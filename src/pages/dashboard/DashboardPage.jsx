@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, Outlet } from 'react-router-dom';
 import './DashboardPage.css';
-import logo from '../assets/logo-lex.jpeg';
+import logo from '../../assets/logo-lex.jpeg';
 
 function DashboardPage() {
   const navigate = useNavigate();

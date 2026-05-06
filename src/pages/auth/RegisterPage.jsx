@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../api/axiosConfig'; // <-- 1. MUDANÇA: Importa nosso 'api'
+import api from '../../api/axiosConfig';
 import './RegisterPage.css';
-import logo from '../assets/logo-lex.jpeg'; // Verifique se é .jpeg ou .png
+import logo from '../../assets/logo-lex.jpeg';
 
 function RegisterPage() {
   const [nome, setNome] = useState('');

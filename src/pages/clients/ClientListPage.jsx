@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axiosConfig';
-import './ClientePage.css';
+import './ClientPage.css';
 
 function ClienteListPage() {
   const [clientes, setClientes] = useState([]);

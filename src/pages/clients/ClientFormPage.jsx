@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/axiosConfig';
-import './ClientePage.css'; // O CSS pode ser mantido
+import './ClientPage.css';
 
 function ClienteFormPage() {
   // 1. Novo estado para controlar o tipo de pessoa
