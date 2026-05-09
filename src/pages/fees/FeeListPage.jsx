@@ -10,7 +10,7 @@ function FeeListPage() {
 
   useEffect(() => {
     feeService.listFees()
-      .then(res => setFees(res.data))
+      .then(res => setFees(res.data.data ?? res.data))
       .catch(() => setError('Falha ao buscar honorários.'))
       .finally(() => setLoading(false));
   }, []);
@@ -48,6 +48,7 @@ function FeeListPage() {
         <table className="data-table">
           <thead>
             <tr>
+              <th>Processo</th>
               <th>Descrição</th>
               <th>Valor</th>
               <th>Tipo</th>
@@ -58,10 +59,11 @@ function FeeListPage() {
           </thead>
           <tbody>
             {fees.length === 0 ? (
-              <tr><td colSpan="6">Nenhum honorário cadastrado.</td></tr>
+              <tr><td colSpan="7">Nenhum honorário cadastrado.</td></tr>
             ) : (
               fees.map(fee => (
                 <tr key={fee._id}>
+                  <td>{fee.processoId?.titulo ?? '—'}</td>
                   <td>{fee.descricao}</td>
                   <td>{formatValue(fee.valor)}</td>
                   <td>{fee.tipo}</td>

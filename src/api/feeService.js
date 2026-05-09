@@ -1,6 +1,6 @@
 import api from './axiosConfig';
 
-const listFees = () => api.get('/fees');
+const listFees = ({ page = 1, limit = 20 } = {}) => api.get('/fees', { params: { page, limit } });
 const getFeeById = (id) => api.get(`/fees/${id}`);
 const createFee = (data) => api.post('/fees', data);
 const updateFee = (id, data) => api.put(`/fees/${id}`, data);

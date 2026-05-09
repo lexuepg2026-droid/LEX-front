@@ -25,7 +25,7 @@ function FeeFormPage() {
 
   useEffect(() => {
     processService.listProcesses()
-      .then(res => setProcesses(res.data))
+      .then(res => setProcesses(res.data.data ?? res.data))
       .catch(() => setError('Falha ao carregar processos.'));
 
     if (isEditing) {
