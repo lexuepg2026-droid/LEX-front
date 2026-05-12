@@ -53,7 +53,13 @@ function PaymentFormPage() {
     setLoading(true);
     setError('');
     try {
-      const payload = { ...formData, valorPago: Number(formData.valorPago) };
+      const payload = {
+        installmentId: formData.installmentId,
+        valorPago: Number(formData.valorPago),
+        dataPagamento: formData.dataPagamento,
+        formaPagamento: formData.formaPagamento,
+        observacoes: formData.observacoes,
+      };
       if (isEditing) {
         await paymentService.updatePayment(id, payload);
       } else {
