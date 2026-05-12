@@ -18,7 +18,7 @@ function PaymentListPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    paymentService.listPayments()
+    paymentService.listPayments({ page: 1, limit: 20 })
       .then(res => setPayments(res.data.data ?? res.data))
       .catch(() => setError('Falha ao buscar pagamentos.'))
       .finally(() => setLoading(false));
