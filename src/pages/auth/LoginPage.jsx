@@ -17,7 +17,7 @@ function LoginPage() {
 
     try {
       // 2. MUDANÇA: Usa 'api.post' e só o final da URL
-      const response = await api.post('/usuarios/login', {
+      const response = await api.post('/auth/login', {
         email: email,
         senha: senha,
       });

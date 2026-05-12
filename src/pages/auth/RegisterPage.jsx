@@ -24,8 +24,8 @@ function RegisterPage() {
 
     try {
       // 2. MUDANÇA: Usa 'api.post' e só o final da URL
-      await api.post('/usuarios/registrar', {
-        nome_completo: nome,
+      await api.post('/auth/register', {
+        nomeCompleto: nome,
         email: email,
         senha: senha,
       });
