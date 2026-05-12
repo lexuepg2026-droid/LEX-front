@@ -16,7 +16,7 @@ function DocumentListPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    documentService.listDocuments()
+    documentService.listDocuments({ page: 1, limit: 20 })
       .then(res => setDocuments(res.data.data ?? res.data))
       .catch(() => setError('Falha ao buscar documentos.'))
       .finally(() => setLoading(false));

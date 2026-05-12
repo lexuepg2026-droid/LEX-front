@@ -58,8 +58,13 @@ function DocumentFormPage() {
     setError('');
     try {
       const payload = {
-        ...formData,
+        processoId: formData.processoId,
+        nome: formData.nome,
+        tipo: formData.tipo,
+        descricao: formData.descricao,
+        urlArquivo: formData.urlArquivo,
         tamanho: formData.tamanho ? Number(formData.tamanho) : undefined,
+        dataUpload: formData.dataUpload || undefined,
       };
       if (isEditing) {
         await documentService.updateDocument(id, payload);
