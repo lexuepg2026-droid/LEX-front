@@ -1,10 +1,11 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
+import { getToken } from '../../utils/storage';
 
 // Este componente é o "Porteiro"
 function ProtectedRoute() {
   // 1. Ele verifica se o "crachá" (token) está guardado
-  const token = localStorage.getItem('lex-token');
+  const token = getToken();
 
   // 2. Se não houver token, ele expulsa o usuário para a página de login
   if (!token) {

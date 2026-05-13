@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axiosConfig';
+import { setToken } from '../../utils/storage';
 import './LoginPage.css';
 import logo from '../../assets/logo-lex.jpeg';
 
@@ -23,7 +24,7 @@ function LoginPage() {
       });
 
       const token = response.data.token;
-      localStorage.setItem('lex-token', token);
+      setToken(token);
       
       navigate('/dashboard');
 

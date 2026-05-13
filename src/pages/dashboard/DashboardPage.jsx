@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '../../components/layout/AppLayout';
+import { removeToken, getTheme as getStoredTheme, setTheme as setStoredTheme, removeTheme } from '../../utils/storage';
 
 function DashboardPage() {
   const navigate = useNavigate();
-  const [theme, setTheme] = useState(localStorage.getItem('lex-theme') || 'dark');
+  const [theme, setTheme] = useState(getStoredTheme());
 
   useEffect(() => {
     if (theme === 'light') {
@@ -12,7 +13,7 @@ function DashboardPage() {
     } else {
       document.body.classList.remove('light-mode');
     }
-    localStorage.setItem('lex-theme', theme);
+    setStoredTheme(theme);
   }, [theme]);
 
   const toggleTheme = () => {
@@ -20,9 +21,9 @@ function DashboardPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('lex-token');
+    removeToken();
     document.body.classList.remove('light-mode');
-    localStorage.removeItem('lex-theme');
+    removeTheme();
     navigate('/login');
   };
 
