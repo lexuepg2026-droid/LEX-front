@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import documentService from '../../api/documentService';
-import '../clients/ClientPage.css';
+import PageHeader from '../../components/ui/PageHeader';
+import EmptyState from '../../components/ui/EmptyState';
+import Modal from '../../components/ui/Modal';
+import { formatDate } from '../../utils/formatters';
+import '../../styles/modules.css';
 
 const TIPO_LABEL = {
-  'petição': 'Petição',
-  'contrato': 'Contrato',
-  'sentença': 'Sentença',
+  'petição':    'Petição',
+  'contrato':   'Contrato',
+  'sentença':   'Sentença',
   'comprovante': 'Comprovante',
 };
 
@@ -14,6 +18,7 @@ function DocumentListPage() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
 
   useEffect(() => {
     documentService.listDocuments({ page: 1, limit: 20 })
@@ -22,8 +27,11 @@ function DocumentListPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Remover este documento?')) return;
+  const confirmDelete = (id) => setDeleteModal({ open: true, id });
+
+  const handleDelete = async () => {
+    const { id } = deleteModal;
+    setDeleteModal({ open: false, id: null });
     try {
       await documentService.deleteDocument(id);
       setDocuments(documents.filter(d => d._id !== id));
@@ -32,39 +40,30 @@ function DocumentListPage() {
     }
   };
 
-  const formatDate = (date) =>
-    date ? new Date(date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—';
-
   if (loading) return <p>Carregando...</p>;
 
   return (
-    <div className="cliente-page-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 className="page-title" style={{ border: 'none', marginBottom: 0 }}>Documentos</h1>
-        <Link to="/dashboard/documentos/novo" className="btn-primary" style={{ textDecoration: 'none' }}>
-          + Novo Documento
-        </Link>
-      </div>
-
+    <div className="module-container">
+      <PageHeader title="Documentos" actionLabel="+ Novo Documento" actionTo="/dashboard/documentos/novo" />
       {error && <p className="error-message">{error}</p>}
 
-      <div className="table-wrapper">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Tipo</th>
-              <th>Processo</th>
-              <th>Descrição</th>
-              <th>Upload</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {documents.length === 0 ? (
-              <tr><td colSpan="6">Nenhum documento cadastrado.</td></tr>
-            ) : (
-              documents.map(doc => (
+      {documents.length === 0 ? (
+        <EmptyState title="Nenhum documento cadastrado." description="Clique em Novo Documento para começar." />
+      ) : (
+        <div className="table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Tipo</th>
+                <th>Processo</th>
+                <th>Descrição</th>
+                <th>Upload</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {documents.map(doc => (
                 <tr key={doc._id}>
                   <td>
                     <a href={doc.urlArquivo} target="_blank" rel="noreferrer">{doc.nome}</a>
@@ -74,19 +73,25 @@ function DocumentListPage() {
                   <td>{doc.descricao || '—'}</td>
                   <td>{formatDate(doc.dataUpload)}</td>
                   <td className="actions-cell">
-                    <Link to={`/dashboard/documentos/editar/${doc._id}`} className="btn-action btn-edit">
-                      Editar
-                    </Link>
-                    <button onClick={() => handleDelete(doc._id)} className="btn-action btn-delete">
-                      Excluir
-                    </button>
+                    <Link to={`/dashboard/documentos/editar/${doc._id}`} className="btn-action btn-edit">Editar</Link>
+                    <button onClick={() => confirmDelete(doc._id)} className="btn-action btn-delete">Excluir</button>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <Modal
+        open={deleteModal.open}
+        title="Remover documento"
+        message="Tem certeza que deseja remover este documento? Esta ação não pode ser desfeita."
+        variant="danger"
+        confirmLabel="Remover"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteModal({ open: false, id: null })}
+      />
     </div>
   );
 }

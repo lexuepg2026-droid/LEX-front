@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import installmentService from '../../api/installmentService';
-import '../clients/ClientPage.css';
-
-const STATUS_LABEL = {
-  pendente: 'Pendente',
-  pago: 'Pago',
-  vencido: 'Vencido',
-};
+import PageHeader from '../../components/ui/PageHeader';
+import EmptyState from '../../components/ui/EmptyState';
+import Modal from '../../components/ui/Modal';
+import StatusBadge from '../../components/ui/StatusBadge';
+import { formatDate, formatCurrency } from '../../utils/formatters';
+import '../../styles/modules.css';
 
 function InstallmentListPage() {
   const [installments, setInstallments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
 
   useEffect(() => {
     installmentService.listInstallments()
@@ -21,8 +21,11 @@ function InstallmentListPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Remover esta parcela?')) return;
+  const confirmDelete = (id) => setDeleteModal({ open: true, id });
+
+  const handleDelete = async () => {
+    const { id } = deleteModal;
+    setDeleteModal({ open: false, id: null });
     try {
       await installmentService.deleteInstallment(id);
       setInstallments(installments.filter(i => i._id !== id));
@@ -31,64 +34,58 @@ function InstallmentListPage() {
     }
   };
 
-  const formatDate = (date) =>
-    date ? new Date(date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—';
-
-  const formatValue = (value) =>
-    value?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
   if (loading) return <p>Carregando...</p>;
 
   return (
-    <div className="cliente-page-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 className="page-title" style={{ border: 'none', marginBottom: 0 }}>Parcelas</h1>
-        <Link to="/dashboard/parcelas/novo" className="btn-primary" style={{ textDecoration: 'none' }}>
-          + Nova Parcela
-        </Link>
-      </div>
-
+    <div className="module-container">
+      <PageHeader title="Parcelas" actionLabel="+ Nova Parcela" actionTo="/dashboard/parcelas/novo" />
       {error && <p className="error-message">{error}</p>}
 
-      <div className="table-wrapper">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Honorário</th>
-              <th>Nº Parcela</th>
-              <th>Valor</th>
-              <th>Vencimento</th>
-              <th>Status</th>
-              <th>Pagamento</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {installments.length === 0 ? (
-              <tr><td colSpan="7">Nenhuma parcela cadastrada.</td></tr>
-            ) : (
-              installments.map(inst => (
+      {installments.length === 0 ? (
+        <EmptyState title="Nenhuma parcela cadastrada." description="Clique em Nova Parcela para começar." />
+      ) : (
+        <div className="table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Honorário</th>
+                <th>Nº Parcela</th>
+                <th>Valor</th>
+                <th>Vencimento</th>
+                <th>Status</th>
+                <th>Pagamento</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {installments.map(inst => (
                 <tr key={inst._id}>
                   <td>{inst.feeId?.descricao || '—'}</td>
                   <td>{inst.numeroParcela}</td>
-                  <td>{formatValue(inst.valor)}</td>
+                  <td>{formatCurrency(inst.valor)}</td>
                   <td>{formatDate(inst.dataVencimento)}</td>
-                  <td>{STATUS_LABEL[inst.status] || inst.status}</td>
+                  <td><StatusBadge status={inst.status} /></td>
                   <td>{formatDate(inst.dataPagamento)}</td>
                   <td className="actions-cell">
-                    <Link to={`/dashboard/parcelas/editar/${inst._id}`} className="btn-action btn-edit">
-                      Editar
-                    </Link>
-                    <button onClick={() => handleDelete(inst._id)} className="btn-action btn-delete">
-                      Excluir
-                    </button>
+                    <Link to={`/dashboard/parcelas/editar/${inst._id}`} className="btn-action btn-edit">Editar</Link>
+                    <button onClick={() => confirmDelete(inst._id)} className="btn-action btn-delete">Excluir</button>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <Modal
+        open={deleteModal.open}
+        title="Remover parcela"
+        message="Tem certeza que deseja remover esta parcela? Esta ação não pode ser desfeita."
+        variant="danger"
+        confirmLabel="Remover"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteModal({ open: false, id: null })}
+      />
     </div>
   );
 }

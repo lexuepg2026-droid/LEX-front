@@ -1,0 +1,63 @@
+/* Estilos compartilhados entre páginas de listagem */
+
+.module-container {
+  width: 100%;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--space-5);
+  color: var(--color-text-primary);
+  min-width: 800px;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid var(--color-border);
+  padding: var(--space-3);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.data-table th {
+  background-color: var(--color-surface-raised);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.data-table tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.actions-cell {
+  display: flex;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.btn-action {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-family);
+}
+
+.btn-edit   { background-color: var(--color-primary); color: #fff; }
+.btn-view   { background-color: #5c6bc0;              color: #fff; }
+.btn-delete { background-color: var(--color-danger);  color: #fff; }
+
+.error-message {
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+  margin: var(--space-2) 0;
+}
