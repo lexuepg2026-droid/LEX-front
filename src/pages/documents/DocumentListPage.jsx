@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import documentService from '../../api/documentService';
 import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
@@ -19,13 +19,17 @@ function DocumentListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
+  const [searchParams] = useSearchParams();
+  const processoId = searchParams.get('processoId');
 
   useEffect(() => {
-    documentService.listDocuments({ page: 1, limit: 20 })
+    setLoading(true);
+    setError('');
+    documentService.listDocuments({ page: 1, limit: 20, processoId })
       .then(res => setDocuments(res.data.data ?? res.data))
       .catch(() => setError('Falha ao buscar documentos.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [processoId]);
 
   const confirmDelete = (id) => setDeleteModal({ open: true, id });
 

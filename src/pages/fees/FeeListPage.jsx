@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import feeService from '../../api/feeService';
 import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
@@ -13,13 +13,17 @@ function FeeListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
+  const [searchParams] = useSearchParams();
+  const processoId = searchParams.get('processoId');
 
   useEffect(() => {
-    feeService.listFees()
+    setLoading(true);
+    setError('');
+    feeService.listFees({ processoId })
       .then(res => setFees(res.data.data ?? res.data))
       .catch(() => setError('Falha ao buscar honorários.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [processoId]);
 
   const confirmDelete = (id) => setDeleteModal({ open: true, id });
 
