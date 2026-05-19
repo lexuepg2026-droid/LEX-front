@@ -9,12 +9,14 @@ function LoginPage() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [error, setError] = useState('');
-  
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
       // 2. MUDANÇA: Usa 'api.post' e só o final da URL
@@ -25,12 +27,14 @@ function LoginPage() {
 
       const token = response.data.token;
       setToken(token);
-      
+
       navigate('/dashboard');
 
     } catch (err) {
       console.error('Falha no login:', err);
       setError('Credenciais inválidas. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,7 +65,9 @@ function LoginPage() {
 
         {error && <p className="error-message">{error}</p>}
 
-        <button type="submit" className="btn-primary">Entrar</button>
+        <button type="submit" disabled={loading} className="btn-primary">
+          {loading ? 'Entrando...' : 'Entrar'}
+        </button>
       </form>
 
       <div className="login-links">

@@ -6,9 +6,10 @@ import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { formatDate, formatCurrency } from '../../utils/formatters';
+import { toast } from '../../utils/toast';
 import '../../styles/modules.css';
 
-function FeeListPage() {
+function FeeListPage({ embedded = false }) {
   const [fees, setFees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -33,20 +34,23 @@ function FeeListPage() {
     try {
       await feeService.deleteFee(id);
       setFees(fees.filter(f => f._id !== id));
+      toast.success('Honorário removido com sucesso.');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao remover honorário.');
+      toast.error(err.response?.data?.message || 'Erro ao remover honorário.');
     }
   };
 
   if (loading) return <p>Carregando...</p>;
 
-  return (
-    <div className="module-container">
-      <PageHeader title="Honorários" actionLabel="+ Novo Honorário" actionTo="/dashboard/honorarios/novo" />
+  const body = (
+    <>
       {error && <p className="error-message">{error}</p>}
 
       {fees.length === 0 ? (
-        <EmptyState title="Nenhum honorário cadastrado." description="Clique em Novo Honorário para começar." />
+        <EmptyState
+          title="Nenhum honorário cadastrado"
+          description="Registre os contratos de honorários vinculados a processos jurídicos."
+        />
       ) : (
         <div className="table-wrapper">
           <table className="data-table">
@@ -90,6 +94,15 @@ function FeeListPage() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteModal({ open: false, id: null })}
       />
+    </>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <div className="module-container">
+      <PageHeader title="Honorários" actionLabel="+ Novo Honorário" actionTo="/dashboard/honorarios/novo" />
+      {body}
     </div>
   );
 }

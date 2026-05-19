@@ -5,6 +5,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import { formatDate, formatCurrency } from '../../utils/formatters';
+import { toast } from '../../utils/toast';
 import '../../styles/modules.css';
 
 const FORMA_LABEL = {
@@ -16,7 +17,7 @@ const FORMA_LABEL = {
   transferencia:  'Transferência',
 };
 
-function PaymentListPage() {
+function PaymentListPage({ embedded = false }) {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -37,26 +38,31 @@ function PaymentListPage() {
     try {
       await paymentService.removePayment(id);
       setPayments(payments.filter(p => p._id !== id));
+      toast.success('Pagamento removido com sucesso.');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao remover pagamento.');
+      toast.error(err.response?.data?.message || 'Erro ao remover pagamento.');
     }
   };
 
   if (loading) return <p>Carregando...</p>;
 
-  return (
-    <div className="module-container">
-      <PageHeader title="Pagamentos" actionLabel="+ Novo Pagamento" actionTo="/dashboard/pagamentos/novo" />
+  const body = (
+    <>
       {error && <p className="error-message">{error}</p>}
 
       {payments.length === 0 ? (
-        <EmptyState title="Nenhum pagamento cadastrado." description="Clique em Novo Pagamento para começar." />
+        <EmptyState
+          title="Nenhum recebimento registrado"
+          description="Registre os recebimentos para acompanhar os pagamentos das cobranças previstas."
+        />
       ) : (
         <div className="table-wrapper">
           <table className="data-table">
             <thead>
               <tr>
                 <th>Parcela</th>
+                <th>Honorário</th>
+                <th>Processo</th>
                 <th>Valor Pago</th>
                 <th>Data</th>
                 <th>Forma</th>
@@ -68,6 +74,8 @@ function PaymentListPage() {
               {payments.map(p => (
                 <tr key={p._id}>
                   <td>Parcela {p.installmentId?.numeroParcela ?? '—'}</td>
+                  <td>{p.installmentId?.feeId?.descricao ?? '—'}</td>
+                  <td>{p.installmentId?.feeId?.processoId?.titulo ?? '—'}</td>
                   <td>{formatCurrency(p.valorPago)}</td>
                   <td>{formatDate(p.dataPagamento)}</td>
                   <td>{FORMA_LABEL[p.formaPagamento] || p.formaPagamento}</td>
@@ -92,6 +100,15 @@ function PaymentListPage() {
         onConfirm={handleRemove}
         onCancel={() => setDeleteModal({ open: false, id: null })}
       />
+    </>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <div className="module-container">
+      <PageHeader title="Pagamentos" actionLabel="+ Novo Pagamento" actionTo="/dashboard/pagamentos/novo" />
+      {body}
     </div>
   );
 }

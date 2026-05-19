@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import processService from '../../api/processService';
 import clientService from '../../api/clientService';
+import { toast } from '../../utils/toast';
 import './ProcessPage.css';
 
 const STATUS_OPTIONS = ['ativo', 'encerrado', 'suspenso'];
@@ -101,6 +102,7 @@ function ProcessoFormPage() {
       } else {
         await processService.createProcess(payload);
       }
+      toast.success(isEditing ? 'Processo atualizado com sucesso.' : 'Processo cadastrado com sucesso.');
       navigate('/dashboard/processos');
     } catch (err) {
       setError(err.response?.data?.message || 'Erro ao salvar processo. Verifique os dados.');

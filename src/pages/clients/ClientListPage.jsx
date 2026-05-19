@@ -4,6 +4,7 @@ import clientService from '../../api/clientService';
 import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
+import { toast } from '../../utils/toast';
 import '../../styles/modules.css';
 
 function ClienteListPage() {
@@ -36,8 +37,9 @@ function ClienteListPage() {
     try {
       await clientService.deleteClient(id);
       setClientes(clientes.filter(c => c._id !== id));
+      toast.success('Cliente excluído com sucesso.');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao excluir cliente.');
+      toast.error(err.response?.data?.message || 'Erro ao excluir cliente.');
     }
   };
 

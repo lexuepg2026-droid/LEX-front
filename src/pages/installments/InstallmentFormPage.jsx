@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import installmentService from '../../api/installmentService';
 import feeService from '../../api/feeService';
+import { toast } from '../../utils/toast';
 import '../clients/ClientPage.css';
 
 const EMPTY_FORM = {
@@ -10,7 +11,6 @@ const EMPTY_FORM = {
   valor: '',
   dataVencimento: '',
   status: 'pendente',
-  dataPagamento: '',
 };
 
 function InstallmentFormPage() {
@@ -38,7 +38,6 @@ function InstallmentFormPage() {
             valor: inst.valor || '',
             dataVencimento: inst.dataVencimento ? inst.dataVencimento.substring(0, 10) : '',
             status: inst.status || 'pendente',
-            dataPagamento: inst.dataPagamento ? inst.dataPagamento.substring(0, 10) : '',
           });
         })
         .catch(() => setError('Falha ao carregar parcela.'));
@@ -60,14 +59,13 @@ function InstallmentFormPage() {
         numeroParcela: Number(formData.numeroParcela),
         valor: Number(formData.valor),
         dataVencimento: formData.dataVencimento || undefined,
-        status: formData.status,
-        dataPagamento: formData.status === 'pago' ? (formData.dataPagamento || undefined) : undefined,
       };
       if (isEditing) {
         await installmentService.updateInstallment(id, payload);
       } else {
         await installmentService.createInstallment(payload);
       }
+      toast.success(isEditing ? 'Parcela atualizada com sucesso.' : 'Parcela cadastrada com sucesso.');
       navigate('/dashboard/parcelas');
     } catch (err) {
       setError(err.response?.data?.message || 'Erro ao salvar parcela.');
@@ -133,23 +131,20 @@ function InstallmentFormPage() {
           </div>
 
           <div className="form-group span-1">
-            <label>Status</label>
-            <select name="status" value={formData.status} onChange={handleChange}>
+            <label>
+              Status{' '}
+              <span style={{ fontSize: '11px', opacity: 0.55, fontWeight: 400 }}>
+                (calculado automaticamente)
+              </span>
+            </label>
+            <select name="status" value={formData.status} onChange={handleChange} disabled>
               <option value="pendente">Pendente</option>
               <option value="pago">Pago</option>
               <option value="vencido">Vencido</option>
+              <option value="parcial">Parcial</option>
             </select>
           </div>
 
-          <div className="form-group span-1">
-            <label>Data de Pagamento</label>
-            <input
-              type="date"
-              name="dataPagamento"
-              value={formData.dataPagamento}
-              onChange={handleChange}
-            />
-          </div>
         </div>
 
         {error && <p className="error-message">{error}</p>}

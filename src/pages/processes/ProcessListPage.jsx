@@ -6,6 +6,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { formatDate } from '../../utils/formatters';
+import { toast } from '../../utils/toast';
 import '../../styles/modules.css';
 
 function ProcessoListPage() {
@@ -38,8 +39,9 @@ function ProcessoListPage() {
     try {
       await processService.deleteProcess(id);
       setProcessos(processos.filter(p => p._id !== id));
+      toast.success('Processo excluído com sucesso.');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao excluir processo.');
+      toast.error(err.response?.data?.message || 'Erro ao excluir processo.');
     }
   };
 

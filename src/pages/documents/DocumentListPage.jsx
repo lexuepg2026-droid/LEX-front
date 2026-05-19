@@ -5,6 +5,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import { formatDate } from '../../utils/formatters';
+import { toast } from '../../utils/toast';
 import '../../styles/modules.css';
 
 const TIPO_LABEL = {
@@ -39,8 +40,9 @@ function DocumentListPage() {
     try {
       await documentService.deleteDocument(id);
       setDocuments(documents.filter(d => d._id !== id));
+      toast.success('Documento removido com sucesso.');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao remover documento.');
+      toast.error(err.response?.data?.message || 'Erro ao remover documento.');
     }
   };
 

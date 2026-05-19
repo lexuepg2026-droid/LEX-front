@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import feeService from '../../api/feeService';
 import processService from '../../api/processService';
+import { toast } from '../../utils/toast';
 import '../clients/ClientPage.css';
 
 const EMPTY_FORM = {
@@ -68,6 +69,7 @@ function FeeFormPage() {
       } else {
         await feeService.createFee(payload);
       }
+      toast.success(isEditing ? 'Honorário atualizado com sucesso.' : 'Honorário cadastrado com sucesso.');
       navigate('/dashboard/honorarios');
     } catch (err) {
       setError(err.response?.data?.message || 'Erro ao salvar honorário.');

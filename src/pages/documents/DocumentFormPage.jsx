@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import documentService from '../../api/documentService';
 import processService from '../../api/processService';
+import { toast } from '../../utils/toast';
 import '../clients/ClientPage.css';
 
 const EMPTY_FORM = {
@@ -71,6 +72,7 @@ function DocumentFormPage() {
       } else {
         await documentService.createDocument(payload);
       }
+      toast.success(isEditing ? 'Documento atualizado com sucesso.' : 'Documento cadastrado com sucesso.');
       navigate('/dashboard/documentos');
     } catch (err) {
       setError(err.response?.data?.message || 'Erro ao salvar documento.');

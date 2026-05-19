@@ -6,9 +6,10 @@ import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { formatDate, formatCurrency } from '../../utils/formatters';
+import { toast } from '../../utils/toast';
 import '../../styles/modules.css';
 
-function InstallmentListPage() {
+function InstallmentListPage({ embedded = false }) {
   const [installments, setInstallments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -29,20 +30,23 @@ function InstallmentListPage() {
     try {
       await installmentService.deleteInstallment(id);
       setInstallments(installments.filter(i => i._id !== id));
+      toast.success('Parcela removida com sucesso.');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao remover parcela.');
+      toast.error(err.response?.data?.message || 'Erro ao remover parcela.');
     }
   };
 
   if (loading) return <p>Carregando...</p>;
 
-  return (
-    <div className="module-container">
-      <PageHeader title="Parcelas" actionLabel="+ Nova Parcela" actionTo="/dashboard/parcelas/novo" />
+  const body = (
+    <>
       {error && <p className="error-message">{error}</p>}
 
       {installments.length === 0 ? (
-        <EmptyState title="Nenhuma parcela cadastrada." description="Clique em Nova Parcela para começar." />
+        <EmptyState
+          title="Nenhuma cobrança prevista"
+          description="As cobranças são criadas a partir de honorários e representam parcelas a receber."
+        />
       ) : (
         <div className="table-wrapper">
           <table className="data-table">
@@ -86,6 +90,15 @@ function InstallmentListPage() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteModal({ open: false, id: null })}
       />
+    </>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <div className="module-container">
+      <PageHeader title="Parcelas" actionLabel="+ Nova Parcela" actionTo="/dashboard/parcelas/novo" />
+      {body}
     </div>
   );
 }

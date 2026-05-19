@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import clientService from '../../api/clientService';
+import { toast } from '../../utils/toast';
 import './ClientPage.css';
 
 function ClienteFormPage() {
@@ -95,6 +96,7 @@ function ClienteFormPage() {
       } else {
         await clientService.createClient(payload);
       }
+      toast.success(isEditing ? 'Cliente atualizado com sucesso.' : 'Cliente cadastrado com sucesso.');
       navigate('/dashboard/clientes');
     } catch (err) {
       setError(err.response?.data?.message || 'Erro ao salvar cliente. Verifique os dados.');

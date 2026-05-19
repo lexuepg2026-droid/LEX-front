@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axiosConfig';
+import { toast } from '../../utils/toast';
 import './RegisterPage.css';
 import logo from '../../assets/logo-lex.jpeg';
 
@@ -10,7 +11,8 @@ function RegisterPage() {
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [error, setError] = useState('');
-  
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -22,6 +24,7 @@ function RegisterPage() {
       return;
     }
 
+    setLoading(true);
     try {
       // 2. MUDANÇA: Usa 'api.post' e só o final da URL
       await api.post('/auth/register', {
@@ -30,7 +33,7 @@ function RegisterPage() {
         senha: senha,
       });
 
-      alert('Cadastro realizado com sucesso! Faça o login.');
+      toast.success('Conta criada com sucesso! Faça o login.');
       navigate('/login');
 
     } catch (err) {
@@ -40,6 +43,8 @@ function RegisterPage() {
       } else {
         setError('Erro ao se cadastrar. Tente novamente.');
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -88,7 +93,9 @@ function RegisterPage() {
 
         {error && <p className="error-message">{error}</p>}
 
-        <button type="submit" className="btn-primary">Registrar</button>
+        <button type="submit" disabled={loading} className="btn-primary">
+          {loading ? 'Registrando...' : 'Registrar'}
+        </button>
       </form>
 
       <div className="register-links">

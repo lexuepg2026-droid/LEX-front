@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import paymentService from '../../api/paymentService';
 import installmentService from '../../api/installmentService';
+import { formatCurrency } from '../../utils/formatters';
+import { toast } from '../../utils/toast';
 import '../clients/ClientPage.css';
 
 const EMPTY_FORM = {
@@ -15,6 +17,8 @@ const EMPTY_FORM = {
 function PaymentFormPage() {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [installments, setInstallments] = useState([]);
+  const [selectedInstallment, setSelectedInstallment] = useState(null);
+  const [valorJaPago, setValorJaPago] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -23,7 +27,7 @@ function PaymentFormPage() {
   const isEditing = Boolean(id);
 
   useEffect(() => {
-    installmentService.listInstallments()
+    installmentService.listInstallments({ limit: 200 })
       .then(res => setInstallments(res.data.data ?? res.data))
       .catch(() => setError('Falha ao carregar parcelas.'));
 
@@ -42,6 +46,23 @@ function PaymentFormPage() {
         .catch(() => setError('Falha ao carregar pagamento.'));
     }
   }, [id, isEditing]);
+
+  useEffect(() => {
+    if (!formData.installmentId || installments.length === 0) {
+      setSelectedInstallment(null);
+      setValorJaPago(0);
+      return;
+    }
+    const inst = installments.find(i => i._id === formData.installmentId);
+    setSelectedInstallment(inst || null);
+    paymentService.listPayments({ installmentId: formData.installmentId, limit: 200 })
+      .then(res => {
+        const list = res.data.data ?? res.data;
+        const filtrado = isEditing ? list.filter(p => p._id !== id) : list;
+        setValorJaPago(filtrado.reduce((acc, p) => acc + Number(p.valorPago || 0), 0));
+      })
+      .catch(() => setValorJaPago(0));
+  }, [formData.installmentId, installments, id, isEditing]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -65,6 +86,7 @@ function PaymentFormPage() {
       } else {
         await paymentService.createPayment(payload);
       }
+      toast.success(isEditing ? 'Pagamento atualizado com sucesso.' : 'Pagamento registrado com sucesso.');
       navigate('/dashboard/pagamentos');
     } catch (err) {
       setError(err.response?.data?.message || 'Erro ao salvar pagamento.');
@@ -98,8 +120,27 @@ function PaymentFormPage() {
             </select>
           </div>
 
+          {selectedInstallment && (
+            <div className="form-info-box span-3">
+              <div className="form-info-item">
+                <span className="form-info-label">Valor da parcela</span>
+                <span className="form-info-value">{formatCurrency(selectedInstallment.valor)}</span>
+              </div>
+              <div className="form-info-item">
+                <span className="form-info-label">Já recebido</span>
+                <span className="form-info-value">{formatCurrency(valorJaPago)}</span>
+              </div>
+              <div className="form-info-item">
+                <span className="form-info-label">Saldo restante</span>
+                <span className={`form-info-value${selectedInstallment.valor - valorJaPago <= 0 ? ' form-info-value--danger' : ''}`}>
+                  {formatCurrency(Math.max(0, selectedInstallment.valor - valorJaPago))}
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="form-group span-1">
-            <label>Valor Pago (R$) *</label>
+            <label>Valor a registrar (R$) *</label>
             <input
               type="number"
               name="valorPago"
