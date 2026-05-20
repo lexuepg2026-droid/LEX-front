@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { to: '/dashboard/clientes',   label: 'Clientes',   icon: Users            },
   { to: '/dashboard/processos',  label: 'Processos',  icon: Scale            },
   { to: '/dashboard/documentos', label: 'Documentos', icon: FolderOpen       },
-  { to: '/dashboard/financeiro', label: 'Financeiro',  icon: Banknote         },
+  { to: '/dashboard/financeiro', label: 'Financeiro', icon: Banknote         },
 ];
 
 function BottomNav() {

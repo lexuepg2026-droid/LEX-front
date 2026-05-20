@@ -71,7 +71,6 @@ function LoginPage() {
       </form>
 
       <div className="login-links">
-        <Link to="/esqueci-senha">Esqueceu a senha?</Link>
         <Link to="/registrar">Criar nova conta</Link>
       </div>
     </div>

@@ -2,18 +2,22 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Scale,
-  Banknote, FolderOpen, Sun, Moon, LogOut
+  Banknote, Receipt, CalendarDays, CreditCard,
+  FolderOpen, Sun, Moon, LogOut
 } from 'lucide-react';
 import logo from '../../assets/logo-lex.jpeg';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
-  { to: '/dashboard', label: 'Início',      icon: LayoutDashboard, end: true },
+  { to: '/dashboard',             label: 'Início',      icon: LayoutDashboard, end: true },
   null,
-  { to: '/dashboard/clientes',   label: 'Clientes',    icon: Users     },
-  { to: '/dashboard/processos',  label: 'Processos',   icon: Scale    },
+  { to: '/dashboard/clientes',   label: 'Clientes',    icon: Users      },
+  { to: '/dashboard/processos',  label: 'Processos',   icon: Scale      },
   null,
-  { to: '/dashboard/financeiro', label: 'Financeiro',  icon: Banknote },
+  { to: '/dashboard/financeiro', label: 'Financeiro',  icon: Banknote   },
+  { to: '/dashboard/honorarios', label: 'Honorários',  icon: Receipt    },
+  { to: '/dashboard/parcelas',   label: 'Parcelas',    icon: CalendarDays },
+  { to: '/dashboard/pagamentos', label: 'Pagamentos',  icon: CreditCard },
   null,
   { to: '/dashboard/documentos', label: 'Documentos',  icon: FolderOpen },
 ];

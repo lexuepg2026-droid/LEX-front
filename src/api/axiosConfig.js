@@ -1,12 +1,11 @@
 import axios from 'axios';
+import { removeToken } from '../utils/storage';
+import { toast } from '../utils/toast';
 
-// O "api" agora aponta para a URL base CORRETA,
-// incluindo o /api
 const api = axios.create({
   baseURL: 'http://localhost:3001/api'
 });
 
-// O interceptor de token continua igual
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('lex-token');
@@ -15,7 +14,20 @@ api.interceptors.request.use(
     }
     return config;
   },
+  (error) => Promise.reject(error)
+);
+
+let isRedirecting = false;
+
+api.interceptors.response.use(
+  (response) => response,
   (error) => {
+    if (error.response?.status === 401 && !isRedirecting) {
+      isRedirecting = true;
+      removeToken();
+      toast.error('Sessão expirada. Faça login novamente.');
+      window.location.href = '/login';
+    }
     return Promise.reject(error);
   }
 );
