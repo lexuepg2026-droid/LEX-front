@@ -5,6 +5,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import { toast } from '../../utils/toast';
+import Loading from '../../components/common/Loading';
 import '../../styles/modules.css';
 
 function ClienteListPage() {
@@ -53,7 +54,7 @@ function ClienteListPage() {
     ].filter(Boolean).join(', ');
   };
 
-  if (loading) return <p>Carregando...</p>;
+  if (loading) return <Loading />;
 
   return (
     <div className="module-container">

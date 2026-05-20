@@ -4,7 +4,9 @@ import dashboardService from '../../api/dashboardService';
 import installmentService from '../../api/installmentService';
 import StatusBadge from '../../components/ui/StatusBadge';
 import EmptyState from '../../components/ui/EmptyState';
+import Loading from '../../components/common/Loading';
 import { formatDate, formatCurrency } from '../../utils/formatters';
+import { toast } from '../../utils/toast';
 import './DashboardPage.css';
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
@@ -84,19 +86,19 @@ function DashboardHomePage() {
 
         setUpcoming(urgent);
       })
-      .catch(() => {});
+      .catch(() => toast.error('Não foi possível carregar cobranças urgentes.'));
   }, []);
 
   useEffect(() => {
     dashboardService.getStatusCounts()
       .then(res => setStatusData(res.data))
-      .catch(() => {});
+      .catch(() => toast.error('Não foi possível carregar estatísticas do dashboard.'));
   }, []);
 
   useEffect(() => {
     dashboardService.getFeesByMonth()
       .then(res => setFeesByMonth(res.data))
-      .catch(() => {});
+      .catch(() => toast.error('Não foi possível carregar gráfico financeiro.'));
   }, []);
 
   return (
@@ -109,7 +111,7 @@ function DashboardHomePage() {
       <section className="summary-section">
         <h2 className="summary-title">Resumo Geral</h2>
 
-        {loading && <p>Carregando...</p>}
+        {loading && <Loading />}
         {error && <p className="error-message">{error}</p>}
 
         {summary && (

@@ -6,6 +6,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
+import Loading from '../../components/common/Loading';
 import '../../styles/modules.css';
 
 const FORMA_LABEL = {
@@ -44,7 +45,7 @@ function PaymentListPage({ embedded = false }) {
     }
   };
 
-  if (loading) return <p>Carregando...</p>;
+  if (loading) return <Loading />;
 
   const body = (
     <>

@@ -6,6 +6,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import { formatDate } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
+import Loading from '../../components/common/Loading';
 import '../../styles/modules.css';
 
 const TIPO_LABEL = {
@@ -46,7 +47,7 @@ function DocumentListPage() {
     }
   };
 
-  if (loading) return <p>Carregando...</p>;
+  if (loading) return <Loading />;
 
   return (
     <div className="module-container">

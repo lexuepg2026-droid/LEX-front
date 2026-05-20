@@ -7,6 +7,7 @@ import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
+import Loading from '../../components/common/Loading';
 import '../../styles/modules.css';
 
 function InstallmentListPage({ embedded = false }) {
@@ -36,7 +37,7 @@ function InstallmentListPage({ embedded = false }) {
     }
   };
 
-  if (loading) return <p>Carregando...</p>;
+  if (loading) return <Loading />;
 
   const body = (
     <>
