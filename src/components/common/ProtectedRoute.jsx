@@ -1,19 +1,19 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { getToken } from '../../utils/storage';
+import { useAuth } from '../../contexts/AuthContext';
+import Loading from './Loading';
 
-// Este componente é o "Porteiro"
 function ProtectedRoute() {
-  // 1. Ele verifica se o "crachá" (token) está guardado
-  const token = getToken();
+  const { isAuthenticated, isLoading } = useAuth();
 
-  // 2. Se não houver token, ele expulsa o usuário para a página de login
-  if (!token) {
+  if (isLoading) {
+    return <Loading />;
+  }
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // 3. Se houver um token, ele deixa o usuário ver o conteúdo (o Dashboard)
-  // <Outlet /> é o "prêmio" (a página que estava sendo protegida)
   return <Outlet />;
 }
 
