@@ -17,15 +17,29 @@ function FeeListPage({ embedded = false }) {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
   const [searchParams] = useSearchParams();
   const processoId = searchParams.get('processoId');
+  const [busca, setBusca] = useState('');
+  const [buscaDebounced, setBuscaDebounced] = useState('');
+  const [tipo, setTipo] = useState('');
+  const [status, setStatus] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => setBuscaDebounced(busca), 300);
+    return () => clearTimeout(t);
+  }, [busca]);
 
   useEffect(() => {
     setLoading(true);
     setError('');
-    feeService.listFees({ processoId })
+    feeService.listFees({
+      processoId,
+      busca: buscaDebounced || undefined,
+      tipo: tipo || undefined,
+      status: status || undefined,
+    })
       .then(res => setFees(res.data.data ?? res.data))
       .catch(() => setError('Falha ao buscar honorários.'))
       .finally(() => setLoading(false));
-  }, [processoId]);
+  }, [processoId, buscaDebounced, tipo, status]);
 
   const confirmDelete = (id) => setDeleteModal({ open: true, id });
 
@@ -47,10 +61,32 @@ function FeeListPage({ embedded = false }) {
     <>
       {error && <p className="error-message">{error}</p>}
 
+      <div className="filter-bar">
+        <input
+          type="text"
+          placeholder="Buscar por descrição..."
+          value={busca}
+          onChange={e => setBusca(e.target.value)}
+          maxLength={80}
+        />
+        <select value={tipo} onChange={e => setTipo(e.target.value)}>
+          <option value="">Todos os tipos</option>
+          <option value="fixo">Fixo</option>
+          <option value="percentual">Percentual</option>
+          <option value="custas">Custas</option>
+        </select>
+        <select value={status} onChange={e => setStatus(e.target.value)}>
+          <option value="">Todos os status</option>
+          <option value="pendente">Pendente</option>
+          <option value="pago">Pago</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+
       {fees.length === 0 ? (
         <EmptyState
-          title="Nenhum honorário cadastrado"
-          description="Registre os contratos de honorários vinculados a processos jurídicos."
+          title="Nenhum honorário encontrado"
+          description="Tente ajustar os filtros ou registre um novo honorário."
         />
       ) : (
         <div className="table-wrapper">

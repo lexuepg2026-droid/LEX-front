@@ -1,9 +1,10 @@
 import api from './axiosConfig';
 
-const listPayments = ({ page = 1, limit = 20, installmentId, processoId } = {}) => {
+const listPayments = ({ page = 1, limit = 20, installmentId, processoId, formaPagamento } = {}) => {
   const params = { page, limit };
   if (installmentId) params.installmentId = installmentId;
   if (processoId) params.processoId = processoId;
+  if (formaPagamento) params.formaPagamento = formaPagamento;
   return api.get('/payments', { params });
 };
 const getPaymentById = (id) => api.get(`/payments/${id}`);

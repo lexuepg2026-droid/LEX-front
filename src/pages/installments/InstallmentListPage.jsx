@@ -17,13 +17,15 @@ function InstallmentListPage({ embedded = false }) {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
   const [searchParams] = useSearchParams();
   const processoId = searchParams.get('processoId') || undefined;
+  const [statusFiltro, setStatusFiltro] = useState('');
 
   useEffect(() => {
-    installmentService.listInstallments({ processoId })
+    setLoading(true);
+    installmentService.listInstallments({ processoId, status: statusFiltro || undefined })
       .then(res => setInstallments(res.data.data ?? res.data))
       .catch(() => setError('Falha ao buscar parcelas.'))
       .finally(() => setLoading(false));
-  }, [processoId]);
+  }, [processoId, statusFiltro]);
 
   const confirmDelete = (id) => setDeleteModal({ open: true, id });
 
@@ -45,10 +47,20 @@ function InstallmentListPage({ embedded = false }) {
     <>
       {error && <p className="error-message">{error}</p>}
 
+      <div className="filter-bar">
+        <select value={statusFiltro} onChange={e => setStatusFiltro(e.target.value)}>
+          <option value="">Todos os status</option>
+          <option value="pendente">Pendente</option>
+          <option value="pago">Pago</option>
+          <option value="vencido">Vencido</option>
+          <option value="parcial">Parcial</option>
+        </select>
+      </div>
+
       {installments.length === 0 ? (
         <EmptyState
-          title="Nenhuma cobrança prevista"
-          description="As cobranças são criadas a partir de honorários e representam parcelas a receber."
+          title="Nenhuma cobrança encontrada"
+          description="Tente ajustar os filtros ou crie uma nova parcela."
         />
       ) : (
         <div className="table-wrapper">

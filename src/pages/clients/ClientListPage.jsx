@@ -13,22 +13,22 @@ function ClienteListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
+  const [busca, setBusca] = useState('');
+  const [buscaDebounced, setBuscaDebounced] = useState('');
 
   useEffect(() => {
-    const fetchClientes = async () => {
-      try {
-        setLoading(true);
-        const response = await clientService.getAllClients();
-        setClientes(response.data.data ?? response.data);
-      } catch (err) {
-        setError('Falha ao buscar clientes.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchClientes();
-  }, []);
+    const t = setTimeout(() => setBuscaDebounced(busca), 300);
+    return () => clearTimeout(t);
+  }, [busca]);
+
+  useEffect(() => {
+    setLoading(true);
+    setError('');
+    clientService.getAllClients({ busca: buscaDebounced || undefined })
+      .then(res => setClientes(res.data.data ?? res.data))
+      .catch(() => setError('Falha ao buscar clientes.'))
+      .finally(() => setLoading(false));
+  }, [buscaDebounced]);
 
   const confirmDelete = (id) => setDeleteModal({ open: true, id });
 
@@ -61,8 +61,18 @@ function ClienteListPage() {
       <PageHeader title="Clientes Registrados" actionLabel="Novo Cliente" actionTo="/dashboard/clientes/novo" />
       {error && <p className="error-message">{error}</p>}
 
+      <div className="filter-bar">
+        <input
+          type="text"
+          placeholder="Buscar por nome, razão social ou email..."
+          value={busca}
+          onChange={e => setBusca(e.target.value)}
+          maxLength={80}
+        />
+      </div>
+
       {clientes.length === 0 ? (
-        <EmptyState title="Nenhum cliente cadastrado." description="Clique em Novo Cliente para começar." />
+        <EmptyState title="Nenhum cliente encontrado." description="Tente ajustar os filtros ou cadastre um novo cliente." />
       ) : (
         <div className="table-wrapper">
           <table className="data-table">

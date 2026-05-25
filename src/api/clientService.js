@@ -1,7 +1,10 @@
 import api from './axiosConfig';
 
-const getAllClients = ({ page = 1, limit = 20 } = {}) =>
-  api.get('/clients', { params: { page, limit } });
+const getAllClients = ({ page = 1, limit = 20, busca } = {}) => {
+  const params = { page, limit };
+  if (busca) params.busca = busca;
+  return api.get('/clients', { params });
+};
 
 const getClientById = (id) => api.get(`/clients/${id}`);
 

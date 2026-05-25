@@ -25,13 +25,15 @@ function PaymentListPage({ embedded = false }) {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
   const [searchParams] = useSearchParams();
   const processoId = searchParams.get('processoId') || undefined;
+  const [formaPagamento, setFormaPagamento] = useState('');
 
   useEffect(() => {
-    paymentService.listPayments({ page: 1, limit: 20, processoId })
+    setLoading(true);
+    paymentService.listPayments({ page: 1, limit: 20, processoId, formaPagamento: formaPagamento || undefined })
       .then(res => setPayments(res.data.data ?? res.data))
       .catch(() => setError('Falha ao buscar pagamentos.'))
       .finally(() => setLoading(false));
-  }, [processoId]);
+  }, [processoId, formaPagamento]);
 
   const confirmDelete = (id) => setDeleteModal({ open: true, id });
 
@@ -53,10 +55,22 @@ function PaymentListPage({ embedded = false }) {
     <>
       {error && <p className="error-message">{error}</p>}
 
+      <div className="filter-bar">
+        <select value={formaPagamento} onChange={e => setFormaPagamento(e.target.value)}>
+          <option value="">Todas as formas</option>
+          <option value="dinheiro">Dinheiro</option>
+          <option value="pix">Pix</option>
+          <option value="boleto">Boleto</option>
+          <option value="cartao_credito">Cartão de Crédito</option>
+          <option value="cartao_debito">Cartão de Débito</option>
+          <option value="transferencia">Transferência</option>
+        </select>
+      </div>
+
       {payments.length === 0 ? (
         <EmptyState
-          title="Nenhum recebimento registrado"
-          description="Registre os recebimentos para acompanhar os pagamentos das cobranças previstas."
+          title="Nenhum recebimento encontrado"
+          description="Tente ajustar os filtros ou registre um novo pagamento."
         />
       ) : (
         <div className="table-wrapper">

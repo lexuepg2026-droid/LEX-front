@@ -15,22 +15,23 @@ function ProcessoListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
+  const [busca, setBusca] = useState('');
+  const [buscaDebounced, setBuscaDebounced] = useState('');
+  const [status, setStatus] = useState('');
 
   useEffect(() => {
-    const fetchProcessos = async () => {
-      try {
-        setLoading(true);
-        const response = await processService.listProcesses();
-        setProcessos(response.data.data ?? response.data);
-      } catch (err) {
-        setError('Falha ao buscar processos.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProcessos();
-  }, []);
+    const t = setTimeout(() => setBuscaDebounced(busca), 300);
+    return () => clearTimeout(t);
+  }, [busca]);
+
+  useEffect(() => {
+    setLoading(true);
+    setError('');
+    processService.listProcesses({ busca: buscaDebounced || undefined, status: status || undefined })
+      .then(res => setProcessos(res.data.data ?? res.data))
+      .catch(() => setError('Falha ao buscar processos.'))
+      .finally(() => setLoading(false));
+  }, [buscaDebounced, status]);
 
   const confirmDelete = (id) => setDeleteModal({ open: true, id });
 
@@ -63,8 +64,24 @@ function ProcessoListPage() {
       <PageHeader title="Processos Registrados" actionLabel="Novo Processo" actionTo="/dashboard/processos/novo" />
       {error && <p className="error-message">{error}</p>}
 
+      <div className="filter-bar">
+        <input
+          type="text"
+          placeholder="Buscar por título ou número..."
+          value={busca}
+          onChange={e => setBusca(e.target.value)}
+          maxLength={80}
+        />
+        <select value={status} onChange={e => setStatus(e.target.value)}>
+          <option value="">Todos os status</option>
+          <option value="ativo">Ativo</option>
+          <option value="encerrado">Encerrado</option>
+          <option value="suspenso">Suspenso</option>
+        </select>
+      </div>
+
       {processos.length === 0 ? (
-        <EmptyState title="Nenhum processo cadastrado." description="Clique em Novo Processo para começar." />
+        <EmptyState title="Nenhum processo encontrado." description="Tente ajustar os filtros ou cadastre um novo processo." />
       ) : (
         <div className="table-wrapper">
           <table className="data-table">
