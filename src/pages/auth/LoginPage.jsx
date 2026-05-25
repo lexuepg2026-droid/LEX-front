@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../../api/axiosConfig';
+import { useAuth } from '../../contexts/AuthContext';
 import './LoginPage.css';
 import logo from '../../assets/logo-lex.jpeg';
 
@@ -11,6 +11,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,12 +19,7 @@ function LoginPage() {
     setLoading(true);
 
     try {
-      // 2. MUDANÇA: Usa 'api.post' e só o final da URL
-      await api.post('/auth/login', {
-        email: email,
-        senha: senha,
-      });
-
+      await login(email, senha);
       navigate('/dashboard');
 
     } catch (err) {

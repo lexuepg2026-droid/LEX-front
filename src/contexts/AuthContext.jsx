@@ -18,6 +18,11 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const login = useCallback(async (email, senha) => {
+    const res = await api.post('/auth/login', { email, senha });
+    setUser(res.data.usuario);
+  }, []);
+
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
@@ -25,7 +30,7 @@ export function AuthProvider({ children }) {
   const isAuthenticated = !!user;
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAuthenticated, checkAuth }}>
+    <AuthContext.Provider value={{ user, isLoading, isAuthenticated, checkAuth, login }}>
       {children}
     </AuthContext.Provider>
   );
