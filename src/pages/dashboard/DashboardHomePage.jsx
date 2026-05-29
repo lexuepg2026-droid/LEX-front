@@ -1,30 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { Scale, Users, FileText, AlertCircle, FolderOpen, Banknote } from 'lucide-react';
 import dashboardService from '../../api/dashboardService';
 import installmentService from '../../api/installmentService';
 import StatusBadge from '../../components/ui/StatusBadge';
 import EmptyState from '../../components/ui/EmptyState';
 import Loading from '../../components/common/Loading';
-import { formatDate, formatCurrency } from '../../utils/formatters';
+import { formatCurrency } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import './DashboardPage.css';
-import {
-  ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-} from 'recharts';
 
-const STATUS_COLORS = {
-  ativo:     '#C8A96B',
-  pago:      '#22c55e',
-  pendente:  '#f59e0b',
-  suspenso:  '#f59e0b',
-  encerrado: '#6b7280',
-  vencido:   '#ef4444',
-  cancelado: '#ef4444',
-};
-
-const toChartData = (obj) =>
-  Object.entries(obj || {}).map(([name, value]) => ({ name, value }));
+const DashboardCharts = lazy(() => import('./DashboardCharts'));
 
 const CARDS = [
   { key: 'processosAtivos',        label: 'Processos Ativos',       format: 'number',   Icon: Scale,       color: 'primary' },
@@ -163,68 +148,9 @@ function DashboardHomePage() {
 
       <section className="charts-section">
         <h2 className="summary-title">Distribuição por Status</h2>
-
-        {statusData && (
-          <div className="charts-grid">
-            {[
-              { key: 'processos',  label: 'Processos'  },
-              { key: 'honorarios', label: 'Honorários' },
-              { key: 'parcelas',   label: 'Parcelas'   },
-            ].map(({ key, label }) => {
-              const data = toChartData(statusData[key]);
-              return (
-                <div key={key} className="chart-panel">
-                  <p className="chart-panel-title">{label}</p>
-                  {data.length === 0 ? (
-                    <p className="chart-empty">Sem dados</p>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={160}>
-                      <PieChart>
-                        <Pie
-                          data={data}
-                          cx="50%" cy="50%"
-                          innerRadius={45} outerRadius={65}
-                          dataKey="value"
-                          paddingAngle={2}
-                        >
-                          {data.map(entry => (
-                            <Cell key={entry.name} fill={STATUS_COLORS[entry.name] ?? '#6b7280'} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value, name) => [value, name]} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <h2 className="summary-title chart-sub-title">Honorários por Mês</h2>
-
-        {feesByMonth.length === 0 ? (
-          <EmptyState
-            title="Sem dados mensais."
-            description="Nenhum honorário registrado nos últimos 6 meses."
-          />
-        ) : (
-          <div className="chart-bar-wrapper">
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={feesByMonth} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.2)" />
-                <XAxis dataKey="mes" tick={{ fontSize: 12, fill: '#888' }} />
-                <YAxis
-                  tick={{ fontSize: 12, fill: '#888' }}
-                  width={70}
-                  tickFormatter={(v) => v >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v}`}
-                />
-                <Tooltip formatter={(value) => [formatCurrency(value), 'Total']} />
-                <Bar dataKey="total" fill="#C8A96B" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+        <Suspense fallback={<Loading />}>
+          <DashboardCharts statusData={statusData} feesByMonth={feesByMonth} />
+        </Suspense>
       </section>
     </div>
   );
