@@ -2,13 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import clientService from '../../api/clientService';
 import { toast } from '../../utils/toast';
+import { getApiErrorMessage } from '../../utils/apiError';
+import { maskCPF, maskCNPJ, maskCEP, maskPhone, unmask } from '../../utils/masks';
+import { UFS, SEXO_OPTIONS, ESTADO_CIVIL_OPTIONS } from '../../utils/enums';
 import './ClientPage.css';
 
 function ClienteFormPage() {
   const [tipoPessoa, setTipoPessoa] = useState('fisica');
   const [formData, setFormData] = useState({
     nomeCompleto: '', cpf: '',
+    rg: '', dataNascimento: '', sexo: '', estadoCivil: '', profissao: '', nacionalidade: 'brasileira',
     razaoSocial: '', nomeFantasia: '', cnpj: '',
+    repNome: '', repCpf: '', repCargo: '',
     email: '', telefone: '',
     cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', pais: '',
     observacoes: ''
@@ -27,15 +32,25 @@ function ClienteFormPage() {
         const response = await clientService.getClientById(id);
         const d = response.data;
         setTipoPessoa(d.tipoPessoa);
+        // A API guarda dígitos puros; a UI trabalha com o valor mascarado.
         setFormData({
           nomeCompleto: d.nomeCompleto || '',
-          cpf: d.cpf || '',
+          cpf: maskCPF(d.cpf || ''),
+          rg: d.rg || '',
+          dataNascimento: d.dataNascimento ? String(d.dataNascimento).slice(0, 10) : '',
+          sexo: d.sexo || '',
+          estadoCivil: d.estadoCivil || '',
+          profissao: d.profissao || '',
+          nacionalidade: d.nacionalidade || '',
           razaoSocial: d.razaoSocial || '',
           nomeFantasia: d.nomeFantasia || '',
-          cnpj: d.cnpj || '',
+          cnpj: maskCNPJ(d.cnpj || ''),
+          repNome: d.representanteLegal?.nome || '',
+          repCpf: maskCPF(d.representanteLegal?.cpf || ''),
+          repCargo: d.representanteLegal?.cargo || '',
           email: d.email || '',
-          telefone: d.telefone || '',
-          cep: d.endereco?.cep || '',
+          telefone: maskPhone(d.telefone || ''),
+          cep: maskCEP(d.endereco?.cep || ''),
           logradouro: d.endereco?.logradouro || '',
           numero: d.endereco?.numero || '',
           complemento: d.endereco?.complemento || '',
@@ -45,7 +60,7 @@ function ClienteFormPage() {
           pais: d.endereco?.pais || '',
           observacoes: d.observacoes || ''
         });
-      } catch (err) {
+      } catch {
         setError('Falha ao carregar dados do cliente.');
       }
     };
@@ -57,13 +72,18 @@ function ClienteFormPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleMaskedChange = (mask) => (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: mask(value) }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     const endereco = {
-      cep: formData.cep || undefined,
+      cep: unmask(formData.cep) || undefined,
       logradouro: formData.logradouro || undefined,
       numero: formData.numero || undefined,
       complemento: formData.complemento || undefined,
@@ -76,18 +96,32 @@ function ClienteFormPage() {
     const payload = {
       tipoPessoa,
       email: formData.email || undefined,
-      telefone: formData.telefone || undefined,
+      telefone: unmask(formData.telefone) || undefined,
       observacoes: formData.observacoes || undefined,
       endereco,
     };
 
     if (tipoPessoa === 'fisica') {
       payload.nomeCompleto = formData.nomeCompleto;
-      payload.cpf = formData.cpf;
+      payload.cpf = unmask(formData.cpf);
+      // Enums vazios vão como undefined: string vazia não passa no enum do schema.
+      payload.rg = formData.rg || undefined;
+      payload.dataNascimento = formData.dataNascimento || undefined;
+      payload.sexo = formData.sexo || undefined;
+      payload.estadoCivil = formData.estadoCivil || undefined;
+      payload.profissao = formData.profissao || undefined;
+      payload.nacionalidade = formData.nacionalidade || undefined;
     } else {
       payload.razaoSocial = formData.razaoSocial;
       payload.nomeFantasia = formData.nomeFantasia;
-      payload.cnpj = formData.cnpj;
+      payload.cnpj = unmask(formData.cnpj);
+
+      const repNome = formData.repNome.trim();
+      const repCpf = unmask(formData.repCpf);
+      const repCargo = formData.repCargo.trim();
+      payload.representanteLegal = (repNome || repCpf || repCargo)
+        ? { nome: repNome || undefined, cpf: repCpf || undefined, cargo: repCargo || undefined }
+        : undefined;
     }
 
     try {
@@ -99,7 +133,7 @@ function ClienteFormPage() {
       toast.success(isEditing ? 'Cliente atualizado com sucesso.' : 'Cliente cadastrado com sucesso.');
       navigate('/dashboard/clientes');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao salvar cliente. Verifique os dados.');
+      setError(getApiErrorMessage(err, 'Erro ao salvar cliente. Verifique os dados.'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -139,8 +173,45 @@ function ClienteFormPage() {
               <input type="text" name="nomeCompleto" value={formData.nomeCompleto} onChange={handleChange} required />
             </div>
             <div className="form-group span-1">
-              <label>CPF* (somente números, 11 dígitos)</label>
-              <input type="text" name="cpf" value={formData.cpf} onChange={handleChange} required maxLength="11" />
+              <label>CPF*</label>
+              <input type="text" name="cpf" value={formData.cpf} onChange={handleMaskedChange(maskCPF)}
+                     placeholder="000.000.000-00" inputMode="numeric" required />
+            </div>
+
+            <p className="form-note span-3">
+              Campos usados na geração automática de documentos (procuração, contrato).
+              Opcionais, mas recomendados.
+            </p>
+
+            <div className="form-group span-1">
+              <label>RG</label>
+              <input type="text" name="rg" value={formData.rg} onChange={handleChange} maxLength={20} />
+            </div>
+            <div className="form-group span-1">
+              <label>Data de nascimento</label>
+              <input type="date" name="dataNascimento" value={formData.dataNascimento} onChange={handleChange} />
+            </div>
+            <div className="form-group span-1">
+              <label>Sexo</label>
+              <select name="sexo" value={formData.sexo} onChange={handleChange}>
+                <option value="">Selecione…</option>
+                {SEXO_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            <div className="form-group span-1">
+              <label>Estado civil</label>
+              <select name="estadoCivil" value={formData.estadoCivil} onChange={handleChange}>
+                <option value="">Selecione…</option>
+                {ESTADO_CIVIL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            <div className="form-group span-1">
+              <label>Profissão</label>
+              <input type="text" name="profissao" value={formData.profissao} onChange={handleChange} maxLength={60} />
+            </div>
+            <div className="form-group span-1">
+              <label>Nacionalidade</label>
+              <input type="text" name="nacionalidade" value={formData.nacionalidade} onChange={handleChange} maxLength={50} />
             </div>
           </div>
         )}
@@ -149,8 +220,9 @@ function ClienteFormPage() {
           <div className="form-grid section">
             <h3>Dados Empresariais</h3>
             <div className="form-group span-1">
-              <label>CNPJ* (somente números, 14 dígitos)</label>
-              <input type="text" name="cnpj" value={formData.cnpj} onChange={handleChange} required maxLength="14" />
+              <label>CNPJ*</label>
+              <input type="text" name="cnpj" value={formData.cnpj} onChange={handleMaskedChange(maskCNPJ)}
+                     placeholder="00.000.000/0000-00" inputMode="numeric" required />
             </div>
             <div className="form-group span-2">
               <label>Razão Social*</label>
@@ -160,6 +232,29 @@ function ClienteFormPage() {
               <label>Nome Fantasia*</label>
               <input type="text" name="nomeFantasia" value={formData.nomeFantasia} onChange={handleChange} required />
             </div>
+
+            <fieldset className="form-fieldset span-3">
+              <legend>Representante legal</legend>
+              <p className="form-note">
+                Quem assina pela empresa em procuração e contrato.
+                Opcional, mas recomendado.
+              </p>
+              <div className="form-grid-inner">
+                <div className="form-group span-2">
+                  <label>Nome</label>
+                  <input type="text" name="repNome" value={formData.repNome} onChange={handleChange} maxLength={255} />
+                </div>
+                <div className="form-group span-1">
+                  <label>CPF</label>
+                  <input type="text" name="repCpf" value={formData.repCpf} onChange={handleMaskedChange(maskCPF)}
+                         placeholder="000.000.000-00" inputMode="numeric" />
+                </div>
+                <div className="form-group span-1">
+                  <label>Cargo</label>
+                  <input type="text" name="repCargo" value={formData.repCargo} onChange={handleChange} maxLength={60} />
+                </div>
+              </div>
+            </fieldset>
           </div>
         )}
 
@@ -171,7 +266,8 @@ function ClienteFormPage() {
           </div>
           <div className="form-group span-1">
             <label>Telefone</label>
-            <input type="tel" name="telefone" value={formData.telefone} onChange={handleChange} />
+            <input type="tel" name="telefone" value={formData.telefone} onChange={handleMaskedChange(maskPhone)}
+                   placeholder="(00) 00000-0000" inputMode="numeric" />
           </div>
         </div>
 
@@ -179,7 +275,8 @@ function ClienteFormPage() {
           <h3>Endereço</h3>
           <div className="form-group span-1">
             <label>CEP</label>
-            <input type="text" name="cep" value={formData.cep} onChange={handleChange} />
+            <input type="text" name="cep" value={formData.cep} onChange={handleMaskedChange(maskCEP)}
+                   placeholder="00000-000" inputMode="numeric" />
           </div>
           <div className="form-group span-2">
             <label>Logradouro</label>
@@ -203,7 +300,11 @@ function ClienteFormPage() {
           </div>
           <div className="form-group span-1">
             <label>Estado (UF)</label>
-            <input type="text" name="estado" value={formData.estado} onChange={handleChange} />
+            {/* Select, não texto livre: o backend tem enum de UF e texto solto gera 400. */}
+            <select name="estado" value={formData.estado} onChange={handleChange}>
+              <option value="">Selecione…</option>
+              {UFS.map(uf => <option key={uf.value} value={uf.value}>{uf.label}</option>)}
+            </select>
           </div>
           <div className="form-group span-1">
             <label>País</label>
