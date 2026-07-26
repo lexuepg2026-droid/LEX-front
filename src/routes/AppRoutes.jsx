@@ -19,6 +19,7 @@ import DocumentFormPage from '../pages/documents/DocumentFormPage';
 import PaymentListPage from '../pages/payments/PaymentListPage';
 import PaymentFormPage from '../pages/payments/PaymentFormPage';
 import FinanceiroPage from '../pages/financeiro/FinanceiroPage';
+import ProfilePage from '../pages/profile/ProfilePage';
 
 function AppRoutes() {
   return (
@@ -58,6 +59,8 @@ function AppRoutes() {
           <Route path="pagamentos/editar/:id" element={<PaymentFormPage />} />
 
           <Route path="financeiro" element={<FinanceiroPage />} />
+
+          <Route path="perfil" element={<ProfilePage />} />
         </Route>
       </Route>
     </Routes>
