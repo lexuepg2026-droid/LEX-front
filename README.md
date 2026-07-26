@@ -1,17 +1,28 @@
-# React + Vite
+# LEX — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface web do LEX (sistema de gestão para prática jurídica), em React + Vite.
 
-Currently, two official plugins are available:
+O guia de setup completo (backend, `.env`, MongoDB Atlas, seed de dados e login) está no repositório do backend:
+**[danisprodrigues22-maker/LEX](https://github.com/danisprodrigues22-maker/LEX)**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Rodando localmente
 
-## React Compiler
+```bash
+npm install
+cp .env.example .env
+npm run dev   # http://localhost:5173
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+> O backend precisa estar rodando antes (`http://localhost:3001`) — veja o passo a passo completo no README do repositório `LEX`.
 
-## Expanding the ESLint configuration
+## Variáveis de ambiente
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-# LEX
+| Variável | Obrigatória | Padrão | Descrição |
+| --- | --- | --- | --- |
+| `VITE_API_URL` | Não | `http://localhost:3001/api` | URL base da API, já com o prefixo `/api`. |
+
+O `.env` não é versionado; use o `.env.example` como ponto de partida. Sem a
+variável, o app cai no padrão de desenvolvimento — então o `npm run dev` local
+funciona sem configuração alguma. Em outro ambiente (deploy, backend em outra
+porta ou máquina), defina `VITE_API_URL` antes do build: o Vite injeta o valor
+em tempo de compilação, alterar depois não tem efeito.

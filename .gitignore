@@ -38,3 +38,8 @@ yarn-error.log*
 
 # Vite
 .vite/
+
+# Variáveis de ambiente (o .env.example fica versionado)
+.env
+.env.*
+!.env.example
