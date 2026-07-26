@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import authService from '../../api/authService';
-import { getApiErrorMessage } from '../../utils/apiError';
+import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import { maskCPF, maskCEP, maskPhone, unmask } from '../../utils/masks';
 import { buscarEnderecoPorCEP } from '../../utils/viacep';
 import { UFS } from '../../utils/enums';
@@ -120,9 +120,20 @@ function RegisterPage() {
     } catch (err) {
       const msg = getApiErrorMessage(err, 'Erro ao criar conta. Verifique os dados.');
       setError(msg);
-      // 409 de e-mail → o campo problemático está na etapa 1; volta para lá.
-      // CPF/OAB/400 → o campo está na etapa 2; permanece. Nada é perdido.
-      if (/mail/i.test(msg)) setStep(1);
+
+      // Volta para a etapa 1 só quando o campo problemático está lá (e-mail).
+      // CPF/OAB ficam na etapa 2. Nada digitado é perdido em nenhum caso.
+      //
+      // A decisão vem de `campo`, enviado pelo backend junto do 409. O regex
+      // na mensagem fica como fallback para rotas que ainda não devolvam o
+      // campo — antes ele era o único critério, e qualquer reescrita do texto
+      // da mensagem quebrava o roteamento sem ninguém perceber.
+      const campo = getApiErrorField(err);
+      if (campo) {
+        if (campo === 'email') setStep(1);
+      } else if (/mail/i.test(msg)) {
+        setStep(1);
+      }
     } finally {
       setLoading(false);
     }
