@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import AppLayout from '../../components/layout/AppLayout';
 import { getTheme as getStoredTheme, setTheme as setStoredTheme, removeTheme } from '../../utils/storage';
-import api from '../../api/axiosConfig';
+import { useAuth } from '../../contexts/AuthContext';
 
 function DashboardPage() {
-  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [theme, setTheme] = useState(getStoredTheme());
 
   useEffect(() => {
@@ -22,15 +21,10 @@ function DashboardPage() {
   };
 
   const handleLogout = async () => {
-    try {
-      await api.post('/auth/logout');
-    } catch (err) {
-      console.warn('Logout API call failed, proceeding with local cleanup:', err);
-    } finally {
-      document.body.classList.remove('light-mode');
-      removeTheme();
-      navigate('/login');
-    }
+    // Limpeza local do tema; a sessão (zerar user + navegar) fica no contexto.
+    document.body.classList.remove('light-mode');
+    removeTheme();
+    await logout();
   };
 
   return (
