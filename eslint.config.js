@@ -23,7 +23,20 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // Sem o eslint-plugin-react (que traz o jsx-uses-vars), o ESLint não
+      // liga uma referência em JSX à variável que a declarou: `<Icon />` não
+      // conta como uso de `Icon`. Componentes desestruturados de arrays de
+      // configuração (`{ icon: Icon }`, `{ Component }`) caem nesse caso e
+      // eram reportados como não usados mesmo estando em uso.
+      //
+      // Identificador em PascalCase é convenção de componente React, então
+      // ignorá-lo aqui é seguro. `argsIgnorePattern` é necessário além de
+      // `varsIgnorePattern` porque desestruturação em parâmetro de callback
+      // conta como argumento, não como variável.
+      'no-unused-vars': ['error', {
+        varsIgnorePattern: '^[A-Z_]',
+        argsIgnorePattern: '^[A-Z_]',
+      }],
     },
   },
 ])

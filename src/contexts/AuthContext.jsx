@@ -55,6 +55,10 @@ export function AuthProvider({ children }) {
   );
 }
 
+// O hook mora junto do provider por ser a interface de consumo dele; separá-lo
+// só para satisfazer a regra criaria um arquivo sem outra razão de existir. O
+// custo é perder o fast refresh neste arquivo — aceitável, ele quase não muda.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   return useContext(AuthContext);
 }

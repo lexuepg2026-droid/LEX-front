@@ -35,7 +35,7 @@ function ProcessoFormPage() {
       try {
         const response = await clientService.getAllClients({ limit: 100 });
         setClientes(response.data.data ?? response.data);
-      } catch (err) {
+      } catch {
         setError('Falha ao carregar a lista de clientes.');
       }
     };
@@ -64,7 +64,7 @@ function ProcessoFormPage() {
             ? new Date(d.dataDistribuicao).toISOString().split('T')[0]
             : '',
         });
-      } catch (err) {
+      } catch {
         setError('Falha ao carregar dados do processo.');
       }
     };

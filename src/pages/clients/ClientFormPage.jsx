@@ -82,35 +82,47 @@ function ClienteFormPage() {
     setLoading(true);
     setError('');
 
+    // Campo opcional esvaziado precisa ir como `null` na edição: `undefined`
+    // some no JSON.stringify, a chave nem chega ao backend e o merge parcial
+    // preserva o valor antigo — era impossível apagar um telefone digitado
+    // errado. Na criação `undefined` é o certo, para o schema aplicar os
+    // defaults (ex.: nacionalidade "brasileira") em vez de gravar null.
+    const opcional = (valor) => {
+      const v = typeof valor === 'string' ? valor.trim() : valor;
+      if (v) return v;
+      return isEditing ? null : undefined;
+    };
+
     const endereco = {
-      cep: unmask(formData.cep) || undefined,
-      logradouro: formData.logradouro || undefined,
-      numero: formData.numero || undefined,
-      complemento: formData.complemento || undefined,
-      bairro: formData.bairro || undefined,
-      cidade: formData.cidade || undefined,
-      estado: formData.estado || undefined,
-      pais: formData.pais || undefined,
+      cep: opcional(unmask(formData.cep)),
+      logradouro: opcional(formData.logradouro),
+      numero: opcional(formData.numero),
+      complemento: opcional(formData.complemento),
+      bairro: opcional(formData.bairro),
+      cidade: opcional(formData.cidade),
+      estado: opcional(formData.estado),
+      pais: opcional(formData.pais),
     };
 
     const payload = {
       tipoPessoa,
-      email: formData.email || undefined,
-      telefone: unmask(formData.telefone) || undefined,
-      observacoes: formData.observacoes || undefined,
+      email: opcional(formData.email),
+      telefone: opcional(unmask(formData.telefone)),
+      observacoes: opcional(formData.observacoes),
       endereco,
     };
 
     if (tipoPessoa === 'fisica') {
       payload.nomeCompleto = formData.nomeCompleto;
       payload.cpf = unmask(formData.cpf);
-      // Enums vazios vão como undefined: string vazia não passa no enum do schema.
-      payload.rg = formData.rg || undefined;
-      payload.dataNascimento = formData.dataNascimento || undefined;
-      payload.sexo = formData.sexo || undefined;
-      payload.estadoCivil = formData.estadoCivil || undefined;
-      payload.profissao = formData.profissao || undefined;
-      payload.nacionalidade = formData.nacionalidade || undefined;
+      // Enum vazio nunca vai como string vazia: '' reprova no enum do schema,
+      // null passa (o validador do Mongoose ignora null) e limpa o campo.
+      payload.rg = opcional(formData.rg);
+      payload.dataNascimento = opcional(formData.dataNascimento);
+      payload.sexo = opcional(formData.sexo);
+      payload.estadoCivil = opcional(formData.estadoCivil);
+      payload.profissao = opcional(formData.profissao);
+      payload.nacionalidade = opcional(formData.nacionalidade);
     } else {
       payload.razaoSocial = formData.razaoSocial;
       payload.nomeFantasia = formData.nomeFantasia;
@@ -119,9 +131,11 @@ function ClienteFormPage() {
       const repNome = formData.repNome.trim();
       const repCpf = unmask(formData.repCpf);
       const repCargo = formData.repCargo.trim();
+      // Com algum dado preenchido manda o trio (campo vazio como null, para
+      // limpar); com os três vazios manda null, que remove o subdocumento.
       payload.representanteLegal = (repNome || repCpf || repCargo)
-        ? { nome: repNome || undefined, cpf: repCpf || undefined, cargo: repCargo || undefined }
-        : undefined;
+        ? { nome: opcional(repNome), cpf: opcional(repCpf), cargo: opcional(repCargo) }
+        : (isEditing ? null : undefined);
     }
 
     try {

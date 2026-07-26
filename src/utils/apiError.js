@@ -11,3 +11,9 @@ export const getApiErrorMessage = (err, fallback = 'Ocorreu um erro. Tente novam
     fallback
   );
 };
+
+// Campo que originou o erro ("email", "cpf", "oab", "cnpj"), quando o backend
+// informa. Serve para a UI rotear (destacar input, voltar de etapa) sem
+// interpretar o texto da mensagem — reescrever a mensagem quebrava o
+// roteamento em silêncio. Devolve null quando a resposta não traz o campo.
+export const getApiErrorField = (err) => err?.response?.data?.campo || null;
