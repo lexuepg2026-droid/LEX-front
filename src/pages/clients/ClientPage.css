@@ -190,3 +190,15 @@
   .form-fieldset.span-3 { grid-column: 1; }
   .form-grid-inner { grid-template-columns: 1fr; }
 }
+/* Input apontado pelo backend como causa do conflito (409 com `campo`). */
+.form-group input.input-erro,
+.form-group select.input-erro {
+  border-color: #ff6b6b;
+  outline: 1px solid rgba(255, 107, 107, 0.35);
+}
+
+.cep-hint {
+  opacity: 0.7;
+  font-style: italic;
+  font-size: 12px;
+}

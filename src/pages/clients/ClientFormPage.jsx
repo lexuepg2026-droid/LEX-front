@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import clientService from '../../api/clientService';
 import { toast } from '../../utils/toast';
-import { getApiErrorMessage } from '../../utils/apiError';
+import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import { maskCPF, maskCNPJ, maskCEP, maskPhone, unmask } from '../../utils/masks';
 import { UFS, SEXO_OPTIONS, ESTADO_CIVIL_OPTIONS } from '../../utils/enums';
+import { buscarEnderecoPorCEP } from '../../utils/viacep';
 import './ClientPage.css';
 
 function ClienteFormPage() {
@@ -19,6 +20,10 @@ function ClienteFormPage() {
     observacoes: ''
   });
   const [error, setError] = useState('');
+  // Campo apontado pelo backend no 409 ("cpf" | "cnpj" | "email"), para
+  // destacar o input em vez de só exibir a mensagem no rodapé.
+  const [campoComErro, setCampoComErro] = useState(null);
+  const [cepLoading, setCepLoading] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -77,10 +82,34 @@ function ClienteFormPage() {
     setFormData(prev => ({ ...prev, [name]: mask(value) }));
   };
 
+  // Mesmo comportamento de RegisterPage e ProfilePage: 8 dígitos disparam a
+  // busca, os campos seguem editáveis e a falha é silenciosa — CEP é
+  // conveniência, não pode travar o cadastro.
+  const handleCepChange = async (e) => {
+    const masked = maskCEP(e.target.value);
+    setFormData(prev => ({ ...prev, cep: masked }));
+
+    if (unmask(masked).length !== 8) return;
+
+    setCepLoading(true);
+    const endereco = await buscarEnderecoPorCEP(masked);
+    setCepLoading(false);
+    if (!endereco) return;
+
+    setFormData(prev => ({
+      ...prev,
+      logradouro: endereco.logradouro || prev.logradouro,
+      bairro: endereco.bairro || prev.bairro,
+      cidade: endereco.cidade || prev.cidade,
+      estado: endereco.estado || prev.estado,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setCampoComErro(null);
 
     // Campo opcional esvaziado precisa ir como `null` na edição: `undefined`
     // some no JSON.stringify, a chave nem chega ao backend e o merge parcial
@@ -148,6 +177,9 @@ function ClienteFormPage() {
       navigate('/dashboard/clientes');
     } catch (err) {
       setError(getApiErrorMessage(err, 'Erro ao salvar cliente. Verifique os dados.'));
+      // O backend informa qual campo causou o 409; destacamos o input em vez de
+      // deixar o usuário caçar o duplicado numa mensagem no rodapé.
+      setCampoComErro(getApiErrorField(err));
       console.error(err);
     } finally {
       setLoading(false);
@@ -189,7 +221,8 @@ function ClienteFormPage() {
             <div className="form-group span-1">
               <label>CPF*</label>
               <input type="text" name="cpf" value={formData.cpf} onChange={handleMaskedChange(maskCPF)}
-                     placeholder="000.000.000-00" inputMode="numeric" required />
+                     placeholder="000.000.000-00" inputMode="numeric" required
+                     className={campoComErro === 'cpf' ? 'input-erro' : undefined} />
             </div>
 
             <p className="form-note span-3">
@@ -236,7 +269,8 @@ function ClienteFormPage() {
             <div className="form-group span-1">
               <label>CNPJ*</label>
               <input type="text" name="cnpj" value={formData.cnpj} onChange={handleMaskedChange(maskCNPJ)}
-                     placeholder="00.000.000/0000-00" inputMode="numeric" required />
+                     placeholder="00.000.000/0000-00" inputMode="numeric" required
+                     className={campoComErro === 'cnpj' ? 'input-erro' : undefined} />
             </div>
             <div className="form-group span-2">
               <label>Razão Social*</label>
@@ -276,7 +310,8 @@ function ClienteFormPage() {
           <h3>Contato</h3>
           <div className="form-group span-2">
             <label>Email</label>
-            <input type="email" name="email" value={formData.email} onChange={handleChange} />
+            <input type="email" name="email" value={formData.email} onChange={handleChange}
+                   className={campoComErro === 'email' ? 'input-erro' : undefined} />
           </div>
           <div className="form-group span-1">
             <label>Telefone</label>
@@ -288,8 +323,8 @@ function ClienteFormPage() {
         <div className="form-grid section">
           <h3>Endereço</h3>
           <div className="form-group span-1">
-            <label>CEP</label>
-            <input type="text" name="cep" value={formData.cep} onChange={handleMaskedChange(maskCEP)}
+            <label>CEP {cepLoading && <span className="cep-hint">buscando…</span>}</label>
+            <input type="text" name="cep" value={formData.cep} onChange={handleCepChange}
                    placeholder="00000-000" inputMode="numeric" />
           </div>
           <div className="form-group span-2">
