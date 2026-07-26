@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { getApiErrorMessage } from '../../utils/apiError';
 import './LoginPage.css';
 import logo from '../../assets/logo-lex.jpeg';
 
@@ -24,7 +25,7 @@ function LoginPage() {
 
     } catch (err) {
       console.error('Falha no login:', err);
-      setError('Credenciais inválidas. Tente novamente.');
+      setError(getApiErrorMessage(err, 'Credenciais inválidas. Tente novamente.'));
     } finally {
       setLoading(false);
     }

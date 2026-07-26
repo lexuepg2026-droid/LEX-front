@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../../api/axiosConfig';
+import authService from '../../api/authService';
+import { getApiErrorMessage } from '../../utils/apiError';
 import { toast } from '../../utils/toast';
 import './RegisterPage.css';
 import logo from '../../assets/logo-lex.jpeg';
@@ -26,8 +27,7 @@ function RegisterPage() {
 
     setLoading(true);
     try {
-      // 2. MUDANÇA: Usa 'api.post' e só o final da URL
-      await api.post('/auth/register', {
+      await authService.register({
         nomeCompleto: nome,
         email: email,
         senha: senha,
@@ -38,11 +38,7 @@ function RegisterPage() {
 
     } catch (err) {
       console.error('Falha no cadastro:', err);
-      if (err.response && err.response.data.error) {
-        setError(err.response.data.error);
-      } else {
-        setError('Erro ao se cadastrar. Tente novamente.');
-      }
+      setError(getApiErrorMessage(err, 'Erro ao se cadastrar. Tente novamente.'));
     } finally {
       setLoading(false);
     }

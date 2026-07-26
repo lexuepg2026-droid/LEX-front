@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import api from '../api/axiosConfig';
+import authService from '../api/authService';
 
 const AuthContext = createContext(null);
 
@@ -9,7 +9,7 @@ export function AuthProvider({ children }) {
 
   const checkAuth = useCallback(async () => {
     try {
-      const res = await api.get('/auth/me');
+      const res = await authService.getMe();
       setUser(res.data);
     } catch {
       setUser(null);
@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async (email, senha) => {
-    const res = await api.post('/auth/login', { email, senha });
+    const res = await authService.login(email, senha);
     setUser(res.data.usuario);
   }, []);
 
