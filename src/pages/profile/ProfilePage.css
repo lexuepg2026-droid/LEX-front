@@ -1,0 +1,118 @@
+/* Segue o mesmo desenho de formulário de ClientPage.css / ProcessPage.css:
+   grid de 3 colunas em seções com borda, spans de 1 a 3. */
+
+.profile-page-container {
+  width: 100%;
+}
+
+.profile-page-container .page-title {
+  color: var(--text-color);
+  font-weight: 500;
+  border-bottom: 1px solid rgba(184, 157, 75, 0.2);
+  padding-bottom: 15px;
+  margin-top: 0;
+}
+
+.profile-page-container .data-form { margin-top: 20px; }
+
+.profile-page-container .form-grid.section {
+  border: 1px solid rgba(184, 157, 75, 0.2);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.profile-page-container .form-grid.section h3 {
+  grid-column: span 3;
+  color: var(--text-color);
+  margin-top: 0;
+  border-bottom: 1px solid rgba(184, 157, 75, 0.2);
+  padding-bottom: 10px;
+}
+
+.profile-page-container .form-group { display: flex; flex-direction: column; }
+.profile-page-container .span-1 { grid-column: span 1; }
+.profile-page-container .span-2 { grid-column: span 2; }
+.profile-page-container .span-3 { grid-column: span 3; }
+
+.profile-page-container .form-group label {
+  color: var(--text-color);
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.profile-page-container .form-group input,
+.profile-page-container .form-group select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--text-color);
+  background: var(--bg-input);
+  color: var(--text-color);
+  font-size: 16px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.profile-page-container .form-group select option {
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+.profile-page-container .form-group input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profile-page-container .field-note {
+  color: var(--text-color);
+  opacity: 0.6;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.profile-page-container .cep-hint {
+  opacity: 0.7;
+  font-style: italic;
+  font-size: 12px;
+}
+
+.profile-page-container .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.profile-page-container .btn-primary {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  background-color: var(--bg-button);
+  color: var(--text-button);
+}
+
+.profile-page-container .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.profile-page-container .error-message { color: #ff6b6b; margin: 12px 0 0; }
+.profile-page-container .form-hint { color: var(--text-color); opacity: 0.7; margin: 12px 0 0; }
+
+@media (max-width: 1023px) {
+  .profile-page-container .form-grid.section { grid-template-columns: repeat(2, 1fr); }
+  .profile-page-container .form-grid.section h3 { grid-column: span 2; }
+  .profile-page-container .span-3 { grid-column: span 2; }
+}
+
+@media (max-width: 767px) {
+  .profile-page-container .form-grid.section { grid-template-columns: 1fr; }
+  .profile-page-container .form-grid.section h3 { grid-column: 1; }
+  .profile-page-container .span-1,
+  .profile-page-container .span-2,
+  .profile-page-container .span-3 { grid-column: 1; }
+}

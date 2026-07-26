@@ -36,3 +36,8 @@
   color: var(--color-accent);
   text-decoration: none;
 }
+
+/* Com 6 itens a barra fica apertada em telas estreitas. */
+@media (max-width: 400px) {
+  .bottom-nav-item { padding: var(--space-1); }
+}

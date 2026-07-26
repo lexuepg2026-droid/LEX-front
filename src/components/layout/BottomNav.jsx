@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Scale, FolderOpen, Banknote } from 'lucide-react';
+import { LayoutDashboard, Users, Scale, FolderOpen, Banknote, UserCog } from 'lucide-react';
 import './BottomNav.css';
 
 const NAV_ITEMS = [
@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/dashboard/processos',  label: 'Processos',  icon: Scale            },
   { to: '/dashboard/documentos', label: 'Documentos', icon: FolderOpen       },
   { to: '/dashboard/financeiro', label: 'Financeiro', icon: Banknote         },
+  { to: '/dashboard/perfil',     label: 'Perfil',     icon: UserCog          },
 ];
 
 function BottomNav() {

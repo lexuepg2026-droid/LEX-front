@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useLocation } from 'react-router-dom';
-import api from '../../api/axiosConfig';
+import { useAuth } from '../../contexts/AuthContext';
 import './Header.css';
 
 const BREADCRUMB_MAP = {
@@ -17,6 +17,7 @@ const BREADCRUMB_MAP = {
   '/dashboard/documentos/novo': 'Novo Documento',
   '/dashboard/pagamentos':   'Pagamentos',
   '/dashboard/pagamentos/novo': 'Novo Pagamento',
+  '/dashboard/perfil':       'Perfil',
 };
 
 const SECTION_LABELS = {
@@ -48,16 +49,13 @@ function getInitials(name) {
 
 function Header() {
   const location = useLocation();
-  const [nomeCompleto, setNomeCompleto] = useState('');
+  // O nome vem do contexto, não de um GET /me próprio: assim a tela de Perfil
+  // reflete aqui na hora, via updateUser, sem recarregar a página.
+  const { user } = useAuth();
 
   const breadcrumb = buildBreadcrumb(location.pathname);
 
-  useEffect(() => {
-    api.get('/auth/me')
-      .then(res => setNomeCompleto(res.data.nomeCompleto || ''))
-      .catch(() => setNomeCompleto(''));
-  }, []);
-
+  const nomeCompleto = user?.nomeCompleto || '';
   const firstName = nomeCompleto.split(' ')[0] || '';
 
   return (

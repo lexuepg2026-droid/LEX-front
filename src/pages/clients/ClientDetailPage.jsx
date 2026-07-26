@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import clientService from '../../api/clientService';
+import { formatCPF, formatCNPJ, formatPhone, formatCEP, formatDate } from '../../utils/formatters';
+import { labelDe, SEXO_OPTIONS, ESTADO_CIVIL_OPTIONS } from '../../utils/enums';
 import './ClientPage.css';
 
 function ClientDetailPage() {
@@ -29,7 +31,16 @@ function ClientDetailPage() {
   if (loading) return <p>Carregando...</p>;
   if (error) return <p className="error-message">{error}</p>;
 
-  const { tipoPessoa, nomeCompleto, cpf, razaoSocial, nomeFantasia, cnpj, email, telefone, endereco, observacoes } = cliente;
+  const {
+    tipoPessoa, nomeCompleto, cpf,
+    rg, dataNascimento, sexo, estadoCivil, profissao, nacionalidade,
+    razaoSocial, nomeFantasia, cnpj, representanteLegal,
+    email, telefone, endereco, observacoes
+  } = cliente;
+
+  const temRepresentante = Boolean(
+    representanteLegal && (representanteLegal.nome || representanteLegal.cpf || representanteLegal.cargo)
+  );
 
   return (
     <div className="cliente-page-container">
@@ -45,22 +56,37 @@ function ClientDetailPage() {
         <h3>{tipoPessoa === 'fisica' ? 'Pessoa Física' : 'Pessoa Jurídica'}</h3>
         {tipoPessoa === 'fisica' ? (
           <>
-            <p><strong>Nome Completo:</strong> {nomeCompleto}</p>
-            <p><strong>CPF:</strong> {cpf}</p>
+            <p><strong>Nome Completo:</strong> {nomeCompleto || '—'}</p>
+            <p><strong>CPF:</strong> {formatCPF(cpf)}</p>
+            <p><strong>RG:</strong> {rg || '—'}</p>
+            <p><strong>Data de Nascimento:</strong> {formatDate(dataNascimento)}</p>
+            <p><strong>Sexo:</strong> {labelDe(SEXO_OPTIONS, sexo)}</p>
+            <p><strong>Estado Civil:</strong> {labelDe(ESTADO_CIVIL_OPTIONS, estadoCivil)}</p>
+            <p><strong>Profissão:</strong> {profissao || '—'}</p>
+            <p><strong>Nacionalidade:</strong> {nacionalidade || '—'}</p>
           </>
         ) : (
           <>
-            <p><strong>Razão Social:</strong> {razaoSocial}</p>
-            <p><strong>Nome Fantasia:</strong> {nomeFantasia}</p>
-            <p><strong>CNPJ:</strong> {cnpj}</p>
+            <p><strong>Razão Social:</strong> {razaoSocial || '—'}</p>
+            <p><strong>Nome Fantasia:</strong> {nomeFantasia || '—'}</p>
+            <p><strong>CNPJ:</strong> {formatCNPJ(cnpj)}</p>
           </>
         )}
       </div>
 
+      {tipoPessoa === 'juridica' && temRepresentante && (
+        <div className="detail-section">
+          <h3>Representante Legal</h3>
+          <p><strong>Nome:</strong> {representanteLegal.nome || '—'}</p>
+          <p><strong>CPF:</strong> {formatCPF(representanteLegal.cpf)}</p>
+          <p><strong>Cargo:</strong> {representanteLegal.cargo || '—'}</p>
+        </div>
+      )}
+
       <div className="detail-section">
         <h3>Contato</h3>
         <p><strong>Email:</strong> {email || '—'}</p>
-        <p><strong>Telefone:</strong> {telefone || '—'}</p>
+        <p><strong>Telefone:</strong> {formatPhone(telefone)}</p>
       </div>
 
       {endereco && Object.values(endereco).some(Boolean) && (
@@ -72,7 +98,7 @@ function ClientDetailPage() {
           {(endereco.cidade || endereco.estado) && (
             <p><strong>Cidade/Estado:</strong> {[endereco.cidade, endereco.estado].filter(Boolean).join('/')}</p>
           )}
-          {endereco.cep && <p><strong>CEP:</strong> {endereco.cep}</p>}
+          {endereco.cep && <p><strong>CEP:</strong> {formatCEP(endereco.cep)}</p>}
           {endereco.pais && <p><strong>País:</strong> {endereco.pais}</p>}
         </div>
       )}

@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Scale,
   Banknote, Receipt, CalendarDays, CreditCard,
-  FolderOpen, Sun, Moon, LogOut
+  FolderOpen, UserCog, Sun, Moon, LogOut
 } from 'lucide-react';
 import logo from '../../assets/logo-lex.jpeg';
 import './Sidebar.css';
@@ -20,6 +20,8 @@ const NAV_ITEMS = [
   { to: '/dashboard/pagamentos', label: 'Pagamentos',  icon: CreditCard },
   null,
   { to: '/dashboard/documentos', label: 'Documentos',  icon: FolderOpen },
+  null,
+  { to: '/dashboard/perfil',     label: 'Perfil',      icon: UserCog    },
 ];
 
 function Sidebar({ theme, toggleTheme, onLogout }) {
