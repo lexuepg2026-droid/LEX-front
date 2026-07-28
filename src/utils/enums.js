@@ -28,6 +28,30 @@ export const TIPO_PESSOA_OPTIONS = [
   { value: 'juridica', label: 'Pessoa Jurídica' },
 ];
 
+// Papel do cliente dentro do processo. Mesmos valores do enum de
+// `processo_clientes` no backend — se divergirem, o POST volta 400.
+export const PAPEL_PROCESSO_OPTIONS = [
+  { value: 'autor', label: 'Autor' },
+  { value: 'reu', label: 'Réu' },
+  { value: 'terceiro_interessado', label: 'Terceiro interessado' },
+  { value: 'litisconsorte', label: 'Litisconsorte' },
+];
+
+// Nome de exibição de um cliente, que depende do tipo de pessoa. Repetido em
+// três telas antes desta função existir.
+export const nomeDoCliente = (cliente) => {
+  if (!cliente || typeof cliente !== 'object') return '—';
+  const nome = cliente.tipoPessoa === 'fisica' ? cliente.nomeCompleto : cliente.razaoSocial;
+  return nome || '—';
+};
+
+export const documentoDoCliente = (cliente) => {
+  if (!cliente || typeof cliente !== 'object') return '';
+  return cliente.tipoPessoa === 'fisica'
+    ? (cliente.cpf ? `CPF: ${cliente.cpf}` : '')
+    : (cliente.cnpj ? `CNPJ: ${cliente.cnpj}` : '');
+};
+
 // Devolve o rótulo correspondente ao value, ou '—' quando vazio/desconhecido.
 export const labelDe = (options, value) => {
   if (!value) return '—';

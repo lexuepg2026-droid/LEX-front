@@ -3,13 +3,19 @@ import { useNavigate, useParams } from 'react-router-dom';
 import processService from '../../api/processService';
 import clientService from '../../api/clientService';
 import { toast } from '../../utils/toast';
+import {
+  PAPEL_PROCESSO_OPTIONS,
+  documentoDoCliente,
+  nomeDoCliente,
+} from '../../utils/enums';
 import './ProcessPage.css';
 
 const STATUS_OPTIONS = ['ativo', 'encerrado', 'suspenso'];
 
+const PAPEL_PADRAO = 'autor';
+
 function ProcessoFormPage() {
   const [formData, setFormData] = useState({
-    clienteId: '',
     titulo: '',
     numeroProcesso: '',
     tipoAcao: '',
@@ -23,6 +29,14 @@ function ProcessoFormPage() {
     dataDistribuicao: '',
   });
   const [clientes, setClientes] = useState([]);
+  // Participantes do processo: [{ clienteId, papel, principal }]. Substitui o
+  // seletor único de cliente — um processo pode ter litisconsórcio.
+  const [participantes, setParticipantes] = useState([]);
+  // Cópia do que veio do servidor, para a edição saber o que mudou. Os
+  // participantes de um processo existente são alterados pelos endpoints
+  // próprios, um por operação — não por PUT do processo inteiro.
+  const [participantesOriginais, setParticipantesOriginais] = useState([]);
+  const [clienteParaAdicionar, setClienteParaAdicionar] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -48,8 +62,14 @@ function ProcessoFormPage() {
       try {
         const response = await processService.getProcessById(id);
         const d = response.data;
+        const vindos = (d.participantes ?? []).map((p) => ({
+          clienteId: (p.clienteId?._id ?? p.clienteId)?.toString() ?? '',
+          papel: p.papel,
+          principal: p.principal === true,
+        }));
+        setParticipantes(vindos);
+        setParticipantesOriginais(vindos);
         setFormData({
-          clienteId: d.clienteId?._id?.toString() ?? d.clienteId?.toString() ?? '',
           titulo: d.titulo || '',
           numeroProcesso: d.numeroProcesso || '',
           tipoAcao: d.tipoAcao || '',
@@ -76,13 +96,111 @@ function ProcessoFormPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // ── Participantes ────────────────────────────────────────────────────────
+
+  const adicionarParticipante = () => {
+    if (!clienteParaAdicionar) return;
+    if (participantes.some(p => p.clienteId === clienteParaAdicionar)) {
+      setError('Este cliente já é participante do processo.');
+      return;
+    }
+    setError('');
+    setParticipantes(prev => [
+      ...prev,
+      {
+        clienteId: clienteParaAdicionar,
+        papel: PAPEL_PADRAO,
+        // O primeiro entra como principal: um processo com participantes e
+        // nenhum principal não é salvável, e obrigar a marcar o único que
+        // existe seria só uma etapa a mais para errar.
+        principal: prev.length === 0,
+      },
+    ]);
+    setClienteParaAdicionar('');
+  };
+
+  const removerParticipante = (clienteId) => {
+    setParticipantes(prev => {
+      const restantes = prev.filter(p => p.clienteId !== clienteId);
+      // Se saiu o principal e ainda há gente, o primeiro assume — senão a lista
+      // ficaria sem principal e o submit seria barrado sem o usuário entender.
+      if (restantes.length > 0 && !restantes.some(p => p.principal)) {
+        restantes[0] = { ...restantes[0], principal: true };
+      }
+      return restantes;
+    });
+  };
+
+  const alterarPapel = (clienteId, papel) => {
+    setParticipantes(prev =>
+      prev.map(p => (p.clienteId === clienteId ? { ...p, papel } : p))
+    );
+  };
+
+  // Exatamente um principal: marcar um desmarca o anterior no mesmo passo.
+  const marcarPrincipal = (clienteId) => {
+    setParticipantes(prev =>
+      prev.map(p => ({ ...p, principal: p.clienteId === clienteId }))
+    );
+  };
+
+  const clientesDisponiveis = clientes.filter(
+    c => !participantes.some(p => p.clienteId === c._id)
+  );
+
+  // Aplica ao processo já existente a diferença entre o que veio do servidor e
+  // o que está na tela. A ORDEM importa: promover o novo principal antes de
+  // remover qualquer um, porque o backend recusa (409) remover o principal
+  // enquanto houver outros participantes.
+  const sincronizarParticipantes = async () => {
+    const original = new Map(participantesOriginais.map(p => [p.clienteId, p]));
+    const atual = new Map(participantes.map(p => [p.clienteId, p]));
+
+    for (const [clienteId, p] of atual) {
+      if (!original.has(clienteId)) {
+        await processService.addProcessCliente(id, { clienteId, papel: p.papel });
+      } else if (original.get(clienteId).papel !== p.papel) {
+        await processService.updateProcessClientePapel(id, clienteId, p.papel);
+      }
+    }
+
+    const novoPrincipal = participantes.find(p => p.principal);
+    const principalAntigo = participantesOriginais.find(p => p.principal);
+    if (novoPrincipal && novoPrincipal.clienteId !== principalAntigo?.clienteId) {
+      await processService.setProcessClientePrincipal(id, novoPrincipal.clienteId);
+    }
+
+    for (const clienteId of original.keys()) {
+      if (!atual.has(clienteId)) {
+        await processService.removeProcessCliente(id, clienteId);
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validado aqui, antes de qualquer chamada: o backend recusa os dois casos,
+    // mas deixar a requisição sair só para receber 400 gasta viagem e mostra a
+    // mensagem no lugar errado.
+    if (participantes.length === 0) {
+      setError('Adicione ao menos um cliente ao processo.');
+      return;
+    }
+    const principais = participantes.filter(p => p.principal).length;
+    if (principais !== 1) {
+      setError(
+        principais === 0
+          ? 'Marque um dos participantes como principal.'
+          : 'Apenas um participante pode ser o principal.'
+      );
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     const payload = {
-      clienteId: formData.clienteId,
       titulo: formData.titulo,
       status: formData.status,
       numeroProcesso: formData.numeroProcesso || undefined,
@@ -99,8 +217,12 @@ function ProcessoFormPage() {
     try {
       if (isEditing) {
         await processService.updateProcess(id, payload);
+        await sincronizarParticipantes();
       } else {
-        await processService.createProcess(payload);
+        // Na criação os participantes vão no mesmo payload: o backend grava
+        // processo e vínculos na mesma transação, e processo sem participante
+        // não chega a existir.
+        await processService.createProcess({ ...payload, clientes: participantes });
       }
       toast.success(isEditing ? 'Processo atualizado com sucesso.' : 'Processo cadastrado com sucesso.');
       navigate('/dashboard/processos');
@@ -112,11 +234,7 @@ function ProcessoFormPage() {
     }
   };
 
-  const clienteLabel = (c) => {
-    const nome = c.tipoPessoa === 'fisica' ? c.nomeCompleto : c.razaoSocial;
-    const doc = c.tipoPessoa === 'fisica' ? `CPF: ${c.cpf}` : `CNPJ: ${c.cnpj}`;
-    return `${nome} — ${doc}`;
-  };
+  const clienteLabel = (c) => `${nomeDoCliente(c)} — ${documentoDoCliente(c)}`;
 
   return (
     <div className="page-container">
@@ -126,13 +244,79 @@ function ProcessoFormPage() {
         <div className="form-grid">
 
           <div className="form-group span-3">
-            <label htmlFor="clienteId">Cliente*</label>
-            <select id="clienteId" name="clienteId" value={formData.clienteId} onChange={handleChange} required>
-              <option value="">Selecione um cliente...</option>
-              {clientes.map(c => (
-                <option key={c._id} value={c._id}>{clienteLabel(c)}</option>
-              ))}
-            </select>
+            <label htmlFor="clienteParaAdicionar">Clientes do processo*</label>
+            <p className="participantes-ajuda">
+              Um processo pode ter mais de um cliente (litisconsórcio). Marque
+              qual deles é o principal — é a qualificação usada quando um
+              documento é gerado sem cliente escolhido.
+            </p>
+
+            <div className="participantes-adicionar">
+              <select
+                id="clienteParaAdicionar"
+                value={clienteParaAdicionar}
+                onChange={(e) => setClienteParaAdicionar(e.target.value)}
+              >
+                <option value="">Selecione um cliente...</option>
+                {clientesDisponiveis.map(c => (
+                  <option key={c._id} value={c._id}>{clienteLabel(c)}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={adicionarParticipante}
+                disabled={!clienteParaAdicionar}
+              >
+                Adicionar
+              </button>
+            </div>
+
+            {participantes.length === 0 ? (
+              <p className="participantes-vazio">Nenhum cliente adicionado ainda.</p>
+            ) : (
+              <ul className="participantes-lista">
+                {participantes.map(p => {
+                  const cliente = clientes.find(c => c._id === p.clienteId);
+                  return (
+                    <li key={p.clienteId} className="participante-item">
+                      <div className="participante-nome">
+                        <strong>{nomeDoCliente(cliente)}</strong>
+                        <span className="participante-doc">{documentoDoCliente(cliente)}</span>
+                      </div>
+
+                      <select
+                        aria-label={`Papel de ${nomeDoCliente(cliente)}`}
+                        value={p.papel}
+                        onChange={(e) => alterarPapel(p.clienteId, e.target.value)}
+                      >
+                        {PAPEL_PROCESSO_OPTIONS.map(o => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+
+                      <label className="participante-principal">
+                        <input
+                          type="radio"
+                          name="participantePrincipal"
+                          checked={p.principal}
+                          onChange={() => marcarPrincipal(p.clienteId)}
+                        />
+                        Principal
+                      </label>
+
+                      <button
+                        type="button"
+                        className="btn-cancel"
+                        onClick={() => removerParticipante(p.clienteId)}
+                      >
+                        Remover
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
 
           <div className="form-group span-2">
