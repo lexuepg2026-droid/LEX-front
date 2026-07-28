@@ -79,3 +79,104 @@
   .form-group.span-2,
   .form-group.span-3 { grid-column: 1; }
 }
+/* ── Participantes do processo (junção processo × cliente) ─────────────── */
+/* Reaproveita os tokens e os botões já existentes nesta folha. `btn-secondary`
+   é o mesmo contorno de `btn-cancel`, num tamanho menor, porque estes botões
+   ficam dentro de uma linha de lista e não na barra de ações do formulário. */
+
+.btn-secondary {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  background-color: transparent;
+  border: 1px solid var(--text-color);
+  color: var(--text-color);
+}
+.btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.participantes-ajuda {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 0 0 10px;
+}
+
+.participantes-adicionar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.participantes-adicionar select { flex: 1; }
+
+.participantes-vazio {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 10px 0 0;
+}
+
+.participantes-lista {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.participante-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background-color: var(--color-surface-raised);
+}
+
+/* O principal é o que resolve as variáveis do documento quando nenhum cliente
+   é escolhido: precisa ser distinguível de relance. */
+.participante-item--principal {
+  border-color: var(--color-border-strong);
+  border-left: 3px solid var(--bg-button);
+}
+
+.participante-nome {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 180px;
+}
+.participante-doc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.participante-papel {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.participante-tag {
+  font-size: 12px;
+  font-weight: bold;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background-color: var(--bg-button);
+  color: var(--text-button);
+}
+
+.participante-principal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.participante-principal input { width: auto; margin: 0; }
+
+@media (max-width: 767px) {
+  .participante-item { align-items: flex-start; }
+  .participantes-adicionar { flex-direction: column; align-items: stretch; }
+}

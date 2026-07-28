@@ -11,4 +11,44 @@ const createProcess = (data) => api.post('/processes', data);
 const updateProcess = (id, data) => api.put(`/processes/${id}`, data);
 const deleteProcess = (id) => api.delete(`/processes/${id}`);
 
-export default { listProcesses, getProcessById, createProcess, updateProcess, deleteProcess };
+// ── Participantes do processo (junção processo × cliente) ───────────────────
+// O processo passou a ter vários clientes, cada um com o seu papel. A criação
+// manda `clientes: [{ clienteId, papel, principal }]`; daí em diante os
+// participantes são mexidos por estes endpoints, um a um.
+
+const listProcessClientes = (id) => api.get(`/processes/${id}/clientes`);
+
+const addProcessCliente = (id, { clienteId, papel }) =>
+  api.post(`/processes/${id}/clientes`, { clienteId, papel });
+
+const updateProcessClientePapel = (id, clienteId, papel) =>
+  api.patch(`/processes/${id}/clientes/${clienteId}`, { papel });
+
+// Promove a principal e rebaixa o anterior no mesmo movimento, no servidor.
+// Nunca fazer isso em duas chamadas daqui: entre uma e outra o processo teria
+// dois principais, ou nenhum.
+const setProcessClientePrincipal = (id, clienteId) =>
+  api.patch(`/processes/${id}/clientes/${clienteId}/principal`);
+
+const removeProcessCliente = (id, clienteId) =>
+  api.delete(`/processes/${id}/clientes/${clienteId}`);
+
+// Endpoint próprio, e não campo da listagem: o código de acesso não vem junto
+// com os participantes de propósito, para não vazar em log nem em print de
+// tela. Só é buscado quando a advogada pede o de um participante específico.
+const getProcessClienteCodigoAcesso = (id, clienteId) =>
+  api.get(`/processes/${id}/clientes/${clienteId}/codigo-acesso`);
+
+export default {
+  listProcesses,
+  getProcessById,
+  createProcess,
+  updateProcess,
+  deleteProcess,
+  listProcessClientes,
+  addProcessCliente,
+  updateProcessClientePapel,
+  setProcessClientePrincipal,
+  removeProcessCliente,
+  getProcessClienteCodigoAcesso,
+};

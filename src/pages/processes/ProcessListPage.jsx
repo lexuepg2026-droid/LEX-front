@@ -6,6 +6,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { formatDate } from '../../utils/formatters';
+import { nomeDoCliente } from '../../utils/enums';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
 import '../../styles/modules.css';
@@ -47,14 +48,14 @@ function ProcessoListPage() {
     }
   };
 
+  // Mostra o principal e, havendo litisconsórcio, quantos mais existem — a
+  // coluna é estreita e a lista inteira de participantes não cabe. O detalhe
+  // do processo mostra todos.
   const nomeCliente = (p) => {
-    if (!p.clienteId) return '—';
-    if (typeof p.clienteId === 'object') {
-      return p.clienteId.tipoPessoa === 'fisica'
-        ? p.clienteId.nomeCompleto
-        : p.clienteId.razaoSocial;
-    }
-    return String(p.clienteId);
+    const principal = p.participantes?.find(x => x.principal);
+    const nome = nomeDoCliente(principal?.clienteId ?? p.clientePrincipalId);
+    const outros = (p.participantes?.length ?? 0) - 1;
+    return outros > 0 ? `${nome} +${outros}` : nome;
   };
 
   if (loading) return <Loading />;
