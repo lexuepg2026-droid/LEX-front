@@ -5,6 +5,7 @@ import { getApiErrorMessage } from '../../utils/apiError';
 import { maskCPF, maskCEP, maskPhone, unmask } from '../../utils/masks';
 import { buscarEnderecoPorCEP } from '../../utils/viacep';
 import { UFS } from '../../utils/enums';
+import { prepararLogo, formatarTamanho } from '../../utils/imagem';
 import { toast } from '../../utils/toast';
 import './ProfilePage.css';
 
@@ -20,6 +21,9 @@ const buildForm = (u) => ({
   advChavePix: u?.advocacia?.chavePix || '',
   advInstagram: u?.advocacia?.instagram || '',
   advSite: u?.advocacia?.site || '',
+  // String vazia representa "sem logo" no formulário; vira null no payload,
+  // que é como o backend remove o campo.
+  advLogo: u?.advocacia?.logoBase64 || '',
   cep: maskCEP(u?.endereco?.cep || ''),
   logradouro: u?.endereco?.logradouro || '',
   numero: u?.endereco?.numero || '',
@@ -44,6 +48,7 @@ function ProfilePage() {
   const [hint, setHint] = useState('');
   const [saving, setSaving] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const [logoLoading, setLogoLoading] = useState(false);
 
   const [senhas, setSenhas] = useState({ senhaAtual: '', novaSenha: '', confirmarNovaSenha: '' });
   const [senhaError, setSenhaError] = useState('');
@@ -89,6 +94,45 @@ function ProfilePage() {
     }));
   };
 
+  // ── Logo do escritório ───────────────────────────────────────────────────
+  // Validação e redimensionamento acontecem AQUI, antes de qualquer PATCH:
+  // enviar 8 MB para receber 400 gasta a transferência inteira à toa, e numa
+  // conexão ruim isso é o suficiente para a advogada desistir.
+  const handleLogoChange = async (e) => {
+    const arquivo = e.target.files?.[0];
+    // Zera o input para o mesmo arquivo poder ser escolhido de novo depois de
+    // um erro — sem isso o onChange não dispara na segunda tentativa.
+    e.target.value = '';
+    if (!arquivo) return;
+
+    setLogoLoading(true);
+    setError('');
+    setHint('');
+
+    try {
+      const { dataUri, redimensionada, tamanhoOriginal, tamanhoFinal } =
+        await prepararLogo(arquivo);
+
+      setField('advLogo', dataUri);
+
+      if (redimensionada) {
+        toast.success(
+          `Logo redimensionado de ${formatarTamanho(tamanhoOriginal)} para ${formatarTamanho(tamanhoFinal)}.`
+        );
+      }
+      setHint('Logo carregado. Clique em "Salvar alterações" para gravar.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLogoLoading(false);
+    }
+  };
+
+  const handleRemoverLogo = () => {
+    setField('advLogo', '');
+    setHint('Logo removido. Clique em "Salvar alterações" para gravar.');
+  };
+
   // Campo alterado entra no payload; se ficou vazio vai como null, porque
   // `undefined` some no JSON e o merge parcial do backend não apagaria nada.
   const buildPayload = () => {
@@ -113,6 +157,7 @@ function ProfilePage() {
     compara(advocacia, 'chavePix', form.advChavePix.trim(), inicial.advChavePix.trim());
     compara(advocacia, 'instagram', form.advInstagram.trim(), inicial.advInstagram.trim());
     compara(advocacia, 'site', form.advSite.trim(), inicial.advSite.trim());
+    compara(advocacia, 'logoBase64', form.advLogo, inicial.advLogo);
     if (Object.keys(advocacia).length > 0) payload.advocacia = advocacia;
 
     const endereco = {};
@@ -244,6 +289,43 @@ function ProfilePage() {
           <div className="form-group span-2">
             <label>Site</label>
             <input type="text" name="advSite" value={form.advSite} onChange={handleChange} maxLength={200} />
+          </div>
+
+          <div className="form-group span-3">
+            <label>Logo do escritório</label>
+            <p className="campo-ajuda">
+              Aparece no cabeçalho dos documentos gerados em PDF e DOCX.
+              PNG ou JPEG. Imagens grandes são reduzidas automaticamente.
+            </p>
+
+            <div className="logo-bloco">
+              <div className="logo-preview">
+                {form.advLogo ? (
+                  <img src={form.advLogo} alt="Logo do escritório" />
+                ) : (
+                  <span className="logo-vazio">Sem logo</span>
+                )}
+              </div>
+
+              <div className="logo-acoes">
+                <label className="btn-secundario" htmlFor="advLogoInput">
+                  {logoLoading ? 'Processando…' : form.advLogo ? 'Trocar logo' : 'Escolher logo'}
+                </label>
+                <input
+                  id="advLogoInput"
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  onChange={handleLogoChange}
+                  disabled={logoLoading}
+                  className="input-arquivo"
+                />
+                {form.advLogo && (
+                  <button type="button" className="btn-remover" onClick={handleRemoverLogo}>
+                    Remover
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

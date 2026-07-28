@@ -116,3 +116,86 @@
   .profile-page-container .span-2,
   .profile-page-container .span-3 { grid-column: 1; }
 }
+
+/* ── Logo do escritório ─────────────────────────────────────────────────── */
+/* Reaproveita os tokens e o .btn-primary já existentes nesta folha. O input
+   de arquivo nativo é escondido e acionado pela <label>, porque ele não aceita
+   estilo e sairia destoando de todos os outros controles do formulário. */
+
+.profile-page-container .campo-ajuda {
+  font-size: 12px;
+  color: var(--text-color);
+  opacity: 0.7;
+  margin: 0 0 10px;
+}
+
+.profile-page-container .logo-bloco {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.profile-page-container .logo-preview {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--color-border-strong, rgba(184, 157, 75, 0.45));
+  border-radius: 8px;
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.profile-page-container .logo-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.profile-page-container .logo-vazio {
+  font-size: 12px;
+  opacity: 0.6;
+  color: var(--text-color);
+}
+
+.profile-page-container .logo-acoes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Escondido de forma acessível: continua alcançável por teclado através da
+   label, ao contrário de display:none. */
+.profile-page-container .input-arquivo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.profile-page-container .btn-secundario,
+.profile-page-container .btn-remover {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  background-color: transparent;
+  border: 1px solid var(--text-color);
+  color: var(--text-color);
+  display: inline-block;
+}
+
+.profile-page-container .btn-remover {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
