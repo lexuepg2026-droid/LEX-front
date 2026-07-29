@@ -14,7 +14,6 @@ const BREADCRUMB_MAP = {
   '/dashboard/parcelas':     'Parcelas',
   '/dashboard/parcelas/novo': 'Nova Parcela',
   '/dashboard/documentos':   'Documentos',
-  '/dashboard/documentos/novo': 'Novo Documento',
   '/dashboard/pagamentos':   'Pagamentos',
   '/dashboard/pagamentos/novo': 'Novo Pagamento',
   '/dashboard/perfil':       'Perfil',
