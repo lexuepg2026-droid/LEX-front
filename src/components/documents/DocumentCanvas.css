@@ -1,0 +1,286 @@
+/* Canvas de montagem — folha A4 com as margens de 2,5 cm reproduzidas.
+   Aproximação visual: a fonte da verdade do layout é documentRenderService.js.
+   Só tokens que existem de fato em variables.css. */
+
+.canvas-scroll {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: var(--space-4);
+  background: var(--color-bg);
+  border-radius: var(--radius-lg);
+}
+
+/* 210mm × 297mm é A4 de verdade. As unidades mm do CSS dão a proporção certa
+   na tela e mantêm a margem de 2,5 cm comparável à do arquivo gerado. */
+.canvas-folha {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 25mm;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  box-shadow: var(--shadow-lg);
+  border-radius: 2px;
+}
+
+/* A folha é branca nos dois temas — é papel. Por isso o texto dentro dela não
+   usa os tokens de texto do tema: no modo escuro, --color-text-primary é claro
+   e desapareceria. As cores aqui são as do documento impresso. */
+.canvas-folha,
+.canvas-folha * {
+  color: #1a1a18;
+}
+
+/* ── Timbrado ───────────────────────────────────────────────────────────── */
+
+.canvas-timbrado {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid #cccccc;
+}
+
+/* Sem logo a coluna da imagem simplesmente não existe — o bloco de texto ocupa
+   a largura inteira. Reservar espaço abriria um buraco na diagramação de quem
+   não subiu logo. Mesma regra da Fase 2C. */
+.canvas-timbrado__logo {
+  width: 20mm;
+  height: 20mm;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.canvas-timbrado__texto {
+  min-width: 0;
+}
+
+.canvas-timbrado__titulo {
+  font-size: 12pt;
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 1px;
+}
+
+.canvas-timbrado__linha {
+  font-size: 8pt;
+  color: #444444;
+  margin: 0 0 1px;
+  line-height: var(--line-height-tight);
+}
+
+.canvas-timbrado--vazio {
+  border-bottom-style: dashed;
+}
+
+.canvas-timbrado--vazio p {
+  font-size: 9pt;
+  color: #777777;
+  margin: 0;
+}
+
+/* ── Corpo ──────────────────────────────────────────────────────────────── */
+
+.canvas-corpo {
+  flex: 1;
+  padding-top: var(--space-5);
+}
+
+.canvas-vazio {
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  font-size: 10pt;
+  color: #666666;
+}
+
+.canvas-vazio__titulo {
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--space-2);
+}
+
+.canvas-vazio p {
+  margin: 0 0 var(--space-2);
+}
+
+/* ── Bloco de seção ─────────────────────────────────────────────────────── */
+
+.canvas-bloco {
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.canvas-bloco:hover {
+  border-color: #dddddd;
+  background: #fafafa;
+}
+
+.canvas-bloco--arrastando {
+  opacity: 0.4;
+}
+
+.canvas-bloco__barra {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px dashed #e5e5e5;
+  font-size: 8.5pt;
+}
+
+.canvas-bloco__punho {
+  display: flex;
+  color: #aaaaaa;
+  cursor: grab;
+}
+
+.canvas-bloco__ordem {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 7.5pt;
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+}
+
+.canvas-bloco__titulo {
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.canvas-bloco__tipo {
+  padding: 1px var(--space-2);
+  border: 1px solid #dddddd;
+  border-radius: var(--radius-full);
+  font-size: 7.5pt;
+  color: #666666;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.canvas-bloco__acoes {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+/* Alvo de toque generoso: no tablet, ↑ e ↓ são o caminho principal de
+   reordenação, porque o arrastar não dispara em toque. */
+.canvas-bloco__acao {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 28px;
+  padding: 0 var(--space-2);
+  border: 1px solid #dddddd;
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: #444444;
+  font-size: 8pt;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.canvas-bloco__acao:hover:not(:disabled) {
+  background: #f0f0f0;
+  border-color: #bbbbbb;
+}
+
+.canvas-bloco__acao:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.canvas-bloco__acao--remover:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.canvas-bloco__texto {
+  margin: 0;
+  padding: var(--space-2);
+  font-family: var(--font-family);
+  font-size: 11pt;
+  line-height: 1.4;
+  text-align: justify;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── Slots de inserção ──────────────────────────────────────────────────── */
+
+/* Fora de uso o slot é uma faixa fina e invisível: alvo de drop sem poluir a
+   folha. Armado (com seção escolhida na biblioteca) vira botão de verdade. */
+.canvas-slot {
+  min-height: 10px;
+  border-radius: var(--radius-sm);
+  transition: min-height var(--transition-fast), background var(--transition-fast);
+}
+
+.canvas-slot--ativo {
+  min-height: 28px;
+  background: var(--color-accent-muted);
+  border: 1px dashed var(--color-accent);
+}
+
+.canvas-slot--armado {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: var(--space-1) 0;
+}
+
+.canvas-slot__botao {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 28px;
+  padding: 0 var(--space-3);
+  border: 1px dashed var(--color-primary);
+  border-radius: var(--radius-full);
+  background: rgba(46, 125, 50, 0.08);
+  color: var(--color-primary-dark);
+  font-family: var(--font-family);
+  font-size: 8.5pt;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.canvas-slot__botao:hover {
+  background: rgba(46, 125, 50, 0.18);
+}
+
+/* ── Rodapé ─────────────────────────────────────────────────────────────── */
+
+.canvas-rodape {
+  margin-top: var(--space-6);
+  padding-top: var(--space-2);
+  border-top: 1px solid #eeeeee;
+  text-align: center;
+  font-size: 8pt;
+  color: #999999;
+}
+
+/* Abaixo da largura da folha, deixa a folha encolher em vez de forçar rolagem
+   horizontal na página inteira. A rolagem fica dentro de .canvas-scroll. */
+@media (max-width: 900px) {
+  .canvas-folha {
+    width: 100%;
+    min-width: 320px;
+    min-height: 0;
+    padding: var(--space-5);
+  }
+}

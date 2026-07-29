@@ -1,0 +1,297 @@
+/* Tela de montagem. Só tokens que existem de fato em variables.css. */
+
+.montagem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ── Cabeçalho com o modo sempre visível ────────────────────────────────── */
+
+.montagem__cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  /* A faixa lateral é o que distingue os dois modos de longe, sem ler. */
+  border-left: 4px solid var(--color-border-strong);
+}
+
+.montagem__cabecalho--modelo {
+  border-left-color: var(--color-accent);
+}
+
+.montagem__cabecalho--documento {
+  border-left-color: var(--color-primary);
+}
+
+.montagem__identidade {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.montagem__selo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  align-self: flex-start;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+}
+
+.montagem__cabecalho--modelo .montagem__selo {
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+}
+
+.montagem__cabecalho--documento .montagem__selo {
+  background: var(--color-success-bg);
+  color: var(--color-primary-light);
+}
+
+.montagem__titulo {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.montagem__subtitulo {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ── Indicador de salvamento ────────────────────────────────────────────── */
+
+.montagem__estado {
+  flex-shrink: 0;
+}
+
+.montagem__estado-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.montagem__estado-item--salvando {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.montagem__estado-item--salvo {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.montagem__estado-item--erro {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.montagem__estado-item--ocioso {
+  color: var(--color-text-muted);
+}
+
+.montagem__girando {
+  animation: montagem-girar 900ms linear infinite;
+}
+
+@keyframes montagem-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .montagem__girando {
+    animation: none;
+  }
+}
+
+/* ── Faixa da seção armada ──────────────────────────────────────────────── */
+
+.montagem__armada {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-accent-muted);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.montagem__cancelar-armada {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-accent);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ── Área de trabalho ───────────────────────────────────────────────────── */
+
+.montagem__area {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.montagem__rodape {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.montagem__rodape p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.montagem__rodape a {
+  color: var(--color-accent);
+}
+
+/* ── Porta de entrada ───────────────────────────────────────────────────── */
+
+.inicio-bloco {
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-top: var(--space-4);
+}
+
+.inicio-bloco__titulo {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.inicio-bloco__vazio,
+.inicio-bloco__alternativa {
+  margin: var(--space-3) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.inicio-bloco__link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-accent);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.inicio-modelos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-2);
+}
+
+.inicio-modelo {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.inicio-modelo:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-input);
+}
+
+.inicio-modelo__nome {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.inicio-modelo__tipo {
+  font-size: var(--font-size-xs);
+  color: var(--color-accent);
+}
+
+.inicio-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.inicio-form__campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 200px;
+  flex: 1;
+}
+
+.inicio-form__campo label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.inicio-form__campo input,
+.inicio-form__campo select {
+  padding: var(--space-2);
+  background: var(--color-surface-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+}
+
+.inicio-form__acoes {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* A biblioteca vira faixa acima da folha quando a coluna não cabe. */
+@media (max-width: 900px) {
+  .montagem__area {
+    flex-direction: column;
+  }
+
+  .montagem__area > * {
+    width: 100%;
+  }
+}

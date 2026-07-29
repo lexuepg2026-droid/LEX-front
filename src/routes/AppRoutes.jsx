@@ -16,6 +16,7 @@ import InstallmentListPage from '../pages/installments/InstallmentListPage';
 import InstallmentFormPage from '../pages/installments/InstallmentFormPage';
 import DocumentListPage from '../pages/documents/DocumentListPage';
 import DocumentFormPage from '../pages/documents/DocumentFormPage';
+import DocumentAssemblyPage from '../pages/documents/DocumentAssemblyPage';
 import SecaoListPage from '../pages/secoes/SecaoListPage';
 import SecaoFormPage from '../pages/secoes/SecaoFormPage';
 import PaymentListPage from '../pages/payments/PaymentListPage';
@@ -55,6 +56,15 @@ function AppRoutes() {
           <Route path="documentos" element={<DocumentListPage />} />
           <Route path="documentos/novo" element={<DocumentFormPage />} />
           <Route path="documentos/editar/:id" element={<DocumentFormPage />} />
+
+          {/* UMA tela de montagem, DOIS modos, DUAS portas de entrada.
+              O modo vem em `?modo=modelo|documento` e não no caminho: são o
+              mesmo recurso sendo montado, e duas rotas para a mesma tela dariam
+              dois jeitos de dizer a mesma coisa. As duas portas do menu são
+              links para esta rota com o `modo` diferente. */}
+          <Route path="documentos/montar" element={<DocumentAssemblyPage />} />
+          <Route path="documentos/montar/:id" element={<DocumentAssemblyPage />} />
+
 
           <Route path="secoes" element={<SecaoListPage />} />
           <Route path="secoes/nova" element={<SecaoFormPage />} />

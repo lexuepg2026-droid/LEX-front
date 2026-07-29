@@ -1,0 +1,241 @@
+/* Barra lateral da montagem — miniaturas das seções ativas.
+   Só tokens que existem de fato em variables.css. */
+
+.biblioteca {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  align-self: flex-start;
+  max-height: calc(100vh - var(--header-height) - var(--space-12));
+  overflow-y: auto;
+}
+
+.biblioteca__cabecalho {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.biblioteca__titulo {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.biblioteca__ajuda {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+/* ── Filtros ────────────────────────────────────────────────────────────── */
+
+.biblioteca__filtros {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.biblioteca__busca {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-2);
+  background: var(--color-surface-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+}
+
+.biblioteca__busca input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2) 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+}
+
+.biblioteca__busca input:focus {
+  outline: none;
+}
+
+.biblioteca__filtros select {
+  padding: var(--space-2);
+  background: var(--color-surface-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+}
+
+/* ── Lista ──────────────────────────────────────────────────────────────── */
+
+.biblioteca__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.biblioteca__vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.biblioteca__vazio p {
+  margin: 0;
+  line-height: var(--line-height-normal);
+}
+
+/* ── Miniatura ──────────────────────────────────────────────────────────── */
+
+.miniatura {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.miniatura:hover {
+  border-color: var(--color-border-strong);
+}
+
+.miniatura[draggable='true'] {
+  cursor: grab;
+}
+
+.miniatura--armada {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+/* Já no documento: fica visível mas claramente indisponível. O índice único do
+   banco é quem garante; isto só evita a tentativa. */
+.miniatura--usada {
+  opacity: 0.55;
+}
+
+.miniatura--usada:hover {
+  border-color: var(--color-border);
+}
+
+.miniatura__corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-family: var(--font-family);
+  cursor: pointer;
+}
+
+.miniatura__corpo:disabled {
+  cursor: default;
+}
+
+.miniatura__linha1 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.miniatura__titulo {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.miniatura__tipo {
+  flex-shrink: 0;
+  padding: 1px var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.miniatura__trecho {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+/* Alvo de toque cheio: no tablet, "Adicionar" é o caminho principal. */
+.miniatura__adicionar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 34px;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-input);
+  color: var(--color-primary-light);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.miniatura__adicionar:hover:not(:disabled) {
+  background: var(--color-accent-muted);
+}
+
+.miniatura__adicionar:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.miniatura__usada-selo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 34px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* No tablet e no celular a biblioteca deixa de ser coluna e passa a faixa
+   acima do canvas, com altura limitada e rolagem própria. */
+@media (max-width: 900px) {
+  .biblioteca {
+    width: 100%;
+    max-height: 320px;
+  }
+}
