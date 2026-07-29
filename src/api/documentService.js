@@ -49,6 +49,13 @@ const previewDocumento = (id, { processoId, clienteId, honorarioId } = {}) => {
 const atualizarTexto = (id, textoResolvido) =>
   api.patch(`/documents/${id}/texto`, { textoResolvido });
 
+// ── Catálogo de variáveis ──────────────────────────────────────────────────
+// Somente leitura. Devolve { total, grupos: [{ origem, rotulo, descricao,
+// total, variaveis: [{ chave, rotulo, descricao }] }] }. Os rótulos e as
+// descrições são escritos à mão no backend — exibir como vêm, nunca derivar
+// texto da chave.
+const listarVariaveis = () => api.get('/documents/variaveis');
+
 // ── Download ───────────────────────────────────────────────────────────────
 
 // `responseType: 'blob'` é obrigatório: sem ele o axios tenta decodificar o
@@ -77,6 +84,7 @@ export default {
   gerarDocumento,
   previewDocumento,
   atualizarTexto,
+  listarVariaveis,
   baixarDocumento,
   nomeDoAnexo,
 };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import authService from '../../api/authService';
+import { useAuth } from '../../contexts/AuthContext';
 import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import { maskCPF, maskCEP, maskPhone, unmask } from '../../utils/masks';
 import { buscarEnderecoPorCEP } from '../../utils/viacep';
@@ -31,6 +31,7 @@ function RegisterPage() {
   const [cepLoading, setCepLoading] = useState(false);
 
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const setField = (name, value) => setForm((prev) => ({ ...prev, [name]: value }));
   const handleChange = (e) => setField(e.target.name, e.target.value);
@@ -114,9 +115,13 @@ function RegisterPage() {
     };
 
     try {
-      await authService.register(payload);
-      toast.success('Conta criada com sucesso! Faça o login.');
-      navigate('/login');
+      // O backend emite o cookie `lex-token` já no cadastro, e `register` do
+      // AuthContext grava o usuário no estado. Daqui a advogada entra direto
+      // no sistema — terminar o assistente e cair numa tela de login pedindo a
+      // senha escolhida dois campos antes era o pior momento do fluxo.
+      await register(payload);
+      toast.success('Conta criada com sucesso. Bem-vinda ao LEX!');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       const msg = getApiErrorMessage(err, 'Erro ao criar conta. Verifique os dados.');
       setError(msg);

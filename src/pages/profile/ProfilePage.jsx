@@ -188,8 +188,8 @@ function ProfilePage() {
     setSaving(true);
     try {
       const res = await authService.updateMe(payload);
-      updateUser(res.data);
-      resync(res.data);
+      updateUser(res.data.usuario);
+      resync(res.data.usuario);
       toast.success('Perfil atualizado com sucesso.');
     } catch (err) {
       setError(getApiErrorMessage(err, 'Erro ao salvar o perfil. Verifique os dados.'));

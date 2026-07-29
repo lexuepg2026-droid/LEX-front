@@ -37,6 +37,21 @@ export const PAPEL_PROCESSO_OPTIONS = [
   { value: 'litisconsorte', label: 'Litisconsorte' },
 ];
 
+// Tipo da seção de documento. Mesmos 8 valores do enum TIPOS_SECAO do backend —
+// se divergirem, o POST volta 400. Os rótulos seguem o vocabulário que a
+// advogada usa ao montar a peça, na ordem em que as partes costumam aparecer
+// no documento.
+export const TIPO_SECAO_OPTIONS = [
+  { value: 'qualificacao', label: 'Qualificação' },
+  { value: 'objeto', label: 'Objeto' },
+  { value: 'clausula', label: 'Cláusula' },
+  { value: 'fundamentacao', label: 'Fundamentação' },
+  { value: 'pedido', label: 'Pedido' },
+  { value: 'encerramento', label: 'Encerramento' },
+  { value: 'assinatura', label: 'Assinatura' },
+  { value: 'outro', label: 'Outro' },
+];
+
 // Nome de exibição de um cliente, que depende do tipo de pessoa. Repetido em
 // três telas antes desta função existir.
 export const nomeDoCliente = (cliente) => {

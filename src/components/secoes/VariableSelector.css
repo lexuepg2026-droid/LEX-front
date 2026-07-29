@@ -1,0 +1,210 @@
+/* Seletor de variáveis — painel lateral do editor de seção. */
+
+.var-selector {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  overflow: hidden;
+  /* Acompanha a altura do textarea ao lado sem empurrar a página. */
+  max-height: 560px;
+}
+
+.var-selector__header {
+  padding: var(--space-3, 12px);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+}
+
+.var-selector__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.var-selector__count {
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+  font-size: var(--font-size-xs, 0.7rem);
+  font-weight: 600;
+}
+
+.var-selector__hint {
+  margin: 6px 0 0;
+  font-size: var(--font-size-xs, 0.7rem);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+/* ── Busca ───────────────────────────────────────────────────────────────── */
+
+.var-selector__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.var-selector__search-icon {
+  position: absolute;
+  left: 20px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.var-selector__search input {
+  width: 100%;
+  padding: 7px 26px 7px 28px;
+  background: var(--color-surface-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.var-selector__search input:focus {
+  outline: none;
+  border-color: var(--color-border-strong);
+}
+
+.var-selector__clear {
+  position: absolute;
+  right: 20px;
+  display: flex;
+  padding: 2px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.var-selector__clear:hover {
+  color: var(--color-text-primary);
+}
+
+/* ── Lista ───────────────────────────────────────────────────────────────── */
+
+.var-selector__body {
+  overflow-y: auto;
+  padding: var(--space-2, 8px) 0;
+}
+
+.var-selector__status {
+  margin: 0;
+  padding: var(--space-3, 12px);
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary);
+}
+
+.var-selector__status--erro {
+  color: var(--color-danger);
+}
+
+.var-group {
+  padding: var(--space-2, 8px) 0;
+}
+
+.var-group + .var-group {
+  border-top: 1px solid var(--color-border);
+}
+
+.var-group__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0 var(--space-3, 12px);
+  font-size: var(--font-size-xs, 0.7rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.var-group__count {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.var-group__description {
+  margin: 4px 0 6px;
+  padding: 0 var(--space-3, 12px);
+  font-size: var(--font-size-xs, 0.7rem);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.var-group__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cada item é um botão: rótulo em destaque, descrição embaixo, chave crua
+   por último e discreta. A ordem visual é deliberada — a advogada escolhe
+   pelo nome legível, não pelo identificador. */
+.var-item {
+  display: block;
+  width: 100%;
+  padding: 7px var(--space-3, 12px);
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-family);
+}
+
+.var-item:hover:not(:disabled),
+.var-item:focus-visible {
+  background: var(--color-surface-raised);
+  border-left-color: var(--color-accent);
+  outline: none;
+}
+
+.var-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.var-item__rotulo {
+  display: block;
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.var-item__descricao {
+  display: block;
+  margin-top: 1px;
+  font-size: var(--font-size-xs, 0.7rem);
+  color: var(--color-text-secondary);
+  line-height: 1.35;
+}
+
+.var-item__chave {
+  display: block;
+  margin-top: 3px;
+  font-family: ui-monospace, 'SFMono-Regular', 'Consolas', monospace;
+  font-size: var(--font-size-xs, 0.7rem);
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 900px) {
+  .var-selector {
+    max-height: 340px;
+  }
+}

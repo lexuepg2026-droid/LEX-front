@@ -1,0 +1,122 @@
+/* Pré-visualização da seção — modal de leitura do template cru. */
+
+.secao-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4, 16px);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.secao-preview {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 760px;
+  max-height: 85vh;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+.secao-preview__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  padding: var(--space-4, 16px);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.secao-preview__title {
+  margin: 0;
+  font-size: var(--font-size-lg, 1.125rem);
+  color: var(--color-text-primary);
+}
+
+.secao-preview__tipo {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+  font-size: var(--font-size-xs, 0.7rem);
+  font-weight: 600;
+}
+
+.secao-preview__close {
+  display: flex;
+  padding: 4px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.secao-preview__close:hover,
+.secao-preview__close:focus-visible {
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.secao-preview__aviso {
+  margin: 0;
+  padding: var(--space-3, 12px) var(--space-4, 16px) 0;
+  font-size: var(--font-size-xs, 0.7rem);
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
+/* Monoespaçada e com quebras preservadas: o template é texto de trabalho, e
+   a diagramação dele importa para conferir parágrafo e espaçamento. */
+.secao-preview__texto {
+  flex: 1;
+  overflow: auto;
+  margin: var(--space-3, 12px) var(--space-4, 16px);
+  padding: var(--space-3, 12px);
+  background: var(--color-surface-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--color-text-primary);
+  font-family: ui-monospace, 'SFMono-Regular', 'Consolas', monospace;
+  font-size: var(--font-size-sm, 0.875rem);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Chave de variável destacada — é o que diferencia o template do texto final. */
+.secao-preview__var {
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.secao-preview__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  padding: var(--space-3, 12px) var(--space-4, 16px) var(--space-4, 16px);
+  border-top: 1px solid var(--color-border);
+}
+
+.secao-preview__contagem {
+  font-size: var(--font-size-xs, 0.7rem);
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 640px) {
+  .secao-preview {
+    max-height: 92vh;
+  }
+}
