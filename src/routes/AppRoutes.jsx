@@ -17,6 +17,7 @@ import InstallmentFormPage from '../pages/installments/InstallmentFormPage';
 import DocumentListPage from '../pages/documents/DocumentListPage';
 import DocumentFormPage from '../pages/documents/DocumentFormPage';
 import DocumentAssemblyPage from '../pages/documents/DocumentAssemblyPage';
+import DocumentFinalTextPage from '../pages/documents/DocumentFinalTextPage';
 import SecaoListPage from '../pages/secoes/SecaoListPage';
 import SecaoFormPage from '../pages/secoes/SecaoFormPage';
 import PaymentListPage from '../pages/payments/PaymentListPage';
@@ -65,6 +66,8 @@ function AppRoutes() {
           <Route path="documentos/montar" element={<DocumentAssemblyPage />} />
           <Route path="documentos/montar/:id" element={<DocumentAssemblyPage />} />
 
+          {/* Editor de texto final de um documento já gerado. */}
+          <Route path="documentos/:id/texto" element={<DocumentFinalTextPage />} />
 
           <Route path="secoes" element={<SecaoListPage />} />
           <Route path="secoes/nova" element={<SecaoFormPage />} />

@@ -4,6 +4,7 @@ import { AlertTriangle, Check, FileStack, FileText, Loader2 } from 'lucide-react
 import documentService from '../../api/documentService';
 import DocumentCanvas from '../../components/documents/DocumentCanvas';
 import SecaoLibraryPanel from '../../components/documents/SecaoLibraryPanel';
+import GenerationPanel from '../../components/documents/GenerationPanel';
 import Loading from '../../components/common/Loading';
 import { useAuth } from '../../contexts/AuthContext';
 import useSerialQueue from '../../hooks/useSerialQueue';
@@ -355,6 +356,17 @@ function DocumentAssemblyPage() {
           desabilitado={salvando}
         />
       </div>
+
+      {modo === MODO_DOCUMENTO && (
+        <GenerationPanel
+          modeloId={id}
+          totalSecoes={vinculos.length}
+          onGerado={(documentoGerado) => {
+            toast.success('Documento gerado. Agora é revisar o texto final.');
+            navigate(`/dashboard/documentos/${documentoGerado._id}/texto`);
+          }}
+        />
+      )}
 
       {modo === MODO_MODELO && (
         <footer className="montagem__rodape">

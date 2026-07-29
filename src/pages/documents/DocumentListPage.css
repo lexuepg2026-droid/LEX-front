@@ -1,0 +1,30 @@
+/* Selos de situação do documento na listagem.
+   Só tokens que existem de fato em variables.css. */
+
+.doc-selos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.doc-selo {
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.doc-selo--editado {
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+}
+
+.doc-selo--portal {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.doc-selo--neutro {
+  color: var(--color-text-muted);
+}

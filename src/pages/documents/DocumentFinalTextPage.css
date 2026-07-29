@@ -1,0 +1,370 @@
+/* Editor de texto final. Só tokens que existem de fato em variables.css. */
+
+.final {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ── Cabeçalho ──────────────────────────────────────────────────────────── */
+
+.final__cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.final__identidade {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.final__titulo {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.final__subtitulo {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.final__selos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.final__selo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.final__selo--editado {
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+}
+
+.final__selo--substituido {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.final__acoes-topo {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* ── Lacunas ────────────────────────────────────────────────────────────── */
+
+.final__lacunas {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.final__lacunas-titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning);
+}
+
+.final__lacunas-ajuda {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+.final__lacunas-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.final__lacuna {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-sm);
+}
+
+.final__lacuna-rotulo {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+/* O contexto vem do backend com as quebras já viradas em espaço, para ler numa
+   linha só. Monoespaçada porque é citação literal do documento. */
+.final__lacuna-contexto {
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-primary);
+  word-break: break-word;
+}
+
+.final__lacuna-ir {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-accent);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.final__lacuna-ir:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+/* ── Área de trabalho ───────────────────────────────────────────────────── */
+
+.final__area {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.final__editor {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.final__editor-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.final__editor-titulo {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.final__editor-acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.final__sujo {
+  font-size: var(--font-size-xs);
+  color: var(--color-warning);
+}
+
+/* Editor de texto simples, de propósito: o documento é texto corrido, e um
+   editor rico introduziria marcação que o renderizador do backend não lê. */
+.final__textarea {
+  width: 100%;
+  min-height: 60vh;
+  padding: var(--space-4);
+  background: var(--color-surface-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  resize: vertical;
+}
+
+.final__textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.final__contador {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* ── Lateral ────────────────────────────────────────────────────────────── */
+
+.final__lateral {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.final__cartao {
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.final__cartao-titulo {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.final__cartao-texto {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+.final__cartao-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2);
+  background: var(--color-info-bg);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+.final__cartao-aviso svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-info);
+}
+
+.final__portal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 38px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-input);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.final__portal--ligado {
+  background: var(--color-success-bg);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.final__portal:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.final__secoes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: secao;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.final__secao {
+  counter-increment: secao;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+}
+
+.final__secao::before {
+  content: counter(secao);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-input);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+}
+
+.final__secao-titulo {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.final__secao-tipo {
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
+@media (max-width: 900px) {
+  .final__area {
+    flex-direction: column;
+  }
+
+  .final__lateral {
+    width: 100%;
+  }
+}
