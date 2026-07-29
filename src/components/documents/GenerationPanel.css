@@ -94,6 +94,13 @@
   color: var(--color-text-secondary);
 }
 
+.geracao__honorario-nota {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-muted);
+}
+
 .geracao__opcoes {
   list-style: none;
   margin: 0;

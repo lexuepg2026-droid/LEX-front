@@ -112,10 +112,27 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
     [pendencias]
   );
 
-  const pendenciasDeCadastro = useMemo(
-    () => pendencias.filter((p) => p !== escolhaDeHonorario),
-    [pendencias, escolhaDeHonorario]
-  );
+  // Sem `honorarioId` resolvido, o backend não tem de onde tirar NENHUMA
+  // variável de honorário — e todas elas voltam como pendência junto. São
+  // sintoma da mesma causa, e é por isso que o backend põe a escolha em
+  // primeiro lugar na lista.
+  //
+  // Listá-las como dado faltando seria mentir para a advogada: diria
+  // "preencha Valor do honorário no honorário vinculado ao processo" quando o
+  // valor está cadastrado e o que falta é ela dizer QUAL honorário. Enquanto a
+  // escolha estiver pendente, as de origem `honorario` ficam de fora.
+  const pendenciasDeCadastro = useMemo(() => {
+    const semEscolha = pendencias.filter((p) => p !== escolhaDeHonorario);
+    if (!escolhaDeHonorario) return semEscolha;
+    return semEscolha.filter((p) => p.origem !== 'honorario');
+  }, [pendencias, escolhaDeHonorario]);
+
+  // Quantas variáveis de honorário estão esperando só a escolha. Vale dizer o
+  // número: explica por que a lista encolhe depois que ela escolhe.
+  const sintomasDeHonorario = useMemo(() => {
+    if (!escolhaDeHonorario) return 0;
+    return pendencias.filter((p) => p !== escolhaDeHonorario && p.origem === 'honorario').length;
+  }, [pendencias, escolhaDeHonorario]);
 
   const gerar = useCallback(
     async ({ confirmarSobrescrita } = {}) => {
@@ -232,6 +249,15 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
             {escolhaDeHonorario.rotulo}
           </p>
           <p className="geracao__honorario-orientacao">{escolhaDeHonorario.orientacao}</p>
+
+          {sintomasDeHonorario > 0 && (
+            <p className="geracao__honorario-nota">
+              {sintomasDeHonorario === 1
+                ? 'Há 1 variável de honorário no texto esperando esta escolha.'
+                : `Há ${sintomasDeHonorario} variáveis de honorário no texto esperando esta escolha.`}{' '}
+              Elas se resolvem sozinhas quando você escolher — não é dado faltando no cadastro.
+            </p>
+          )}
 
           <ul className="geracao__opcoes">
             {escolhaDeHonorario.opcoes.map((opcao) => {
