@@ -16,6 +16,8 @@ import InstallmentListPage from '../pages/installments/InstallmentListPage';
 import InstallmentFormPage from '../pages/installments/InstallmentFormPage';
 import DocumentListPage from '../pages/documents/DocumentListPage';
 import DocumentFormPage from '../pages/documents/DocumentFormPage';
+import SecaoListPage from '../pages/secoes/SecaoListPage';
+import SecaoFormPage from '../pages/secoes/SecaoFormPage';
 import PaymentListPage from '../pages/payments/PaymentListPage';
 import PaymentFormPage from '../pages/payments/PaymentFormPage';
 import FinanceiroPage from '../pages/financeiro/FinanceiroPage';
@@ -53,6 +55,10 @@ function AppRoutes() {
           <Route path="documentos" element={<DocumentListPage />} />
           <Route path="documentos/novo" element={<DocumentFormPage />} />
           <Route path="documentos/editar/:id" element={<DocumentFormPage />} />
+
+          <Route path="secoes" element={<SecaoListPage />} />
+          <Route path="secoes/nova" element={<SecaoFormPage />} />
+          <Route path="secoes/editar/:id" element={<SecaoFormPage />} />
 
           <Route path="pagamentos" element={<PaymentListPage />} />
           <Route path="pagamentos/novo" element={<PaymentFormPage />} />
