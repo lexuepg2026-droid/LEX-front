@@ -52,6 +52,22 @@ export const TIPO_SECAO_OPTIONS = [
   { value: 'outro', label: 'Outro' },
 ];
 
+// Tipo do documento. Mesmos 10 valores do enum TIPOS_DOCUMENTO do backend — se
+// divergirem, o POST volta 400. Os rótulos são o nome da peça como a advogada
+// a chama ao pedir, não o identificador técnico.
+export const TIPO_DOCUMENTO_OPTIONS = [
+  { value: 'procuracao', label: 'Procuração' },
+  { value: 'contrato_prestacao_servicos', label: 'Contrato de prestação de serviços' },
+  { value: 'declaracao_isencao_ir', label: 'Declaração de isenção de IR' },
+  { value: 'declaracao_autonomo', label: 'Declaração de autônomo' },
+  { value: 'declaracao_hipossuficiencia', label: 'Declaração de hipossuficiência' },
+  { value: 'declaracao_renuncia', label: 'Declaração de renúncia' },
+  { value: 'peticao', label: 'Petição' },
+  { value: 'sentenca', label: 'Sentença' },
+  { value: 'comprovante', label: 'Comprovante' },
+  { value: 'outro', label: 'Outro' },
+];
+
 // Nome de exibição de um cliente, que depende do tipo de pessoa. Repetido em
 // três telas antes desta função existir.
 export const nomeDoCliente = (cliente) => {

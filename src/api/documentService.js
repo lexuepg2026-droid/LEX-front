@@ -13,6 +13,13 @@ const deleteDocument = (id) => api.delete(`/documents/${id}`);
 
 // ── Modelos, geração e preview ─────────────────────────────────────────────
 
+// Modelo se cria por esta rota, e não por POST /documents: o backend impõe
+// `ehModelo: true` e `origem: "gerado"`, e ignora `processoId` — modelo não
+// pertence a processo. `ehModelo` é imutável depois da criação, então não há
+// como transformar um documento comum em modelo pelo update.
+const criarModelo = ({ nome, tipo, descricao } = {}) =>
+  api.post('/documents/modelos', { nome, tipo, descricao });
+
 const listModelos = ({ page = 1, limit = 20, tipo } = {}) => {
   const params = { page, limit };
   if (tipo) params.tipo = tipo;
@@ -49,6 +56,43 @@ const previewDocumento = (id, { processoId, clienteId, honorarioId } = {}) => {
 const atualizarTexto = (id, textoResolvido) =>
   api.patch(`/documents/${id}/texto`, { textoResolvido });
 
+// ── Vínculos documento ↔ seção (a montagem) ────────────────────────────────
+//
+// A ordem é do backend, não da tela. Três regras vivem lá e NÃO devem ser
+// reimplementadas aqui:
+//
+//   1. `ordem` informada INSERE na posição e EMPURRA as seguintes; omitida,
+//      anexa ao fim; fora do intervalo, encaixa na borda mais próxima.
+//   2. dois índices únicos parciais em `documento_secao` impedem a mesma seção
+//      duas vezes e duas seções na mesma posição. A tela antecipa a restrição
+//      para não deixar a advogada tentar — mas quem garante é o banco.
+//   3. a renumeração roda em duas fases, porque o índice único é verificado a
+//      cada operação e reatribuir 1..N direto colidiria no meio do caminho.
+
+const listDocumentSecoes = (id) => api.get(`/documents/${id}/secoes`);
+
+// `ordem` omitida anexa ao fim — é o caminho do botão "Adicionar". Informada,
+// insere na posição — é o caminho do arrastar. Os dois chamam este método.
+const vincularSecao = (id, { secaoId, ordem } = {}) =>
+  api.post(`/documents/${id}/secoes`, { secaoId, ordem });
+
+// O id do path é o da SEÇÃO, não o do vínculo. O backend renumera o que sobra
+// para não deixar buraco na sequência.
+const desvincularSecao = (id, secaoId) =>
+  api.delete(`/documents/${id}/secoes/${secaoId}`);
+
+// `secoes` é o array de ids de seção na ordem desejada, e precisa conter
+// exatamente as seções já vinculadas — reordenar é permutar, não incluir nem
+// remover. Faltando ou sobrando, o backend responde 400 dizendo qual.
+const reordenarSecoes = (id, secoes) =>
+  api.patch(`/documents/${id}/secoes/reordenar`, { secoes });
+
+// ── Visibilidade no portal do cliente ──────────────────────────────────────
+// Omitir `visivelPortal` faz o backend alternar. Enviamos o valor explícito
+// para a tela não depender de adivinhar o estado atual do servidor.
+const alternarVisibilidadePortal = (id, visivelPortal) =>
+  api.patch(`/documents/${id}/visibilidade-portal`, { visivelPortal });
+
 // ── Catálogo de variáveis ──────────────────────────────────────────────────
 // Somente leitura. Devolve { total, grupos: [{ origem, rotulo, descricao,
 // total, variaveis: [{ chave, rotulo, descricao }] }] }. Os rótulos e as
@@ -74,17 +118,50 @@ const nomeDoAnexo = (response, alternativo) => {
   return disposition.match(/filename="?([^";]+)"?/)?.[1] ?? alternativo;
 };
 
+// Baixa e entrega o arquivo ao navegador, num passo só.
+//
+// O <a download> temporário é o único caminho que funciona nos dois casos que
+// importam: com cookie httpOnly não dá para apontar o href direto para a rota
+// e deixar o navegador baixar (o axios é quem carrega o cookie), e o blob
+// precisa de uma URL para virar arquivo. O revoke é obrigatório — sem ele cada
+// download deixa o blob preso na memória da aba até o F5.
+const baixarEsalvar = async (id, formato = 'pdf') => {
+  const response = await baixarDocumento(id, formato);
+  const nome = nomeDoAnexo(response, `documento.${formato}`);
+  const url = URL.createObjectURL(response.data);
+
+  try {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nome;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+
+  return { nome, tamanho: response.data?.size ?? 0 };
+};
+
 export default {
   listDocuments,
   getDocumentById,
   createDocument,
   updateDocument,
   deleteDocument,
+  criarModelo,
   listModelos,
   gerarDocumento,
   previewDocumento,
+  listDocumentSecoes,
+  vincularSecao,
+  desvincularSecao,
+  reordenarSecoes,
+  alternarVisibilidadePortal,
   atualizarTexto,
   listarVariaveis,
   baixarDocumento,
   nomeDoAnexo,
+  baixarEsalvar,
 };

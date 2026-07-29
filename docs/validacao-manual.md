@@ -3,7 +3,7 @@
 Checklist de teste da interface, **versionado para acumular entre fases**.
 Não é a documentação da banca.
 
-Reúne tudo o que ficou pendente de validação visual até a Fase 2D.1 —
+Reúne tudo o que ficou pendente de validação visual até a Fase 2D.2 —
 principalmente o que depende de navegador (`FileReader`, `canvas`,
 `clipboard`, foco de teclado, Word/LibreOffice) e por isso nunca pôde ser
 executado por script.
@@ -37,6 +37,10 @@ Dados que vários passos usam:
 | Processo com 2 honorários ativos | o primeiro da lista (caso ambíguo) |
 | Documento editado à mão | 1 dos contratos gerados |
 | Documento com lacuna `[...]` | 1 documento gerado |
+| Modelo de procuração PF | "Procuração Ad Judicia" |
+| Modelo de procuração PJ | "Procuração Ad Judicia — Pessoa Jurídica" |
+| Modelo que usa honorário | "Contrato de Prestação de Serviços Advocatícios" |
+| Processo com 2 honorários ativos | Indenizacao por Danos Morais |
 
 > Alguns passos alteram a base (excluir, desativar, trocar senha). Rode
 > `npm run seed:fresh` de novo antes de repetir o roteiro do início.
@@ -404,6 +408,270 @@ Dados que vários passos usam:
 
 ---
 
+## 8. Montagem de documento (`/dashboard/documentos/montar`)
+
+- [ ] **47. Montagem — duas portas de entrada no menu**
+  Passos: olhar o menu lateral, no grupo de Documentos.
+  Esperado: existem **dois** itens novos entre "Documentos" e "Seções":
+  **"Gerar documento"** e **"Montar modelo"**. Levam à mesma tela. Estando numa
+  delas, **só a porta correspondente fica acesa** no menu — não as duas.
+  Fase de origem: 2D.2
+
+- [ ] **48. Montagem — o modo MODELO fica visível o tempo todo** ⭐
+  Passos: 1) "Montar modelo"; 2) dar nome e tipo; 3) "Começar a montar";
+  4) acrescentar uma seção; 5) rolar a tela.
+  Esperado: o cabeçalho traz o selo **"Montando um MODELO"** e a faixa lateral
+  dourada, e eles **continuam ali** depois de montar, não só na entrada. O
+  subtítulo diz "reutilizável, sem processo e sem cliente". **Não aparece**
+  painel de geração.
+  Fase de origem: 2D.2
+
+- [ ] **49. Montagem — o modo DOCUMENTO fica visível o tempo todo** ⭐
+  Passos: 1) "Gerar documento"; 2) escolher um modelo da lista.
+  Esperado: selo **"Montando um DOCUMENTO"**, faixa lateral verde, e o painel
+  "Gerar o documento" no fim da tela. Em nenhum momento fica dúvida sobre qual
+  dos dois modos está aberto.
+  Fase de origem: 2D.2
+
+- [ ] **50. Montagem — canvas em A4 com timbrado e logo**
+  Pré-condição: ter logo salvo no perfil (passo 13).
+  Passos: abrir a montagem de um modelo com seções.
+  Esperado: a folha é **branca nos dois temas** (é papel), em proporção A4, com
+  margens visíveis de 2,5 cm. O cabeçalho traz o logo à esquerda e, à direita,
+  nome do escritório, `Nome — OAB/UF nº`, endereço em uma linha e
+  `telefone · e-mail`. Rodapé no pé da folha.
+  Fase de origem: 2D.2
+
+- [ ] **51. Montagem — timbrado sem logo não abre buraco** ⭐
+  Pré-condição: **remover** o logo no perfil (passo 14).
+  Passos: voltar à montagem.
+  Esperado: o bloco de texto do timbrado passa a ocupar a **largura inteira**.
+  **Não sobra espaço reservado** onde a imagem estava. Mesma regra da Fase 2C.
+  Fase de origem: 2D.2
+
+- [ ] **52. Montagem — biblioteca com filtro e busca sem acento**
+  Passos: na barra lateral, 1) escolher "Qualificação" no filtro; 2) limpar;
+  3) digitar `qualificacao` sem acento; 4) digitar `qualificação` com acento.
+  Esperado: o filtro deixa só as de qualificação; as duas buscas trazem o
+  **mesmo** resultado. Cada miniatura mostra título, tipo e trecho inicial.
+  Fase de origem: 2D.2 (reusa a busca da 2D.1)
+
+- [ ] **53. Montagem — inserir pelo botão "Adicionar"**
+  Passos: clicar em "Adicionar" numa miniatura.
+  Esperado: a seção entra **no fim** do documento, numerada na sequência. O
+  indicador mostra "salvando…" e depois "salvo às HH:MM:SS".
+  Fase de origem: 2D.2
+
+- [ ] **54. Montagem — inserir arrastando da barra para a folha**
+  Pré-condição: **mouse** (o arrastar não dispara em toque — ver passo 55).
+  Passos: arrastar uma miniatura e soltar **entre dois blocos** da folha.
+  Esperado: uma faixa tracejada marca onde vai cair, e a seção entra
+  **exatamente naquela posição**, não no fim.
+  Fase de origem: 2D.2
+
+- [ ] **55. Montagem — inserir na posição por TOQUE, sem arrastar** ⚠️ ⭐
+  Pré-condição: abrir o LEX **no tablet** (ou no emulador de toque do DevTools,
+  com "touch" ativado).
+  Passos: 1) **tocar no corpo** de uma miniatura (não no botão "Adicionar");
+  2) observar a folha; 3) tocar em "Inserir aqui" no ponto desejado.
+  Esperado: a miniatura fica destacada, aparece a faixa
+  "«título» pronta para entrar", e a folha mostra botões **"Inserir aqui"**
+  entre os blocos. A seção entra na posição escolhida — **o mesmo resultado do
+  arrastar, sem arrastar**.
+  Por que só aqui: `dragstart`/`dragover`/`drop` **não disparam em toque**, e
+  este é o caminho que substitui o arrastar no tablet. Não há como exercitá-lo
+  por script.
+  Fase de origem: 2D.2
+
+- [ ] **56. Montagem — soltar em posição ocupada empurra as demais**
+  Passos: inserir uma seção na **posição 2**, com o documento já tendo 4 ou
+  mais.
+  Esperado: a nova fica na 2, e quem estava na 2 vai para a 3, e assim por
+  diante. A numeração continua **1, 2, 3… sem repetir e sem pular**. O empurrão
+  é regra do backend — a tela só mostra o resultado.
+  Fase de origem: 2D.2
+
+- [ ] **57. Montagem — seção já usada aparece marcada e não entra de novo**
+  Passos: 1) olhar na barra lateral uma seção que já está na folha; 2) tentar
+  arrastá-la.
+  Esperado: a miniatura fica esmaecida, com o selo verde **"no documento"** em
+  vez do botão "Adicionar", e **não é arrastável**. A restrição real é o índice
+  único do banco; a tela só antecipa.
+  Fase de origem: 2D.2
+
+- [ ] **58. Montagem — reordenar por ↑ e ↓**
+  Passos: clicar em ↑ e ↓ na barra de um bloco.
+  Esperado: o bloco troca de lugar, a numeração acompanha na hora, e o
+  indicador vai a "salvando…" e volta a "salvo". O ↑ do primeiro bloco e o ↓ do
+  último ficam **desabilitados**.
+  Fase de origem: 2D.2
+
+- [ ] **59. Montagem — reordenar arrastando bloco na folha**
+  Pré-condição: mouse.
+  Passos: arrastar um bloco pela folha e soltar em outra posição.
+  Esperado: mesmo resultado do ↑/↓. O bloco arrastado fica translúcido durante
+  o arraste.
+  Fase de origem: 2D.2
+
+- [ ] **60. Montagem — remover bloco**
+  Passos: clicar em "Remover" num bloco.
+  Esperado: sai da folha na hora, a numeração dos demais **fecha sem buraco**,
+  e a miniatura correspondente **volta a ficar disponível** na barra lateral.
+  Fase de origem: 2D.2
+
+- [ ] **61. Montagem — recarregar mantém a ordem**
+  Passos: depois de montar e reordenar, dar **F5**.
+  Esperado: a mesma sequência volta, na mesma ordem. Não há botão "Salvar" em
+  nenhum momento — cada operação já persistiu.
+  Fase de origem: 2D.2
+
+- [ ] **62. Montagem — rollback visível quando a rede falha** ⭐
+  Passos: 1) montar com 4 seções; 2) no DevTools, aba Network, marcar
+  **Offline**; 3) clicar em ↓ num bloco; 4) observar.
+  Esperado: o bloco **desce na hora** (atualização otimista) e em seguida
+  **volta para o lugar de origem** — o rollback é visível. Aparece toast de
+  erro, a faixa vermelha "não salvo — a ordem anterior foi restaurada" no
+  cabeçalho, e a mensagem do erro abaixo. Voltando a rede, a próxima
+  reordenação funciona normalmente.
+  Fase de origem: 2D.2
+
+- [ ] **63. Montagem — cinco reordenações rápidas não embaralham** ⭐
+  Passos: clicar em ↑/↓ **cinco vezes seguidas, o mais rápido que conseguir**,
+  em blocos diferentes.
+  Esperado: a ordem final na tela é exatamente a que se vê depois do último
+  clique, e o **F5 confirma a mesma**. As chamadas são serializadas — se
+  embaralhar, a fila não está funcionando.
+  Fase de origem: 2D.2
+
+---
+
+## 9. Geração do documento (painel no fim da montagem, modo documento)
+
+- [ ] **64. Geração — escolha de processo e do cliente com o papel**
+  Passos: 1) modo documento; 2) escolher o processo "Inventário e Partilha de
+  Bens"; 3) abrir o seletor de cliente.
+  Esperado: o seletor de cliente só habilita **depois** de escolher o processo,
+  e lista os participantes com **nome — papel**, dizendo qual é o
+  **(principal)** e o CPF/CNPJ. Processo com um participante só já vem
+  escolhido; com dois, nenhum vem marcado.
+  Fase de origem: 2D.2
+
+- [ ] **65. Geração — cliente PF gera**
+  Passos: gerar a procuração de pessoa física para um cliente PF com cadastro
+  completo (ex.: Joao Paulo Oliveira).
+  Esperado: toast de sucesso e a tela vai para o **editor de texto final**.
+  Fase de origem: 2D.2
+
+- [ ] **66. Geração — cliente PJ gera pela interface** ⭐
+  Passos: escolher o modelo **"Procuração Ad Judicia — Pessoa Jurídica"**,
+  processo com cliente PJ (ex.: Tech Solutions Brasil S.A.), e gerar.
+  Esperado: gera. O texto final traz razão social, CNPJ, sede e o representante
+  legal — **não** os campos de pessoa física.
+  Por que importa: este caminho nunca havia sido exercitado pela interface.
+  Fase de origem: 2D.2
+
+- [ ] **67. Geração — 422 mostra o RÓTULO, nunca a chave crua** ⭐
+  Passos: gerar a procuração de pessoa física para **Beatriz Ramos Pereira**
+  (o seed a deixa sem profissão de propósito).
+  Esperado: bloco de aviso dizendo **"Falta um dado no cadastro"**, e o item
+  traz em destaque **"Profissão"** — o rótulo — com a orientação
+  **"Preencha «Profissão» no cadastro do cliente"**. A chave
+  `{{profissaoCliente}}` aparece **discreta e por último**, em cinza. **Não pode
+  aparecer JSON**, nem a chave no lugar do nome.
+  Fase de origem: 2D.2
+
+- [ ] **68. Geração — escolha de honorário oferecida na própria tela** ⭐
+  Passos: gerar o **"Contrato de Prestação de Serviços Advocatícios"** para
+  "Indenizacao por Danos Morais" / Ana Lima Santos (o processo tem 2 honorários
+  ativos).
+  Esperado: bloco azul com a orientação do backend e a **lista de honorários
+  para escolher**, cada um com valor, descrição, tipo e vencimento. Abaixo, a
+  nota de que **"6 variáveis de honorário estão esperando esta escolha"** e que
+  se resolvem sozinhas — elas **não** aparecem na lista de dados faltando.
+  Escolhendo um e clicando em "Gerar com este honorário", gera.
+  Fase de origem: 2D.2
+
+- [ ] **69. Geração — diálogo do 409 ao regerar texto revisado** ⭐
+  Pré-condição: ter um documento gerado e **editado à mão** (passo 70).
+  Passos: 1) voltar à montagem no modo documento, mesmo modelo, mesmo processo
+  e mesmo cliente; 2) gerar de novo.
+  Esperado: **não gera direto.** Abre diálogo dizendo explicitamente que o
+  texto revisado será **SUBSTITUÍDO** e que o documento atual **sai da lista**,
+  com a data do atual. "Manter o texto revisado" cancela e nada muda.
+  "Regerar e substituir" gera o novo — e o anterior desaparece da listagem.
+  Fase de origem: 2D.2
+
+---
+
+## 10. Texto final do documento (`/dashboard/documentos/:id/texto`)
+
+- [ ] **70. Texto final — editar e salvar marca "editado à mão"**
+  Passos: 1) abrir um documento gerado; 2) acrescentar um parágrafo no fim;
+  3) "Salvar texto".
+  Esperado: enquanto há mudança pendente aparece "alterações não salvas" e o
+  botão habilita. Depois de salvar, toast de sucesso e o selo dourado
+  **"editado à mão"** no cabeçalho. F5 mantém o texto novo.
+  Fase de origem: 2D.2
+
+- [ ] **71. Texto final — seções de origem são rastreabilidade, não conteúdo** ⭐
+  Passos: 1) no documento editado do passo 70, olhar o cartão "Seções de
+  origem"; 2) ir a Seções e **editar o texto** de uma delas; 3) voltar ao
+  documento e dar F5.
+  Esperado: o cartão lista as seções na ordem, com um aviso dizendo que o texto
+  **já não vem delas**. Depois de editar a seção, **o texto do documento não
+  muda** — é isso que garante que a revisão dela não é descartada.
+  Fase de origem: 2D.2
+
+- [ ] **72. Texto final — aviso de lacuna com contexto, sem bloquear**
+  Passos: abrir o documento que contém `[...]` (o seed cria um).
+  Esperado: faixa amarela dizendo quantos trechos faltam preencher, cada um com
+  o **rótulo**, a **linha** e o **trecho de contexto** ao redor. "ir até o
+  trecho" leva o cursor até lá e o seleciona. O texto diz que é aviso, não
+  impedimento — e **o download funciona** mesmo assim.
+  Fase de origem: 2D.2 (a lacuna vem da 2C)
+
+- [ ] **73. Texto final — download em PDF pela interface**
+  Passos: clicar em "PDF".
+  Esperado: o arquivo baixa com o nome vindo do servidor
+  (`procuracao-nome-do-cliente-aaaa-mm-dd.pdf`), e o toast informa nome e
+  tamanho. Abrindo, é o **texto editado** que está lá, com o timbrado.
+  Fase de origem: 2D.2
+
+- [ ] **74. Texto final — download em DOCX pela interface**
+  Passos: clicar em "DOCX".
+  Esperado: mesmo comportamento, extensão `.docx`. Conferir a abertura no Word
+  e no LibreOffice é o passo 43.
+  Fase de origem: 2D.2
+
+- [ ] **75. Texto final — alternar a visibilidade no portal**
+  Passos: 1) clicar no botão de portal; 2) dar F5; 3) clicar de novo; 4) F5.
+  Esperado: começa **"Oculto do portal"** (padrão desligado). Ligando, fica
+  verde com "Visível no portal" e **persiste depois do F5**. Desligando,
+  volta — e também persiste. O portal em si é a Fase 3; aqui só o interruptor.
+  Fase de origem: 2D.2
+
+---
+
+## 11. Lista de Documentos, revisada (`/dashboard/documentos`)
+
+- [ ] **76. Documentos — a lista mostra só documentos gerados**
+  Passos: abrir a lista.
+  Esperado: **nenhum modelo** aparece (modelo tem tela própria) e **não há
+  coluna de arquivo nem link de URL** — upload está fora da interface. As
+  colunas são Nome, Tipo, Processo, Gerado em, Situação e Ações. O tipo sai por
+  extenso ("Procuração", "Contrato de prestação de serviços"), nunca o
+  identificador cru.
+  Fase de origem: 2D.2
+
+- [ ] **77. Documentos — selos de situação e download direto da lista**
+  Passos: 1) localizar o documento editado à mão e um com portal ligado;
+  2) clicar em "PDF" e em "DOCX" na linha.
+  Esperado: os selos "editado à mão" e "no portal" aparecem na coluna Situação;
+  os demais mostram "gerado". Os dois downloads funcionam **direto da lista**,
+  sem precisar abrir o documento. "Abrir" leva ao editor de texto final.
+  Fase de origem: 2D.2
+---
+
 ## Notas
 
 **Itens reconstruídos.** Os passos 21 a 25 correspondem aos itens 19 a 22 da
@@ -418,3 +686,14 @@ participante mereciam passos separados.
 
 **Legenda:** ⚠️ depende de aplicativo externo ou de API só existente no
 navegador. ⭐ item central da fase.
+
+**Tela de Clientes (passos 15 a 20).** A Fase 2D.1 registrou que
+`ClientPage.css` usava três tokens inexistentes (`--bg-button`, `--text-button`,
+`--bg-color`) e que por isso a tela estaria visualmente errada. **A Fase 2D.2
+conferiu e o achado não se reproduz:** os três estão definidos em
+`variables.css`, no bloco "Legado", tanto em `:root` quanto em
+`body.light-mode`, e resolvem nos dois temas. A varredura completa dos `.css` e
+`.jsx` do frontend encontrou **63 tokens consumidos e 0 inexistentes**. Nada foi
+alterado, e portanto **nenhuma regressão visual foi introduzida** nestes passos
+— eles seguem valendo como estão. Continuam pendentes de execução, como o resto
+do roteiro, mas não por causa de correção de CSS.
