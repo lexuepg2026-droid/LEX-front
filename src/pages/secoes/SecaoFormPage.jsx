@@ -7,6 +7,7 @@ import { TIPO_SECAO_OPTIONS } from '../../utils/enums';
 import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import { toast } from '../../utils/toast';
 import '../clients/ClientPage.css';
+import '../../components/ui/Button.css';
 import './SecaoPage.css';
 
 const EMPTY_FORM = { titulo: '', tipo: '', texto: '' };

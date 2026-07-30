@@ -63,7 +63,10 @@ function Header() {
         {breadcrumb.map((segment, i) => (
           <React.Fragment key={i}>
             {i > 0 && <span className="breadcrumb-sep">›</span>}
-            <span className={i === breadcrumb.length - 1 ? 'breadcrumb-current' : 'breadcrumb-item'}>
+            {/* `breadcrumb-item` saiu: nunca teve regra em CSS nenhum. Os
+                segmentos não-atuais já herdam a cor de `.breadcrumb`, e só o
+                último se distingue, por `.breadcrumb-current`. */}
+            <span className={i === breadcrumb.length - 1 ? 'breadcrumb-current' : undefined}>
               {segment}
             </span>
           </React.Fragment>

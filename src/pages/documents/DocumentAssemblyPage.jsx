@@ -12,6 +12,7 @@ import { TIPO_DOCUMENTO_OPTIONS, labelDe } from '../../utils/enums';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { toast } from '../../utils/toast';
 import '../../styles/modules.css';
+import '../../components/ui/Button.css';
 import './DocumentAssemblyPage.css';
 
 // ═══════════════════════════════════════════════════════════════════════════

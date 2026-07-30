@@ -150,8 +150,11 @@ function RegisterPage() {
       <h2>Criar Nova Conta</h2>
       <p className="wizard-progress">Etapa {step} de 2 — {step === 1 ? 'Acesso' : 'Dados profissionais'}</p>
 
+      {/* `wizard-step` saiu das duas etapas: nunca teve regra em CSS nenhum. O
+          que estiliza cada etapa é `wizard-step-narrow` (1) e `wizard-grid`
+          (2), e a largura comum vem de `.register-page form`. */}
       {step === 1 && (
-        <form onSubmit={handleContinue} className="wizard-step wizard-step-narrow">
+        <form onSubmit={handleContinue} className="wizard-step-narrow">
           <div className="form-group">
             <label>Nome completo*</label>
             <input type="text" name="nomeCompleto" value={form.nomeCompleto} onChange={handleChange} required />
@@ -176,7 +179,7 @@ function RegisterPage() {
       )}
 
       {step === 2 && (
-        <form onSubmit={handleSubmit} className="wizard-step wizard-grid">
+        <form onSubmit={handleSubmit} className="wizard-grid">
           <h3 className="wizard-section-title">Dados profissionais</h3>
 
           <div className="form-group span-1">

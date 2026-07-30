@@ -18,7 +18,7 @@ import { readFileSync } from "node:fs";
 
 import {
   listarPaginas, listarNaoRoteados, cssAlcancavel, classesAplicadas, classesGlobais,
-  relativo, ehNomeDeClassePlausivel
+  relativo, ehNomeDeClassePlausivel, RAIZ
 } from "../helpers/cssScan.js";
 import { ALLOWLIST, PREFIXOS_ACEITOS } from "./allowlist.js";
 
@@ -140,7 +140,7 @@ describe("varredura de classe CSS", () => {
 
     for (const [arquivo, prefixo] of CASOS) {
       test(`${prefixo}\${…} em ${arquivo.split("/").pop()} tem família de regras`, () => {
-        const caminho = `${process.cwd()}/${arquivo}`;
+        const caminho = `${RAIZ}/${arquivo}`;
         const { prefixos } = classesAplicadas(readFileSync(caminho, "utf8"));
 
         assert.ok(
@@ -172,7 +172,7 @@ describe("varredura de classe CSS", () => {
       ];
 
       const total = familias.reduce((soma, [arquivo, prefixo]) => {
-        const { classes } = cssAlcancavel(`${process.cwd()}/${arquivo}`);
+        const { classes } = cssAlcancavel(`${RAIZ}/${arquivo}`);
         const familia = [...new Set([...classes, ...globais])].filter((c) => c.startsWith(prefixo));
         return soma + familia.length;
       }, 0);
