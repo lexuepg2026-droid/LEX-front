@@ -76,7 +76,6 @@ function ProcessoDetalhePage() {
         // a que diz o motivo de verdade.
         toast.error(getApiErrorMessage(err, 'Não foi possível obter o código de acesso.'));
       }
-      console.error(err);
     } finally {
       setBuscandoCodigo(null);
     }

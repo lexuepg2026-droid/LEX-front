@@ -20,81 +20,6 @@
   margin-top: 20px;
 }
 
-.tabs-nav {
-  display: flex;
-  border-bottom: 1px solid var(--text-color);
-  flex-wrap: wrap; /* Permite quebrar linha em telas menores */
-}
-
-.tab-link {
-  padding: 10px 20px;
-  cursor: pointer;
-  background-color: transparent;
-  border: none;
-  color: var(--text-color);
-  opacity: 0.6;
-  font-size: 1rem; /* Ajustei o tamanho */
-  border-bottom: 3px solid transparent;
-  margin-bottom: -1px;
-}
-
-.tab-link.active {
-  opacity: 1;
-  border-bottom: 3px solid var(--bg-button);
-}
-
-.tab-link.disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.tab-content {
-  padding-top: 20px;
-  color: var(--text-color);
-}
-
-/* --- Formulários "Inline" --- */
-.form-inline {
-  margin-top: 20px;
-  padding: 20px;
-  border: 1px solid rgba(184, 157, 75, 0.2);
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.02);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  align-items: flex-end;
-}
-
-.form-inline h4 {
-  width: 100%;
-  margin: 0 0 10px 0;
-  color: var(--text-color);
-  font-weight: 500;
-}
-
-.form-inline input,
-.form-inline select {
-  flex-grow: 1;
-  min-width: 150px;
-  padding: 10px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--text-color);
-  background: var(--bg-input);
-  color: var(--text-color);
-  font-size: 14px;
-  font-family: inherit;
-}
-.form-inline select option {
-  background: var(--bg-color);
-  color: var(--text-color);
-}
-
-.form-actions-inline {
-  display: flex;
-  gap: 10px;
-}
-
 .btn-action.btn-cancel {
   background-color: transparent;
   border: 1px solid var(--text-color);
@@ -102,11 +27,6 @@
 }
 .btn-action.btn-cancel:hover {
   background-color: rgba(255, 255, 255, 0.1);
-}
-
-/* --- Destaque de Linha --- */
-.data-table tr.row-selected {
-  background-color: rgba(184, 157, 75, 0.2) !important;
 }
 
 .modulos-nav-title {

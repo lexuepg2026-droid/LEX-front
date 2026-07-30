@@ -4,7 +4,7 @@ import clientService from '../../api/clientService';
 import { toast } from '../../utils/toast';
 import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import { maskCPF, maskCNPJ, maskCEP, maskPhone, unmask } from '../../utils/masks';
-import { UFS, SEXO_OPTIONS, ESTADO_CIVIL_OPTIONS } from '../../utils/enums';
+import { UFS, SEXO_OPTIONS, ESTADO_CIVIL_OPTIONS, TIPO_PESSOA_OPTIONS, labelDe } from '../../utils/enums';
 import { buscarEnderecoPorCEP } from '../../utils/viacep';
 import './ClientPage.css';
 
@@ -180,7 +180,6 @@ function ClienteFormPage() {
       // O backend informa qual campo causou o 409; destacamos o input em vez de
       // deixar o usuário caçar o duplicado numa mensagem no rodapé.
       setCampoComErro(getApiErrorField(err));
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -194,18 +193,19 @@ function ClienteFormPage() {
         <div className="form-group tipo-pessoa-seletor">
           <label>Tipo de Pessoa:</label>
           <div className="radio-group">
-            <input type="radio" id="tipo_fisica" name="tipoPessoa" value="fisica"
-                   checked={tipoPessoa === 'fisica'} onChange={() => setTipoPessoa('fisica')} />
-            <label htmlFor="tipo_fisica">Pessoa Física</label>
-            <input type="radio" id="tipo_juridica" name="tipoPessoa" value="juridica"
-                   checked={tipoPessoa === 'juridica'} onChange={() => setTipoPessoa('juridica')} />
-            <label htmlFor="tipo_juridica">Pessoa Jurídica</label>
+            {TIPO_PESSOA_OPTIONS.map(({ value, label }) => (
+              <React.Fragment key={value}>
+                <input type="radio" id={`tipo_${value}`} name="tipoPessoa" value={value}
+                       checked={tipoPessoa === value} onChange={() => setTipoPessoa(value)} />
+                <label htmlFor={`tipo_${value}`}>{label}</label>
+              </React.Fragment>
+            ))}
           </div>
         </div>
       )}
       {isEditing && (
         <p className="tipo-pessoa-label">
-          Tipo: <strong>{tipoPessoa === 'fisica' ? 'Pessoa Física' : 'Pessoa Jurídica'}</strong>
+          Tipo: <strong>{labelDe(TIPO_PESSOA_OPTIONS, tipoPessoa)}</strong>
         </p>
       )}
 

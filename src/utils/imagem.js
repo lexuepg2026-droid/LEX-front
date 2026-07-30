@@ -11,8 +11,8 @@
 // REDIMENSIONADA via canvas, não recusada.
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const LOGO_MIMES_ACEITOS = ["image/png", "image/jpeg"];
-export const LOGO_LIMITE_BYTES = 200 * 1024;
+const LOGO_MIMES_ACEITOS = ["image/png", "image/jpeg"];
+const LOGO_LIMITE_BYTES = 200 * 1024;
 
 // Folga de 5%: o limite do backend é rígido, e recomprimir para exatamente
 // 200 KB deixaria qualquer arredondamento de codificação estourar.
@@ -25,10 +25,10 @@ const LADO_MAXIMO_INICIAL = 512;
 export const formatarTamanho = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
 
 // Tamanho real da string que vai para o backend — é ela que o limite mede.
-export const tamanhoDoDataUri = (dataUri) =>
+const tamanhoDoDataUri = (dataUri) =>
   new Blob([dataUri ?? ""]).size;
 
-export const lerArquivoComoDataUri = (arquivo) =>
+const lerArquivoComoDataUri = (arquivo) =>
   new Promise((resolve, reject) => {
     const leitor = new FileReader();
     leitor.onload = () => resolve(leitor.result);
@@ -130,5 +130,3 @@ export const prepararLogo = async (arquivo) => {
     `Não foi possível reduzir a imagem para menos de ${formatarTamanho(LOGO_LIMITE_BYTES)}. Tente um arquivo menor ou mais simples.`
   );
 };
-
-export default { prepararLogo, tamanhoDoDataUri, formatarTamanho, LOGO_LIMITE_BYTES };

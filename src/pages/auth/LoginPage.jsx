@@ -24,7 +24,6 @@ function LoginPage() {
       navigate('/dashboard');
 
     } catch (err) {
-      console.error('Falha no login:', err);
       setError(getApiErrorMessage(err, 'Credenciais inválidas. Tente novamente.'));
     } finally {
       setLoading(false);
