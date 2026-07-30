@@ -683,24 +683,6 @@ Dados que vários passos usam:
 > Cada passo traz `[automatizável]` (a Fase 2E.2 vai convertê-lo em teste e
 > removê-lo daqui) ou `[só olho humano]`.
 
-- [ ] **78. ⭐🚨 BLOQUEANTE — login real e navegação completa após a subida do
-  `axios` e do `react-router-dom`** `[só olho humano]`
-  Pré-condição: `npm run dev` nos dois repositórios, navegador limpo (sem
-  cookie de sessão anterior).
-  Passos: 1) fazer login de verdade em `/login` com `demo@lex.dev`; 2) abrir,
-  **uma a uma, todas as portas do menu**: Dashboard, Clientes, Processos,
-  Seções, Documentos, Financeiro (Honorários, Cobranças, Recebimentos),
-  Perfil; 3) recarregar (F5) em duas telas diferentes; 4) sair e entrar de
-  novo.
-  Esperado: o login autentica, o cookie httpOnly `lex-token` é emitido e
-  reenviado (o F5 **não** derruba a sessão), e **nenhuma rota quebra**.
-  Por que só olho humano: o `axios` subiu de 1.13.2 para 1.19.0 e o
-  `react-router-dom` de 7.9.5 para 7.18.2. **Nenhum script deste ambiente
-  detecta quebra de roteamento no navegador nem falha de envio do cookie** —
-  `lint` e `build` passam limpos com o app quebrado. **Se este passo falhar,
-  nada mais neste roteiro importa:** reverter a atualização e reportar.
-  Fase de origem: 2E.1
-
 - [ ] **79. Detalhe de cliente mostra o erro real, não a mensagem fixa**
   `[automatizável]`
   Pré-condição: logada, com um cliente aberto.
@@ -757,6 +739,50 @@ Dados que vários passos usam:
   "Tipo: Pessoa Física/Jurídica" aparece certo. Os rádios agora saem de
   `TIPO_PESSOA_OPTIONS`, e não de literais repetidos na tela.
   Fase de origem: 2E.1
+
+---
+
+## Validado
+
+> Passo **executado por olho humano e aprovado**, com data. Continua sendo
+> verificação manual — só não está mais pendente. Não se apaga: daqui a três
+> fases ninguém lembra o que foi verificado de fato.
+>
+> Isto **não é** a mesma coisa que `## Automatizado`. Lá o passo virou teste e
+> nunca mais precisa de olho humano; aqui ele foi olhado uma vez, naquela
+> versão do código, e uma mudança grande no assunto pede que volte à lista.
+
+- [x] **78. ⭐🚨 BLOQUEANTE — login real e navegação completa após a subida do
+  `axios` e do `react-router-dom`** `[só olho humano]`
+  **Validado em 30/07/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run dev` nos dois repositórios, navegador limpo (sem
+  cookie de sessão anterior).
+  Passos: 1) fazer login de verdade em `/login` com `demo@lex.dev`; 2) abrir,
+  **uma a uma, todas as portas do menu**: Dashboard, Clientes, Processos,
+  Seções, Documentos, Financeiro (Honorários, Cobranças, Recebimentos),
+  Perfil; 3) recarregar (F5) em duas telas diferentes; 4) sair e entrar de
+  novo.
+  Esperado: o login autentica, o cookie httpOnly `lex-token` é emitido e
+  reenviado (o F5 **não** derruba a sessão), e **nenhuma rota quebra**.
+  Por que só olho humano: o `axios` subiu de 1.13.2 para 1.19.0 e o
+  `react-router-dom` de 7.9.5 para 7.18.2. **Nenhum script deste ambiente
+  detecta quebra de roteamento no navegador nem falha de envio do cookie** —
+  `lint` e `build` passam limpos com o app quebrado. **Se este passo falhar,
+  nada mais neste roteiro importa:** reverter a atualização e reportar.
+  Fase de origem: 2E.1
+
+---
+
+## Automatizado
+
+> Passo que **virou teste na suíte** e por isso saiu da lista pendente. Cada
+> entrada diz o arquivo e o nome do teste que o substitui, para que a
+> substituição seja auditável — e para que apagar o teste devolva o passo à
+> lista, em vez de sumir com a verificação.
+>
+> Preenchido a partir da Fase 2E.2.
+
+_(preenchido na Parte 9 desta fase)_
 
 ---
 
