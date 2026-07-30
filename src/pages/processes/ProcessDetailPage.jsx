@@ -8,6 +8,7 @@ import {
   labelDe,
   nomeDoCliente,
 } from '../../utils/enums';
+import { getApiErrorMessage } from '../../utils/apiError';
 import './ProcessPage.css';
 import './ProcessTabs.css';
 import ProcessoTabs from './ProcessTabs';
@@ -29,8 +30,10 @@ function ProcessoDetalhePage() {
         const response = await processService.getProcessById(id);
         setProcesso(response.data);
       } catch (err) {
-        setError('Falha ao carregar dados do processo.');
-        console.error(err);
+        // A mensagem fixa dizia "Falha ao carregar dados do processo" também em
+        // 500 e em queda de rede, e custava tempo de diagnóstico. O genérico
+        // fica só como fallback de quando o servidor não manda mensagem.
+        setError(getApiErrorMessage(err, 'Falha ao carregar dados do processo.'));
       } finally {
         setLoading(false);
       }
@@ -69,7 +72,9 @@ function ProcessoDetalhePage() {
       if (codigo) {
         toast.error(`Não foi possível copiar. Código: ${codigo}`);
       } else {
-        toast.error('Não foi possível obter o código de acesso.');
+        // Sem código em mãos, a falha foi na busca, e a mensagem do servidor é
+        // a que diz o motivo de verdade.
+        toast.error(getApiErrorMessage(err, 'Não foi possível obter o código de acesso.'));
       }
       console.error(err);
     } finally {

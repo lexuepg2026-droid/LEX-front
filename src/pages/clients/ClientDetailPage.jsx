@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import clientService from '../../api/clientService';
 import { formatCPF, formatCNPJ, formatPhone, formatCEP, formatDate } from '../../utils/formatters';
 import { labelDe, SEXO_OPTIONS, ESTADO_CIVIL_OPTIONS } from '../../utils/enums';
+import { getApiErrorMessage } from '../../utils/apiError';
 import './ClientPage.css';
 
 function ClientDetailPage() {
@@ -19,8 +20,10 @@ function ClientDetailPage() {
         const response = await clientService.getClientById(id);
         setCliente(response.data);
       } catch (err) {
-        setError('Cliente não encontrado.');
-        console.error(err);
+        // A mensagem fixa dizia "Cliente não encontrado" também em 500 e em
+        // queda de rede, e custava tempo de diagnóstico. O genérico fica só
+        // como fallback de quando o servidor não manda mensagem nenhuma.
+        setError(getApiErrorMessage(err, 'Não foi possível carregar o cliente.'));
       } finally {
         setLoading(false);
       }

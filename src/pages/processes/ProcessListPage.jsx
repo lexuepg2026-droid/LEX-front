@@ -9,6 +9,7 @@ import { formatDate } from '../../utils/formatters';
 import { nomeDoCliente } from '../../utils/enums';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
+import { getApiErrorMessage } from '../../utils/apiError';
 import '../../styles/modules.css';
 
 function ProcessoListPage() {
@@ -44,7 +45,7 @@ function ProcessoListPage() {
       setProcessos(processos.filter(p => p._id !== id));
       toast.success('Processo excluído com sucesso.');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erro ao excluir processo.');
+      toast.error(getApiErrorMessage(err, 'Erro ao excluir processo.'));
     }
   };
 

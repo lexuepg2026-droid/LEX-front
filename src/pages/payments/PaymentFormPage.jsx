@@ -4,6 +4,7 @@ import paymentService from '../../api/paymentService';
 import installmentService from '../../api/installmentService';
 import { formatCurrency } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
+import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import '../clients/ClientPage.css';
 
 const EMPTY_FORM = {
@@ -21,6 +22,7 @@ function PaymentFormPage() {
   const [valorJaPago, setValorJaPago] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [campoComErro, setCampoComErro] = useState(null);
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -89,7 +91,10 @@ function PaymentFormPage() {
       toast.success(isEditing ? 'Pagamento atualizado com sucesso.' : 'Pagamento registrado com sucesso.');
       navigate('/dashboard/pagamentos');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao salvar pagamento.');
+      setError(getApiErrorMessage(err, 'Erro ao salvar pagamento.'));
+      // O backend informa qual campo causou o 409; destacamos o input em vez de
+      // deixar a advogada caçar o conflito numa mensagem no rodapé.
+      setCampoComErro(getApiErrorField(err));
     } finally {
       setLoading(false);
     }
@@ -149,6 +154,7 @@ function PaymentFormPage() {
               value={formData.valorPago}
               onChange={handleChange}
               required
+              className={campoComErro === 'valorPago' ? 'input-erro' : undefined}
             />
           </div>
 

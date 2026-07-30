@@ -6,6 +6,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
+import { getApiErrorMessage } from '../../utils/apiError';
 import '../../styles/modules.css';
 
 function ClienteListPage() {
@@ -40,7 +41,7 @@ function ClienteListPage() {
       setClientes(clientes.filter(c => c._id !== id));
       toast.success('Cliente excluído com sucesso.');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erro ao excluir cliente.');
+      toast.error(getApiErrorMessage(err, 'Erro ao excluir cliente.'));
     }
   };
 

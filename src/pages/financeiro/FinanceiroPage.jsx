@@ -6,6 +6,7 @@ import InstallmentListPage from '../installments/InstallmentListPage';
 import PaymentListPage from '../payments/PaymentListPage';
 import financeiroService from '../../api/financeiroService';
 import { formatCurrency } from '../../utils/formatters';
+import { getApiErrorMessage } from '../../utils/apiError';
 import './FinanceiroPage.css';
 
 const SECTIONS = [
@@ -17,7 +18,9 @@ const SECTIONS = [
 function FinanceiroPage() {
   const [summary, setSummary] = useState(null);
   const [loadingSummary, setLoadingSummary] = useState(true);
-  const [summaryError, setSummaryError] = useState(false);
+  // Guarda a mensagem, não um booleano: era sempre "indisponível no momento",
+  // inclusive em 500 e em queda de rede, e a causa real não chegava à tela.
+  const [summaryError, setSummaryError] = useState('');
 
   useEffect(() => {
     financeiroService.getResumo()
@@ -30,7 +33,7 @@ function FinanceiroPage() {
           qtdVencidas: d.vencidas ?? 0,
         });
       })
-      .catch(() => setSummaryError(true))
+      .catch(err => setSummaryError(getApiErrorMessage(err, 'Resumo financeiro indisponível no momento.')))
       .finally(() => setLoadingSummary(false));
   }, []);
 
@@ -40,7 +43,7 @@ function FinanceiroPage() {
 
       {!loadingSummary && summaryError && (
         <div className="financeiro-summary financeiro-summary--unavailable">
-          <p className="financeiro-summary__error">Resumo financeiro indisponível no momento.</p>
+          <p className="financeiro-summary__error">{summaryError}</p>
         </div>
       )}
 

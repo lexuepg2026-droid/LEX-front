@@ -8,6 +8,7 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
+import { getApiErrorMessage } from '../../utils/apiError';
 import '../../styles/modules.css';
 
 function InstallmentListPage({ embedded = false }) {
@@ -37,7 +38,7 @@ function InstallmentListPage({ embedded = false }) {
       setInstallments(installments.filter(i => i._id !== id));
       toast.success('Parcela removida com sucesso.');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erro ao remover parcela.');
+      toast.error(getApiErrorMessage(err, 'Erro ao remover parcela.'));
     }
   };
 
