@@ -7,6 +7,7 @@ import Modal from '../../components/ui/Modal';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
+import { getApiErrorMessage } from '../../utils/apiError';
 import '../../styles/modules.css';
 
 const FORMA_LABEL = {
@@ -45,7 +46,7 @@ function PaymentListPage({ embedded = false }) {
       setPayments(payments.filter(p => p._id !== id));
       toast.success('Pagamento removido com sucesso.');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erro ao remover pagamento.');
+      toast.error(getApiErrorMessage(err, 'Erro ao remover pagamento.'));
     }
   };
 

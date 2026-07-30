@@ -670,6 +670,94 @@ Dados que vários passos usam:
   os demais mostram "gerado". Os dois downloads funcionam **direto da lista**,
   sem precisar abrir o documento. "Abrir" leva ao editor de texto final.
   Fase de origem: 2D.2
+
+---
+
+## 12. Fase 2E.1 — atualização de dependências e correções
+
+> Estes 6 passos entraram na Fase 2E.1. **Só entrou aqui o que script não
+> consegue verificar** — formato de resposta, chave de erro, envelope e
+> ausência de `__v` foram verificados por HTTP na própria fase e ficaram de
+> fora de propósito.
+>
+> Cada passo traz `[automatizável]` (a Fase 2E.2 vai convertê-lo em teste e
+> removê-lo daqui) ou `[só olho humano]`.
+
+- [ ] **78. ⭐🚨 BLOQUEANTE — login real e navegação completa após a subida do
+  `axios` e do `react-router-dom`** `[só olho humano]`
+  Pré-condição: `npm run dev` nos dois repositórios, navegador limpo (sem
+  cookie de sessão anterior).
+  Passos: 1) fazer login de verdade em `/login` com `demo@lex.dev`; 2) abrir,
+  **uma a uma, todas as portas do menu**: Dashboard, Clientes, Processos,
+  Seções, Documentos, Financeiro (Honorários, Cobranças, Recebimentos),
+  Perfil; 3) recarregar (F5) em duas telas diferentes; 4) sair e entrar de
+  novo.
+  Esperado: o login autentica, o cookie httpOnly `lex-token` é emitido e
+  reenviado (o F5 **não** derruba a sessão), e **nenhuma rota quebra**.
+  Por que só olho humano: o `axios` subiu de 1.13.2 para 1.19.0 e o
+  `react-router-dom` de 7.9.5 para 7.18.2. **Nenhum script deste ambiente
+  detecta quebra de roteamento no navegador nem falha de envio do cookie** —
+  `lint` e `build` passam limpos com o app quebrado. **Se este passo falhar,
+  nada mais neste roteiro importa:** reverter a atualização e reportar.
+  Fase de origem: 2E.1
+
+- [ ] **79. Detalhe de cliente mostra o erro real, não a mensagem fixa**
+  `[automatizável]`
+  Pré-condição: logada, com um cliente aberto.
+  Passos: 1) desligar a rede (DevTools → Network → Offline, ou derrubar o
+  backend); 2) abrir `/dashboard/clientes/:id` de um cliente qualquer.
+  Esperado: a mensagem **não** é mais o "Cliente não encontrado." fixo — é o
+  erro real da falha de rede. Repetir com o backend no ar e um id inexistente:
+  aí sim a mensagem do servidor sobre não encontrar aparece.
+  Fase de origem: 2E.1
+
+- [ ] **80. Detalhe de processo mostra o erro real, não a mensagem fixa**
+  `[automatizável]`
+  Pré-condição: logada, com um processo aberto.
+  Passos: mesmos do passo 79, em `/dashboard/processos/:id`.
+  Esperado: a mensagem **não** é mais o "Falha ao carregar dados do processo."
+  fixo em toda situação. Com a rede desligada aparece o erro de rede; com id
+  inexistente, a mensagem do servidor.
+  Fase de origem: 2E.1
+
+- [ ] **81. Destaque do campo no 409 dos quatro formulários** `[automatizável]`
+  Pré-condição: logada, base recém-seedada.
+  Passos: 1) **Processo**: criar um processo repetindo o `numeroProcesso` de
+  um existente; 2) **Parcela**: criar uma parcela com um número que já existe
+  no mesmo honorário; 3) **Pagamento**: registrar um pagamento com valor maior
+  que o saldo da parcela; 4) **Honorário**: salvar e observar (hoje o backend
+  não emite `campo` para honorário — o formulário está ligado, mas nada deve
+  ser destacado).
+  Esperado: nos casos 1, 2 e 3 o input responsável fica com a borda vermelha
+  (`numeroProcesso`, `numeroParcela`, `valorPago`) **além** da mensagem no
+  rodapé. No caso 4, mensagem sem destaque, e isso está correto.
+  Fase de origem: 2E.1
+
+- [ ] **82. Aparência das telas depois da remoção das classes CSS**
+  `[só olho humano]`
+  Pré-condição: logada.
+  Passos: 1) abrir **Processos** e o **detalhe de um processo** (a tela que
+  usava `ProcessTabs.css`); 2) percorrer as telas que carregam
+  `utilities.css`, que é global — Dashboard, Clientes, Financeiro; 3) olhar os
+  botões em geral (`Button.css` perdeu `--ghost` e `--lg`).
+  Esperado: **nada mudou visualmente**. Foram removidas 12 classes e 3 tokens
+  que nenhuma tela aplicava, mais `Card.css` inteiro. Procurar especificamente
+  por: bloco sem borda, botão sem cor de fundo, texto sem cor, espaçamento
+  colapsado.
+  Por que só olho humano: remoção de CSS não quebra `lint` nem `build` — o
+  sintoma é visual e só aparece na tela.
+  Fase de origem: 2E.1
+
+- [ ] **83. Rádios de tipo de pessoa vindos do enum** `[automatizável]`
+  Pré-condição: `/dashboard/clientes/novo`.
+  Passos: 1) olhar os dois rádios; 2) alternar entre eles; 3) salvar um PF e
+  um PJ; 4) abrir um cliente existente em edição.
+  Esperado: os rótulos são "Pessoa Física" e "Pessoa Jurídica", alternar troca
+  os campos do formulário como antes, os dois salvam, e na **edição** o texto
+  "Tipo: Pessoa Física/Jurídica" aparece certo. Os rádios agora saem de
+  `TIPO_PESSOA_OPTIONS`, e não de literais repetidos na tela.
+  Fase de origem: 2E.1
+
 ---
 
 ## Notas
@@ -685,7 +773,15 @@ o original tinha quatro, porque a promoção a principal e a remoção de
 participante mereciam passos separados.
 
 **Legenda:** ⚠️ depende de aplicativo externo ou de API só existente no
-navegador. ⭐ item central da fase.
+navegador. ⭐ item central da fase. 🚨 bloqueante — falhando ele, o resto do
+roteiro não tem sentido.
+
+**Marcação `[automatizável]` / `[só olho humano]` (a partir da Fase 2E.1).**
+Os passos 78 a 83 trazem a marcação porque a **Fase 2E.2** vai converter os
+automatizáveis em teste e removê-los desta lista. Os passos 1 a 77, anteriores
+à convenção, **não foram remarcados** — remarcar 77 passos sem executá-los
+seria adivinhação. Dos 6 novos, **4 são automatizáveis** (79, 80, 81, 83) e
+**2 são só olho humano** (78, 82).
 
 **Tela de Clientes (passos 15 a 20).** A Fase 2D.1 registrou que
 `ClientPage.css` usava três tokens inexistentes (`--bg-button`, `--text-button`,

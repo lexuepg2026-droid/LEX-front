@@ -8,6 +8,7 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
+import { getApiErrorMessage } from '../../utils/apiError';
 import '../../styles/modules.css';
 
 function FeeListPage({ embedded = false }) {
@@ -51,7 +52,7 @@ function FeeListPage({ embedded = false }) {
       setFees(fees.filter(f => f._id !== id));
       toast.success('Honorário removido com sucesso.');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erro ao remover honorário.');
+      toast.error(getApiErrorMessage(err, 'Erro ao remover honorário.'));
     }
   };
 

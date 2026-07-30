@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import installmentService from '../../api/installmentService';
 import feeService from '../../api/feeService';
 import { toast } from '../../utils/toast';
+import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import '../clients/ClientPage.css';
 
 const EMPTY_FORM = {
@@ -18,6 +19,7 @@ function InstallmentFormPage() {
   const [fees, setFees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [campoComErro, setCampoComErro] = useState(null);
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -68,7 +70,10 @@ function InstallmentFormPage() {
       toast.success(isEditing ? 'Parcela atualizada com sucesso.' : 'Parcela cadastrada com sucesso.');
       navigate('/dashboard/parcelas');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao salvar parcela.');
+      setError(getApiErrorMessage(err, 'Erro ao salvar parcela.'));
+      // O backend informa qual campo causou o 409; destacamos o input em vez de
+      // deixar a advogada caçar o conflito numa mensagem no rodapé.
+      setCampoComErro(getApiErrorField(err));
     } finally {
       setLoading(false);
     }
@@ -103,6 +108,7 @@ function InstallmentFormPage() {
               value={formData.numeroParcela}
               onChange={handleChange}
               required
+              className={campoComErro === 'numeroParcela' ? 'input-erro' : undefined}
             />
           </div>
 

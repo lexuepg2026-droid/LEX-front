@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import feeService from '../../api/feeService';
 import processService from '../../api/processService';
 import { toast } from '../../utils/toast';
+import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import '../clients/ClientPage.css';
 
 const EMPTY_FORM = {
@@ -19,6 +20,7 @@ function FeeFormPage() {
   const [processes, setProcesses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [campoComErro, setCampoComErro] = useState(null);
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -72,7 +74,10 @@ function FeeFormPage() {
       toast.success(isEditing ? 'Honorário atualizado com sucesso.' : 'Honorário cadastrado com sucesso.');
       navigate('/dashboard/honorarios');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao salvar honorário.');
+      setError(getApiErrorMessage(err, 'Erro ao salvar honorário.'));
+      // O backend informa qual campo causou o 409; destacamos o input em vez de
+      // deixar a advogada caçar o conflito numa mensagem no rodapé.
+      setCampoComErro(getApiErrorField(err));
     } finally {
       setLoading(false);
     }
@@ -118,6 +123,7 @@ function FeeFormPage() {
               min="0"
               value={formData.valor}
               onChange={handleChange}
+              className={campoComErro === 'valor' ? 'input-erro' : undefined}
               required
             />
           </div>

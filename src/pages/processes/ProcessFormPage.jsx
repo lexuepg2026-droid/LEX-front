@@ -8,6 +8,7 @@ import {
   documentoDoCliente,
   nomeDoCliente,
 } from '../../utils/enums';
+import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import './ProcessPage.css';
 
 const STATUS_OPTIONS = ['ativo', 'encerrado', 'suspenso'];
@@ -39,6 +40,7 @@ function ProcessoFormPage() {
   const [clienteParaAdicionar, setClienteParaAdicionar] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [campoComErro, setCampoComErro] = useState(null);
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -227,8 +229,10 @@ function ProcessoFormPage() {
       toast.success(isEditing ? 'Processo atualizado com sucesso.' : 'Processo cadastrado com sucesso.');
       navigate('/dashboard/processos');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao salvar processo. Verifique os dados.');
-      console.error(err);
+      setError(getApiErrorMessage(err, 'Erro ao salvar processo. Verifique os dados.'));
+      // O backend informa qual campo causou o 409; destacamos o input em vez de
+      // deixar a advogada caçar o duplicado numa mensagem no rodapé.
+      setCampoComErro(getApiErrorField(err));
     } finally {
       setLoading(false);
     }
@@ -326,7 +330,8 @@ function ProcessoFormPage() {
 
           <div className="form-group span-1">
             <label htmlFor="numeroProcesso">Nº do Processo (CNJ)</label>
-            <input type="text" id="numeroProcesso" name="numeroProcesso" value={formData.numeroProcesso} onChange={handleChange} />
+            <input type="text" id="numeroProcesso" name="numeroProcesso" value={formData.numeroProcesso} onChange={handleChange}
+                   className={campoComErro === 'numeroProcesso' ? 'input-erro' : undefined} />
           </div>
 
           <div className="form-group span-1">

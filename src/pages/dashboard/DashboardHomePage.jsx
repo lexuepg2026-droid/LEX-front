@@ -7,6 +7,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import Loading from '../../components/common/Loading';
 import { formatCurrency } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
+import { getApiErrorMessage } from '../../utils/apiError';
 import './DashboardPage.css';
 
 const DashboardCharts = lazy(() => import('./DashboardCharts'));
@@ -48,7 +49,7 @@ function DashboardHomePage() {
   useEffect(() => {
     dashboardService.getDashboardSummary()
       .then(res => setSummary(res.data))
-      .catch(() => setError('Falha ao carregar o resumo.'))
+      .catch(err => setError(getApiErrorMessage(err, 'Falha ao carregar o resumo.')))
       .finally(() => setLoading(false));
   }, []);
 
@@ -71,19 +72,19 @@ function DashboardHomePage() {
 
         setUpcoming(urgent);
       })
-      .catch(() => toast.error('Não foi possível carregar cobranças urgentes.'));
+      .catch(err => toast.error(getApiErrorMessage(err, 'Não foi possível carregar cobranças urgentes.')));
   }, []);
 
   useEffect(() => {
     dashboardService.getStatusCounts()
       .then(res => setStatusData(res.data))
-      .catch(() => toast.error('Não foi possível carregar estatísticas do dashboard.'));
+      .catch(err => toast.error(getApiErrorMessage(err, 'Não foi possível carregar estatísticas do dashboard.')));
   }, []);
 
   useEffect(() => {
     dashboardService.getFeesByMonth()
       .then(res => setFeesByMonth(res.data))
-      .catch(() => toast.error('Não foi possível carregar gráfico financeiro.'));
+      .catch(err => toast.error(getApiErrorMessage(err, 'Não foi possível carregar gráfico financeiro.')));
   }, []);
 
   return (
