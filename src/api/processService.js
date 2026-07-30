@@ -8,7 +8,9 @@ const listProcesses = ({ page = 1, limit = 20, busca, status } = {}) => {
 };
 const getProcessById = (id) => api.get(`/processes/${id}`);
 const createProcess = (data) => api.post('/processes', data);
-const updateProcess = (id, data) => api.put(`/processes/${id}`, data);
+// `PATCH` é o verbo de update do projeto. O `PUT` continua no backend como
+// alias depreciado, mas não se chama mais daqui.
+const updateProcess = (id, data) => api.patch(`/processes/${id}`, data);
 const deleteProcess = (id) => api.delete(`/processes/${id}`);
 
 // ── Participantes do processo (junção processo × cliente) ───────────────────
