@@ -682,56 +682,11 @@ Dados que vários passos usam:
 >
 > Cada passo traz `[automatizável]` (a Fase 2E.2 vai convertê-lo em teste e
 > removê-lo daqui) ou `[só olho humano]`.
-
-- [ ] **78. ⭐🚨 BLOQUEANTE — login real e navegação completa após a subida do
-  `axios` e do `react-router-dom`** `[só olho humano]`
-  Pré-condição: `npm run dev` nos dois repositórios, navegador limpo (sem
-  cookie de sessão anterior).
-  Passos: 1) fazer login de verdade em `/login` com `demo@lex.dev`; 2) abrir,
-  **uma a uma, todas as portas do menu**: Dashboard, Clientes, Processos,
-  Seções, Documentos, Financeiro (Honorários, Cobranças, Recebimentos),
-  Perfil; 3) recarregar (F5) em duas telas diferentes; 4) sair e entrar de
-  novo.
-  Esperado: o login autentica, o cookie httpOnly `lex-token` é emitido e
-  reenviado (o F5 **não** derruba a sessão), e **nenhuma rota quebra**.
-  Por que só olho humano: o `axios` subiu de 1.13.2 para 1.19.0 e o
-  `react-router-dom` de 7.9.5 para 7.18.2. **Nenhum script deste ambiente
-  detecta quebra de roteamento no navegador nem falha de envio do cookie** —
-  `lint` e `build` passam limpos com o app quebrado. **Se este passo falhar,
-  nada mais neste roteiro importa:** reverter a atualização e reportar.
-  Fase de origem: 2E.1
-
-- [ ] **79. Detalhe de cliente mostra o erro real, não a mensagem fixa**
-  `[automatizável]`
-  Pré-condição: logada, com um cliente aberto.
-  Passos: 1) desligar a rede (DevTools → Network → Offline, ou derrubar o
-  backend); 2) abrir `/dashboard/clientes/:id` de um cliente qualquer.
-  Esperado: a mensagem **não** é mais o "Cliente não encontrado." fixo — é o
-  erro real da falha de rede. Repetir com o backend no ar e um id inexistente:
-  aí sim a mensagem do servidor sobre não encontrar aparece.
-  Fase de origem: 2E.1
-
-- [ ] **80. Detalhe de processo mostra o erro real, não a mensagem fixa**
-  `[automatizável]`
-  Pré-condição: logada, com um processo aberto.
-  Passos: mesmos do passo 79, em `/dashboard/processos/:id`.
-  Esperado: a mensagem **não** é mais o "Falha ao carregar dados do processo."
-  fixo em toda situação. Com a rede desligada aparece o erro de rede; com id
-  inexistente, a mensagem do servidor.
-  Fase de origem: 2E.1
-
-- [ ] **81. Destaque do campo no 409 dos quatro formulários** `[automatizável]`
-  Pré-condição: logada, base recém-seedada.
-  Passos: 1) **Processo**: criar um processo repetindo o `numeroProcesso` de
-  um existente; 2) **Parcela**: criar uma parcela com um número que já existe
-  no mesmo honorário; 3) **Pagamento**: registrar um pagamento com valor maior
-  que o saldo da parcela; 4) **Honorário**: salvar e observar (hoje o backend
-  não emite `campo` para honorário — o formulário está ligado, mas nada deve
-  ser destacado).
-  Esperado: nos casos 1, 2 e 3 o input responsável fica com a borda vermelha
-  (`numeroProcesso`, `numeroParcela`, `valorPago`) **além** da mensagem no
-  rodapé. No caso 4, mensagem sem destaque, e isso está correto.
-  Fase de origem: 2E.1
+>
+> **Resultado da Fase 2E.2:** os 4 `[automatizável]` (79, 80, 81, 83) viraram
+> teste e foram para `## Automatizado`. O 78 foi executado e foi para
+> `## Validado`. Sobra o 82, que é `[só olho humano]` — e entra o 84, que a
+> própria 2E.2 criou ao mexer em CSS.
 
 - [ ] **82. Aparência das telas depois da remoção das classes CSS**
   `[só olho humano]`
@@ -748,15 +703,130 @@ Dados que vários passos usam:
   sintoma é visual e só aparece na tela.
   Fase de origem: 2E.1
 
-- [ ] **83. Rádios de tipo de pessoa vindos do enum** `[automatizável]`
-  Pré-condição: `/dashboard/clientes/novo`.
-  Passos: 1) olhar os dois rádios; 2) alternar entre eles; 3) salvar um PF e
-  um PJ; 4) abrir um cliente existente em edição.
-  Esperado: os rótulos são "Pessoa Física" e "Pessoa Jurídica", alternar troca
-  os campos do formulário como antes, os dois salvam, e na **edição** o texto
-  "Tipo: Pessoa Física/Jurídica" aparece certo. Os rádios agora saem de
-  `TIPO_PESSOA_OPTIONS`, e não de literais repetidos na tela.
+---
+
+## 13. Fase 2E.2 — o que a suíte não alcança
+
+> A Fase 2E.2 foi de testes, não de funcionalidade, e por isso **só gerou um
+> passo**. Ele existe porque a Parte 8 daquela fase mexeu em CSS de produção,
+> e mudança de CSS é a única coisa ali que a própria suíte não consegue
+> conferir: a varredura prova que a regra **chega** na tela, nunca que o
+> resultado **está bonito**.
+
+- [ ] **84. Aparência depois da correção do `ui-btn` e das remoções da 2E.2**
+  `[só olho humano]`
+  Pré-condição: logada, base recém-seedada.
+  Passos: 1) abrir **Montagem de documento**, **Texto final do documento** e
+  **nova Seção** — as três telas cujos botões `ui-btn` **estavam sem estilo** e
+  passaram a receber `Button.css`; 2) abrir qualquer **modal de confirmação**
+  (excluir uma seção, por exemplo) e olhar o botão vermelho de confirmar; 3)
+  percorrer **Cadastro** (as duas etapas do assistente) e o **breadcrumb** do
+  topo em três telas diferentes; 4) abrir o **detalhe de um processo**, que
+  usava `.btn-action.btn-cancel`.
+  Esperado: nos passos 1 e 2, os botões agora **têm** aparência de botão —
+  é mudança visual **intencional**, e o que se confere é que ficou coerente
+  com os botões das demais telas, não que nada mudou. Nos passos 3 e 4,
+  **nada mudou**: foram removidas 5 classes que não casavam com seletor
+  nenhum (`wizard-step`, `breadcrumb-item`, `text-muted`, `text-secondary`,
+  `.btn-action.btn-cancel`) e o arquivo `utilities.css` inteiro.
+  Por que só olho humano: a varredura de `tests/css/appliedClasses.test.js`
+  garante que toda classe aplicada tem regra alcançável, e `npm run build`
+  garante que compila. **Nenhum dos dois enxerga o resultado.** Botão que
+  ganhou estilo errado e bloco que colapsou passam limpos nos dois.
+  Fase de origem: 2E.2
+
+---
+
+## Validado
+
+> Passo **executado por olho humano e aprovado**, com data. Continua sendo
+> verificação manual — só não está mais pendente. Não se apaga: daqui a três
+> fases ninguém lembra o que foi verificado de fato.
+>
+> Isto **não é** a mesma coisa que `## Automatizado`. Lá o passo virou teste e
+> nunca mais precisa de olho humano; aqui ele foi olhado uma vez, naquela
+> versão do código, e uma mudança grande no assunto pede que volte à lista.
+
+- [x] **78. ⭐🚨 BLOQUEANTE — login real e navegação completa após a subida do
+  `axios` e do `react-router-dom`** `[só olho humano]`
+  **Validado em 30/07/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run dev` nos dois repositórios, navegador limpo (sem
+  cookie de sessão anterior).
+  Passos: 1) fazer login de verdade em `/login` com `demo@lex.dev`; 2) abrir,
+  **uma a uma, todas as portas do menu**: Dashboard, Clientes, Processos,
+  Seções, Documentos, Financeiro (Honorários, Cobranças, Recebimentos),
+  Perfil; 3) recarregar (F5) em duas telas diferentes; 4) sair e entrar de
+  novo.
+  Esperado: o login autentica, o cookie httpOnly `lex-token` é emitido e
+  reenviado (o F5 **não** derruba a sessão), e **nenhuma rota quebra**.
+  Por que só olho humano: o `axios` subiu de 1.13.2 para 1.19.0 e o
+  `react-router-dom` de 7.9.5 para 7.18.2. **Nenhum script deste ambiente
+  detecta quebra de roteamento no navegador nem falha de envio do cookie** —
+  `lint` e `build` passam limpos com o app quebrado. **Se este passo falhar,
+  nada mais neste roteiro importa:** reverter a atualização e reportar.
   Fase de origem: 2E.1
+
+---
+
+## Automatizado
+
+> Passo que **virou teste na suíte** e por isso saiu da lista pendente. Cada
+> entrada diz o arquivo e o nome do teste que o substitui, para que a
+> substituição seja auditável — e para que apagar o teste devolva o passo à
+> lista, em vez de sumir com a verificação.
+>
+> Preenchido a partir da Fase 2E.2.
+
+**O que os testes destes 4 passos provam, e o que não provam.** São análise
+estática de arquivo, sem navegador: não pintam pixel e não clicam. Provam a
+**regressão específica** que cada passo existia para pegar — a mensagem fixa
+voltando por cima do helper, o formulário deixando de ler `campo`, os rótulos
+voltando a ser literal repetido. É essa volta que um refactor distraído causa,
+e era ela que não tinha guarda nenhuma.
+
+No passo 81 a cadeia é coberta por três testes em dois repositórios, e é isso
+que torna a conversão honesta em vez de teatro: o backend emite `campo` no 409,
+o formulário lê `campo` e aplica `input-erro`, e `input-erro` tem regra
+alcançável por aquela página — este último sendo justamente o elo que estava
+quebrado na 2E.1 e fazia o destaque sair inerte.
+
+- [x] **79. Detalhe de cliente mostra o erro real, não a mensagem fixa**
+  Substituído por: `lex-frontend/tests/regressions/telas2E1.test.js`
+  → `passos 79 e 80: detalhe mostra o erro real, não a mensagem fixa`
+  → `ClientDetailPage.jsx passa o erro por getApiErrorMessage`
+  → `ClientDetailPage.jsx: a mensagem antiga só sobrevive como fallback`
+  Fase de origem: 2E.1 · Automatizado na 2E.2
+
+- [x] **80. Detalhe de processo mostra o erro real, não a mensagem fixa**
+  Substituído por: `lex-frontend/tests/regressions/telas2E1.test.js`
+  → `ProcessDetailPage.jsx passa o erro por getApiErrorMessage`
+  → `ProcessDetailPage.jsx: a mensagem antiga só sobrevive como fallback`
+  Fase de origem: 2E.1 · Automatizado na 2E.2
+
+- [x] **81. Destaque do campo no 409 dos quatro formulários**
+  Substituído por três testes, em dois repositórios:
+  1. o backend emite `campo` — `lex-backend/tests/financial/chain.test.js`
+     → `4.2 409 de pagamento que excede a parcela`
+     → `as 4 chaves, com \`saldoDisponivel\` numericamente certo`
+  2. o formulário lê `campo` e aplica a classe —
+     `lex-frontend/tests/regressions/telas2E1.test.js`
+     → `passo 81: os formulários leem \`campo\` do 409 e destacam o input`
+     (4 formulários: Processo, Parcela, Pagamento, Honorário)
+  3. a classe tem regra alcançável pela página — mesmo arquivo,
+     → `<Formulário>.jsx alcança a regra .input-erro`, e a varredura de
+     `lex-frontend/tests/css/appliedClasses.test.js`
+  O caso 4 do passo original (honorário sem `campo`) fica travado em
+  → `o honorário continua SEM campo destacado, e isso está correto`.
+  Quando a Fase 4 fizer o `feeService` emitir `campo` (DEC-027, item 3), esse
+  teste cai e obriga a revisar — em vez de a mudança passar despercebida.
+  Fase de origem: 2E.1 · Automatizado na 2E.2
+
+- [x] **83. Rádios de tipo de pessoa vindos do enum**
+  Substituído por: `lex-frontend/tests/regressions/telas2E1.test.js`
+  → `passo 83: os rádios de tipo de pessoa saem do enum`
+  → `ClientFormPage monta os rádios a partir de TIPO_PESSOA_OPTIONS`
+  → `utils/enums.js tem os dois valores, com os rótulos certos`
+  Fase de origem: 2E.1 · Automatizado na 2E.2
 
 ---
 
@@ -782,6 +852,40 @@ automatizáveis em teste e removê-los desta lista. Os passos 1 a 77, anteriores
 à convenção, **não foram remarcados** — remarcar 77 passos sem executá-los
 seria adivinhação. Dos 6 novos, **4 são automatizáveis** (79, 80, 81, 83) e
 **2 são só olho humano** (78, 82).
+
+**A conta da Fase 2E.2.** O roteiro entrou com **83** passos pendentes e saiu
+com **79**:
+
+| Movimento | Passos | Para onde |
+|---|---|---|
+| Executados e aprovados | 78 | `## Validado`, em 30/07/2026 |
+| Convertidos em teste | 79, 80, 81, 83 | `## Automatizado` |
+| Criados pela própria fase | 84 | lista pendente |
+
+83 − 1 − 4 + 1 = **79**.
+
+**Por que os passos 1 a 77 resistiram à automação.** Não por falta de tentativa:
+por serem, quase todos, exatamente o que o roteiro manual deve guardar. Eles se
+dividem em quatro grupos, e nenhum cabe em `node --test` sem navegador:
+
+1. **Aparência** — timbrado, canvas em A4, rodapé "página X de Y", ausência de
+   buraco no layout sem logo, selos de situação. É julgamento visual: um teste
+   que afirmasse "está bonito" não estaria verificando nada.
+2. **Gesto** — arrastar da barra para a folha, arrastar bloco para reordenar,
+   inserção por toque. Depende de eventos de ponteiro reais.
+3. **API só existente no navegador** — `FileReader` e `canvas` no
+   redimensionamento do logo, `clipboard` no código de acesso, foco de teclado
+   e `Esc` no modal, abertura de DOCX no Word e no LibreOffice.
+4. **Comportamento de tela sobre regra já testada no backend** — 422 mostrando
+   o rótulo, 409 de sobrescrita, seção em uso recusada, cliente com processo
+   ativo recusado. A **regra** está travada na suíte do backend; o que sobra no
+   passo manual é a tela reagir a ela, e isso pede DOM renderizado.
+
+O grupo 4 é o único candidato futuro real, e o caminho seria uma dependência de
+render — que esta fase proibiu, com razão: 77 passos de tela não justificam
+`jsdom` e uma biblioteca de testing-library entrando no projeto agora.
+**Baixar o número inventando automação frágil seria pior que o passo manual
+honesto.**
 
 **Tela de Clientes (passos 15 a 20).** A Fase 2D.1 registrou que
 `ClientPage.css` usava três tokens inexistentes (`--bg-button`, `--text-button`,

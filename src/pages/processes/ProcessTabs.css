@@ -20,15 +20,6 @@
   margin-top: 20px;
 }
 
-.btn-action.btn-cancel {
-  background-color: transparent;
-  border: 1px solid var(--text-color);
-  color: var(--text-color);
-}
-.btn-action.btn-cancel:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
 .modulos-nav-title {
   color: var(--text-color);
   font-weight: 500;

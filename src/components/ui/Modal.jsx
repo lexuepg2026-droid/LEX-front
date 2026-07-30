@@ -1,5 +1,10 @@
 import React, { useEffect } from 'react';
 import './Modal.css';
+// O botão de confirmação usa `ui-btn ui-btn--danger`, e a regra vive em
+// Button.css. Sem este import, o Modal só ficava estilizado por acaso: quando
+// a página que o abre importava PageHeader, que era o único importador de
+// Button.css no projeto inteiro.
+import './Button.css';
 
 function Modal({
   open,

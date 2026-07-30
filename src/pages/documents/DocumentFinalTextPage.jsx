@@ -16,6 +16,7 @@ import { formatDate } from '../../utils/formatters';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { toast } from '../../utils/toast';
 import '../../styles/modules.css';
+import '../../components/ui/Button.css';
 import './DocumentFinalTextPage.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
