@@ -5,10 +5,16 @@ import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
-import { formatDate, formatCurrency } from '../../utils/formatters';
+import { formatDate, formatCurrency, formatPercent } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
-import { getApiErrorMessage } from '../../utils/apiError';
+import { getFinancialErrorMessage } from '../../utils/financialErrors';
+import {
+  TIPO_HONORARIO_OPTIONS,
+  STATUS_HONORARIO_OPTIONS,
+  STATUS_CANCELADO,
+  labelDe,
+} from '../../utils/enums';
 import '../../styles/modules.css';
 
 function FeeListPage({ embedded = false }) {
@@ -38,7 +44,7 @@ function FeeListPage({ embedded = false }) {
       status: status || undefined,
     })
       .then(res => setFees(res.data.data ?? res.data))
-      .catch(() => setError('Falha ao buscar honorários.'))
+      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao buscar honorários.')))
       .finally(() => setLoading(false));
   }, [processoId, buscaDebounced, tipo, status]);
 
@@ -52,7 +58,9 @@ function FeeListPage({ embedded = false }) {
       setFees(fees.filter(f => f._id !== id));
       toast.success('Honorário removido com sucesso.');
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Erro ao remover honorário.'));
+      // 409 de integridade: o honorário tem parcelas ativas. A mensagem diz
+      // quantas, de `dependencia` + `quantidade`, e não destaca campo nenhum.
+      toast.error(getFinancialErrorMessage(err, 'Erro ao remover honorário.'));
     }
   };
 
@@ -72,15 +80,17 @@ function FeeListPage({ embedded = false }) {
         />
         <select value={tipo} onChange={e => setTipo(e.target.value)}>
           <option value="">Todos os tipos</option>
-          <option value="fixo">Fixo</option>
-          <option value="percentual">Percentual</option>
-          <option value="custas">Custas</option>
+          {TIPO_HONORARIO_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
         </select>
+        {/* Os quatro status da DEC-028. `parcialmente_pago` faltava aqui, e sem
+            ele o filtro escondia a maioria dos honorários em andamento. */}
         <select value={status} onChange={e => setStatus(e.target.value)}>
           <option value="">Todos os status</option>
-          <option value="pendente">Pendente</option>
-          <option value="pago">Pago</option>
-          <option value="cancelado">Cancelado</option>
+          {STATUS_HONORARIO_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
         </select>
       </div>
 
@@ -96,8 +106,10 @@ function FeeListPage({ embedded = false }) {
               <tr>
                 <th>Processo</th>
                 <th>Descrição</th>
-                <th>Valor</th>
                 <th>Tipo</th>
+                <th>Percentual</th>
+                <th>Valor base</th>
+                <th>Valor</th>
                 <th>Status</th>
                 <th>Vencimento</th>
                 <th>Ações</th>
@@ -105,11 +117,18 @@ function FeeListPage({ embedded = false }) {
             </thead>
             <tbody>
               {fees.map(fee => (
-                <tr key={fee._id}>
+                // Honorário cancelado continua na lista, atenuado: sumir levaria
+                // junto o histórico da cobrança que ela desfez.
+                <tr
+                  key={fee._id}
+                  className={fee.status === STATUS_CANCELADO ? 'row-inativa' : undefined}
+                >
                   <td>{fee.processoId?.titulo ?? '—'}</td>
                   <td>{fee.descricao}</td>
+                  <td>{labelDe(TIPO_HONORARIO_OPTIONS, fee.tipo)}</td>
+                  <td>{formatPercent(fee.percentual)}</td>
+                  <td>{fee.valorBase == null ? '—' : formatCurrency(fee.valorBase)}</td>
                   <td>{formatCurrency(fee.valor)}</td>
-                  <td>{fee.tipo}</td>
                   <td><StatusBadge status={fee.status} /></td>
                   <td>{formatDate(fee.dataVencimento)}</td>
                   <td className="actions-cell">

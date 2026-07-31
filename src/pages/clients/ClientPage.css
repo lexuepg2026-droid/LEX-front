@@ -170,6 +170,50 @@
 
 .form-info-value--danger { color: #ef4444; }
 
+/* Resultado de uma conta que o sistema fez — o valor derivado do honorário
+   percentual (Fase 4.2). Verde porque é resultado, não alerta. */
+.form-info-value--success { color: #22c55e; }
+
+/* Texto de apoio abaixo de um campo. A regra já existia em ProfilePage.css,
+   escopada àquele container; os formulários que carregam esta folha (honorário,
+   parcela, pagamento) não a alcançavam. */
+.form-hint {
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-color);
+  opacity: 0.65;
+  margin-top: 6px;
+}
+
+/* Valor somente leitura no lugar onde haveria um input — o status derivado do
+   honorário e o já recebido da parcela. NÃO é um input desabilitado: campo
+   cinza no meio do formulário parece algo que se pode habilitar, e estes
+   nunca são editáveis. */
+.form-static-value {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 0 0;
+}
+
+/* Caixa de seleção com rótulo ao lado, alinhados pela linha de base do texto. */
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.form-check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
 @media (max-width: 1023px) {
   .form-grid.section { grid-template-columns: repeat(2, 1fr); }
   .form-grid.section h3 { grid-column: span 2; }
