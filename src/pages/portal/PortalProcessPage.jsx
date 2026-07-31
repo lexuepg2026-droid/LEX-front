@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import portalService from '../../api/portalService';
 import PortalDocumentList from '../../components/portal/PortalDocumentList';
+import PortalConfirmation from '../../components/portal/PortalConfirmation';
 import { getApiErrorMessage } from '../../utils/apiError';
 import {
   explicacaoPapel,
@@ -169,6 +170,10 @@ function PortalProcessPage() {
         <h2 className="portal-secao-titulo">Documentos</h2>
         <PortalDocumentList documentos={documentos} />
       </section>
+
+      {/* O bloco de confirmação vem DEPOIS do conteúdo, sempre. Ver
+          `PortalConfirmation.jsx` para o motivo probatório. */}
+      <PortalConfirmation />
 
       {acesso?.primeiroAcesso && (
         <p className="portal-ajuda" style={{ marginTop: 'var(--space-5)' }}>
