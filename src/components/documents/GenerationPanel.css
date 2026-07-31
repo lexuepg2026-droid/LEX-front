@@ -215,3 +215,41 @@
   display: flex;
   gap: var(--space-2);
 }
+
+/* ── Aviso de visibilidade no portal (Fase 3.2) ───────────────────────────
+   O aviso vale para TODA regeração de documento visível, e não só para a que
+   dispara 409. Ver o cabeçalho de `GenerationPanel.jsx`. */
+
+.geracao__aviso-portal {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  background-color: var(--color-warning-bg);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.geracao__liberacao {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background-color: var(--color-accent-muted);
+}
+
+.geracao__liberacao-titulo {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.geracao__liberacao-texto {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-3);
+}

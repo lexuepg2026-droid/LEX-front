@@ -36,6 +36,28 @@ import './GenerationPanel.css';
 //        Regerar descarta a revisão dela — que é exatamente a parte que o
 //        sistema não sabe refazer. Só reenvia com `confirmarSobrescrita: true`,
 //        depois de diálogo explícito.
+//
+// ═══════════════════════════════════════════════════════════════════════════
+// O AVISO DE VISIBILIDADE — correção de uma premissa da Fase 3.1
+//
+// A 3.1 pôs o aviso "este documento sairá do portal" dentro da resposta do 409.
+// Isso cobre menos do que parece: o 409 SÓ dispara para documento
+// `editadoManualmente`. Regerar um documento que está visível no portal e NÃO
+// foi editado à mão o tira do portal do mesmo jeito — o novo nasce com
+// `visivelPortal: false` — e não há 409 nenhum, porque não há conflito a
+// confirmar. O aviso alcançava exatamente o caminho que já parava sozinho.
+//
+// Aqui o aviso passa a valer para TODA regeração de documento que esteja
+// visível, nos dois caminhos. O COMPORTAMENTO não muda: `visivelPortal`
+// continua nascendo `false`, que é segurança por omissão — a alternativa é uma
+// peça nova aparecer para o cliente sem ninguém ter liberado. O que muda é a
+// tela deixar de ser silenciosa.
+//
+// Para saber se há documento anterior visível, a tela consulta a listagem de
+// documentos do processo e procura pela mesma combinação modelo × processo ×
+// cliente que o backend usa em `buscarGeradoAnterior`
+// (`documentGenerationService.js:376`). É leitura, não regra duplicada: quem
+// decide o que é "o mesmo documento" continua sendo o backend.
 // ═══════════════════════════════════════════════════════════════════════════
 
 function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
@@ -53,6 +75,16 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
 
   // Dados do 409, que abrem o diálogo de sobrescrita.
   const [conflito, setConflito] = useState(null);
+
+  // Documento gerado anterior desta combinação que está VISÍVEL no portal.
+  // `null` quando não há — e é a ausência que libera a geração direta.
+  const [anteriorVisivel, setAnteriorVisivel] = useState(null);
+  // Diálogo de "isto sai do portal", no caminho SEM 409.
+  const [avisoDePortal, setAvisoDePortal] = useState(false);
+  // Documento recém-gerado que substituiu um visível: a oferta de liberar o
+  // novo ali mesmo, sem obrigar a advogada a ir à lista de documentos.
+  const [ofertaDeLiberacao, setOfertaDeLiberacao] = useState(null);
+  const [liberando, setLiberando] = useState(false);
 
   useEffect(() => {
     let ativo = true;
@@ -105,6 +137,39 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
     return () => { ativo = false; };
   }, [processoId]);
 
+  // Há documento anterior desta combinação visível no portal? A consulta roda
+  // quando processo E cliente estão escolhidos — antes disso não há combinação
+  // para procurar.
+  useEffect(() => {
+    setAnteriorVisivel(null);
+    if (!processoId || !clienteId || !modeloId) return;
+
+    let ativo = true;
+    documentService
+      .listDocuments({ processoId, limit: 100 })
+      .then((res) => {
+        if (!ativo) return;
+        const lista = res.data.data ?? res.data;
+        const anterior = (Array.isArray(lista) ? lista : []).find(
+          (d) =>
+            d.ehModelo !== true &&
+            String(d.geradoDeModeloId ?? '') === String(modeloId) &&
+            String(d.clienteId ?? '') === String(clienteId) &&
+            d.visivelPortal === true
+        );
+        setAnteriorVisivel(anterior ?? null);
+      })
+      .catch(() => {
+        // Falha aqui NÃO bloqueia a geração e NÃO é reportada como erro da
+        // tela: o pior caso é o aviso não aparecer, que é exatamente o
+        // comportamento que existia antes desta fase. Bloquear a geração
+        // porque uma consulta auxiliar falhou seria pior que o silêncio.
+        if (ativo) setAnteriorVisivel(null);
+      });
+
+    return () => { ativo = false; };
+  }, [modeloId, processoId, clienteId]);
+
   // A pendência de escolha de honorário é a única que a tela resolve sozinha —
   // as outras dependem de a advogada ir ao cadastro.
   const escolhaDeHonorario = useMemo(
@@ -147,6 +212,16 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
           confirmarSobrescrita,
         });
         setPendencias([]);
+
+        // Se o anterior estava visível, o novo NASCEU INVISÍVEL. Em vez de
+        // navegar direto e deixar o cliente sem o documento em silêncio, a
+        // tela oferece liberar o novo aqui mesmo. `onGerado` só é chamado
+        // depois que a advogada decide.
+        if (anteriorVisivel) {
+          setOfertaDeLiberacao(res.data);
+          return;
+        }
+
         onGerado(res.data);
       } catch (err) {
         const status = err?.response?.status;
@@ -172,8 +247,35 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
         setGerando(false);
       }
     },
-    [modeloId, processoId, clienteId, honorarioId, onGerado]
+    [modeloId, processoId, clienteId, honorarioId, onGerado, anteriorVisivel]
   );
+
+  // O botão de gerar não chama `gerar()` direto quando há documento visível:
+  // passa pelo aviso primeiro. Este é o caminho SEM 409 — o que a Fase 3.1 não
+  // cobria, e o mais comum, porque a maioria dos documentos não é editada à
+  // mão. O caminho COM 409 recebe o mesmo aviso, dentro do diálogo de
+  // sobrescrita.
+  const tentarGerar = useCallback(() => {
+    if (anteriorVisivel) {
+      setAvisoDePortal(true);
+      return;
+    }
+    gerar();
+  }, [anteriorVisivel, gerar]);
+
+  const liberarNovoNoPortal = useCallback(async () => {
+    setLiberando(true);
+    try {
+      await documentService.alternarVisibilidadePortal(ofertaDeLiberacao._id, true);
+      const gerado = ofertaDeLiberacao;
+      setOfertaDeLiberacao(null);
+      onGerado(gerado);
+    } catch (err) {
+      setErro(getApiErrorMessage(err, 'O documento foi gerado, mas não foi possível liberá-lo no portal.'));
+    } finally {
+      setLiberando(false);
+    }
+  }, [ofertaDeLiberacao, onGerado]);
 
   const podeGerar = Boolean(processoId) && Boolean(clienteId) && totalSecoes > 0 && !gerando;
 
@@ -289,7 +391,7 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
           <button
             type="button"
             className="ui-btn ui-btn--primary ui-btn--sm"
-            onClick={() => gerar()}
+            onClick={tentarGerar}
             disabled={!honorarioId || gerando}
           >
             {gerando ? 'Gerando…' : 'Gerar com este honorário'}
@@ -324,16 +426,88 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
         </div>
       )}
 
+      {/* Aviso permanente, antes de qualquer clique: a advogada precisa saber
+          que este documento está no portal ANTES de decidir regerar, e não
+          depois, num diálogo que ela vai fechar no automático. */}
+      {anteriorVisivel && !ofertaDeLiberacao && (
+        <p className="geracao__aviso-portal">
+          <AlertCircle size={15} aria-hidden="true" />
+          O documento atual desta combinação está <strong>visível no portal do
+          cliente</strong>. Regerar o tira de lá: o documento novo nasce
+          invisível, e o cliente deixa de vê-lo até você liberar de novo.
+        </p>
+      )}
+
       <div className="geracao__acoes">
         <button
           type="button"
           className="ui-btn ui-btn--primary ui-btn--md"
-          onClick={() => gerar()}
+          onClick={tentarGerar}
           disabled={!podeGerar}
         >
           {gerando ? 'Gerando…' : 'Gerar documento'}
         </button>
       </div>
+
+      {/* ── Depois de regerar por cima de um visível ──────────────────────── */}
+      {ofertaDeLiberacao && (
+        <div className="geracao__liberacao">
+          <p className="geracao__liberacao-titulo">
+            Documento gerado. Ele ainda <strong>não</strong> está no portal.
+          </p>
+          <p className="geracao__liberacao-texto">
+            A versão anterior estava visível para o cliente e saiu do portal
+            agora. O documento novo nasce invisível de propósito — assim
+            nenhuma peça chega ao cliente sem alguém ter liberado. Se este já
+            pode ser lido por ele, libere aqui.
+          </p>
+          <div className="geracao__acoes">
+            <button
+              type="button"
+              className="ui-btn ui-btn--primary ui-btn--sm"
+              onClick={liberarNovoNoPortal}
+              disabled={liberando}
+            >
+              {liberando ? 'Liberando…' : 'Liberar no portal e continuar'}
+            </button>
+            <button
+              type="button"
+              className="ui-btn ui-btn--secondary ui-btn--sm"
+              onClick={() => {
+                const gerado = ofertaDeLiberacao;
+                setOfertaDeLiberacao(null);
+                onGerado(gerado);
+              }}
+              disabled={liberando}
+            >
+              Deixar invisível por enquanto
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Caminho SEM 409: documento visível e NÃO editado à mão ───────────
+          Este é o caso que a Fase 3.1 não cobria. Não há conflito a confirmar,
+          o backend gera sem reclamar, e o documento simplesmente sai do portal.
+          O diálogo existe só para a tela deixar de ser silenciosa. */}
+      <Modal
+        open={avisoDePortal}
+        title="Este documento sairá do portal do cliente"
+        message={
+          'O documento atual desta combinação está visível para o cliente no portal. ' +
+          'O documento novo nasce INVISÍVEL — é assim de propósito, para que nenhuma peça chegue ao cliente sem alguém ter liberado. ' +
+          'Na prática: ao regerar, o cliente deixa de ver este documento até você liberar o novo. ' +
+          'Você poderá liberá-lo logo depois de gerar, aqui mesmo.'
+        }
+        variant="danger"
+        confirmLabel="Regerar mesmo assim"
+        cancelLabel="Cancelar"
+        onConfirm={() => {
+          setAvisoDePortal(false);
+          gerar();
+        }}
+        onCancel={() => setAvisoDePortal(false)}
+      />
 
       {/* ── 409: regeração sobre texto revisado à mão ─────────────────────── */}
       <Modal
@@ -345,7 +519,15 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
           (conflito?.dataGeracao
             ? `O documento atual foi gerado em ${formatDate(conflito.dataGeracao)}. `
             : '') +
-          'Ele continua recuperável, apontando para a versão nova, mas a revisão não volta sozinha.'
+          'Ele continua recuperável, apontando para a versão nova, mas a revisão não volta sozinha. ' +
+          // O MESMO aviso do caminho sem 409. A condição vem de duas fontes: o
+          // `sairaDoPortal` que o backend manda no 409 (Fase 3.1) e a consulta
+          // que esta tela já faz. Qualquer uma bastando, o aviso aparece — não
+          // depender só do backend é o que faz o texto valer também no dia em
+          // que a chave mudar de nome.
+          (conflito?.sairaDoPortal || anteriorVisivel
+            ? 'Além disso, este documento está VISÍVEL no portal do cliente e sairá de lá: o novo nasce invisível, e você poderá liberá-lo logo depois de gerar.'
+            : '')
         }
         variant="danger"
         confirmLabel="Regerar e substituir"
