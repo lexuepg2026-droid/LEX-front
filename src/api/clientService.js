@@ -16,4 +16,28 @@ const updateClient = (id, data) => api.patch(`/clients/${id}`, data);
 
 const deleteClient = (id) => api.delete(`/clients/${id}`);
 
-export default { getAllClients, getClientById, createClient, updateClient, deleteClient };
+// ── Acesso ao portal do cliente ────────────────────────────────────────────
+//
+// A SENHA entra por `senhaPortal` no corpo da criação e do `PATCH` — não há
+// rota dedicada para defini-la, de propósito: é um campo do cliente como
+// qualquer outro, e o formulário que já existe é onde a advogada está quando
+// decide dar acesso.
+//
+// Toda gravação de senha pela advogada volta `senhaPortalProvisoria` para
+// `true`. É deliberado, e é o fluxo de esquecimento: o cliente perdeu a senha,
+// ela cadastra uma nova, ele troca no primeiro acesso. Não existe "ver a senha
+// atual" — é hash, e a tela mostra ESTADO, nunca valor.
+//
+// A REVOGAÇÃO tem rota própria porque é ação deliberada com consequência
+// imediata (o cliente perde o acesso agora), e não um campo esvaziado por
+// descuido no meio de um formulário grande.
+const revogarSenhaPortal = (id) => api.delete(`/clients/${id}/senha-portal`);
+
+export default {
+  getAllClients,
+  getClientById,
+  createClient,
+  updateClient,
+  deleteClient,
+  revogarSenhaPortal,
+};

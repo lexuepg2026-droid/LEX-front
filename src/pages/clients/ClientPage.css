@@ -202,3 +202,47 @@
   font-style: italic;
   font-size: 12px;
 }
+
+/* ── Bloco de acesso ao portal (Fase 3.2) ─────────────────────────────────
+   Regras LOCAIS, e não `ui-btn`: `Button.css` é importado por `PageHeader.jsx`
+   e esta tela não monta o `PageHeader`. Aplicar `ui-btn` aqui deixaria o botão
+   sem aparência de botão — o defeito exato que a 2E.2 encontrou em 3 telas. */
+
+.portal-estado {
+  margin-bottom: var(--space-2);
+  color: var(--text-color);
+}
+
+.portal-revogar-confirma {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.btn-portal-revogar,
+.btn-portal-cancelar {
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-portal-revogar {
+  background-color: #ff6b6b;
+  color: #fff;
+  border: none;
+}
+
+.btn-portal-cancelar {
+  background-color: transparent;
+  border: 1px solid var(--text-color);
+  color: var(--text-color);
+}
+
+.btn-portal-revogar:disabled,
+.btn-portal-cancelar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

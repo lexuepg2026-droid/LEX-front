@@ -17,8 +17,23 @@ function ClienteFormPage() {
     repNome: '', repCpf: '', repCargo: '',
     email: '', telefone: '',
     cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', pais: '',
-    observacoes: ''
+    observacoes: '',
+    // Senha de portal. Sempre começa vazia, inclusive na edição: o campo é
+    // ENTRADA de senha nova, nunca exibição da atual — a atual é hash e não
+    // existe em lugar nenhum como texto. Ver `estadoDoPortal` abaixo.
+    senhaPortal: ''
   });
+
+  // Estado do acesso ao portal, lido do cliente. Três estados possíveis, e a
+  // tela precisa dos três:
+  //   sem acesso   — `senhaPortalDefinidaEm` nulo e `senhaPortalProvisoria`
+  //                  falso. É estado VÁLIDO: cliente que não usa o portal não
+  //                  precisa de senha, e isso não é pendência.
+  //   provisória   — a advogada gravou uma senha e o cliente ainda não trocou.
+  //   própria      — o cliente trocou, na data registrada.
+  const [portal, setPortal] = useState({ provisoria: false, definidaEm: null });
+  const [revogando, setRevogando] = useState(false);
+  const [confirmandoRevogacao, setConfirmandoRevogacao] = useState(false);
   const [error, setError] = useState('');
   // Campo apontado pelo backend no 409 ("cpf" | "cnpj" | "email"), para
   // destacar o input em vez de só exibir a mensagem no rodapé.
@@ -63,7 +78,12 @@ function ClienteFormPage() {
           cidade: d.endereco?.cidade || '',
           estado: d.endereco?.estado || '',
           pais: d.endereco?.pais || '',
-          observacoes: d.observacoes || ''
+          observacoes: d.observacoes || '',
+          senhaPortal: ''
+        });
+        setPortal({
+          provisoria: d.senhaPortalProvisoria === true,
+          definidaEm: d.senhaPortalDefinidaEm ?? null
         });
       } catch {
         setError('Falha ao carregar dados do cliente.');
@@ -141,6 +161,15 @@ function ClienteFormPage() {
       endereco,
     };
 
+    // A senha só entra no payload quando a advogada DIGITOU algo. Mandá-la
+    // vazia na edição regravaria o acesso a cada salvamento do formulário —
+    // e como toda gravação volta `senhaPortalProvisoria` para `true`, trocar
+    // o telefone de um cliente derrubaria a senha que ele já tinha definido.
+    // Campo em branco significa "não mexer no acesso", não "apagar".
+    if (formData.senhaPortal !== '') {
+      payload.senhaPortal = formData.senhaPortal;
+    }
+
     if (tipoPessoa === 'fisica') {
       payload.nomeCompleto = formData.nomeCompleto;
       payload.cpf = unmask(formData.cpf);
@@ -182,6 +211,35 @@ function ClienteFormPage() {
       setCampoComErro(getApiErrorField(err));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── Acesso ao portal ─────────────────────────────────────────────────────
+  //
+  // Os três estados saem de dois campos, sem ambiguidade e sem consulta extra:
+  // `senhaPortalHash` não sai da API (é `select: false` E é apagado no `toJSON`
+  // global), então quem responde "tem acesso?" é a combinação abaixo.
+  const temAcesso = portal.provisoria || portal.definidaEm !== null;
+
+  const textoDoEstadoDoPortal = portal.provisoria
+    ? 'senha provisória cadastrada — aguardando o cliente entrar e definir a dele'
+    : portal.definidaEm !== null
+      ? `o cliente definiu a própria senha em ${new Date(portal.definidaEm).toLocaleDateString('pt-BR')}`
+      : 'sem acesso ao portal';
+
+  const revogarAcessoPortal = async () => {
+    setRevogando(true);
+    setError('');
+    try {
+      await clientService.revogarSenhaPortal(id);
+      setPortal({ provisoria: false, definidaEm: null });
+      setFormData((prev) => ({ ...prev, senhaPortal: '' }));
+      setConfirmandoRevogacao(false);
+      toast.success('Acesso ao portal revogado. O cliente não consegue mais entrar.');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Não foi possível revogar o acesso ao portal.'));
+    } finally {
+      setRevogando(false);
     }
   };
 
@@ -359,6 +417,86 @@ function ClienteFormPage() {
             <label>País</label>
             <input type="text" name="pais" value={formData.pais} onChange={handleChange} />
           </div>
+        </div>
+
+        {/* ── Acesso ao portal do cliente ────────────────────────────────────
+            Bloco opcional. Cliente que não usa o portal não precisa de senha,
+            e "sem acesso" é estado válido — não pendência a resolver. */}
+        <div className="form-grid section">
+          <h3>Acesso ao portal</h3>
+
+          <div className="form-group span-3">
+            <p className="portal-estado">
+              <strong>Situação:</strong> {textoDoEstadoDoPortal}
+            </p>
+            {/* A senha NUNCA é exibida depois de gravada — é hash, não existe
+                como texto em lugar nenhum. A tela mostra estado, não valor.
+                Isto está escrito porque a pergunta "onde vejo a senha dele?"
+                é inevitável, e a resposta precisa estar na tela, não numa
+                conversa. */}
+            <p className="cep-hint">
+              A senha não pode ser consultada depois de salva — o sistema guarda
+              só uma versão embaralhada dela. Se o cliente esquecer, cadastre uma
+              nova aqui: ele será obrigado a trocá-la no próximo acesso.
+            </p>
+          </div>
+
+          <div className="form-group span-2">
+            <label>{temAcesso ? 'Cadastrar nova senha (redefinir)' : 'Senha inicial do portal'}</label>
+            <input
+              type="password"
+              name="senhaPortal"
+              value={formData.senhaPortal}
+              onChange={handleChange}
+              autoComplete="new-password"
+              placeholder={temAcesso ? 'Deixe em branco para não alterar' : 'Opcional'}
+              className={campoComErro === 'senhaPortal' ? 'input-erro' : undefined}
+            />
+            <span className="cep-hint">
+              {temAcesso
+                ? 'Gravar uma senha nova volta o acesso para "provisória": o cliente terá de trocá-la de novo no próximo acesso. É o caminho para quando ele esquece.'
+                : 'Opcional. Entregue-a ao cliente junto com o código de acesso do processo — ele será obrigado a trocá-la no primeiro acesso.'}
+            </span>
+          </div>
+
+          {isEditing && temAcesso && (
+            <div className="form-group span-1">
+              <label>Revogar acesso</label>
+              {confirmandoRevogacao ? (
+                <div className="portal-revogar-confirma">
+                  <p className="cep-hint">
+                    O cliente perde o acesso ao portal imediatamente. As
+                    confirmações que ele já registrou <strong>não</strong> são
+                    apagadas.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-portal-revogar"
+                    onClick={revogarAcessoPortal}
+                    disabled={revogando}
+                  >
+                    {revogando ? 'Revogando…' : 'Confirmar revogação'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-portal-cancelar"
+                    onClick={() => setConfirmandoRevogacao(false)}
+                    disabled={revogando}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="btn-portal-revogar"
+                  onClick={() => setConfirmandoRevogacao(true)}
+                >
+                  Revogar acesso ao portal
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="form-grid section">
