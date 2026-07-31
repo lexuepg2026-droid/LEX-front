@@ -8,7 +8,8 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
-import { getApiErrorMessage } from '../../utils/apiError';
+import { getFinancialErrorMessage } from '../../utils/financialErrors';
+import { STATUS_PARCELA_OPTIONS } from '../../utils/enums';
 import '../../styles/modules.css';
 
 function InstallmentListPage({ embedded = false }) {
@@ -24,7 +25,7 @@ function InstallmentListPage({ embedded = false }) {
     setLoading(true);
     installmentService.listInstallments({ processoId, status: statusFiltro || undefined })
       .then(res => setInstallments(res.data.data ?? res.data))
-      .catch(() => setError('Falha ao buscar parcelas.'))
+      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao buscar parcelas.')))
       .finally(() => setLoading(false));
   }, [processoId, statusFiltro]);
 
@@ -38,7 +39,10 @@ function InstallmentListPage({ embedded = false }) {
       setInstallments(installments.filter(i => i._id !== id));
       toast.success('Parcela removida com sucesso.');
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Erro ao remover parcela.'));
+      // 409 de integridade: a parcela tem pagamentos ativos. A mensagem diz
+      // QUANTOS, de `dependencia` + `quantidade`, e não destaca campo nenhum —
+      // o conflito é entre registros gravados, não num input.
+      toast.error(getFinancialErrorMessage(err, 'Erro ao remover parcela.'));
     }
   };
 
@@ -51,10 +55,9 @@ function InstallmentListPage({ embedded = false }) {
       <div className="filter-bar">
         <select value={statusFiltro} onChange={e => setStatusFiltro(e.target.value)}>
           <option value="">Todos os status</option>
-          <option value="pendente">Pendente</option>
-          <option value="pago">Pago</option>
-          <option value="vencido">Vencido</option>
-          <option value="parcial">Parcial</option>
+          {STATUS_PARCELA_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
         </select>
       </div>
 
@@ -71,6 +74,11 @@ function InstallmentListPage({ embedded = false }) {
                 <th>Honorário</th>
                 <th>Nº Parcela</th>
                 <th>Valor</th>
+                {/* `valorPago` e o que falta: as duas colunas que a advogada
+                    abre esta lista para ver. Somente leitura — a soma é
+                    mantida pelo backend a partir dos pagamentos ativos. */}
+                <th>Recebido</th>
+                <th>Em aberto</th>
                 <th>Vencimento</th>
                 <th>Status</th>
                 <th>Pagamento</th>
@@ -83,6 +91,8 @@ function InstallmentListPage({ embedded = false }) {
                   <td>{inst.feeId?.descricao || '—'}</td>
                   <td>{inst.numeroParcela}</td>
                   <td>{formatCurrency(inst.valor)}</td>
+                  <td>{formatCurrency(inst.valorPago ?? 0)}</td>
+                  <td>{formatCurrency(Math.max(0, Number(inst.valor || 0) - Number(inst.valorPago || 0)))}</td>
                   <td>{formatDate(inst.dataVencimento)}</td>
                   <td><StatusBadge status={inst.status} /></td>
                   <td>{formatDate(inst.dataPagamento)}</td>

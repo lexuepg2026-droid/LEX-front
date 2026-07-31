@@ -11,6 +11,7 @@ import {
 import { getApiErrorMessage } from '../../utils/apiError';
 import StatusBadge from '../../components/ui/StatusBadge';
 import AccessDelivery from '../../components/processes/AccessDelivery';
+import ProcessFinancialSheet from '../../components/financeiro/ProcessFinancialSheet';
 import './ProcessPage.css';
 import './ProcessTabs.css';
 import ProcessoTabs from './ProcessTabs';
@@ -233,6 +234,16 @@ function ProcessoDetalhePage() {
         {processo.comarca && <p><strong>Comarca:</strong> {processo.comarca}</p>}
         {processo.descricao && <p><strong>Descrição:</strong> {processo.descricao}</p>}
         {processo.observacoes && <p><strong>Observações:</strong> {processo.observacoes}</p>}
+      </div>
+
+      {/* ── Financeiro do processo (Fase 4.2) ────────────────────────────────
+          Carregada junto com a tela, ao contrário das confirmações: ler a ficha
+          não tem efeito colateral nenhum, e é a informação que a advogada abre
+          o processo para ver. As confirmações são sob demanda porque abri-las
+          MARCA como vistas — aqui não há nada a marcar. */}
+      <div className="processo-detalhe-secao">
+        <h3>Financeiro</h3>
+        <ProcessFinancialSheet processoId={id} />
       </div>
 
       {/* ── Confirmações de visualização ─────────────────────────────────────

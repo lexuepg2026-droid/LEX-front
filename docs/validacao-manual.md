@@ -920,6 +920,192 @@ Dados que vários passos usam:
   automatizável; serem compreendidos, não.
   Fase de origem: 3.2
 
+---
+
+## 15. Fase 4.2 — Financeiro na tela
+
+> **Nenhuma tela financeira jamais foi validada por olho humano.** O roteiro
+> chegou a 98 passos sem um único item de honorário, parcela ou pagamento — o
+> módulo mais antigo do projeto, e o único que mexe com dinheiro de verdade.
+>
+> A Fase 4.1 fechou o backend; a suíte prova que a conta está certa, que o `PUT`
+> não voltou e que o saldo chega à mensagem. **O que ela não prova é que a
+> advogada entende o que está vendo** — e num módulo onde o número sai impresso
+> num contrato assinado, essa distância é a que importa.
+>
+> Numeração: o roteiro tem **93 passos pendentes**, mas o maior número já usado
+> é **98** (cinco saíram para `Validado` e `Automatizado` sem renumerar o
+> resto). Os novos continuam a partir de **99** — reaproveitar 94 a 98 criaria
+> dois passos com o mesmo número, e passo é coisa que se cita por número numa
+> conversa.
+
+- [ ] **99. Criar honorário fixo — o caminho que não mudou** `[automatizável]`
+  Pré-condição: base recém-seedada, logada como `demo@lex.dev`.
+  Passos: 1) `/dashboard/honorarios/novo`; 2) escolher um processo, descrição,
+  tipo **Fixo**, valor `3000`, vencimento; 3) salvar.
+  Esperado: os campos **Percentual** e **Valor base** **não aparecem** em
+  momento nenhum, e o campo **Valor** é editável. Não há `<select>` de status na
+  tela. Salva e volta para a listagem.
+  Por que este passo existe: é a linha de base contra a qual os dois seguintes
+  se comparam. Se o formulário fixo tiver regredido, os outros dois não dizem
+  nada.
+  Fase de origem: 4.2
+
+- [ ] **100. ⭐ Honorário percentual: ver o valor mudar enquanto se digita**
+  `[só olho humano]`
+  Pré-condição: nenhuma além do login.
+  Passos: 1) novo honorário, tipo **Percentual**; 2) digitar percentual `10` e
+  valor base `50000`, e **ler o bloco "Valor do honorário"**; 3) mudar o valor
+  base para `80000` **sem sair do campo** e ler de novo; 4) apagar o percentual
+  e ler de novo; 5) salvar com percentual `10` e base `50000`.
+  Esperado: o valor exibido é **R$ 5.000,00**, vira **R$ 8.000,00** ao trocar a
+  base, e volta a **"—"** (não a "R$ 0,00") quando o percentual é apagado. O
+  percentual aparece como **"10%"**, com o símbolo colado. Depois de salvar, a
+  listagem mostra o valor calculado — **não o que foi digitado**, porque não se
+  digitou valor nenhum.
+  Por que só olho humano: a suíte prova que a conta está certa
+  (`tests/financial/honorario.test.js`). **Não prova que a advogada percebe que
+  o número se atualiza sozinho** — e é essa percepção que a impede de procurar
+  um campo de valor que não existe e concluir que o formulário está quebrado.
+  O `"—"` em vez de `"R$ 0,00"` é o detalhe a conferir: zero parece um valor
+  combinado.
+  Fase de origem: 4.2
+
+- [ ] **101. ⭐ Trocar o tipo em edição — de percentual para fixo**
+  `[automatizável]`
+  Pré-condição: o honorário percentual criado no passo 100.
+  Passos: 1) editá-lo; 2) mudar o tipo para **Fixo**; 3) observar que
+  Percentual e Valor base **somem** e o campo Valor **aparece**; 4) digitar
+  `4000` e salvar; 5) reabrir a edição.
+  Esperado: salva **sem erro**, e ao reabrir o honorário é fixo, vale
+  R$ 4.000,00, e as colunas Percentual e Valor base da listagem mostram **"—"**.
+  Por que este passo existe: é o caminho onde a Fase 4.1 esperava quebra. Os
+  dois campos vão no PATCH como **`null`** — não omitidos. Omitidos, o
+  percentual antigo continuaria gravado e o hook recusaria com "honorário do
+  tipo fixo não admite percentual", **sobre um campo que nem está mais na
+  tela** — erro que a advogada não teria como entender nem corrigir.
+  Fase de origem: 4.2
+
+- [ ] **102. O backend é a última palavra** `[automatizável]`
+  Pré-condição: DevTools aberto na aba Network.
+  Passos: 1) criar honorário percentual com percentual `10` e base `50000`;
+  2) **antes de salvar**, sem usar a tela, forçar um percentual inválido (por
+  exemplo `150`) e submeter; 3) ler a mensagem e olhar o campo destacado.
+  Esperado: a mensagem é **"O percentual deve ser maior que zero e no máximo
+  100"** — a mesma frase, venha ela da validação local ou do 400 do servidor —
+  e o input de **Percentual** fica com a borda de erro.
+  Por que este passo existe: a validação de tela existe para poupar uma viagem,
+  **nunca para ser a autoridade**. Duas redações para a mesma regra fariam a
+  advogada ler um texto ao errar offline e outro ao errar contra o servidor,
+  sobre exatamente o mesmo erro.
+  Fase de origem: 4.2
+
+- [ ] **103. Criar parcelas e ver o que já foi recebido** `[automatizável]`
+  Pré-condição: um honorário ativo.
+  Passos: 1) `/dashboard/parcelas/novo`, criar a parcela 1; 2) tentar criar
+  **outra parcela 1** no mesmo honorário; 3) abrir a edição de uma parcela que
+  já tenha pagamento (o seed tem várias).
+  Esperado: a duplicada é recusada com o campo **Nº da Parcela** destacado. Na
+  edição, o bloco **"Situação da parcela"** mostra status, valor, **já
+  recebido** e **em aberto** — nenhum deles editável, e **sem `<select>`
+  desabilitado**. A listagem tem as colunas Recebido e Em aberto.
+  Por que este passo existe: `valorPago` tem um único ponto de escrita no
+  backend e é recusado com 400 se enviado. Exibir sem oferecer edição é o
+  ponto — o caminho para mudar aquele número é registrar um pagamento.
+  Fase de origem: 4.2
+
+- [ ] **104. Registrar um pagamento** `[automatizável]`
+  Pré-condição: uma parcela pendente.
+  Passos: 1) `/dashboard/pagamentos/novo`; 2) escolher a parcela e ler a caixa
+  com valor, já recebido e saldo; 3) registrar um pagamento **parcial**;
+  4) voltar à parcela e ao honorário.
+  Esperado: o pagamento entra, a parcela vira **Parcial**, o **já recebido**
+  sobe, e o honorário vira **Parcialmente pago** — sem ninguém ter tocado em
+  campo de status nenhum.
+  Por que este passo existe: é a cadeia da DEC-028 vista de fora. Se algum dos
+  três não se mover, o status derivado parou de derivar.
+  Fase de origem: 4.2
+
+- [ ] **105. ⭐🚨 Pagamento excedente — a mensagem diz QUANTO ainda cabe**
+  `[só olho humano]`
+  Pré-condição: a parcela do passo 104, com pagamento parcial já registrado.
+  Passos: 1) novo pagamento na **mesma** parcela; 2) digitar um valor
+  claramente maior que o saldo; 3) salvar e **ler a mensagem inteira**.
+  Esperado: a mensagem diz que excede **e informa o saldo exato que ainda cabe
+  e o valor total da parcela**, em reais formatados. O campo **Valor a
+  registrar** fica destacado. Corrigir para o saldo exato salva normalmente.
+  Por que só olho humano: **é o caso de maior valor prático da fase.** A suíte
+  prova que o número chega à mensagem
+  (`tests/financial/erros.test.js`). O que ela não prova é se a advogada, lendo
+  a frase sob pressão de um cliente esperando, **sai dali sabendo qual valor
+  digitar** — ou se apenas entende que deu errado e tenta na tentativa e erro.
+  A diferença entre as duas coisas é a fase inteira.
+  Fase de origem: 4.2
+
+- [ ] **106. ⭐ Baixar o recibo e conferir contra o timbrado real**
+  `[só olho humano]`
+  Pré-condição: o logo real da advogada carregado em `/dashboard/perfil`, e um
+  pagamento ativo.
+  Passos: 1) na listagem de pagamentos, clicar em **Baixar recibo**; 2) abrir o
+  PDF; 3) comparar lado a lado com o PDF de um **documento gerado** do mesmo
+  escritório; 4) conferir o nome do arquivo salvo.
+  Esperado: o recibo sai com **o mesmo timbrado** do documento — mesmo logo,
+  mesmo cabeçalho, mesmo rodapé —, nomeia o participante **principal** do
+  processo, e o arquivo salvo tem o **nome que o backend sugeriu**, não
+  "recibo.pdf" nem um id.
+  Por que só olho humano: o timbrado é compartilhado
+  (`letterheadService.js`) justamente para não divergir, e nenhum script compara
+  a **aparência** de dois PDFs. Em seis meses o cabeçalho do documento e o do
+  recibo podem deixar de ser o mesmo papel, e **ninguém notaria até alguém pôr
+  os dois lado a lado** — que é exatamente o que este passo faz.
+  Fase de origem: 4.2
+
+- [ ] **107. ⭐ Ficha financeira do processo — os totais fecham**
+  `[só olho humano]`
+  Pré-condição: base recém-seedada. Usar um processo com mais de um honorário.
+  Passos: 1) abrir `/dashboard/processos/detalhe/:id` e rolar até
+  **Financeiro**; 2) somar **na calculadora** os honorários vigentes e conferir
+  contra **Contratado**; 3) conferir que **Contratado − Recebido = Em aberto**;
+  4) abrir um processo **sem honorário** e ler o estado vazio.
+  Esperado: os três totais fecham, a contagem de honorários traz "(1 cancelado)"
+  quando houver, e o cancelado aparece na árvore **atenuado**, com aviso de que
+  está fora do contratado — e **o valor dele não entra na soma**.
+  Por que só olho humano: a tela **exibe** os totais e não os recalcula, de
+  propósito. Isso significa que um erro de soma do backend chegaria intacto à
+  tela, e nenhum teste de frontend o pegaria — o teste conferiria a tela contra
+  o mesmo número errado. **A calculadora na mão é a única verificação
+  independente que existe** deste número.
+  Fase de origem: 4.2
+
+- [ ] **108. Cancelar um honorário e ver o total encolher** `[automatizável]`
+  Pré-condição: o processo do passo 107, com o Contratado anotado.
+  Passos: 1) editar um honorário vigente e marcar **"Cancelar este
+  honorário"**; 2) salvar; 3) voltar à ficha do processo; 4) reabrir a edição e
+  **desmarcar**.
+  Esperado: o Contratado **cai** exatamente o valor do honorário cancelado, a
+  contagem de cancelados sobe, e ele continua na lista, atenuado. Ao desmarcar,
+  o status volta a ser **derivado das parcelas** — não fica preso em
+  "Pendente".
+  Por que este passo existe: `cancelado` é o único status que a tela escreve e
+  o único que o recálculo nunca sobrescreve. Descancelar precisa devolver o
+  registro à derivação; sem isso a guarda deixaria o honorário preso para
+  sempre.
+  Fase de origem: 4.2
+
+- [ ] **109. Excluir com dependente — a mensagem diz quantos**
+  `[automatizável]`
+  Pré-condição: um honorário **com** parcelas e uma parcela **com** pagamentos.
+  Passos: 1) tentar excluir o honorário; 2) ler a mensagem; 3) tentar excluir a
+  parcela; 4) ler a mensagem.
+  Esperado: as duas são recusadas, e cada mensagem diz **quantos** dependentes
+  existem e de que tipo ("3 parcelas ativas", "2 pagamentos ativos"), no
+  singular quando for um só. **Nenhum campo do formulário é destacado** —
+  não há input errado, há registro gravado.
+  Por que este passo existe: é o contrato do 409 de integridade
+  (`dependencia` + `quantidade`, sem `campo`), que existia desde a Fase 2E.1 e
+  **nunca tinha sido consumido por tela nenhuma**.
+  Fase de origem: 4.2
+
 
 ---
 
@@ -1122,3 +1308,52 @@ uma variável de ambiente. Está aqui porque o `express-rate-limit` conta por IP
 e numa banca vários avaliadores saem do mesmo wifi — com o teto de produção, o
 terceiro a tentar o portal bate em 429 sem ninguém atacar nada, e a
 demonstração morre com uma mensagem de bloqueio na tela.
+
+---
+
+**A conta da Fase 4.2.** O roteiro entrou com **93** passos pendentes e saiu
+com **104**:
+
+| Movimento | Passos | Para onde |
+|---|---|---|
+| Criados pela própria fase | 99 a 109 | lista pendente |
+
+93 + 11 = **104**. Nada saiu: esta fase não executou nem automatizou passo
+antigo, e mover passo sem executá-lo seria adivinhação.
+
+**Por que a numeração começa em 99 e não em 94.** O roteiro tem 93 passos
+**pendentes**, mas o maior número já **usado** é 98 — cinco passos saíram para
+`Validado` e `Automatizado` sem que o resto fosse renumerado, de propósito.
+Continuar em 94 criaria dois passos com o mesmo número, e passo é coisa que se
+cita por número numa conversa ("o 96 falhou").
+
+Dos 11 novos, **7 são `[automatizável]`** (99, 101, 102, 103, 104, 108, 109) e
+**4 são `[só olho humano]`** (100, 105, 106, 107).
+
+**Por que estes quatro são irredutíveis.** Ao contrário dos do portal, nenhum
+deles depende de aparelho físico. Todos dependem de **conferência
+independente** ou de **compreensão sob pressão**:
+
+1. **O valor derivado atualizando ao vivo (100).** A suíte prova que
+   `derivarValorHonorario(10, 80000)` é 8000. Não prova que a advogada
+   **percebe** o número se atualizar sozinho — e sem perceber, ela procura um
+   campo de valor que não existe e conclui que o formulário quebrou.
+2. **A mensagem do excedente (105).** O teste prova que o saldo chega ao texto.
+   O que se confere aqui é se ela **sai da mensagem sabendo qual valor
+   digitar**, com um cliente esperando do outro lado, em vez de apenas entender
+   que deu errado e ir por tentativa e erro.
+3. **O timbrado do recibo (106).** Nenhum script compara a **aparência** de dois
+   PDFs. O recibo e o documento saem do mesmo `letterheadService.js`
+   justamente para não divergirem, e a divergência, se vier, só aparece com os
+   dois lado a lado.
+4. **Os totais da ficha (107).** É o único dos quatro em que o olho humano é
+   **mais forte** que um teste, e não apenas diferente. A tela **exibe** os
+   totais e não os recalcula — de propósito. Isso significa que um erro de soma
+   do backend chegaria intacto à tela, e um teste de frontend conferiria a tela
+   contra o mesmo número errado. **A calculadora na mão é a única verificação
+   independente que existe deste número.**
+
+**O passo 106 depende do logo real.** Sem o logo carregado em
+`/dashboard/perfil`, o timbrado usa só texto e continua bem diagramado — o
+passo passaria sem exercitar o caminho que interessa. Carregar o logo antes é
+pré-condição, não detalhe.

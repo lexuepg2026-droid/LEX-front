@@ -7,17 +7,9 @@ import Modal from '../../components/ui/Modal';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
-import { getApiErrorMessage } from '../../utils/apiError';
+import { getFinancialErrorMessage } from '../../utils/financialErrors';
+import { FORMA_PAGAMENTO_OPTIONS, labelDe } from '../../utils/enums';
 import '../../styles/modules.css';
-
-const FORMA_LABEL = {
-  dinheiro:       'Dinheiro',
-  pix:            'Pix',
-  boleto:         'Boleto',
-  cartao_credito: 'Cartão de Crédito',
-  cartao_debito:  'Cartão de Débito',
-  transferencia:  'Transferência',
-};
 
 function PaymentListPage({ embedded = false }) {
   const [payments, setPayments] = useState([]);
@@ -27,12 +19,15 @@ function PaymentListPage({ embedded = false }) {
   const [searchParams] = useSearchParams();
   const processoId = searchParams.get('processoId') || undefined;
   const [formaPagamento, setFormaPagamento] = useState('');
+  // Um recibo por vez, por id: sem isso o botão de TODAS as linhas ficaria em
+  // "Baixando…" enquanto um só está sendo gerado.
+  const [reciboEmCurso, setReciboEmCurso] = useState(null);
 
   useEffect(() => {
     setLoading(true);
     paymentService.listPayments({ page: 1, limit: 20, processoId, formaPagamento: formaPagamento || undefined })
       .then(res => setPayments(res.data.data ?? res.data))
-      .catch(() => setError('Falha ao buscar pagamentos.'))
+      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao buscar pagamentos.')))
       .finally(() => setLoading(false));
   }, [processoId, formaPagamento]);
 
@@ -46,7 +41,28 @@ function PaymentListPage({ embedded = false }) {
       setPayments(payments.filter(p => p._id !== id));
       toast.success('Pagamento removido com sucesso.');
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Erro ao remover pagamento.'));
+      toast.error(getFinancialErrorMessage(err, 'Erro ao remover pagamento.'));
+    }
+  };
+
+  // ── Recibo ────────────────────────────────────────────────────────────────
+  //
+  // Blob + <a download> temporário, com o nome vindo do `Content-Disposition`
+  // (`api/paymentService.js`). Não se abre a URL crua em nova aba: o cookie é
+  // httpOnly e quem o carrega é o axios, e um pagamento desativado mostraria a
+  // tela de erro do navegador em vez da mensagem tratada.
+  const baixarRecibo = async (id) => {
+    setReciboEmCurso(id);
+    try {
+      const { nome } = await paymentService.baixarEsalvarRecibo(id);
+      toast.success(`Recibo baixado: ${nome}`);
+    } catch (err) {
+      // 404 quando o pagamento (ou a parcela, o honorário, o processo) está
+      // desativado. Recibo de pagamento estornado é justamente o papel que não
+      // pode existir.
+      toast.error(getFinancialErrorMessage(err, 'Não foi possível gerar o recibo.'));
+    } finally {
+      setReciboEmCurso(null);
     }
   };
 
@@ -59,12 +75,9 @@ function PaymentListPage({ embedded = false }) {
       <div className="filter-bar">
         <select value={formaPagamento} onChange={e => setFormaPagamento(e.target.value)}>
           <option value="">Todas as formas</option>
-          <option value="dinheiro">Dinheiro</option>
-          <option value="pix">Pix</option>
-          <option value="boleto">Boleto</option>
-          <option value="cartao_credito">Cartão de Crédito</option>
-          <option value="cartao_debito">Cartão de Débito</option>
-          <option value="transferencia">Transferência</option>
+          {FORMA_PAGAMENTO_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
         </select>
       </div>
 
@@ -96,9 +109,22 @@ function PaymentListPage({ embedded = false }) {
                   <td>{p.installmentId?.feeId?.processoId?.titulo ?? '—'}</td>
                   <td>{formatCurrency(p.valorPago)}</td>
                   <td>{formatDate(p.dataPagamento)}</td>
-                  <td>{FORMA_LABEL[p.formaPagamento] || p.formaPagamento}</td>
+                  <td>{labelDe(FORMA_PAGAMENTO_OPTIONS, p.formaPagamento)}</td>
                   <td>{p.observacoes || '—'}</td>
                   <td className="actions-cell">
+                    {/* Só pagamento ATIVO tem recibo. A rota responde 404 para
+                        o desativado, e oferecer o botão seria prometer um papel
+                        que o backend recusa emitir — de propósito. */}
+                    {p.ativo !== false && (
+                      <button
+                        type="button"
+                        onClick={() => baixarRecibo(p._id)}
+                        disabled={reciboEmCurso === p._id}
+                        className="btn-action btn-edit"
+                      >
+                        {reciboEmCurso === p._id ? 'Baixando…' : 'Baixar recibo'}
+                      </button>
+                    )}
                     <Link to={`/dashboard/pagamentos/editar/${p._id}`} className="btn-action btn-edit">Editar</Link>
                     <button onClick={() => confirmDelete(p._id)} className="btn-action btn-delete">Remover</button>
                   </td>
