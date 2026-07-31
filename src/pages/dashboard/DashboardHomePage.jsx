@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useState, useEffect } from 'react';
-import { Scale, Users, FileText, AlertCircle, FolderOpen, Banknote } from 'lucide-react';
+import { Scale, Users, FileText, AlertCircle, FolderOpen, Banknote, BellRing } from 'lucide-react';
 import dashboardService from '../../api/dashboardService';
 import installmentService from '../../api/installmentService';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -19,6 +19,13 @@ const CARDS = [
   { key: 'parcelasVencidas',       label: 'Parcelas Vencidas',      format: 'number',   Icon: AlertCircle, color: 'danger'  },
   { key: 'documentosCadastrados',  label: 'Documentos Cadastrados', format: 'number',   Icon: FolderOpen,  color: 'neutral' },
   { key: 'pagamentosRecebidosMes', label: 'Pagamentos do Mês',      format: 'currency', Icon: Banknote,    color: 'success' },
+  // Confirmações de leitura que a advogada ainda não olhou (Fase 3.2). Sai do
+  // mesmo `GET /dashboard` dos outros seis — é mais um número do mesmo painel,
+  // não uma chamada a mais.
+  //
+  // `info` e não `success`: é coisa a fazer, não resultado alcançado. E não é
+  // `warning`: confirmação chegando é o sistema funcionando, nada está errado.
+  { key: 'confirmacoesNaoVistas',  label: 'Confirmações Novas',     format: 'number',   Icon: BellRing,    color: 'info'    },
 ];
 
 const formatCurrentDate = () =>

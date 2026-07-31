@@ -13,6 +13,20 @@ const STATUS_MAP = {
   vencido:   { label: 'Vencido',   color: 'danger'  },
   recebido:  { label: 'Recebido',  color: 'success' },
   parcial:   { label: 'Parcial',   color: 'info'    },
+  // Estado do participante no portal (Fase 3.2), de `config/portalEstados.js`.
+  //
+  // Entram AQUI, no mapa que já existe, em vez de virar uma família de badge
+  // nova: `status-badge--${config.color}` já é montado por template string e a
+  // varredura de CSS o conhece. Uma família nova seria mais um prefixo para a
+  // varredura aceitar, e mais um conjunto de cores para manter em sincronia.
+  //
+  // As cores são as que já existem em `StatusBadge.css` — nenhuma regra nova.
+  // A distinção que importa é entre ACESSAR e CONFIRMAR: abrir a página é
+  // automático e não notifica; confirmar é clique deliberado e é o recibo.
+  // Por isso "acessou, não confirmou" é `warning` e não `success`.
+  nunca_acessou:         { label: 'Nunca acessou',           color: 'neutral' },
+  acessou_sem_confirmar: { label: 'Acessou, não confirmou',  color: 'warning' },
+  confirmou:             { label: 'Confirmou a leitura',     color: 'success' },
 };
 
 function StatusBadge({ status }) {

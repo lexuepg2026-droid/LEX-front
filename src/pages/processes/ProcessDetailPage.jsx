@@ -9,18 +9,47 @@ import {
   nomeDoCliente,
 } from '../../utils/enums';
 import { getApiErrorMessage } from '../../utils/apiError';
+import StatusBadge from '../../components/ui/StatusBadge';
+import AccessDelivery from '../../components/processes/AccessDelivery';
 import './ProcessPage.css';
 import './ProcessTabs.css';
 import ProcessoTabs from './ProcessTabs';
+
+// Data e hora no fuso do escritório. `ultimoAcessoPortal` e `dataHora` da
+// confirmação são carimbos que a advogada pode precisar citar — deixá-los ao
+// fuso do navegador faria o mesmo registro aparecer com horas diferentes em
+// máquinas diferentes.
+const dataHoraBR = (iso) =>
+  iso
+    ? new Date(iso).toLocaleString('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      })
+    : '—';
 
 function ProcessoDetalhePage() {
   const [processo, setProcesso] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  // Códigos de acesso já buscados, por clienteId. Não vêm na listagem de
-  // participantes de propósito — só são pedidos quando a advogada clica.
-  const [codigos, setCodigos] = useState({});
-  const [buscandoCodigo, setBuscandoCodigo] = useState(null);
+
+  // Participantes vêm de `GET /processes/:id/clientes`, e NÃO do array
+  // `participantes` que `GET /processes/:id` já devolve.
+  //
+  // As duas projeções são deliberadamente diferentes: a do detalhe do processo
+  // traz `{ _id, clienteId, papel, principal }`, e só a listagem dedicada
+  // carrega `estadoPortal`, `ultimoAcessoPortal` e `ultimaConfirmacaoEm`.
+  // Como esta tela precisa do estado do portal por pessoa, é a dedicada que
+  // ela consulta. O contrato da 3.1 não foi alterado.
+  const [participantesPortal, setParticipantesPortal] = useState([]);
+
+  // Painel de entrega aberto, por clienteId. Um de cada vez: o código é o dado
+  // mais sensível desta tela, e manter vários abertos é print de tela com o
+  // acesso de todo mundo.
+  const [entregaAberta, setEntregaAberta] = useState(null);
+
+  const [confirmacoes, setConfirmacoes] = useState(null);
+  const [carregandoConfirmacoes, setCarregandoConfirmacoes] = useState(false);
   const { id } = useParams();
 
   useEffect(() => {
@@ -41,45 +70,62 @@ function ProcessoDetalhePage() {
     fetchProcesso();
   }, [id]);
 
+  useEffect(() => {
+    let ativo = true;
+    processService
+      .listProcessClientes(id)
+      .then((res) => {
+        if (!ativo) return;
+        const lista = res.data.data ?? res.data;
+        setParticipantesPortal(Array.isArray(lista) ? lista : []);
+      })
+      .catch(() => {
+        // Falha aqui não derruba a tela: o processo e os dados dele continuam
+        // legíveis, e o que se perde é o selo de portal por participante. O
+        // erro do processo em si já tem tratamento acima.
+        if (ativo) setParticipantesPortal([]);
+      });
+    return () => { ativo = false; };
+  }, [id]);
+
+  // Abrir o histórico é o ato de "olhar", e é ele que marca as confirmações
+  // como vistas — por processo, como o backend expõe. Zerar o contador sem a
+  // advogada ter aberto nada seria mentira; marcar uma a uma exigiria que ela
+  // clicasse em cada registro para o número baixar.
+  const abrirConfirmacoes = async () => {
+    setCarregandoConfirmacoes(true);
+    try {
+      const res = await processService.listProcessConfirmacoes(id);
+      const lista = res.data.data ?? res.data;
+      setConfirmacoes(Array.isArray(lista) ? lista : []);
+      await processService.marcarConfirmacoesVistas(id);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Não foi possível carregar as confirmações.'));
+    } finally {
+      setCarregandoConfirmacoes(false);
+    }
+  };
+
   if (loading) return <p>Carregando...</p>;
   if (error) return <p className="error-message">{error}</p>;
   if (!processo) return null;
 
   const participantes = processo.participantes ?? [];
   const principal = participantes.find(p => p.principal);
+
+  // Estado de portal por clienteId, para casar com a lista já renderizada.
+  const portalPorCliente = new Map(
+    participantesPortal.map((v) => [
+      String(v.clienteId?._id ?? v.clienteId),
+      v,
+    ])
+  );
   // `clientePrincipalId` é o campo derivado do processo; o participante
   // marcado como principal é a mesma pessoa. Usa o primeiro que existir.
   const clienteNome = nomeDoCliente(principal?.clienteId ?? processo.clientePrincipalId);
 
   const formatarData = (d) =>
     d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—';
-
-  const copiarCodigo = async (clienteId) => {
-    try {
-      setBuscandoCodigo(clienteId);
-      let codigo = codigos[clienteId];
-      if (!codigo) {
-        const response = await processService.getProcessClienteCodigoAcesso(id, clienteId);
-        codigo = response.data.codigoAcesso;
-        setCodigos(prev => ({ ...prev, [clienteId]: codigo }));
-      }
-      await navigator.clipboard.writeText(codigo);
-      toast.success(`Código copiado: ${codigo}`);
-    } catch (err) {
-      // Área de transferência bloqueada (contexto não seguro, permissão
-      // negada) não pode virar "falha ao buscar": o código pode ter vindo bem.
-      const codigo = codigos[clienteId];
-      if (codigo) {
-        toast.error(`Não foi possível copiar. Código: ${codigo}`);
-      } else {
-        // Sem código em mãos, a falha foi na busca, e a mensagem do servidor é
-        // a que diz o motivo de verdade.
-        toast.error(getApiErrorMessage(err, 'Não foi possível obter o código de acesso.'));
-      }
-    } finally {
-      setBuscandoCodigo(null);
-    }
-  };
 
   return (
     <div className="page-container">
@@ -108,6 +154,7 @@ function ProcessoDetalhePage() {
             {participantes.map(p => {
               const cliente = p.clienteId;
               const clienteId = (cliente?._id ?? cliente)?.toString();
+              const noPortal = portalPorCliente.get(clienteId);
               return (
                 <li
                   key={clienteId}
@@ -127,14 +174,45 @@ function ProcessoDetalhePage() {
 
                   {p.principal && <span className="participante-tag">Principal</span>}
 
+                  {/* Selo do portal, pelo `StatusBadge` que já serve 4 telas.
+                      Acessar e confirmar são coisas de força muito diferente:
+                      abrir a página é automático, confirmar é declaração. Por
+                      isso "acessou, não confirmou" fica em amarelo. */}
+                  {noPortal?.estadoPortal && (
+                    <span className="participante-portal">
+                      <StatusBadge status={noPortal.estadoPortal} />
+                      {noPortal.estadoPortal === 'confirmou' && noPortal.ultimaConfirmacaoEm && (
+                        <span className="participante-portal-data">
+                          em {dataHoraBR(noPortal.ultimaConfirmacaoEm)}
+                        </span>
+                      )}
+                      {noPortal.ultimoAcessoPortal && (
+                        <span className="participante-portal-data">
+                          último acesso: {dataHoraBR(noPortal.ultimoAcessoPortal)}
+                        </span>
+                      )}
+                    </span>
+                  )}
+
                   <button
                     type="button"
                     className="btn-secondary"
-                    onClick={() => copiarCodigo(clienteId)}
-                    disabled={buscandoCodigo === clienteId}
+                    onClick={() =>
+                      setEntregaAberta(entregaAberta === clienteId ? null : clienteId)
+                    }
                   >
-                    {buscandoCodigo === clienteId ? 'Copiando...' : 'Copiar código de acesso'}
+                    {entregaAberta === clienteId ? 'Fechar entrega' : 'Entregar acesso'}
                   </button>
+
+                  {entregaAberta === clienteId && (
+                    <AccessDelivery
+                      processoId={id}
+                      clienteId={clienteId}
+                      nomeCliente={nomeDoCliente(cliente)}
+                      nomeProcesso={processo.titulo}
+                      onFechar={() => setEntregaAberta(null)}
+                    />
+                  )}
                 </li>
               );
             })}
@@ -155,6 +233,67 @@ function ProcessoDetalhePage() {
         {processo.comarca && <p><strong>Comarca:</strong> {processo.comarca}</p>}
         {processo.descricao && <p><strong>Descrição:</strong> {processo.descricao}</p>}
         {processo.observacoes && <p><strong>Observações:</strong> {processo.observacoes}</p>}
+      </div>
+
+      {/* ── Confirmações de visualização ─────────────────────────────────────
+          Sob demanda, e não carregado junto com a tela: abrir esta seção é o
+          ato de "olhar", e é ele que marca as confirmações como vistas. Se
+          viessem no carregamento, o contador do dashboard zeraria só por a
+          advogada ter aberto o processo para ver outra coisa. */}
+      <div className="processo-detalhe-secao">
+        <h3>Confirmações de leitura</h3>
+
+        {confirmacoes === null ? (
+          <>
+            <p className="confirmacao-ajuda">
+              Cada confirmação é uma declaração do cliente de que leu as
+              informações do processo, com data e hora. Abrir esta lista marca
+              as confirmações deste processo como vistas.
+            </p>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={abrirConfirmacoes}
+              disabled={carregandoConfirmacoes}
+            >
+              {carregandoConfirmacoes ? 'Carregando…' : 'Ver confirmações'}
+            </button>
+          </>
+        ) : confirmacoes.length === 0 ? (
+          <p className="confirmacao-ajuda">
+            Nenhum participante confirmou a leitura ainda. Acessar o portal e
+            confirmar são coisas diferentes — o selo de cada participante,
+            acima, mostra quem já entrou.
+          </p>
+        ) : (
+          <ul className="confirmacao-lista">
+            {confirmacoes.map((c) => (
+              <li key={c.id ?? c._id} className="confirmacao-item">
+                <p className="confirmacao-cabecalho">
+                  <strong>{nomeDoCliente(c.clienteId) || 'Participante'}</strong>
+                  {' — '}
+                  {dataHoraBR(c.dataHora)}
+                </p>
+                <p className="confirmacao-instantaneo">
+                  Na ocasião: processo {c.instantaneo?.statusProcesso ?? '—'},{' '}
+                  {c.instantaneo?.quantidadeDocumentos === 1
+                    ? '1 documento visível'
+                    : `${c.instantaneo?.quantidadeDocumentos ?? 0} documentos visíveis`}
+                  .
+                </p>
+                {/* O texto que o cliente declarou. É o que a advogada mostraria
+                    se precisasse demonstrar o que ele afirmou — guardá-lo e não
+                    exibi-lo tornaria o registro inútil na hora que importa. */}
+                {c.textoConfirmado && (
+                  <details className="confirmacao-texto">
+                    <summary>Ver o que o cliente declarou</summary>
+                    <pre className="confirmacao-declaracao">{c.textoConfirmado}</pre>
+                  </details>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <ProcessoTabs processoId={id} />
