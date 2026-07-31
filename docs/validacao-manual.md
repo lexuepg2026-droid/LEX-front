@@ -737,6 +737,192 @@ Dados que vários passos usam:
 
 ---
 
+## 14. Fase 3.2 — Portal do cliente
+
+> **O portal é a primeira interface do LEX usada por alguém que não é a
+> advogada, num aparelho que não é o dela, numa rede que não é a do
+> escritório.** Aparência, legibilidade e fluxo não têm substituto
+> automatizado aqui: a suíte prova que a classe tem regra e que o import não
+> atravessa, nunca que um leigo de 60 anos consegue entrar com um código
+> ditado por telefone.
+>
+> Por isso esta fase faz o roteiro crescer, e está certo. Cresce com
+> disciplina: cada passo diz o que se confere e por que script nenhum
+> conferiria.
+
+- [ ] **85. ⭐🚨 BLOQUEANTE — a demonstração NÃO roda com `NODE_ENV=production`**
+  `[automatizável]`
+  Pré-condição: nenhuma. **Fazer isto ANTES de qualquer demonstração
+  pública**, e antes dos demais passos desta seção.
+  Passos: 1) conferir o `NODE_ENV` do processo do backend
+  (`echo $NODE_ENV`, ou o `.env` em uso); 2) confirmar que **não** é
+  `production`.
+  Esperado: fora de produção, o teto do rate limit do portal é multiplicado
+  por **20** (`portalRoutes.js:34,44-47`) — 5 vira 100 tentativas por janela.
+  Por que é bloqueante: **o `express-rate-limit` conta por IP.** Numa banca,
+  três professores tentando o portal do mesmo wifi saem do mesmo IP: com o
+  teto de produção (5), o terceiro bate em **429 sem ninguém atacar nada**, e
+  a demonstração morre com uma mensagem de bloqueio na tela. É conferir uma
+  variável, **não mudar código**.
+
+- [ ] **86. Entrar no portal com o código ditado por telefone — minúsculas e
+  com espaço** `[automatizável]`
+  Pré-condição: base recém-seedada; o código de acesso de Maria Aparecida
+  Costa ("Inventario e Partilha de Bens") sai no resumo do seed.
+  Passos: 1) abrir `/portal` **no celular**; 2) digitar o código **todo em
+  minúsculas e com um espaço sobrando no fim** (`lex-xxxx-xxxx `); 3) senha
+  `MinhaSenha2026`; 4) entrar.
+  Esperado: **entra normalmente.** A tela não recusa, não reclama de formato e
+  não "corrige" o que foi digitado enquanto se digita.
+  Por que este passo existe: a advogada dita o código por telefone e o cliente
+  o recebe por WhatsApp ou num papel. **A tela nunca pode ser mais rígida que
+  a API** — o backend normaliza caixa e espaço de propósito, e uma máscara na
+  tela recusaria o que o servidor aceita, deixando o cliente de fora do
+  próprio processo por causa de uma letra minúscula.
+  Fase de origem: 3.2
+
+- [ ] **87. Código errado e excesso de tentativas dizem coisas DIFERENTES**
+  `[só olho humano]`
+  Passos: 1) errar o código uma vez e ler a mensagem; 2) errar a senha de um
+  código válido e ler a mensagem; 3) insistir até estourar o limite.
+  Esperado: **1 e 2 dão a mesma mensagem, palavra por palavra** — a tela não
+  diz se o código existe, se a senha está errada ou se o acesso foi revogado.
+  O 3 dá uma mensagem **visivelmente diferente**, em amarelo, explicando que
+  houve muitas tentativas e para aguardar.
+  Por que só olho humano: o teste estático prova que os dois caminhos existem
+  e escrevem em estados distintos; **não prova que a pessoa percebe a
+  diferença ao ler.** É a percepção que evita o cliente insistir e estender o
+  próprio bloqueio.
+  Fase de origem: 3.2
+
+- [ ] **88. A troca de senha é inescapável** `[automatizável]`
+  Pré-condição: entrar como **Ana Lima Santos**, senha provisória
+  `Portal2026`.
+  Passos: 1) entrar; 2) tentar ir a `/portal/processo` **pela barra de
+  endereço**; 3) voltar e ler a explicação da tela de troca; 4) trocar a senha.
+  Esperado: o passo 2 **cai de volta na tela de troca**, sempre. A tela
+  explica em uma frase por que a troca é obrigatória. Depois de trocar, segue
+  para o processo, e a senha antiga não serve mais.
+  Fase de origem: 3.2
+
+- [ ] **89. Processo e documentos legíveis no celular** `[só olho humano]`
+  Pré-condição: sessão do portal, **num celular de verdade**, não no
+  redimensionador do navegador.
+  Passos: 1) ler a tela do processo inteira sem dar zoom; 2) conferir que
+  "Em andamento" e "Autor" aparecem em português comum, com a explicação do
+  papel; 3) tocar nos botões de download **com o polegar**, em pé.
+  Esperado: uma coluna, fonte legível sem zoom, botões que o dedo acerta de
+  primeira. **Nenhum valor financeiro em lugar nenhum**, e nenhum outro
+  participante do processo.
+  Por que só olho humano: alvo de toque, contraste e comprimento de linha são
+  exatamente o que nenhuma análise estática enxerga. E o emulador mente sobre
+  o tamanho do dedo.
+  Fase de origem: 3.2
+
+- [ ] **90. Baixar PDF e DOCX no aparelho** `[só olho humano]`
+  Passos: 1) baixar o PDF pelo portal, no celular; 2) baixar o DOCX; 3)
+  **abrir os dois** no aparelho.
+  Esperado: os arquivos baixam com o nome vindo do servidor
+  (`procuracao-<cliente>-<data>.pdf`), abrem sem erro, e o conteúdo é o mesmo
+  que a advogada baixa pela tela dela.
+  Por que só olho humano: o download depende de `Content-Disposition`, de
+  `URL.createObjectURL` e do gerenciador de downloads do celular. Script
+  nenhum abre um DOCX no Word do Android para ver se corrompeu.
+  Fase de origem: 3.2
+
+- [ ] **91. Ler primeiro, confirmar depois — e o recibo com a hora certa**
+  `[só olho humano]`
+  Passos: 1) percorrer a tela do processo **de cima a baixo**; 2) observar
+  onde o bloco de confirmação aparece; 3) ler a declaração; 4) confirmar; 5)
+  conferir a data e a hora do recibo contra o relógio.
+  Esperado: **nenhum modal bloqueia a leitura.** O botão de confirmar está no
+  FIM, depois do processo e dos documentos. A declaração aparece **inteira**,
+  sem "ver mais". O recibo traz data e hora no formato brasileiro e no fuso de
+  Brasília — confira contra o relógio, **não contra o que a tela diz**.
+  Por que só olho humano: que o bloco esteja depois do conteúdo é a decisão
+  probatória inteira desta fase, e ela se verifica rolando a tela. E o fuso
+  errado só aparece comparando com um relógio de verdade.
+  Fase de origem: 3.2
+
+- [ ] **92. Confirmar de novo não apaga a primeira** `[automatizável]`
+  Passos: 1) confirmar; 2) confirmar outra vez; 3) olhar a lista.
+  Esperado: **duas confirmações**, cada uma com a sua data e hora. A última em
+  destaque, a anterior na lista. A tela diz, em texto, que confirmar de novo
+  não apaga a anterior.
+  Fase de origem: 3.2
+
+- [ ] **93. Sair, num aparelho emprestado** `[só olho humano]`
+  Passos: 1) achar o botão de sair **sem procurar**; 2) sair; 3) apertar
+  *voltar* no navegador.
+  Esperado: o botão está visível na barra, sem menu escondendo. Depois de
+  sair, *voltar* **não** devolve a sessão.
+  Por que só olho humano: "achar sem procurar" é o passo, e ele não se mede
+  por script.
+  Fase de origem: 3.2
+
+- [ ] **94. Advogada: definir, entregar, redefinir e revogar** `[automatizável]`
+  Passos: 1) no cadastro de um cliente sem acesso, definir uma senha inicial;
+  2) conferir que o estado passa a "senha provisória, aguardando o cliente";
+  3) no processo, abrir **Entregar acesso** e copiar o código e a mensagem
+  pronta; 4) **conferir que a mensagem pronta NÃO contém a senha**; 5) gravar
+  outra senha e conferir que o estado volta a provisória; 6) revogar o acesso
+  e conferir que o cliente não entra mais.
+  Esperado: o estado é sempre legível em português; a senha **nunca** é
+  exibida; a mensagem pronta traz endereço e código, e diz que a senha vai por
+  outro canal. Tentar gravar o CPF do cliente como senha traz a mensagem
+  específica do servidor, não uma genérica.
+  Fase de origem: 3.2
+
+- [ ] **95. O código cabe numa ligação** `[só olho humano]`
+  Passos: 1) abrir **Entregar acesso**; 2) **ditar o código em voz alta** para
+  alguém do outro lado da linha, olhando a tela.
+  Esperado: o código é grande o bastante para ser lido de relance, e nenhum
+  caractere se confunde com outro ao ditar.
+  Por que só olho humano: é literalmente um teste de voz e de vista. Nenhuma
+  outra coisa nesta lista chega perto de verificar isto.
+  Fase de origem: 3.2
+
+- [ ] **96. Litisconsórcio: um confirmou, o outro não** `[automatizável]`
+  Pré-condição: processo "Inventario e Partilha de Bens", base recém-seedada.
+  Passos: 1) abrir o detalhe do processo; 2) olhar os **dois** participantes.
+  Esperado: Maria Aparecida Costa com o selo **Confirmou a leitura** e a data;
+  Joao Paulo Oliveira com **Acessou, não confirmou**, em amarelo, com o último
+  acesso. A diferença entre **acessar** e **confirmar** fica visível sem
+  precisar de explicação — só a segunda é recibo.
+  Fase de origem: 3.2
+
+- [ ] **97. O contador do dashboard zera ao olhar** `[automatizável]`
+  Passos: 1) no dashboard, anotar **Confirmações Novas**; 2) abrir o processo
+  do litisconsórcio; 3) clicar em **Ver confirmações**; 4) voltar ao
+  dashboard.
+  Esperado: o contador baixa exatamente no número de confirmações não vistas
+  daquele processo. Abrir o processo **sem** clicar em "Ver confirmações"
+  **não** zera nada — o que marca como vista é olhar a lista, não passar pela
+  tela.
+  Fase de origem: 3.2
+
+- [ ] **98. Aviso de visibilidade nas DUAS regerações** `[só olho humano]`
+  Pré-condição: base recém-seedada. Um documento gerado **editado à mão** e um
+  **não editado**, ambos tornados visíveis no portal.
+  Passos: 1) escolher modelo, processo e cliente de um documento visível e
+  **não editado** e ler o aviso que aparece **antes** de clicar em gerar; 2)
+  gerar e ler o painel que aparece depois; 3) repetir com o documento
+  **editado à mão**, que dispara o 409, e ler o diálogo.
+  Esperado: os **dois** caminhos avisam, e **os textos são diferentes**,
+  porque o efeito é diferente:
+  - **não editado**: o anterior **continua ativo e visível**, o novo nasce
+    invisível **ao lado dele**, e o cliente continuaria vendo a versão
+    **antiga**. Liberar a nova pelo painel também tira a antiga do portal.
+  - **editado à mão**: o anterior é **substituído** e sai do portal; o cliente
+    fica sem nenhuma das duas até alguém liberar a nova.
+  Por que só olho humano: o que se confere é se a advogada **entende o que vai
+  acontecer** antes de clicar. Os dois textos estarem presentes é
+  automatizável; serem compreendidos, não.
+  Fase de origem: 3.2
+
+
+---
+
 ## Validado
 
 > Passo **executado por olho humano e aprovado**, com data. Continua sendo
@@ -897,3 +1083,42 @@ conferiu e o achado não se reproduz:** os três estão definidos em
 alterado, e portanto **nenhuma regressão visual foi introduzida** nestes passos
 — eles seguem valendo como estão. Continuam pendentes de execução, como o resto
 do roteiro, mas não por causa de correção de CSS.
+
+---
+
+**A conta da Fase 3.2.** O roteiro entrou com **79** passos pendentes e saiu
+com **93**:
+
+| Movimento | Passos | Para onde |
+|---|---|---|
+| Criados pela própria fase | 85 a 98 | lista pendente |
+
+79 + 14 = **93**. Nada saiu: esta fase não executou nem automatizou passo
+antigo, e mover passo sem executá-lo seria adivinhação.
+
+Dos 14 novos, **7 são `[automatizável]`** (85, 86, 88, 92, 94, 96, 97) e
+**7 são `[só olho humano]`** (87, 89, 90, 91, 93, 95, 98).
+
+**Por que a metade é só olho humano, e por que isso é o esperado aqui.** O
+portal é a primeira interface do LEX operada por alguém que não é a advogada,
+num aparelho que não é o dela. Os 7 irredutíveis se dividem em três grupos:
+
+1. **Percepção** (87, 91) — se a pessoa *nota* que a mensagem de 429 é
+   diferente da de credencial inválida; se ela *percebe* que a confirmação vem
+   depois do conteúdo. A suíte prova que os dois caminhos existem e escrevem em
+   estados distintos. Não prova que alguém lendo entende a diferença, e é a
+   compreensão que muda o comportamento.
+2. **Aparelho físico** (89, 90, 93, 95) — alvo de toque com o polegar, abrir um
+   DOCX no Word do Android, achar o botão de sair sem procurar, ditar o código
+   por telefone sem confundir caractere. O emulador mente sobre o tamanho do
+   dedo, e nenhum script abre um arquivo no aplicativo do celular.
+3. **Compreensão de consequência** (98) — se a advogada entende, *antes* de
+   clicar, o que vai acontecer com o documento no portal. Que os dois textos
+   estejam presentes é automatizável e está travado em
+   `tests/portal/isolamento.test.js`; que sejam compreendidos, não.
+
+**O passo 85 é bloqueante e vem antes de todos.** Ele não testa código: confere
+uma variável de ambiente. Está aqui porque o `express-rate-limit` conta por IP,
+e numa banca vários avaliadores saem do mesmo wifi — com o teto de produção, o
+terceiro a tentar o portal bate em 429 sem ninguém atacar nada, e a
+demonstração morre com uma mensagem de bloqueio na tela.
