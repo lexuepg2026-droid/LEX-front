@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { usePortalAuth } from '../../contexts/PortalAuthContext';
-import './PortalLayout.css';
+import './Portal.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MOLDURA DO PORTAL DO CLIENTE
