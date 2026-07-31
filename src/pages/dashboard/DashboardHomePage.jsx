@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, useState, useEffect } from 'react';
-import { Scale, Users, FileText, AlertCircle, FolderOpen, Banknote, BellRing } from 'lucide-react';
+import { Scale, Users, FileText, AlertCircle, FolderOpen, Banknote, BellRing, HandCoins, Wallet } from 'lucide-react';
 import dashboardService from '../../api/dashboardService';
+import financeiroService from '../../api/financeiroService';
 import installmentService from '../../api/installmentService';
 import StatusBadge from '../../components/ui/StatusBadge';
 import EmptyState from '../../components/ui/EmptyState';
@@ -28,6 +29,23 @@ const CARDS = [
   { key: 'confirmacoesNaoVistas',  label: 'Confirmações Novas',     format: 'number',   Icon: BellRing,    color: 'info'    },
 ];
 
+// ── Indicadores em dinheiro (Fase 4.2) ─────────────────────────────────────
+//
+// Saem de `GET /api/financeiro/resumo`, que já existia — nenhum endpoint foi
+// criado nesta fase, e nenhum total é somado aqui.
+//
+// **Os rótulos dizem exatamente o que o número é.** O roteiro da fase pedia "a
+// receber no mês" e "total vencido em valor"; o backend não expõe nenhum dos
+// dois. O que ele expõe é o acumulado do escritório inteiro, sem recorte de
+// período. Rotular "Em aberto" como "A receber no mês" seria mais bonito e
+// estaria errado — e é o tipo de erro que ninguém percebe até a advogada
+// planejar o mês com o número de todos os tempos.
+const CARDS_FINANCEIROS = [
+  { key: 'valorContratado', label: 'Valor Contratado (total)', Icon: FileText,  color: 'primary' },
+  { key: 'recebido',        label: 'Recebido (total)',         Icon: HandCoins, color: 'success' },
+  { key: 'pendente',        label: 'Em Aberto (total)',        Icon: Wallet,    color: 'warning' },
+];
+
 const formatCurrentDate = () =>
   new Date().toLocaleDateString('pt-BR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -52,6 +70,7 @@ function DashboardHomePage() {
   const [upcoming, setUpcoming] = useState([]);
   const [statusData, setStatusData] = useState(null);
   const [feesByMonth, setFeesByMonth] = useState([]);
+  const [resumoFinanceiro, setResumoFinanceiro] = useState(null);
 
   useEffect(() => {
     dashboardService.getDashboardSummary()
@@ -80,6 +99,14 @@ function DashboardHomePage() {
         setUpcoming(urgent);
       })
       .catch(err => toast.error(getApiErrorMessage(err, 'Não foi possível carregar cobranças urgentes.')));
+  }, []);
+
+  // Falha aqui não derruba o painel: os outros seis cartões e os gráficos
+  // continuam legíveis, e o que se perde é a faixa em dinheiro.
+  useEffect(() => {
+    financeiroService.getResumo()
+      .then(res => setResumoFinanceiro(res.data))
+      .catch(err => toast.error(getApiErrorMessage(err, 'Não foi possível carregar os totais financeiros.')));
   }, []);
 
   useEffect(() => {
@@ -120,6 +147,19 @@ function DashboardHomePage() {
                     ? formatCurrency(summary[key])
                     : summary[key] != null ? summary[key].toLocaleString('pt-BR') : '—'}
                 </p>
+              </div>
+            ))}
+          </div>
+        )}
+        {resumoFinanceiro && (
+          <div className="summary-grid">
+            {CARDS_FINANCEIROS.map(({ key, label, Icon, color }) => (
+              <div key={key} className={`summary-card summary-card--${color}`}>
+                <div className="card-icon">
+                  <Icon size={22} />
+                </div>
+                <p className="card-label">{label}</p>
+                <p className="card-value">{formatCurrency(resumoFinanceiro[key] ?? 0)}</p>
               </div>
             ))}
           </div>
