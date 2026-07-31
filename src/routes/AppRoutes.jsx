@@ -52,6 +52,7 @@ const PortalLayout = lazy(() => import('../components/portal/PortalLayout'));
 const PortalProtectedRoute = lazy(() => import('../components/portal/PortalProtectedRoute'));
 const PortalLoginPage = lazy(() => import('../pages/portal/PortalLoginPage'));
 const PortalPasswordPage = lazy(() => import('../pages/portal/PortalPasswordPage'));
+const PortalProcessPage = lazy(() => import('../pages/portal/PortalProcessPage'));
 
 function AppRoutes() {
   return (
@@ -82,6 +83,10 @@ function AppRoutes() {
           <Route path="senha" element={<PortalPasswordPage />} />
         </Route>
 
+        {/* Dado do processo: exige sessão E senha própria. */}
+        <Route element={<PortalProtectedRoute />}>
+          <Route path="processo" element={<PortalProcessPage />} />
+        </Route>
       </Route>
 
       <Route path="/dashboard" element={<ProtectedRoute />}>
