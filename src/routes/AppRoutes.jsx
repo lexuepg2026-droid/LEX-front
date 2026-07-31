@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LoginPage from '../pages/auth/LoginPage';
 import RegisterPage from '../pages/auth/RegisterPage';
@@ -24,12 +25,69 @@ import PaymentFormPage from '../pages/payments/PaymentFormPage';
 import FinanceiroPage from '../pages/financeiro/FinanceiroPage';
 import ProfilePage from '../pages/profile/ProfilePage';
 
+// ═══════════════════════════════════════════════════════════════════════════
+// PORTAL DO CLIENTE — mesmo app, chunk próprio
+//
+// Tudo do portal entra por `lazy()`, no mesmo padrão que `DashboardCharts`
+// (`DashboardHomePage.jsx:13`). Um build e um deploy: o PWA existente continua
+// valendo, não há segundo domínio para configurar e nem segundo CORS para
+// esquecer.
+//
+// O chunk separado é o que torna isso honesto. Sem ele, o cliente baixaria o
+// bundle inteiro das telas da advogada — Financeiro, Perfil, montagem de
+// documento, `recharts` — para ver um processo e dois PDFs, no celular dele,
+// na rede dele.
+//
+// As rotas ficam FORA do `ProtectedRoute` e FORA do layout com Sidebar e
+// Header. Não é organização: o portão da advogada manda para `/login`, e um
+// cliente que caísse lá veria a tela de login de um sistema que não é dele.
+// ═══════════════════════════════════════════════════════════════════════════
+// `PortalAuthProvider` é export nomeado — o `lazy` exige um `default`, daí o
+// `.then`. Carregá-lo por `lazy` junto com o resto é o que mantém o contexto
+// do portal (e o `axios` do portal) fora do bundle inicial da advogada.
+const PortalAuthProvider = lazy(() =>
+  import('../contexts/PortalAuthContext').then((m) => ({ default: m.PortalAuthProvider }))
+);
+const PortalLayout = lazy(() => import('../components/portal/PortalLayout'));
+const PortalProtectedRoute = lazy(() => import('../components/portal/PortalProtectedRoute'));
+const PortalLoginPage = lazy(() => import('../pages/portal/PortalLoginPage'));
+const PortalPasswordPage = lazy(() => import('../pages/portal/PortalPasswordPage'));
+const PortalProcessPage = lazy(() => import('../pages/portal/PortalProcessPage'));
+
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<LoginPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registrar" element={<RegisterPage />} />
+
+      {/* ── Portal do cliente ──────────────────────────────────────────────
+          O `PortalAuthProvider` envolve SÓ este ramo: fora dele o contexto do
+          portal não existe, e nenhuma tela da advogada pode consultá-lo por
+          engano. */}
+      <Route
+        path="/portal"
+        element={
+          <Suspense fallback={<div className="portal-carregando">Carregando…</div>}>
+            <PortalAuthProvider>
+              <PortalLayout />
+            </PortalAuthProvider>
+          </Suspense>
+        }
+      >
+        <Route index element={<PortalLoginPage />} />
+
+        {/* Troca obrigatória: exige sessão, e é a ÚNICA rota alcançável
+            enquanto a senha for provisória. */}
+        <Route element={<PortalProtectedRoute permitirSenhaProvisoria />}>
+          <Route path="senha" element={<PortalPasswordPage />} />
+        </Route>
+
+        {/* Dado do processo: exige sessão E senha própria. */}
+        <Route element={<PortalProtectedRoute />}>
+          <Route path="processo" element={<PortalProcessPage />} />
+        </Route>
+      </Route>
 
       <Route path="/dashboard" element={<ProtectedRoute />}>
         <Route element={<DashboardPage />}>

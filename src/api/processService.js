@@ -41,6 +41,18 @@ const removeProcessCliente = (id, clienteId) =>
 const getProcessClienteCodigoAcesso = (id, clienteId) =>
   api.get(`/processes/${id}/clientes/${clienteId}/codigo-acesso`);
 
+// ── Confirmações de visualização (Fase 3.1, consumidas na 3.2) ─────────────
+//
+// O histórico é do PROCESSO, não de um participante: num litisconsórcio a
+// advogada quer ver quem confirmou e quem não, lado a lado.
+const listProcessConfirmacoes = (id) => api.get(`/processes/${id}/confirmacoes`);
+
+// Marca como vistas as do processo inteiro, e não uma a uma. "Vista" descreve
+// o ato de a advogada abrir a ficha e olhar — que acontece por processo, não
+// por registro. É isso que zera o contador do dashboard.
+const marcarConfirmacoesVistas = (id) =>
+  api.patch(`/processes/${id}/confirmacoes/vistas`);
+
 export default {
   listProcesses,
   getProcessById,
@@ -53,4 +65,6 @@ export default {
   setProcessClientePrincipal,
   removeProcessCliente,
   getProcessClienteCodigoAcesso,
+  listProcessConfirmacoes,
+  marcarConfirmacoesVistas,
 };

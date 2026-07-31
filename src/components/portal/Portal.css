@@ -1,0 +1,451 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   PORTAL DO CLIENTE — identidade própria, mobile-first
+
+   ── Por que um arquivo só, e por que ele não importa nada das telas da
+   advogada ─────────────────────────────────────────────────────────────────
+   O portal é o único lugar do sistema onde alguém de fora entra. Importar
+   `ClientPage.css` ou `modules.css` para aproveitar duas regras traria junto
+   toda a cadeia daqueles arquivos, e a próxima pessoa a mexer numa tela da
+   advogada mudaria o portal sem saber. Aqui as regras se repetem de propósito;
+   é a repetição que mantém as duas superfícies independentes. Há teste
+   travando a ausência do import cruzado.
+
+   ── Tokens ────────────────────────────────────────────────────────────────
+   SÓ tokens que existem em `styles/variables.css`. Nenhum inventado — token
+   inexistente foi defeito real em fase anterior, e é invisível: o navegador
+   ignora a declaração e a regra some sem erro nenhum.
+
+   ── Distinção visual ──────────────────────────────────────────────────────
+   As telas da advogada são verdes (`--color-primary`, a cor de ação do
+   sistema). O portal se apoia no dourado da marca (`--color-accent`) e em
+   superfícies mais sóbrias: quem abre isto precisa perceber, sem ler, que
+   está num lugar diferente daquele em que a advogada trabalha.
+
+   ── Alvos de toque ────────────────────────────────────────────────────────
+   Mínimo de 44px de altura em tudo que se clica. É o piso das diretrizes de
+   acessibilidade para dedo, e este portal é usado em pé, no celular, por
+   alguém que talvez não tenha boa visão.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.portal {
+  /* `body` é `display:flex` centralizado (global.css). Sem isto o portal
+     ficaria numa coluna estreita no meio da tela do desktop. */
+  width: 100%;
+  align-self: stretch;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+/* ── Barra ─────────────────────────────────────────────────────────────── */
+
+.portal__barra {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-strong);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.portal__marca {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+}
+
+.portal__subtitulo {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  /* Empurra o botão de sair para a borda oposta. */
+  margin-right: auto;
+}
+
+.portal__sair {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.portal__sair:hover {
+  background-color: var(--color-surface-raised);
+}
+
+/* ── Conteúdo ──────────────────────────────────────────────────────────── */
+
+.portal__conteudo {
+  flex: 1;
+  width: 100%;
+  /* Uma coluna. No celular ocupa tudo; no desktop para de crescer num
+     comprimento de linha que ainda se lê. */
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4);
+  box-sizing: border-box;
+}
+
+.portal__rodape {
+  padding: var(--space-5) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.portal__rodape-texto {
+  max-width: 720px;
+  margin: 0 auto;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.portal-carregando {
+  padding: var(--space-10) var(--space-4);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+/* ── Blocos ────────────────────────────────────────────────────────────── */
+
+.portal-cartao {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.portal-titulo {
+  font-size: var(--font-size-xl);
+  color: var(--color-accent);
+  margin-bottom: var(--space-2);
+}
+
+.portal-secao-titulo {
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.portal-texto {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.portal-texto--forte {
+  color: var(--color-text-primary);
+}
+
+.portal-ajuda {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
+  margin-top: var(--space-3);
+}
+
+/* ── Mensagens ─────────────────────────────────────────────────────────── */
+
+.portal-erro {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+  font-size: var(--font-size-base);
+  margin-bottom: var(--space-4);
+}
+
+/* Muitas tentativas (429). Distinto do erro de credencial de propósito: quem
+   confunde os dois tenta de novo e piora o próprio bloqueio. */
+.portal-aviso {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+  font-size: var(--font-size-base);
+  margin-bottom: var(--space-4);
+}
+
+.portal-sucesso {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+  font-size: var(--font-size-base);
+  margin-bottom: var(--space-4);
+}
+
+/* ── Formulário ────────────────────────────────────────────────────────── */
+/*
+   `.form-group` NÃO é decoração: o seletor de destaque de erro é
+   `.form-group input.input-erro`, e um input fora desse invólucro tem o
+   destaque INERTE — a classe é aplicada e visualmente nada acontece. Foi o
+   defeito da Fase 2E.1, e a varredura de CSS não o pega, porque a regra
+   existe. Aqui o invólucro é obrigatório, e há teste checando que os
+   formulários do portal o usam.
+*/
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.form-group label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.form-group input {
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-input);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  /* 16px evita o zoom automático do Safari no iPhone ao focar o campo — o
+     portal é usado no celular, e o zoom desloca a tela inteira. */
+  font-size: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.form-group input.input-erro {
+  border-color: var(--color-danger);
+  outline: 1px solid var(--color-danger-bg);
+}
+
+.form-erro-campo {
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+
+/* ── Botões ────────────────────────────────────────────────────────────── */
+
+.portal-btn {
+  min-height: 48px;
+  width: 100%;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.portal-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.portal-btn--principal {
+  background-color: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.portal-btn--secundario {
+  background-color: transparent;
+  border-color: var(--color-border-strong);
+  color: var(--color-text-primary);
+}
+
+/* Botão que cabe em linha, para os pares de download (PDF / DOCX). */
+.portal-btn--linha {
+  width: auto;
+  min-height: 44px;
+  font-size: var(--font-size-base);
+}
+
+.portal-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ── Lista de dados ────────────────────────────────────────────────────── */
+
+.portal-dados {
+  display: grid;
+  /* Uma coluna no celular; duas quando houver largura. */
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.portal-dado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.portal-dado__rotulo {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.portal-dado__valor {
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ── Documentos ────────────────────────────────────────────────────────── */
+
+.portal-doc {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  background-color: var(--color-surface-raised);
+}
+
+.portal-doc__nome {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.portal-doc__meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.portal-doc__descricao {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.portal-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ── Vazio ─────────────────────────────────────────────────────────────── */
+
+.portal-vazio {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.portal-vazio__titulo {
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.portal-vazio__texto {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+/* ── Confirmação ───────────────────────────────────────────────────────── */
+
+/* O bloco de confirmação fica no FIM da página, depois do processo e dos
+   documentos, e nunca em modal. O cliente lê primeiro e confirma depois — é
+   isso que dá valor probatório ao registro. Um modal que exigisse confirmar
+   para ver inverteria o sentido do recibo. */
+.portal-confirmacao {
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  background-color: var(--color-accent-muted);
+}
+
+/* O texto da declaração, exibido LITERALMENTE como o backend o envia. O mesmo
+   texto é copiado para dentro do registro; se a tela mostrasse outra coisa,
+   exibição e prova divergiriam. `pre-wrap` preserva as quebras da constante
+   sem reescrevê-la. */
+.portal-declaracao {
+  white-space: pre-wrap;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.portal-recibo {
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-md);
+  background-color: var(--color-success-bg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.portal-recibo__rotulo {
+  font-size: var(--font-size-sm);
+  color: var(--color-success);
+  margin-bottom: var(--space-1);
+}
+
+.portal-recibo__data {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.portal-historico-item {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+.portal-historico-item:last-child {
+  border-bottom: none;
+}
+
+/* ── Desktop ───────────────────────────────────────────────────────────── */
+/* Mobile-first: o padrão acima é o do celular, e só a partir daqui o layout
+   se espalha. */
+
+@media (min-width: 600px) {
+  .portal-dados {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .portal-btn {
+    width: auto;
+    min-width: 200px;
+  }
+
+  .portal__conteudo {
+    padding: var(--space-8) var(--space-6);
+  }
+}
