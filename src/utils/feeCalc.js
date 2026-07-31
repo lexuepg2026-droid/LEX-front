@@ -16,7 +16,10 @@
 // derivado enquanto a advogada digita — nunca para ser mais rígido que a API.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { TIPO_PERCENTUAL, STATUS_CANCELADO } from './enums';
+// Extensão explícita nos imports deste módulo e dos irmãos que a suíte carrega:
+// o Vite resolve sem ela, `node --test` não. É o que permite testar a regra
+// executando-a, em vez de conferi-la por varredura de texto.
+import { TIPO_PERCENTUAL, STATUS_CANCELADO } from './enums.js';
 
 const ehVazio = (v) => v === undefined || v === null || v === '';
 

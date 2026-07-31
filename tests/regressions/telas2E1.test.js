@@ -95,15 +95,22 @@ describe("passos 79 e 80: detalhe mostra o erro real, não a mensagem fixa", () 
 // ═════════════════════════════════════════════════════════════════════════
 
 describe("passo 81: os formulários leem `campo` do 409 e destacam o input", () => {
-  // [arquivo, campo que o backend emite]. O honorário entra com `null` de
-  // propósito: hoje o `feeService` NÃO emite `campo` em nenhum 409, e o
-  // formulário está ligado sem ter o que destacar. É o item 3 da DEC-027, e
-  // o passo 81 dizia explicitamente que ali "nada deve ser destacado".
+  // [arquivo, campo que o backend emite].
+  //
+  // ── O honorário deixou de ser `null` — Fase 4.2 ──────────────────────────
+  // Até a 4.1 o `feeService` não emitia `campo` em erro nenhum, e este
+  // formulário estava ligado ao helper sem ter o que destacar. O item 3 da
+  // DEC-027 corrigiu isso: `campo` sai nos **400** do hook condicional (o `Fee`
+  // não tem índice único, e portanto não tem 409 de conflito de campo — o
+  // roteiro da 4.1 partia de premissa errada nesse ponto).
+  //
+  // `percentual` é o campo que o hook mais nomeia, e é o que a Fase 4.2 passou
+  // a destacar de verdade.
   const FORMULARIOS = [
     ["src/pages/processes/ProcessFormPage.jsx", "numeroProcesso"],
     ["src/pages/installments/InstallmentFormPage.jsx", "numeroParcela"],
     ["src/pages/payments/PaymentFormPage.jsx", "valorPago"],
-    ["src/pages/fees/FeeFormPage.jsx", null]
+    ["src/pages/fees/FeeFormPage.jsx", "percentual"]
   ];
 
   for (const [arquivo, campo] of FORMULARIOS) {
@@ -148,12 +155,24 @@ describe("passo 81: os formulários leem `campo` do 409 e destacam o input", () 
     });
   }
 
-  test("o honorário continua SEM campo destacado, e isso está correto", () => {
-    // Trava o estado atual descrito na DEC-027 item 3. Quando a Fase 4 fizer o
-    // `feeService` emitir `campo`, este teste cai e obriga a atualizar o passo
-    // — em vez de a mudança passar despercebida.
+  test("o honorário SAIU de inerte — o helper agora tem o que destacar", () => {
+    // Este teste travava o estado anterior ("continua sem campo destacado, e
+    // isso está correto") e existia para cair quando a Fase 4 fizesse o
+    // `feeService` emitir `campo`. Caiu, e foi invertido em vez de apagado: o
+    // histórico do Git mostra a transição deliberada.
     const codigo = ler("src/pages/fees/FeeFormPage.jsx");
-    assert.match(codigo, /getApiErrorField/, "o helper deve continuar ligado, mesmo inerte");
+
+    assert.match(codigo, /getApiErrorField/, "o helper deixou de estar ligado");
+
+    // Os quatro campos que o hook condicional e a validação escrita à mão
+    // nomeiam. Destacar só um deles deixaria os outros três sem roteamento.
+    for (const campo of ["percentual", "valorBase", "valor", "tipo"]) {
+      assert.match(
+        codigo,
+        new RegExp(`campoComErro\\s*===\\s*'${campo}'`),
+        `o input de \`${campo}\` não é destacado, e o backend o nomeia`
+      );
+    }
   });
 });
 

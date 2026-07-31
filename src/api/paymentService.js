@@ -1,4 +1,5 @@
 import api from './axiosConfig';
+import { nomeDoAnexo } from '../utils/download';
 
 const listPayments = ({ page = 1, limit = 20, installmentId, processoId, formaPagamento } = {}) => {
   const params = { page, limit };
@@ -21,16 +22,11 @@ const removePayment = (id) => api.delete(`/payments/${id}`);
 const baixarRecibo = (id) =>
   api.get(`/payments/${id}/recibo`, { responseType: 'blob' });
 
-// Nome sugerido pelo backend (`receiptService.js`, via a mesma
-// `nomeArquivoSeguro` do download de documento). O header só é legível porque a
-// rota o expõe em `Access-Control-Expose-Headers` — sem isso o navegador
-// esconde o `Content-Disposition` mesmo estando na resposta.
-export const nomeDoRecibo = (response, alternativo = 'recibo.pdf') => {
-  const disposition = response?.headers?.['content-disposition'] ?? '';
-  return disposition.match(/filename="?([^";]+)"?/)?.[1] ?? alternativo;
-};
-
 // Baixa e entrega ao navegador num passo só.
+//
+// O nome sai de `utils/download.js`, o mesmo que o download de documento usa —
+// e do lado de lá vem de `nomeArquivoSeguro`, a mesma função para as duas
+// rotas. A regra de nome de arquivo tem um lugar só nas duas pontas.
 //
 // O <a download> temporário é o único caminho que funciona aqui: com cookie
 // httpOnly não dá para apontar o href direto para a rota e deixar o navegador
@@ -40,7 +36,7 @@ export const nomeDoRecibo = (response, alternativo = 'recibo.pdf') => {
 // cada download deixa o blob preso na memória da aba até o F5.
 const baixarEsalvarRecibo = async (id) => {
   const response = await baixarRecibo(id);
-  const nome = nomeDoRecibo(response);
+  const nome = nomeDoAnexo(response, 'recibo.pdf');
   const url = URL.createObjectURL(response.data);
 
   try {

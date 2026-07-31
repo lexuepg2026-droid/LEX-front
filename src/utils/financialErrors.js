@@ -12,15 +12,18 @@
 // corpo, e extraí-la por regex de dentro da frase é exatamente o que a Fase
 // 2E.1 aboliu ao criar as chaves.
 //
-// Nenhuma tela lê `err.response` — tudo passa por `utils/apiError.js`.
+// Nenhuma tela abre o corpo da resposta por conta própria — tudo passa pelos
+// helpers de `utils/apiError.js`, que é o ponto único autorizado.
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Extensão explícita: o Vite resolve sem ela, `node --test` não. Ver a nota em
+// `utils/feeCalc.js`.
 import {
   getApiErrorMessage,
   getApiErrorConflict,
   getApiErrorPendencias,
-} from './apiError';
-import { formatCurrency } from './formatters';
+} from './apiError.js';
+import { formatCurrency } from './formatters.js';
 
 // Rótulo do dependente que bloqueia a exclusão. As chaves são o vocabulário
 // FECHADO de `config/integrityConflicts.js` — nome da coleção, em português, no

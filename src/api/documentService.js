@@ -1,4 +1,5 @@
 import api from './axiosConfig';
+import { nomeDoAnexo } from '../utils/download';
 
 const listDocuments = ({ page = 1, limit = 20, processoId } = {}) => {
   const params = { page, limit };
@@ -110,13 +111,10 @@ const baixarDocumento = (id, formato = 'pdf') =>
     responseType: 'blob',
   });
 
-// Nome sugerido pelo backend (derivado de tipo + cliente + data). O header só
-// é legível porque a rota expõe `Content-Disposition` via
-// Access-Control-Expose-Headers.
-const nomeDoAnexo = (response, alternativo) => {
-  const disposition = response?.headers?.['content-disposition'] ?? '';
-  return disposition.match(/filename="?([^";]+)"?/)?.[1] ?? alternativo;
-};
+// O nome sugerido pelo backend (derivado de tipo + cliente + data) sai de
+// `utils/download.js`. Estava aqui como função local e ia ser copiado pelo
+// recibo na Fase 4.2 — duas cópias da mesma regra divergem na primeira vez que
+// uma delas muda.
 
 // Baixa e entrega o arquivo ao navegador, num passo só.
 //
