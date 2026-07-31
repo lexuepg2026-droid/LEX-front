@@ -32,3 +32,26 @@ export const getApiErrorPendencias = (err) => {
   const pendencias = getApiErrorDetails(err)?.pendencias;
   return Array.isArray(pendencias) ? pendencias : [];
 };
+
+// Chaves estruturadas dos 409, da allowlist de `middleware/errorMiddleware.js`
+// (Fase 2E.1). Existem TRÊS formatos de 409 e eles não são intercambiáveis:
+//
+//   - integridade referencial → `dependencia` + `quantidade`, SEM `campo`
+//     (o conflito é entre registros gravados, não há input para destacar);
+//   - conflito de campo       → `campo` (o input que ela acabou de preencher);
+//   - outra regra de negócio  → `regra` + as chaves que aquela regra declara
+//     (`pagamentoExcedeParcela` traz `saldoDisponivel` e `valorParcela`).
+//
+// Este getter existe para que nenhuma tela precise abrir `err.response.data`
+// para chegar a eles — que é a regra do projeto desde a Fase 2E.1, e o que
+// mantém a mensagem em prosa livre de regex sobre o texto do servidor.
+export const getApiErrorConflict = (err) => {
+  const data = err?.response?.data ?? {};
+  return {
+    regra: data.regra ?? null,
+    dependencia: data.dependencia ?? null,
+    quantidade: typeof data.quantidade === 'number' ? data.quantidade : null,
+    saldoDisponivel: typeof data.saldoDisponivel === 'number' ? data.saldoDisponivel : null,
+    valorParcela: typeof data.valorParcela === 'number' ? data.valorParcela : null,
+  };
+};

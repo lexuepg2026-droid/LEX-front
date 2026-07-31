@@ -12,6 +12,28 @@ export const formatCurrency = (value) => {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
 
+// "10%", "12,5%", "33,33%" — o percentual contratado do honorário (Fase 4.1).
+//
+// Espelha `percentual` de `utils/templateFormatters.js` no backend, que é quem
+// escreve o número dentro do contrato: vírgula decimal, no máximo duas casas,
+// zeros à direita descartados e o símbolo COLADO no número, porque em português
+// "%" não se separa do algarismo.
+//
+// Uma diferença deliberada em relação ao backend: lá o vazio sai como "" para o
+// marcador virar pendência 422 no documento; aqui sai como "—", que é o que
+// `formatCurrency` e `formatDate` já fazem nesta tela. Honorário fixo e custas
+// chegam com `percentual: null` e é isso que a coluna deve mostrar.
+export const formatPercent = (value) => {
+  if (value === undefined || value === null || value === '') return '—';
+  const numero = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numero) || numero <= 0) return '—';
+  const formatado = numero.toLocaleString('pt-BR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+  return `${formatado}%`;
+};
+
 export const formatCPF = (cpf) => {
   if (!cpf) return '—';
   const d = cpf.replace(/\D/g, '');
