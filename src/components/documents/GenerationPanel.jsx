@@ -38,20 +38,42 @@ import './GenerationPanel.css';
 //        depois de diálogo explícito.
 //
 // ═══════════════════════════════════════════════════════════════════════════
-// O AVISO DE VISIBILIDADE — correção de uma premissa da Fase 3.1
+// O AVISO DE VISIBILIDADE — e a premissa que NÃO se reproduziu
 //
-// A 3.1 pôs o aviso "este documento sairá do portal" dentro da resposta do 409.
+// A Fase 3.1 pôs o aviso "este documento sairá do portal" na resposta do 409.
 // Isso cobre menos do que parece: o 409 SÓ dispara para documento
-// `editadoManualmente`. Regerar um documento que está visível no portal e NÃO
-// foi editado à mão o tira do portal do mesmo jeito — o novo nasce com
-// `visivelPortal: false` — e não há 409 nenhum, porque não há conflito a
-// confirmar. O aviso alcançava exatamente o caminho que já parava sozinho.
+// `editadoManualmente` (`documentGenerationService.js:420`). Regerar um
+// documento visível e NÃO editado não produz 409 nenhum, e nesse caminho o
+// aviso nunca aparecia.
 //
-// Aqui o aviso passa a valer para TODA regeração de documento que esteja
-// visível, nos dois caminhos. O COMPORTAMENTO não muda: `visivelPortal`
-// continua nascendo `false`, que é segurança por omissão — a alternativa é uma
-// peça nova aparecer para o cliente sem ninguém ter liberado. O que muda é a
-// tela deixar de ser silenciosa.
+// ── O que MEDIMOS, contra o que se supunha ────────────────────────────────
+// A suposição era que regerar um documento visível e não editado o TIRA do
+// portal em silêncio. Não é o que acontece. O soft delete do anterior está sob
+// `if (anterior && confirmarSobrescrita === true)`
+// (`documentGenerationService.js:483`) — sem confirmação, o anterior NÃO é
+// desativado.
+//
+// Os dois caminhos, verificados contra a base do seed:
+//
+//   EDITADO À MÃO (com `confirmarSobrescrita`)
+//     o anterior sai por soft delete e recebe `substituidoPorId`; o novo nasce
+//     invisível. O cliente PERDE o documento até alguém liberar o novo.
+//
+//   NÃO EDITADO (sem 409)
+//     o anterior CONTINUA ativo e visível; o novo nasce invisível, ao lado
+//     dele. O cliente continua vendo a versão ANTIGA e não vê a nova — e a
+//     advogada fica com duas versões ativas do mesmo documento na listagem,
+//     sem nada dizendo qual vale.
+//
+// São problemas diferentes e por isso os avisos são diferentes. Um texto único
+// dizendo "o documento sai do portal" estaria simplesmente errado na metade
+// dos casos, e errado na direção pior: a advogada acharia que o cliente ficou
+// sem nada quando ele está lendo a versão velha.
+//
+// O COMPORTAMENTO não muda em nenhum dos dois: `visivelPortal` continua
+// nascendo `false`, que é segurança por omissão — a alternativa é uma peça
+// nova aparecer para o cliente sem ninguém ter liberado. O que muda é a tela
+// deixar de ser silenciosa.
 //
 // Para saber se há documento anterior visível, a tela consulta a listagem de
 // documentos do processo e procura pela mesma combinação modelo × processo ×
@@ -218,7 +240,7 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
         // tela oferece liberar o novo aqui mesmo. `onGerado` só é chamado
         // depois que a advogada decide.
         if (anteriorVisivel) {
-          setOfertaDeLiberacao(res.data);
+          setOfertaDeLiberacao({ gerado: res.data, anterior: anteriorVisivel });
           return;
         }
 
@@ -266,8 +288,19 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
   const liberarNovoNoPortal = useCallback(async () => {
     setLiberando(true);
     try {
-      await documentService.alternarVisibilidadePortal(ofertaDeLiberacao._id, true);
-      const gerado = ofertaDeLiberacao;
+      const { gerado, anterior } = ofertaDeLiberacao;
+
+      await documentService.alternarVisibilidadePortal(gerado._id, true);
+
+      // No caminho SEM 409 o anterior continua ATIVO e VISÍVEL — o backend só
+      // o desativa quando há `confirmarSobrescrita`. Liberar o novo sem tirar
+      // o antigo deixaria duas versões da mesma peça no portal, e o cliente
+      // sem saber qual vale. Tirar o antigo é parte de "liberar o novo", não
+      // uma segunda decisão.
+      if (anterior && anterior.editadoManualmente !== true) {
+        await documentService.alternarVisibilidadePortal(anterior._id, false);
+      }
+
       setOfertaDeLiberacao(null);
       onGerado(gerado);
     } catch (err) {
@@ -428,13 +461,31 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
 
       {/* Aviso permanente, antes de qualquer clique: a advogada precisa saber
           que este documento está no portal ANTES de decidir regerar, e não
-          depois, num diálogo que ela vai fechar no automático. */}
+          depois, num diálogo que ela vai fechar no automático.
+
+          O texto muda conforme o caminho, porque o EFEITO é diferente — ver o
+          cabeçalho deste arquivo. */}
       {anteriorVisivel && !ofertaDeLiberacao && (
         <p className="geracao__aviso-portal">
           <AlertCircle size={15} aria-hidden="true" />
-          O documento atual desta combinação está <strong>visível no portal do
-          cliente</strong>. Regerar o tira de lá: o documento novo nasce
-          invisível, e o cliente deixa de vê-lo até você liberar de novo.
+          {anteriorVisivel.editadoManualmente === true ? (
+            <span>
+              O documento atual desta combinação está <strong>visível no portal
+              do cliente</strong> e foi editado à mão. Ao regerar, ele é
+              substituído e <strong>sai do portal</strong>; o documento novo
+              nasce invisível, e o cliente fica sem nada até você liberar o
+              novo.
+            </span>
+          ) : (
+            <span>
+              O documento atual desta combinação está <strong>visível no portal
+              do cliente</strong>. Regerar <strong>não</strong> o substitui: o
+              anterior continua ativo e visível, e o documento novo nasce
+              invisível ao lado dele. Na prática, o cliente continuaria vendo a
+              versão <strong>antiga</strong> — você precisa liberar a nova e
+              tirar a anterior do portal.
+            </span>
+          )}
         </p>
       )}
 
@@ -455,12 +506,26 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
           <p className="geracao__liberacao-titulo">
             Documento gerado. Ele ainda <strong>não</strong> está no portal.
           </p>
-          <p className="geracao__liberacao-texto">
-            A versão anterior estava visível para o cliente e saiu do portal
-            agora. O documento novo nasce invisível de propósito — assim
-            nenhuma peça chega ao cliente sem alguém ter liberado. Se este já
-            pode ser lido por ele, libere aqui.
-          </p>
+
+          {ofertaDeLiberacao.anterior?.editadoManualmente === true ? (
+            <p className="geracao__liberacao-texto">
+              A versão anterior estava visível para o cliente e foi substituída
+              — ela saiu do portal agora. O documento novo nasce invisível de
+              propósito, para que nenhuma peça chegue ao cliente sem alguém ter
+              liberado. <strong>Neste momento o cliente não vê nenhuma das
+              duas.</strong>
+            </p>
+          ) : (
+            <p className="geracao__liberacao-texto">
+              A versão anterior <strong>continua ativa e visível</strong> ao
+              cliente — ela não foi substituída, porque não havia texto editado
+              à mão a preservar. Neste momento o cliente está vendo a{' '}
+              <strong>versão antiga</strong>. Liberar a nova aqui também tira a
+              anterior do portal, para não ficarem duas versões da mesma peça
+              lá.
+            </p>
+          )}
+
           <div className="geracao__acoes">
             <button
               type="button"
@@ -468,19 +533,23 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
               onClick={liberarNovoNoPortal}
               disabled={liberando}
             >
-              {liberando ? 'Liberando…' : 'Liberar no portal e continuar'}
+              {liberando
+                ? 'Liberando…'
+                : ofertaDeLiberacao.anterior?.editadoManualmente === true
+                  ? 'Liberar no portal e continuar'
+                  : 'Liberar a nova e tirar a antiga do portal'}
             </button>
             <button
               type="button"
               className="ui-btn ui-btn--secondary ui-btn--sm"
               onClick={() => {
-                const gerado = ofertaDeLiberacao;
+                const { gerado } = ofertaDeLiberacao;
                 setOfertaDeLiberacao(null);
                 onGerado(gerado);
               }}
               disabled={liberando}
             >
-              Deixar invisível por enquanto
+              Deixar como está por enquanto
             </button>
           </div>
         </div>
@@ -492,12 +561,13 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
           O diálogo existe só para a tela deixar de ser silenciosa. */}
       <Modal
         open={avisoDePortal}
-        title="Este documento sairá do portal do cliente"
+        title="O cliente continuaria vendo a versão antiga"
         message={
-          'O documento atual desta combinação está visível para o cliente no portal. ' +
-          'O documento novo nasce INVISÍVEL — é assim de propósito, para que nenhuma peça chegue ao cliente sem alguém ter liberado. ' +
-          'Na prática: ao regerar, o cliente deixa de ver este documento até você liberar o novo. ' +
-          'Você poderá liberá-lo logo depois de gerar, aqui mesmo.'
+          'O documento atual desta combinação está visível para o cliente no portal, e NÃO foi editado à mão. ' +
+          'Regerar não substitui esse documento: o anterior continua ativo e visível, e o novo é criado ao lado dele, INVISÍVEL. ' +
+          'O documento novo nascer invisível é de propósito, para que nenhuma peça chegue ao cliente sem alguém ter liberado. ' +
+          'Mas o efeito combinado é que o cliente continua lendo a versão antiga e não vê a nova, e você fica com duas versões ativas na listagem. ' +
+          'Depois de gerar, libere a nova e tire a anterior do portal — as duas coisas são oferecidas aqui mesmo.'
         }
         variant="danger"
         confirmLabel="Regerar mesmo assim"
