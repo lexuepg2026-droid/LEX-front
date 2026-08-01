@@ -154,7 +154,19 @@ function SecaoListPage() {
         />
       ) : (
         <div className="table-wrapper">
-          <table className="data-table">
+          {/* `data-table--fixed` + `<colgroup>`: sem os dois juntos, o trecho
+              inicial volta a atravessar a coluna de variáveis. O porquê está
+              escrito em `styles/modules.css`. */}
+          <table className="data-table data-table--fixed">
+            <colgroup>
+              <col className="col-lg" />
+              <col className="col-sm" />
+              {/* O trecho fica sem largura declarada de propósito: é ele que
+                  deve receber a folga que sobrar da tela. */}
+              <col />
+              <col className="col-xxs" />
+              <col className="col-acoes-3" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Título</th>
@@ -167,14 +179,17 @@ function SecaoListPage() {
             <tbody>
               {secoes.map((secao) => (
                 <tr key={secao._id}>
-                  <td>{secao.titulo}</td>
+                  <td className="cell-truncate" title={secao.titulo}>{secao.titulo}</td>
                   <td>
                     <span className="secao-tipo-badge">
                       {labelDe(TIPO_SECAO_OPTIONS, secao.tipo)}
                     </span>
                   </td>
-                  <td className="secao-trecho">{trechoInicial(secao.texto)}</td>
-                  <td>{secao.variaveis?.length ?? 0}</td>
+                  {/* Cortado com reticências. O texto inteiro está no "Ver" da
+                      própria linha — reticências que não levam a lugar nenhum
+                      escondem informação; estas levam. */}
+                  <td className="secao-trecho cell-truncate">{trechoInicial(secao.texto)}</td>
+                  <td className="cell-num">{secao.variaveis?.length ?? 0}</td>
                   <td className="actions-cell">
                     <button
                       type="button"

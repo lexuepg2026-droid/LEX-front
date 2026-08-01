@@ -88,7 +88,20 @@ function PaymentListPage({ embedded = false }) {
         />
       ) : (
         <div className="table-wrapper">
-          <table className="data-table">
+          {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`.
+              "Observações" é texto livre digitado pela advogada, sem teto: era
+              a coluna mais exposta ao defeito que a fase corrigiu. */}
+          <table className="data-table data-table--fixed">
+            <colgroup>
+              <col className="col-xs" />
+              <col />
+              <col />
+              <col className="col-sm" />
+              <col className="col-xs" />
+              <col className="col-sm" />
+              <col />
+              <col className="col-acoes-3-lg" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Parcela</th>
@@ -105,12 +118,12 @@ function PaymentListPage({ embedded = false }) {
               {payments.map(p => (
                 <tr key={p._id}>
                   <td>Parcela {p.installmentId?.numeroParcela ?? '—'}</td>
-                  <td>{p.installmentId?.feeId?.descricao ?? '—'}</td>
-                  <td>{p.installmentId?.feeId?.processoId?.titulo ?? '—'}</td>
-                  <td>{formatCurrency(p.valorPago)}</td>
+                  <td className="cell-truncate" title={p.installmentId?.feeId?.descricao ?? undefined}>{p.installmentId?.feeId?.descricao ?? '—'}</td>
+                  <td className="cell-truncate" title={p.installmentId?.feeId?.processoId?.titulo ?? undefined}>{p.installmentId?.feeId?.processoId?.titulo ?? '—'}</td>
+                  <td className="cell-num">{formatCurrency(p.valorPago)}</td>
                   <td>{formatDate(p.dataPagamento)}</td>
-                  <td>{labelDe(FORMA_PAGAMENTO_OPTIONS, p.formaPagamento)}</td>
-                  <td>{p.observacoes || '—'}</td>
+                  <td className="cell-truncate">{labelDe(FORMA_PAGAMENTO_OPTIONS, p.formaPagamento)}</td>
+                  <td className="cell-truncate" title={p.observacoes || undefined}>{p.observacoes || '—'}</td>
                   <td className="actions-cell">
                     {/* Só pagamento ATIVO tem recibo. A rota responde 404 para
                         o desativado, e oferecer o botão seria prometer um papel

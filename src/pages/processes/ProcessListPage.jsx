@@ -86,7 +86,16 @@ function ProcessoListPage() {
         <EmptyState title="Nenhum processo encontrado." description="Tente ajustar os filtros ou cadastre um novo processo." />
       ) : (
         <div className="table-wrapper">
-          <table className="data-table">
+          {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
+          <table className="data-table data-table--fixed">
+            <colgroup>
+              <col />
+              <col className="col-lg" />
+              <col />
+              <col className="col-xs" />
+              <col className="col-sm" />
+              <col className="col-acoes-2" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Título</th>
@@ -100,9 +109,9 @@ function ProcessoListPage() {
             <tbody>
               {processos.map(p => (
                 <tr key={p._id}>
-                  <td>{p.titulo}</td>
-                  <td>{p.numeroProcesso || '—'}</td>
-                  <td>{nomeCliente(p)}</td>
+                  <td className="cell-truncate" title={p.titulo}>{p.titulo}</td>
+                  <td className="cell-truncate">{p.numeroProcesso || '—'}</td>
+                  <td className="cell-truncate" title={nomeCliente(p)}>{nomeCliente(p)}</td>
                   <td><StatusBadge status={p.status} /></td>
                   <td>{formatDate(p.dataDistribuicao)}</td>
                   <td className="actions-cell">

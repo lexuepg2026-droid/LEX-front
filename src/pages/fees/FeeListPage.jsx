@@ -101,7 +101,19 @@ function FeeListPage({ embedded = false }) {
         />
       ) : (
         <div className="table-wrapper">
-          <table className="data-table">
+          {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
+          <table className="data-table data-table--fixed">
+            <colgroup>
+              <col />
+              <col />
+              <col className="col-xs" />
+              <col className="col-xxs" />
+              <col className="col-sm" />
+              <col className="col-sm" />
+              <col className="col-sm" />
+              <col className="col-xs" />
+              <col className="col-acoes-2" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Processo</th>
@@ -123,12 +135,12 @@ function FeeListPage({ embedded = false }) {
                   key={fee._id}
                   className={fee.status === STATUS_CANCELADO ? 'row-inativa' : undefined}
                 >
-                  <td>{fee.processoId?.titulo ?? '—'}</td>
-                  <td>{fee.descricao}</td>
+                  <td className="cell-truncate" title={fee.processoId?.titulo ?? undefined}>{fee.processoId?.titulo ?? '—'}</td>
+                  <td className="cell-truncate" title={fee.descricao}>{fee.descricao}</td>
                   <td>{labelDe(TIPO_HONORARIO_OPTIONS, fee.tipo)}</td>
-                  <td>{formatPercent(fee.percentual)}</td>
-                  <td>{fee.valorBase == null ? '—' : formatCurrency(fee.valorBase)}</td>
-                  <td>{formatCurrency(fee.valor)}</td>
+                  <td className="cell-num">{formatPercent(fee.percentual)}</td>
+                  <td className="cell-num">{fee.valorBase == null ? '—' : formatCurrency(fee.valorBase)}</td>
+                  <td className="cell-num">{formatCurrency(fee.valor)}</td>
                   <td><StatusBadge status={fee.status} /></td>
                   <td>{formatDate(fee.dataVencimento)}</td>
                   <td className="actions-cell">

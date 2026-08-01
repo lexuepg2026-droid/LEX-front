@@ -68,7 +68,19 @@ function InstallmentListPage({ embedded = false }) {
         />
       ) : (
         <div className="table-wrapper">
-          <table className="data-table">
+          {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
+          <table className="data-table data-table--fixed">
+            <colgroup>
+              <col />
+              <col className="col-xxs" />
+              <col className="col-sm" />
+              <col className="col-sm" />
+              <col className="col-sm" />
+              <col className="col-xs" />
+              <col className="col-xs" />
+              <col className="col-xs" />
+              <col className="col-acoes-2" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Honorário</th>
@@ -88,11 +100,11 @@ function InstallmentListPage({ embedded = false }) {
             <tbody>
               {installments.map(inst => (
                 <tr key={inst._id}>
-                  <td>{inst.feeId?.descricao || '—'}</td>
-                  <td>{inst.numeroParcela}</td>
-                  <td>{formatCurrency(inst.valor)}</td>
-                  <td>{formatCurrency(inst.valorPago ?? 0)}</td>
-                  <td>{formatCurrency(Math.max(0, Number(inst.valor || 0) - Number(inst.valorPago || 0)))}</td>
+                  <td className="cell-truncate" title={inst.feeId?.descricao || undefined}>{inst.feeId?.descricao || '—'}</td>
+                  <td className="cell-num">{inst.numeroParcela}</td>
+                  <td className="cell-num">{formatCurrency(inst.valor)}</td>
+                  <td className="cell-num">{formatCurrency(inst.valorPago ?? 0)}</td>
+                  <td className="cell-num">{formatCurrency(Math.max(0, Number(inst.valor || 0) - Number(inst.valorPago || 0)))}</td>
                   <td>{formatDate(inst.dataVencimento)}</td>
                   <td><StatusBadge status={inst.status} /></td>
                   <td>{formatDate(inst.dataPagamento)}</td>
