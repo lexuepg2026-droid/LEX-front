@@ -1359,6 +1359,157 @@ Dados que vários passos usam:
 
 ---
 
+## 17. Fase 4.4 — Módulo de documentos: a folha, o editor e o gráfico
+
+> Numeração contínua a partir do 125. Dez passos novos: **126 a 135**.
+> O total pendente vai de **120 para 130**.
+>
+> **Estes passos existem porque um bug real passou por tudo.** A folha da
+> montagem não atualizava ao adicionar seção, e nem `lint`, nem `build`, nem as
+> 182 asserções do frontend acusaram — a suíte não tem DOM, e o defeito era do
+> ciclo de vida de um efeito do React. O backend estava correto o tempo todo.
+
+### A folha da montagem
+
+- [ ] **126. ⭐🚨 BLOQUEANTE — adicionar seção e vê-la na folha NA HORA**
+  `[só olho humano]`
+  Pré-condição: `npm run seed:fresh`, `/dashboard/documentos/montar?modo=modelo`,
+  um modelo novo criado, **e o app rodando em `npm run dev`** (é em
+  desenvolvimento que o `<React.StrictMode>` está ativo — foi ele que expôs o
+  bug, e é nele que a correção precisa ser conferida).
+  Passos: 1) na biblioteca à esquerda, clicar **Adicionar** numa seção;
+  2) olhar a folha A4 **sem recarregar a página**; 3) repetir com uma segunda e
+  uma terceira seção.
+  Esperado: cada seção aparece na folha **imediatamente**, no fim, numerada em
+  sequência, com o título e o trecho do texto. A miniatura correspondente na
+  biblioteca passa a exibir o selo "no documento". O indicador do cabeçalho
+  mostra "salvando…" e depois "salvo às HH:MM:SS".
+  Por que é bloqueante: era exatamente isto que estava quebrado. A ação
+  concluía sem erro nenhum e nada acontecia na tela — a advogada clicava,
+  clicava de novo, e concluía que o sistema não funcionava.
+  Fase de origem: 4.4
+
+- [ ] **127. ⭐ Remover e reordenar refletem na hora**
+  `[só olho humano]`
+  Pré-condição: a mesma folha do 126, com três seções.
+  Passos: 1) usar ↑ e ↓ para trocar a ordem de dois blocos; 2) **Remover** um
+  bloco; 3) recarregar a página (F5) e conferir que o que se vê é o que ficou.
+  Esperado: a folha reordena e remove **na hora**, sem piscar nem esperar
+  requisição; a numeração dos blocos se refaz em 1..N sem buraco; o F5 mostra
+  exatamente o mesmo estado. O indicador passa por "salvando…" → "salvo às".
+  Por que só olho humano: reordenar e remover são **otimistas** — a tela muda
+  antes da resposta. O que se confere é se o estado que sobrevive ao F5 é o
+  mesmo que ela viu, e nenhum script sem DOM alcança isso.
+  Fase de origem: 4.4
+
+- [ ] **128. O rollback aparece quando a gravação falha**
+  `[só olho humano]`
+  Pré-condição: DevTools → Network → **Offline**, com três seções na folha.
+  Passos: 1) ficar offline; 2) reordenar dois blocos; 3) voltar ao online.
+  Esperado: a ordem **volta sozinha** para a anterior (rollback visível), com
+  a mensagem "não salvo — a ordem anterior foi restaurada" no cabeçalho e um
+  toast de erro. Nada fica com a ordem que o servidor não aceitou.
+  Por que este passo existe: o rollback compartilhava a cadeia quebrada do 126
+  — a mensagem aparecia mas a folha **não voltava**, deixando a tela mostrando
+  uma ordem que o servidor tinha recusado.
+  Fase de origem: 4.4
+
+- [ ] **129. Arrastar e soltar continua funcionando (desktop)**
+  `[só olho humano]`
+  Passos: arrastar uma seção da biblioteca para um ponto no meio da folha; e
+  arrastar um bloco da folha para outra posição.
+  Esperado: a faixa de destino se destaca durante o arraste; ao soltar, a seção
+  entra **naquela** posição e empurra as seguintes. O resultado é o mesmo do
+  botão "Inserir aqui".
+  Por que só olho humano: eventos de arraste do HTML5 não existem sem
+  navegador, e o LEX não pode depender de o arrastar funcionar na primeira
+  tentativa numa banca — o caminho por botões é o principal, este é o atalho.
+  Fase de origem: 4.4
+
+### O editor pós-geração
+
+- [ ] **130. ⭐ Editar o texto gerado e ver o indicador**
+  `[automatizável]`
+  Pré-condição: um documento **gerado** aberto em
+  `/dashboard/documentos/:id/texto`.
+  Passos: 1) alterar o texto na caixa; 2) reparar em "alterações não salvas";
+  3) clicar **Salvar texto**; 4) dar F5.
+  Esperado: depois de salvar, aparece o selo **"editado à mão"** no cabeçalho,
+  o aviso de não salvo some, e o F5 traz o texto editado. A lista de lacunas se
+  recalcula sobre o texto novo.
+  Fase de origem: 4.4
+
+- [ ] **131. ⭐🚨 Regerar documento EDITADO → diálogo de confirmação**
+  `[só olho humano]`
+  Pré-condição: o documento do passo 130, já com o selo "editado à mão".
+  Passos: 1) no cartão **Regerar**, à direita, ler o aviso em âmbar; 2) clicar
+  **Regerar a partir das seções**; 3) ler o diálogo; 4) cancelar em
+  "Manter o texto atual"; 5) conferir que nada mudou; 6) repetir e confirmar em
+  **Substituir e regerar**.
+  Esperado: o diálogo diz que o texto editado será substituído, **cita a data**
+  em que a versão atual foi gerada e afirma que ela fica recuperável. Cancelar
+  não altera nada. Confirmar leva para o documento **novo**, sem o selo
+  "editado à mão", e o anterior sai da lista de documentos.
+  Por que é bloqueante: é a única ação do módulo que **apaga trabalho da
+  advogada**. Um 409 tratado como toast de erro em vez de pergunta faria a
+  regeração parecer quebrada; um 409 ignorado apagaria a revisão sem perguntar.
+  Fase de origem: 4.4
+
+- [ ] **132. Regerar documento NÃO editado vai direto**
+  `[só olho humano]`
+  Pré-condição: um documento gerado e **não** editado à mão.
+  Passos: clicar **Regerar a partir das seções**.
+  Esperado: regenera **sem diálogo nenhum** — não há texto revisado a proteger.
+  A tela passa a mostrar o documento novo.
+  Por que este passo existe: o 409 só dispara para documento editado. Pedir
+  confirmação sempre treinaria a advogada a clicar "sim" sem ler — e aí o
+  aviso do 131 não protegeria nada.
+  Fase de origem: 4.4
+
+- [ ] **133. Texto não salvo avisa ANTES de regerar**
+  `[automatizável]`
+  Passos: 1) alterar o texto e **não** salvar; 2) clicar em Regerar.
+  Esperado: diálogo dizendo que as alterações não salvas serão descartadas e
+  **não são recuperáveis**, com "Voltar e salvar" como saída. É um diálogo
+  diferente do 131.
+  Por que este passo existe: o servidor não sabe da edição que ainda está na
+  caixa — não haveria 409 nenhum, e o texto se perderia em silêncio. O aviso
+  tem de vir da tela.
+  Fase de origem: 4.4
+
+- [ ] **134. ⭐ PDF e DOCX trazem o texto EDITADO**
+  `[só olho humano]`
+  Pré-condição: documento editado à mão e salvo (passo 130).
+  Passos: 1) baixar em **PDF**; 2) baixar em **DOCX**; 3) abrir os dois e
+  comparar com o que está na caixa de texto.
+  Esperado: os dois arquivos trazem o **texto editado**, e não o recomposto das
+  seções. O timbrado está no lugar nos dois.
+  Por que só olho humano: a suíte do backend já extrai o texto do PDF e do
+  DOCX e prova que é o editado. O que ela **não** prova é que o arquivo abre
+  no Word e no LibreOffice sem reclamar, e que a diagramação continua legível
+  — e é assim que o documento chega ao cliente.
+  Fase de origem: 4.4
+
+### O gráfico
+
+- [ ] **135. Barra do mês sem o honorário cancelado**
+  `[automatizável]`
+  Pré-condição: seed carregado (tem 1 honorário cancelado, de R$ 800).
+  Passos: 1) no dashboard, ler a soma das barras de "Honorários contratados por
+  mês de cadastro"; 2) comparar com o cartão "Valor Contratado (total)";
+  3) abrir a ficha financeira do processo do honorário cancelado e conferir que
+  ele aparece na lista, atenuado, e **fora** do total contratado.
+  Esperado: a soma das barras **bate** com o "Valor Contratado (total)". O
+  cancelado não está em nenhum dos dois, e continua visível na ficha.
+  Por que este passo existe: era um achado reportado na Fase 4.3 e não
+  corrigido — o gráfico somava o cancelado enquanto o cartão logo acima o
+  excluía. Dois números do mesmo assunto, na mesma tela, sem nada explicando a
+  diferença.
+  Fase de origem: 4.4
+
+
+---
+
 ## Validado
 
 > Passo **executado por olho humano e aprovado**, com data. Continua sendo

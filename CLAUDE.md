@@ -325,6 +325,110 @@ pode ser levado para antes do símbolo e a advogada digitaria "1R$500".
 
 ---
 
+## Sentinela de montagem — o bug da folha (Fase 4.4)
+
+**Efeito de limpeza sozinho não é sentinela.** A tela de montagem guardava
+assim:
+
+```js
+const montado = useRef(true);
+useEffect(() => () => { montado.current = false; }, []);   // corpo VAZIO
+```
+
+O `<React.StrictMode>` monta, desmonta e monta de novo em desenvolvimento. A
+limpeza escrevia `false`, o corpo do efeito não escrevia nada, e a sentinela
+ficava **presa em `false` com o componente vivo na tela**. Todo
+`if (montado.current) setX(...)` virava no-op silencioso — sem erro, sem aviso,
+sem console.
+
+**O sintoma:** adicionar uma seção gravava (201), a releitura trazia a lista
+nova do servidor, e a folha A4 continuava mostrando o estado do carregamento
+inicial. Para a advogada: "cliquei, não deu erro, não aconteceu nada".
+
+O carregamento inicial escapava porque usa `let ativo = true` **local ao
+efeito**, criado a cada execução — e não um ref que sobrevive entre elas.
+
+**A correção é uma linha:** o efeito precisa **afirmar** a montagem, não só
+negá-la na saída. Mora em `hooks/useIsMounted.js`, em hook, para a próxima tela
+não reescrever as duas linhas de memória e errar do mesmo jeito.
+
+**Varredura feita na fase:** o formato do defeito (`useEffect(() => () => …)`)
+não existe em nenhum outro arquivo, e as outras oito telas do módulo usam a
+variável local ao efeito, imune à remontagem. **Era um caso só.**
+
+`hooks/useIsMounted.js` exporta também `simularSentinela()` — a mesma lógica
+sem React, para a suíte rodar o ciclo `monta → desmonta → monta` e conferir
+onde o ref para. A suíte não tem renderizador; é a troca aceita por não
+instalar uma testing-library só para isto. **As duas versões precisam ser
+lidas juntas:** mexer numa sem mexer na outra faz o teste deixar de descrever
+o hook.
+
+---
+
+## Estado da montagem — funções puras
+
+`pages/documents/assemblyState.js`, extraído junto com a correção acima, pelo
+mesmo motivo de `utils/feeCalc.js`: a suíte é `node --test` sem DOM, e lógica
+dentro do componente só se testaria por varredura de texto.
+
+| Função | O que faz |
+|---|---|
+| `listaDeVinculos(res)` | envelope → array, **sempre** array |
+| `secaoIdDe(v)` | id da seção com `secaoId` populado **ou** cru |
+| `idsDasSecoes` / `idsNaOrdem` | o conjunto usado e o corpo do PATCH |
+| `reordenarLocal` / `removerLocal` | os movimentos **otimistas** |
+
+**Quem ordena é o backend.** A inserção com `ordem` empurra as seguintes no
+servidor, e a tela relê em vez de reproduzir a regra. `reordenarLocal` fora da
+faixa devolve a **mesma referência**, e não uma cópia: cópia marcaria o estado
+como sujo sem nada ter mudado e dispararia uma reordenação inútil.
+
+---
+
+## Regerar a partir das seções (Fase 4.4)
+
+A auditoria da 4.4 encontrou o contrato da 2C **inteiro no backend** e quase
+inteiro na interface: exibir, editar, salvar por PATCH e o selo "editado à mão"
+já existiam em `DocumentFinalTextPage`; o 409 com `confirmarSobrescrita` já
+existia em `GenerationPanel`, na tela de **montagem**.
+
+**O que faltava era regerar a partir da tela do próprio documento.** Pela
+montagem, a advogada tinha de voltar, achar o modelo e reescolher processo e
+cliente — sabendo de cor quais eram. Tudo isso já está gravado no documento
+desde a 2C: `geradoDeModeloId`, `processoId`, `clienteId`, `honorarioId`.
+
+As regras vivem em `pages/documents/regeneration.js`:
+
+- **`processoId` vem populado** na leitura; mandar o objeto no payload faria o
+  backend receber um id inválido. A normalização é explícita.
+- **Cliente e honorário ausentes saem `undefined`, não `null`.** Aqui não é
+  "apagar campo" (a convenção do projeto) — é "não informar", e o backend
+  trata os dois diferente: `honorarioId` omitido deixa ele escolher quando há
+  um único ativo.
+- **Cada impedimento tem frase própria** (modelo, upload, sem
+  `geradoDeModeloId`, sem processo). Um "não é possível regerar" genérico
+  deixaria a advogada sem saber se o problema é o documento ou o sistema.
+
+**Três diálogos diferentes, e a diferença importa:**
+
+| Situação | Quem avisa | Por quê |
+|---|---|---|
+| texto **não salvo** | a tela | o servidor não sabe da edição na caixa; não haveria 409, e ela se perderia em silêncio |
+| documento **editado** | o 409 do backend | é o contrato da 2C — reenvia com `confirmarSobrescrita: true` |
+| documento **não editado** | ninguém | regenera direto; pedir confirmação sempre treina a clicar "sim" sem ler |
+
+O texto do diálogo sai das **chaves** do 409 (`dataGeracao`,
+`editadoManualmente`, `sairaDoPortal`), nunca de regex sobre a mensagem. A
+frase do portal só entra quando `sairaDoPortal` é verdadeiro: dizer "e sai do
+portal" sobre documento que nunca esteve lá é informação errada na direção que
+assusta.
+
+**Esta tela entrou na allowlist de roteamento por status HTTP**
+(`tests/financial/estatica.test.js`), com motivo escrito. É a terceira, ao lado
+de `GenerationPanel` e `PortalLoginPage`.
+
+---
+
 ## Testes
 
 `npm test` → `node --test tests/`. **Sem DOM e sem dependência de render**, por
@@ -341,6 +445,8 @@ A consequência é a divisão de trabalho que a Fase 4.2 firmou:
 | `tests/financial/estatica.test.js` | que a **tela continua chamando** aquelas funções |
 | `tests/financial/moeda.test.js` | a **máscara de moeda**, nos três caminhos de entrada |
 | `tests/dashboard/graficos.test.js` | a **série e a legenda** dos gráficos, e a paridade badge ↔ fatia |
+| `tests/documents/folha.test.js` | o **ciclo de vida** da sentinela e a lista que alimenta a folha |
+| `tests/documents/regeracao.test.js` | os **parâmetros** da regeração e o texto do 409 |
 | `tests/css/appliedClasses.test.js` | que toda classe aplicada **alcança** regra |
 
 As varreduras estáticas limpam comentários antes de analisar. Sem isso, um
@@ -484,6 +590,43 @@ reportado, não como correção de passagem.
 **Não tocado:** backend (nenhum commit deste repositório),
 `axiosConfig.js`, telas do portal, contrato de payload de qualquer rota.
 **Nenhuma dependência nova** — `package.json` idêntico a `main`.
+
+---
+
+### Fase 4.4 — Módulo de documentos: a folha, o editor pós-geração e o gráfico
+
+**Resumo:** um bug funcional real — a folha da montagem não refletia a seção
+adicionada — diagnosticado até a causa raiz, corrigido e travado. Mais a
+regeração na tela do documento e o achado do gráfico que a 4.3 deixou aberto.
+Frontend 182 → 213 testes. Roteiro manual 120 → 130 passos.
+
+**Arquivos novos:** `hooks/useIsMounted.js`,
+`pages/documents/assemblyState.js`, `pages/documents/regeneration.js`,
+`tests/documents/folha.test.js`, `tests/documents/regeracao.test.js`.
+
+**Alterados:** `pages/documents/DocumentAssemblyPage.jsx` (a correção e a
+extração), `pages/documents/DocumentFinalTextPage.jsx` + `.css` (regerar),
+`tests/financial/estatica.test.js` (a allowlist de status, com motivo),
+`docs/validacao-manual.md`.
+
+**A causa raiz, em uma linha honesta:** o efeito que guardava a sentinela de
+montagem só tinha limpeza, e a remontagem do StrictMode a deixava presa em
+`false` — todo `setState` guardado virava no-op silencioso. **Não era a rede,
+não era o backend, e não era a folha.**
+
+**O diagnóstico foi medido, não suposto.** Antes de tocar em qualquer linha,
+a sequência inteira da tela foi reproduzida por HTTP contra o servidor real
+(POST sem `ordem`, POST com `ordem`, PATCH reordenar, DELETE): **o backend
+respondeu certo em todos os passos**, com `secaoId` populado e `ordem` correta.
+Foi isso que descartou o backend e apontou para o ciclo de vida do efeito.
+
+**A correção foi conferida por mutação:** removida a linha `ref.current = true`
+do efeito, o teste do ciclo de vida falha; devolvida, passa. Sem isso o teste
+provaria apenas que o código roda.
+
+**Não tocado:** contrato de rota nenhum, `axiosConfig.js`, telas do portal,
+módulo financeiro. **Nenhuma dependência nova** — `package.json` idêntico a
+`main`.
 
 ---
 

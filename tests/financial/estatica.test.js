@@ -182,7 +182,7 @@ describe("o tratamento de erro passa pelos helpers, nunca por err.response", () 
   //
   // O conjunto é TRAVADO mesmo assim: um arquivo novo que apareça aqui derruba
   // o teste e obriga a decidir de propósito, em vez de o hábito se espalhar.
-  test("o roteamento por status HTTP fica restrito às duas telas que já o faziam", () => {
+  test("o roteamento por status HTTP fica restrito às três telas autorizadas", () => {
     const leemStatus = [];
 
     for (const caminho of arquivosFonte()) {
@@ -196,6 +196,14 @@ describe("o tratamento de erro passa pelos helpers, nunca por err.response", () 
     assert.deepEqual(leemStatus.sort(), [
       // 409 de sobrescrita e 422 de pendências, na geração de documento (3.2).
       "src/components/documents/GenerationPanel.jsx",
+      // 409 de sobrescrita, agora também na tela do próprio documento (4.4).
+      //
+      // Entrou de propósito, e não por hábito: a Fase 4.4 pôs "Regerar a partir
+      // das seções" aqui, e regerar documento editado à mão responde 409. É o
+      // MESMO contrato da 2C que o GenerationPanel já trata — o status é o que
+      // distingue "precisa confirmar" de "deu errado", e o corpo continua sendo
+      // lido só por `getApiErrorDetails`.
+      "src/pages/documents/DocumentFinalTextPage.jsx",
       // 429 do rate limit do portal, que precisa de mensagem visivelmente
       // diferente da de credencial inválida (3.2).
       "src/pages/portal/PortalLoginPage.jsx"
