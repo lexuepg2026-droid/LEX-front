@@ -76,7 +76,19 @@ function ClienteListPage() {
         <EmptyState title="Nenhum cliente encontrado." description="Tente ajustar os filtros ou cadastre um novo cliente." />
       ) : (
         <div className="table-wrapper">
-          <table className="data-table">
+          {/* Larguras estáveis (Fase 4.3). Nome, e-mail e endereço são texto
+              livre sem teto: sem `<colgroup>` eles decidem a largura da tabela
+              e empurram a coluna de ações para fora da tela. */}
+          <table className="data-table data-table--fixed">
+            <colgroup>
+              <col />
+              <col className="col-md" />
+              <col className="col-xs" />
+              <col />
+              <col className="col-sm" />
+              <col />
+              <col className="col-acoes-3" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Nome / Razão Social</th>
@@ -89,21 +101,25 @@ function ClienteListPage() {
               </tr>
             </thead>
             <tbody>
-              {clientes.map(cliente => (
+              {clientes.map(cliente => {
+                const nome = cliente.tipoPessoa === 'fisica' ? cliente.nomeCompleto : cliente.razaoSocial;
+                const endereco = formatEndereco(cliente.endereco);
+                return (
                 <tr key={cliente._id}>
-                  <td>{cliente.tipoPessoa === 'fisica' ? cliente.nomeCompleto : cliente.razaoSocial}</td>
+                  <td className="cell-truncate" title={nome}>{nome}</td>
                   <td>{cliente.tipoPessoa === 'fisica' ? cliente.cpf : cliente.cnpj}</td>
                   <td>{cliente.tipoPessoa === 'fisica' ? 'Física' : 'Jurídica'}</td>
-                  <td>{cliente.email || '—'}</td>
+                  <td className="cell-truncate" title={cliente.email || undefined}>{cliente.email || '—'}</td>
                   <td>{cliente.telefone || '—'}</td>
-                  <td>{formatEndereco(cliente.endereco)}</td>
+                  <td className="cell-truncate" title={endereco}>{endereco}</td>
                   <td className="actions-cell">
                     <Link to={`/dashboard/clientes/detalhe/${cliente._id}`} className="btn-action btn-view">Ver</Link>
                     <Link to={`/dashboard/clientes/editar/${cliente._id}`} className="btn-action btn-edit">Editar</Link>
                     <button onClick={() => confirmDelete(cliente._id)} className="btn-action btn-delete">Excluir</button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

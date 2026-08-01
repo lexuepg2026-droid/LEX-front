@@ -36,8 +36,13 @@
   color: var(--color-text-primary);
 }
 
+/* A rolagem horizontal de tabela larga mora AQUI, e nunca na página.
+   `max-width: 100%` é o que impede a tabela de empurrar o container: sem ele,
+   `width: 100%` num filho mais largo que o pai faz o pai crescer junto e quem
+   rola é o documento inteiro — com o cabeçalho e o menu saindo de vista. */
 .table-wrapper {
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
 }
 
@@ -55,6 +60,80 @@
   padding: var(--space-3);
   text-align: left;
   white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TABELA DE LARGURA ESTÁVEL — o padrão reutilizável da Fase 4.3
+   ═══════════════════════════════════════════════════════════════════════════
+
+   ── O defeito que originou isto ──────────────────────────────────────────
+   A Biblioteca de Seções tinha `max-width: 40ch` na célula do trecho inicial,
+   junto com o `white-space: nowrap` que TODA célula desta folha herda. Com
+   `table-layout: auto` (o padrão), o navegador dimensiona a coluna pelo
+   conteúdo, e conteúdo que não pode quebrar tem largura mínima igual à frase
+   inteira. O `max-width` não encolhe a frase: ele encolhe a CAIXA, e o texto
+   sai por cima da célula seguinte. Era por isso que o trecho invadia a coluna
+   "Variáveis" e o número encostava nos botões.
+
+   `max-width` sozinho nunca resolve isso — nem com `overflow: hidden`, porque
+   em `table-layout: auto` a largura da coluna continua sendo negociada pelo
+   conteúdo de todas as linhas.
+
+   ── A correção ───────────────────────────────────────────────────────────
+   `table-layout: fixed` + um `<colgroup>` que declara a largura de cada
+   coluna. Aí a largura é decidida ANTES de ler o conteúdo, `overflow: hidden`
+   passa a valer e `text-overflow: ellipsis` corta com reticências.
+
+   O texto inteiro continua acessível — no "Ver" da própria linha, que já
+   existe. Reticências que não levam a lugar nenhum escondem informação; estas
+   levam.
+
+   Quem aplica `data-table--fixed` PRECISA declarar o `<colgroup>`: sem ele,
+   `table-layout: fixed` divide a largura em partes iguais e a coluna de ações
+   recebe o mesmo tanto que a de status. */
+.data-table--fixed {
+  table-layout: fixed;
+}
+
+.data-table--fixed th,
+.data-table--fixed td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Larguras de coluna. Classes, e não `style` inline, para a próxima listagem
+   não inventar uma sexta medida. Coluna sem classe fica `auto` e divide o que
+   sobrar — é onde vai o texto livre, que é quem deve ganhar a folga. */
+.col-xxs { width: 80px; }
+.col-xs  { width: 100px; }
+.col-sm  { width: 130px; }
+.col-md  { width: 170px; }
+.col-lg  { width: 220px; }
+
+/* A coluna de ações é dimensionada pela FILEIRA DE BOTÕES, não pelo título.
+   Estreitá-la para caber mais texto é o que reintroduz a sobreposição — os
+   botões não encolhem, eles escapam. Quatro medidas, por quantidade de botão. */
+.col-acoes-2    { width: 180px; }
+.col-acoes-3    { width: 240px; }
+.col-acoes-3-lg { width: 300px; }
+.col-acoes-4    { width: 340px; }
+
+/* Célula de texto livre truncada. Explícita, e não herdada de `td`, para o
+   truncamento ser uma decisão visível em cada listagem que o usa.
+   Seletor com `.data-table` na frente de propósito: `.data-table td` já
+   declara `text-align: left`, e uma classe solta perderia a disputa de
+   especificidade em silêncio. */
+.data-table .cell-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Número alinhado à direita: coluna de dinheiro e de contagem se lê pela
+   unidade, não pela primeira letra. */
+.data-table .cell-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .data-table th {

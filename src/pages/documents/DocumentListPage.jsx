@@ -109,7 +109,18 @@ function DocumentListPage() {
         />
       ) : (
         <div className="table-wrapper">
-          <table className="data-table">
+          {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. A coluna
+              de ações é a mais larga do app: são quatro botões, dois deles com
+              ícone. */}
+          <table className="data-table data-table--fixed">
+            <colgroup>
+              <col />
+              <col className="col-md" />
+              <col />
+              <col className="col-sm" />
+              <col className="col-md" />
+              <col className="col-acoes-4" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Nome</th>
@@ -123,11 +134,11 @@ function DocumentListPage() {
             <tbody>
               {documentos.map((documento) => (
                 <tr key={documento._id}>
-                  <td>
+                  <td className="cell-truncate" title={documento.nome}>
                     <Link to={`/dashboard/documentos/${documento._id}/texto`}>{documento.nome}</Link>
                   </td>
-                  <td>{labelDe(TIPO_DOCUMENTO_OPTIONS, documento.tipo)}</td>
-                  <td>{documento.processoId?.titulo || '—'}</td>
+                  <td className="cell-truncate">{labelDe(TIPO_DOCUMENTO_OPTIONS, documento.tipo)}</td>
+                  <td className="cell-truncate" title={documento.processoId?.titulo || undefined}>{documento.processoId?.titulo || '—'}</td>
                   <td>{documento.dataGeracao ? formatDate(documento.dataGeracao) : '—'}</td>
                   <td>
                     <div className="doc-selos">

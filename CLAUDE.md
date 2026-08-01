@@ -183,6 +183,148 @@ Detalhes e os 12 pontos da DEC-029 estão no `CLAUDE.md` do backend.
 
 ---
 
+## Tabela de largura estável — o padrão reutilizável (Fase 4.3)
+
+**Nenhuma listagem do app pode ter texto atravessando célula.** O padrão vive
+em `styles/modules.css` e se aplica em três peças:
+
+| Peça | O que faz |
+|---|---|
+| `.data-table--fixed` | `table-layout: fixed` + `overflow: hidden` nas células |
+| `<colgroup>` com `.col-*` | declara a largura de cada coluna |
+| `.cell-truncate` | corta o texto com reticências |
+
+**Quem aplica `data-table--fixed` PRECISA declarar o `<colgroup>`.** Sem ele,
+o layout fixo divide a largura em partes iguais e a coluna de ações recebe o
+mesmo tanto que a de status.
+
+### O defeito que originou o padrão
+
+A Biblioteca de Seções tinha `max-width: 40ch` na célula do trecho inicial,
+junto com o `white-space: nowrap` que **toda** célula de `.data-table` herda.
+Com `table-layout: auto` (o padrão), a coluna é dimensionada pelo conteúdo, e
+conteúdo que não pode quebrar tem largura mínima igual à frase inteira. O
+`max-width` não encolhe a frase: encolhe a **caixa**, e o texto sai por cima da
+célula seguinte. Era por isso que o trecho invadia a coluna "Variáveis" e o
+número encostava nos botões.
+
+**`max-width` sozinho nunca resolve isso** — nem com `overflow: hidden`, porque
+em layout automático a largura da coluna continua sendo negociada pelo conteúdo
+de todas as linhas. Só `table-layout: fixed` decide a largura **antes** de ler
+o conteúdo, e é isso que faz `text-overflow: ellipsis` passar a valer.
+
+**As reticências precisam levar a algum lugar.** Na Biblioteca de Seções, o
+texto completo está no "Ver" que já existia. Reticências que não levam a lugar
+nenhum escondem informação.
+
+**A rolagem horizontal é do `.table-wrapper`, nunca da página.** `max-width:
+100%` no wrapper é o que impede a tabela de empurrar o container: sem ele,
+`width: 100%` num filho mais largo que o pai faz o pai crescer junto, e quem
+rola é o documento inteiro — com o cabeçalho e o menu saindo de vista.
+
+As sete listagens usam o padrão: clientes, processos, seções, documentos,
+honorários, parcelas e pagamentos.
+
+---
+
+## Cor de gráfico É cor de badge — `utils/statusVisual.js` (Fase 4.3)
+
+Fonte **única** de rótulo e cor por status, consumida pelo `StatusBadge` **e**
+pelos donuts do dashboard.
+
+```
+status → { label, tom }        tom → var(--color-…)
+                               success → --color-success
+                               warning → --color-warning
+                               danger  → --color-danger
+                               info    → --color-info
+                               neutral → --color-text-secondary
+```
+
+**Havia dois mapas escritos à mão, e eles já tinham divergido:** `ativo` era
+`success` (verde) no badge e `--color-accent` (dourado) no donut; `parcial` era
+`info` (azul) no badge e dourado no donut. E os dois esqueceram
+`parcialmente_pago`, que nasceu na DEC-028 — o badge do honorário exibia a
+**string crua do enum**, com sublinhado, em cinza de "status desconhecido".
+
+**A regra é: o gráfico se ajusta ao badge**, nunca o contrário. O badge é o que
+a advogada vê o dia inteiro nas listagens; o donut é consulta ocasional.
+
+**A cor da fatia é o TEXTO do badge, não o fundo.** O badge pinta fundo
+esmaecido (`--color-*-bg`, 10% de alpha) e texto em cor plena. Numa fatia de
+donut, um fundo de 10% seria cinza para qualquer olho — a cor que a pessoa
+identifica como "a cor do Vencido" é a do texto.
+
+`neutral` é o único tom sem `--color-neutral`: o cinza legível do projeto é o
+do texto secundário, e é ele que o badge neutro já usa.
+
+**A legenda é escrita à mão, não o `<Legend>` do Recharts.** Precisa de
+quantidade ao lado do rótulo e das classes do projeto; o `<Legend>` daria um
+`<ul>` com estilo próprio para sobrescrever peça a peça.
+
+`tests/dashboard/graficos.test.js` trava as duas pontas — que cada tom tem
+regra `.status-badge--<tom>` e variável CSS declarada — e varre o componente
+de gráfico para que ele **não reintroduza um mapa de cor próprio**.
+
+---
+
+## `MoneyInput` — entrada de dinheiro em pt-BR (Fase 4.3)
+
+`components/ui/MoneyInput.jsx`, com a regra em `utils/masks.js`. Substitui o
+`<input type="number" step="0.01">` dos **quatro** campos de dinheiro:
+`valor` e `valorBase` do honorário, `valor` da parcela, `valorPago` do
+pagamento.
+
+**O contrato não mudou nada no payload.** `value` entra como **Number em
+reais** (ou `null`/`''`) e `onChange` devolve **Number em reais ou `null`** —
+exatamente o que os formulários já guardavam. `montarPayloadHonorario`
+continua fazendo `Number(form.valor)`.
+
+**`onChange` devolve o número, não o evento.** Um componente de máscara que
+devolvesse evento obrigaria cada formulário a saber que aquele campo é
+diferente — que é justamente o acoplamento que ele existe para tirar da tela.
+Por isso os formulários ganharam um `handleValorChange` ao lado do
+`handleChange` genérico.
+
+**Apagar tudo devolve `null`, nunca 0.** `null` é "não informado" — a convenção
+do projeto para campo apagado — e 0 seria uma cobrança de zero real. É disso
+que `validarHonorario` depende para acusar "valor é obrigatório".
+
+### Os três caminhos de entrada, e por que são três
+
+| Caminho | Quem resolve | Regra |
+|---|---|---|
+| digitar | `maskMoney` | ponto é **sempre** milhar; só a vírgula é decimal |
+| tecla `.` | `onKeyDown` do componente | vira vírgula na posição do cursor |
+| colar | `parseMoney` | aceita `1.234,56` **e** `1234.56` |
+
+**Por que o ponto não é tratado dentro de `maskMoney`.** A máscara é reaplicada
+sobre a própria saída a cada tecla: com "1.500" na tela, digitar mais um zero
+entrega `"1.5000"` a ela. Qualquer regra que tentasse adivinhar se aquele ponto
+é decimal erra em algum caminho real — apagar o último dígito de "1.500"
+entrega `"1.50"`, que por "ponto seguido de duas casas" viraria **R$ 1,50** em
+vez de R$ 150,00. No evento de tecla não há palpite: houve um `.` pressionado,
+numa posição conhecida. Foi um defeito real desta fase, pego pelo teste
+"a máscara é idempotente e sobrevive à própria saída".
+
+**A ambiguidade da colagem tem regra escrita.** `"1.234"` colado de uma
+planilha brasileira é **mil duzentos e trinta e quatro**, não R$ 1,23: ponto
+seguido de três dígitos é milhar. Ponto único seguido de 1–2 dígitos é decimal.
+Com vírgula presente, a vírgula decide e todo ponto é milhar.
+
+**O erro que este componente evita é de fator 100 e não tem sintoma** — o
+número aparece formatado e correto na listagem, e a cobrança é que está cem
+vezes errada. É por isso que `tests/financial/moeda.test.js` varre todas as
+escritas plausíveis do mesmo valor.
+
+**O "R$" fica fora do campo editável**, posicionado sobre ele. Dentro, o cursor
+pode ser levado para antes do símbolo e a advogada digitaria "1R$500".
+
+**`inputMode="decimal"`**, e não `numeric`: no iOS o `numeric` abre um teclado
+**sem vírgula**, e o campo ficaria impossível de preencher com centavos.
+
+---
+
 ## Testes
 
 `npm test` → `node --test tests/`. **Sem DOM e sem dependência de render**, por
@@ -197,6 +339,8 @@ A consequência é a divisão de trabalho que a Fase 4.2 firmou:
 | `tests/financial/honorario.test.js` | a **conta**, executada de verdade |
 | `tests/financial/erros.test.js` | os **quatro erros**, com o corpo real da API |
 | `tests/financial/estatica.test.js` | que a **tela continua chamando** aquelas funções |
+| `tests/financial/moeda.test.js` | a **máscara de moeda**, nos três caminhos de entrada |
+| `tests/dashboard/graficos.test.js` | a **série e a legenda** dos gráficos, e a paridade badge ↔ fatia |
 | `tests/css/appliedClasses.test.js` | que toda classe aplicada **alcança** regra |
 
 As varreduras estáticas limpam comentários antes de analisar. Sem isso, um
@@ -272,6 +416,74 @@ honorários em andamento.
 **Não tocado:** backend (nenhum commit), contrato das rotas do portal,
 `axiosConfig.js`, catálogo de variáveis. **Nenhuma dependência nova** —
 `package.json` idêntico a `main`.
+
+---
+
+### Fase 4.3 — Tabelas, gráficos legíveis, cartões do mês e moeda
+
+**Resumo:** a primeira fase nascida de uma sessão de **validação visual**. Três
+defeitos que passaram por `lint`, `build` e pelas duas suítes sem que nada
+acusasse — porque não eram erros de lógica, eram erros de leitura. Frontend
+149 → 182 testes. Roteiro manual 104 → 120 passos.
+
+**Arquivos novos:** `utils/statusVisual.js`, `utils/chartSeries.js`,
+`components/ui/MoneyInput.jsx` + `.css`, `tests/financial/moeda.test.js`,
+`tests/dashboard/graficos.test.js`.
+
+**Alterados:** `styles/modules.css` (o padrão de tabela), as **sete** listagens
+(`<colgroup>` + truncamento), `pages/secoes/SecaoPage.css` (o `max-width`
+defeituoso), `pages/dashboard/DashboardCharts.jsx` (reescrito),
+`pages/dashboard/DashboardHomePage.jsx` (cartões do mês e próximos
+vencimentos), `pages/dashboard/DashboardPage.css`,
+`components/ui/StatusBadge.jsx` (passa a ler a fonte única),
+`utils/masks.js` e `utils/formatters.js` (moeda e mês), os **quatro** campos de
+dinheiro dos formulários financeiros, `components/layout/Header.jsx` + `.css`
+(breadcrumb), `pages/financeiro/FinanceiroPage.jsx`,
+`pages/clients/ClientDetailPage.jsx` e `pages/processes/ProcessDetailPage.jsx`
+(padrão de loading), `docs/validacao-manual.md`.
+
+**Decisões**, com o porquê nos blocos acima: `table-layout: fixed` com
+`<colgroup>` como único jeito de o truncamento valer; a cor do gráfico se
+ajustando à do badge; o ponto decimal tratado no evento de tecla e não na
+máscara; `mesReferencia` vindo do servidor.
+
+**Dois cartões foram REMOVIDOS do dashboard, e é deliberado:**
+
+- **"Pagamentos do Mês"** virou **"Recebido em {mês}"**. Era o cartão que abriu
+  a fase: exibia "R$ 0,00" com o seed inteiro quitado em meses passados, e não
+  havia como distinguir "não entrou nada neste mês" de "o número quebrou". O
+  rótulo com o mês resolve a ambiguidade na própria frase, e o zero real ganhou
+  a linha "nenhum recebimento no mês".
+- **"Parcelas Vencidas"** foi absorvido por **"Total vencido"**, que traz valor
+  e contagem juntos. Manter os dois deixaria dois números do mesmo assunto lado
+  a lado, vindos de rotas diferentes e livres para divergir.
+
+**Três defeitos encontrados no caminho, corrigidos porque estavam no caminho:**
+
+1. **`parcialmente_pago` não existia em mapa nenhum.** O badge do honorário
+   exibia a string crua do enum desde a DEC-028.
+2. **O breadcrumb ignorava Seções e Financeiro** — quatro telas caíam no
+   `return ['LEX']` do fim de `buildBreadcrumb` e ficavam sem trilha.
+3. **`FinanceiroPage` tinha `loadingSummary` sem desenhar nada**: os quatro
+   cartões apareciam de repente. Duas telas de detalhe usavam
+   `<p>Carregando...</p>` em vez do `<Loading />` do projeto.
+
+**Uma correção de premissa do roteiro:** ele pedia moeda em três formulários e
+nomeava `valor`, `valorBase` e `valorPago`. São **quatro** campos em três
+telas — a parcela também tem `valor`, e deixá-lo como `<input type="number">`
+manteria dois jeitos de digitar dinheiro no mesmo módulo.
+
+**Um desvio deliberado:** o título do gráfico de barras passou a ser
+"Honorários **contratados** por mês **de cadastro**". A rota soma `Fee.valor`
+agrupando por `createdAt` — é valor contratado, pelo mês em que a cobrança foi
+registrada. "Honorários por mês" deixava a advogada livre para ler aquilo como
+faturamento do mês. **O backend não foi alterado** para acompanhar o rótulo:
+`getFeesByMonth` ainda inclui honorário cancelado, e isso ficou como achado
+reportado, não como correção de passagem.
+
+**Não tocado:** backend (nenhum commit deste repositório),
+`axiosConfig.js`, telas do portal, contrato de payload de qualquer rota.
+**Nenhuma dependência nova** — `package.json` idêntico a `main`.
 
 ---
 

@@ -17,6 +17,13 @@ const BREADCRUMB_MAP = {
   '/dashboard/pagamentos':   'Pagamentos',
   '/dashboard/pagamentos/novo': 'Novo Pagamento',
   '/dashboard/perfil':       'Perfil',
+  // Seções e Financeiro faltavam nos dois mapas (varredura B.5 da Fase 4.3):
+  // as três telas de seção e a de financeiro caíam no `return ['LEX']` do
+  // fim, e o cabeçalho ficava sem trilha nenhuma — justamente nas telas em
+  // que a advogada mais navega para dentro.
+  '/dashboard/secoes':       'Biblioteca de Seções',
+  '/dashboard/secoes/nova':  'Nova Seção',
+  '/dashboard/financeiro':   'Financeiro',
 };
 
 const SECTION_LABELS = {
@@ -26,6 +33,7 @@ const SECTION_LABELS = {
   parcelas:    'Parcelas',
   documentos:  'Documentos',
   pagamentos:  'Pagamentos',
+  secoes:      'Biblioteca de Seções',
 };
 
 function buildBreadcrumb(pathname) {

@@ -1109,6 +1109,256 @@ Dados que vários passos usam:
 
 ---
 
+## 16. Fase 4.3 — Tabelas, gráficos, indicadores do mês e moeda
+
+> Numeração contínua a partir do 109, que era o maior número já usado.
+> Dezesseis passos novos: **110 a 125**. O total pendente vai de **104 para
+> 120**.
+>
+> **A fase nasceu de uma sessão de validação visual**, e é por isso que este
+> bloco tem tanto passo de olho humano. Os três defeitos que a abriram —
+> texto atravessando célula, donut sem legenda e "R$ 0,00" que parecia bug —
+> passaram por `lint`, `build` e pelas duas suítes sem que nada acusasse. Não
+> eram erros de lógica; eram erros de LEITURA, e leitura só se confere lendo.
+
+### Tabelas
+
+- [ ] **110. ⭐ Biblioteca de Seções — nada atravessa célula (desktop)**
+  `[só olho humano]`
+  Pré-condição: `npm run seed:fresh`, janela maximizada, `/dashboard/secoes`.
+  Passos: 1) percorrer as 11 linhas da tabela; 2) olhar especificamente a
+  fronteira entre "Trecho inicial" e "Variáveis", e entre "Variáveis" e
+  "Ações".
+  Esperado: o trecho termina em **reticências** dentro da própria coluna; o
+  número de variáveis fica isolado na coluna dele; os três botões (Ver,
+  Editar, Desativar) não recebem texto por cima e não são cortados.
+  Clicar em "Ver" abre o modal com o texto **inteiro** da seção.
+  Por que só olho humano: é o defeito de origem da fase. `max-width` numa
+  tabela de layout automático encolhe a caixa e não a frase — o texto sai por
+  cima da célula vizinha, e **nenhuma varredura de CSS pega isso**, porque as
+  duas regras existem, são válidas e se alcançam. Só o desenho na tela mostra.
+  Fase de origem: 4.3
+
+- [ ] **111. ⭐ As mesmas tabelas em 360 px — a rolagem é do container**
+  `[só olho humano]`
+  Pré-condição: DevTools em 360 px de largura (ou celular real).
+  Passos: 1) abrir `/dashboard/secoes`; 2) arrastar a tabela para a direita;
+  3) repetir em `/dashboard/clientes`, `/dashboard/processos`,
+  `/dashboard/documentos` e nas três listas de `/dashboard/financeiro`.
+  Esperado: a tabela rola **dentro da própria moldura**. O cabeçalho do app, o
+  breadcrumb e a barra inferior de navegação **ficam parados**. A página não
+  ganha barra de rolagem horizontal própria.
+  Por que só olho humano: o sintoma de `min-width: 0` faltando num ancestral é
+  a página inteira deslizando junto — comportamento de layout, invisível para
+  qualquer asserção que não seja um navegador de verdade.
+  Fase de origem: 4.3
+
+- [ ] **112. As sete listagens truncam com reticências, e não com corte seco**
+  `[só olho humano]`
+  Pré-condição: seed carregado.
+  Passos: percorrer as sete listagens (`clientes`, `processos`, `secoes`,
+  `documentos`, e honorários/cobranças/recebimentos em `financeiro`) e olhar as
+  colunas de texto livre: nome, e-mail, endereço, título, descrição e
+  **observações** do pagamento.
+  Esperado: onde o texto não cabe, ele termina em `…`. Passar o mouse sobre a
+  célula mostra o conteúdo completo no `title` do navegador. Nenhuma coluna de
+  ações fica espremida a ponto de os botões se sobreporem.
+  Por que este passo existe: a correção do 110 foi extraída para classes
+  reutilizáveis (`data-table--fixed`, `col-*`, `cell-truncate`) e aplicada nas
+  outras seis. Uma largura de coluna mal escolhida em qualquer uma delas
+  reintroduz o defeito **naquela tela só**, e nenhuma das outras acusaria.
+  Fase de origem: 4.3
+
+### Gráficos
+
+- [ ] **113. ⭐ Legenda dos donuts — a cor confere com a do badge**
+  `[só olho humano]`
+  Pré-condição: `/dashboard`, seed carregado (tem os quatro estados de
+  honorário, inclusive `parcialmente_pago` e `cancelado`).
+  Passos: 1) ler a legenda dos três donuts — cada linha tem bolinha, rótulo e
+  quantidade; 2) abrir `/dashboard/financeiro` numa segunda aba; 3) comparar,
+  **cor a cor**, a bolinha da legenda com o badge do mesmo status na listagem.
+  Esperado: "Vencido" é vermelho nos dois; "Pago", verde nos dois; "Pendente",
+  âmbar nos dois; "Parcialmente pago" e "Parcial", azuis nos dois; "Encerrado"
+  e "Nunca acessou", cinzas. O rótulo é o mesmo texto do badge — **nunca** a
+  chave crua do enum (`parcialmente_pago` com sublinhado).
+  Por que só olho humano: a suíte prova que as duas pontas leem o mesmo módulo
+  e que cada tom tem regra CSS. Não prova que a variável `--color-info`
+  resolve para a cor que a pessoa chama de azul, nem que o contraste da
+  bolinha de 9 px é suficiente no tema claro.
+  Fase de origem: 4.3
+
+- [ ] **114. Tooltip do donut traz quantidade e percentual**
+  `[só olho humano]`
+  Passos: passar o mouse sobre cada fatia dos três donuts.
+  Esperado: aparece o rótulo do status e algo como `3 (27,3%)`. Os percentuais
+  das fatias de um mesmo donut somam 100%.
+  Por que este passo existe: o percentual é calculado na série e não dentro do
+  tooltip — o tooltip do Recharts recebe uma fatia por vez e não conhece o
+  total. Um erro de fiação sairia como `undefined%` em todas as fatias.
+  Fase de origem: 4.3
+
+- [ ] **115. Barras com rótulo de valor e sem buraco no eixo**
+  `[só olho humano]`
+  Pré-condição: `/dashboard`, seção "Honorários contratados por mês de
+  cadastro".
+  Passos: 1) contar as colunas do eixo X; 2) ler o rótulo sobre cada barra;
+  3) passar o mouse sobre uma barra.
+  Esperado: **seis** meses no eixo, sempre, em português abreviado
+  (`mar/2026`); mês sem honorário aparece com barra zerada e **sem** rótulo
+  flutuando; a barra com valor traz o compacto (`R$ 12,5 mil`) por cima; o
+  tooltip traz o valor **por extenso** (`R$ 12.500,00`) e o mês por extenso.
+  O eixo Y não diz mais "R$12k".
+  Por que só olho humano: a suíte prova a série (seis meses, zeros nos
+  vazios). Não prova que o rótulo sobre a barra **cabe** sem encostar no
+  vizinho quando dois meses seguidos têm valor alto.
+  Fase de origem: 4.3
+
+- [ ] **116. Estado vazio de cada gráfico tem frase própria**
+  `[só olho humano]`
+  Pré-condição: **usuário recém-registrado**, sem nenhum dado. É o único jeito
+  de ver este estado — no seed nenhum gráfico fica vazio.
+  Passos: registrar um usuário novo em `/registrar` e abrir `/dashboard`.
+  Esperado: cada donut mostra "Sem dados no período" no lugar do anel; a área
+  de barras mostra o cartão de estado vazio com "Nenhum honorário contratado
+  nos últimos 6 meses". **Não** aparece anel cinzento nem eixo em branco.
+  Por que este passo existe: donut vazio e gráfico carregando são
+  indistinguíveis, e o segundo faz a pessoa esperar por algo que não vem.
+  Fase de origem: 4.3
+
+### Cartões do mês e próximos vencimentos
+
+- [ ] **117. ⭐ Os cartões do mês dizem QUAL mês**
+  `[automatizável]`
+  Pré-condição: `/dashboard`, seed carregado.
+  Passos: ler o título da faixa e os dois primeiros cartões.
+  Esperado: a faixa diz "No mês — agosto/2026" (o mês do **servidor**), e os
+  cartões dizem "A receber em agosto/2026" e "Recebido em agosto/2026" — com
+  o mesmo mês, sem abreviação, e **nunca** um mês diferente do da faixa.
+  Por que este passo existe: o rótulo vem de `mesReferencia`, que o backend
+  calcula. Se a tela voltasse a usar `new Date()` do navegador, o cartão
+  diria "setembro" sobre o número de agosto em qualquer máquina com o relógio
+  adiantado — e ninguém desconfiaria do rótulo.
+  Fase de origem: 4.3
+
+- [ ] **118. ⭐ "Recebido em {mês}" zerado diz por extenso que é zero**
+  `[só olho humano]`
+  Pré-condição: seed recém-carregado (todos os pagamentos são de meses
+  passados — é o cenário exato que abriu esta fase).
+  Passos: ler o cartão "Recebido em agosto/2026".
+  Esperado: "R$ 0,00" e, logo abaixo, **"nenhum recebimento no mês"**. O
+  cartão antigo "Pagamentos do Mês" **não existe mais**.
+  Por que só olho humano: o defeito original não era o número — era a
+  ambiguidade. "R$ 0,00" sem contexto foi lido como bug numa sessão de
+  validação real. O que se confere aqui é se a frase **desfaz** a dúvida, e
+  isso é julgamento de quem lê.
+  Fase de origem: 4.3
+
+- [ ] **119. Total vencido — valor e contagem no mesmo cartão**
+  `[automatizável]`
+  Passos: ler o cartão "Total vencido" no dashboard e comparar com a coluna
+  "Em aberto" das parcelas vencidas em `/dashboard/financeiro`.
+  Esperado: o cartão traz o **valor** (soma do que falta nas parcelas
+  vencidas) e, como texto secundário, "6 parcelas vencidas". Uma parcela
+  vencida com pagamento **parcial** entra pelo que falta, não pelo valor
+  cheio. O cartão de contagem "Parcelas Vencidas" **não existe mais** — os
+  dois números moram juntos.
+  Por que este passo existe: até a Fase 4.2 havia só a contagem, e o painel
+  respondia "quantas" a uma advogada que perguntava "quanto".
+  Fase de origem: 4.3
+
+- [ ] **120. ⭐ Próximos vencimentos levam à parcela**
+  `[só olho humano]`
+  Pré-condição: `/dashboard`, seed carregado.
+  Passos: 1) ler a lista "Próximos vencimentos"; 2) clicar na descrição do
+  primeiro item; 3) voltar e repetir com o último.
+  Esperado: no máximo **cinco** itens, do vencimento mais próximo para o mais
+  distante, cada um com descrição do honorário, número da parcela, número do
+  processo, data e **valor em aberto**. O clique abre o formulário **daquela**
+  parcela. Parcela já quitada e parcela de honorário **cancelado** não
+  aparecem.
+  Por que só olho humano: a suíte prova a lista e o isolamento por usuário.
+  Não prova que a descrição parece clicável — sem sublinhado no hover, cinco
+  linhas de texto comum não convidam ninguém a clicar, e a lista vira enfeite.
+  Fase de origem: 4.3
+
+### Entrada de dinheiro
+
+- [ ] **121. ⭐ Digitar valor com vírgula nos três formulários**
+  `[só olho humano]`
+  Pré-condição: `/dashboard/honorarios/novo`, `/dashboard/parcelas/novo` e
+  `/dashboard/pagamentos/novo`.
+  Passos: em cada um, no campo de dinheiro, digitar `1500,50` tecla a tecla;
+  depois apagar e digitar `1500` seguido da tecla **ponto** do teclado
+  numérico e `50`.
+  Esperado: o campo mostra `R$ 1.500,50` nos dois casos — o "R$" fica fixo à
+  esquerda e não é apagável, o milhar ganha ponto sozinho, e a tecla de ponto
+  vira vírgula. Sair do campo com `1500,5` completa para `1.500,50`. Salvar e
+  reabrir mostra `1.500,50`.
+  Por que só olho humano: o defeito que este componente fecha é o
+  `<input type="number">` **descartando a vírgula em silêncio** em parte dos
+  navegadores — o campo ficava vazio para o React e a advogada reenviava sem
+  entender. Reproduzir isso exige um navegador; a suíte só alcança a máscara.
+  Fase de origem: 4.3
+
+- [ ] **122. ⭐🚨 Colar valor nos dois formatos — o erro de fator 100**
+  `[só olho humano]`
+  Pré-condição: um dos três formulários financeiros aberto.
+  Passos: 1) copiar `1.234,56` de qualquer lugar e colar no campo; 2) apagar
+  e colar `1234.56`; 3) apagar e colar `1.234`; 4) salvar em cada caso e
+  conferir o valor gravado na listagem.
+  Esperado: os dois primeiros gravam **R$ 1.234,56**. O terceiro grava
+  **R$ 1.234,00** — ponto seguido de três dígitos é separador de milhar.
+  Nenhum dos três grava R$ 123.456,00 nem R$ 1,23.
+  Por que é bloqueante: este é o único passo do roteiro em que o erro é de
+  **fator 100** e **não tem sintoma**. O número aparece formatado e correto na
+  listagem; a cobrança é que está cem vezes errada.
+  Fase de origem: 4.3
+
+- [ ] **123. Apagar o valor não vira R$ 0,00**
+  `[automatizável]`
+  Passos: 1) abrir um honorário existente para edição; 2) apagar todo o
+  conteúdo do campo de valor; 3) tentar salvar.
+  Esperado: o campo fica vazio (não mostra `0,00`), e salvar é recusado com
+  "valor é obrigatório", com o input destacado. No honorário **percentual**,
+  apagar o valor base faz o "Valor do honorário" exibir **"—"**, e não
+  "R$ 0,00".
+  Por que este passo existe: `Number(null)` é `0`. Um campo vazio que virasse
+  zero gravaria um honorário de R$ 0,00 sem erro nenhum — e zero parece um
+  valor combinado.
+  Fase de origem: 4.3
+
+- [ ] **124. Teclado numérico no celular**
+  `[só olho humano]`
+  Pré-condição: **celular real** (ou emulação com teclado virtual), qualquer
+  formulário financeiro.
+  Passos: tocar no campo de valor.
+  Esperado: abre o teclado **numérico com vírgula**, e não o alfabético.
+  Por que só olho humano: `inputMode="decimal"` é uma dica ao sistema
+  operacional. Nenhum script deste ambiente observa qual teclado o aparelho
+  decidiu abrir — e no iOS o valor errado (`numeric`) abre um teclado **sem
+  vírgula**, deixando o campo impossível de preencher com centavos.
+  Fase de origem: 4.3
+
+### Navegação
+
+- [ ] **125. Breadcrumb da Biblioteca de Seções e do Financeiro**
+  `[automatizável]`
+  Passos: abrir `/dashboard/secoes`, `/dashboard/secoes/nova`,
+  `/dashboard/secoes/editar/:id` e `/dashboard/financeiro`, lendo a trilha no
+  cabeçalho em cada uma.
+  Esperado: "LEX › Biblioteca de Seções", "LEX › Nova Seção",
+  "LEX › Biblioteca de Seções › Editar" e "LEX › Financeiro". Em 360 px a
+  trilha **encurta com reticências** em vez de empurrar o nome da usuária para
+  fora da tela.
+  Por que este passo existe: as quatro telas caíam no `return ['LEX']` do fim
+  de `buildBreadcrumb` — ficavam sem trilha nenhuma, e são justamente aquelas
+  em que se navega para dentro.
+  Fase de origem: 4.3
+
+
+---
+
 ## Validado
 
 > Passo **executado por olho humano e aprovado**, com data. Continua sendo

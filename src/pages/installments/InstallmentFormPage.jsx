@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import installmentService from '../../api/installmentService';
 import feeService from '../../api/feeService';
 import StatusBadge from '../../components/ui/StatusBadge';
+import MoneyInput from '../../components/ui/MoneyInput';
 import { toast } from '../../utils/toast';
 import { getApiErrorField } from '../../utils/apiError';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
@@ -76,6 +77,13 @@ function InstallmentFormPage() {
     if (campoComErro === name) setCampoComErro(null);
   };
 
+  // O campo de dinheiro não passa pelo `handleChange` genérico: `MoneyInput`
+  // devolve o número já convertido (ou `null`), e não o evento.
+  const handleValorChange = (numero) => {
+    setFormData(prev => ({ ...prev, valor: numero }));
+    if (campoComErro === 'valor') setCampoComErro(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -144,15 +152,16 @@ function InstallmentFormPage() {
           </div>
 
           <div className="form-group span-1">
-            <label>Valor (R$) *</label>
-            <input
-              type="number"
+            <label htmlFor="parcela-valor">Valor *</label>
+            {/* `MoneyInput` devolve Number em reais (ou `null`); o payload
+                continua fazendo `Number(formData.valor)`. */}
+            <MoneyInput
+              id="parcela-valor"
               name="valor"
-              step="0.01"
-              min="0"
               value={formData.valor}
-              onChange={handleChange}
+              onChange={handleValorChange}
               required
+              className={campoComErro === 'valor' ? 'input-erro' : undefined}
             />
           </div>
 

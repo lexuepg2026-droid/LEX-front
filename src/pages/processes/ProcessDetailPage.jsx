@@ -12,6 +12,7 @@ import { getApiErrorMessage } from '../../utils/apiError';
 import StatusBadge from '../../components/ui/StatusBadge';
 import AccessDelivery from '../../components/processes/AccessDelivery';
 import ProcessFinancialSheet from '../../components/financeiro/ProcessFinancialSheet';
+import Loading from '../../components/common/Loading';
 import './ProcessPage.css';
 import './ProcessTabs.css';
 import ProcessoTabs from './ProcessTabs';
@@ -107,7 +108,9 @@ function ProcessoDetalhePage() {
     }
   };
 
-  if (loading) return <p>Carregando...</p>;
+  // Padrão de carregamento do projeto (varredura B.5 da Fase 4.3): era um
+  // <p> escrito à mão, sem o spinner que todas as outras telas usam.
+  if (loading) return <Loading />;
   if (error) return <p className="error-message">{error}</p>;
   if (!processo) return null;
 

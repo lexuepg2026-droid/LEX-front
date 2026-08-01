@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import feeService from '../../api/feeService';
 import processService from '../../api/processService';
 import StatusBadge from '../../components/ui/StatusBadge';
+import MoneyInput from '../../components/ui/MoneyInput';
 import { toast } from '../../utils/toast';
 import { getApiErrorField } from '../../utils/apiError';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
@@ -95,6 +96,14 @@ function FeeFormPage() {
     // Trocar o campo que o servidor acusou apaga o destaque: manter a borda
     // vermelha depois da correção faz a advogada reenviar achando que não
     // resolveu.
+    if (campoComErro === name) setCampoComErro(null);
+  };
+
+  // Os campos de dinheiro não passam pelo `handleChange` genérico: `MoneyInput`
+  // devolve o NÚMERO já convertido (ou `null`), e não o evento. É de propósito
+  // — ver o cabeçalho de `components/ui/MoneyInput.jsx`.
+  const handleValorChange = (name, numero) => {
+    setFormData(prev => ({ ...prev, [name]: numero }));
     if (campoComErro === name) setCampoComErro(null);
   };
 
@@ -196,14 +205,15 @@ function FeeFormPage() {
           {/* ── Tipo fixo e custas: `valor` é entrada ──────────────────────── */}
           {campos.valor === 'entrada' && (
             <div className="form-group span-1">
-              <label>Valor (R$) *</label>
-              <input
-                type="number"
+              <label htmlFor="fee-valor">Valor *</label>
+              {/* `MoneyInput` devolve Number em reais ou `null` — o mesmo que
+                  `formData.valor` já guardava. `montarPayloadHonorario`
+                  continua fazendo `Number(form.valor)` e o payload não muda. */}
+              <MoneyInput
+                id="fee-valor"
                 name="valor"
-                step="0.01"
-                min="0"
                 value={formData.valor}
-                onChange={handleChange}
+                onChange={(numero) => handleValorChange('valor', numero)}
                 className={campoComErro === 'valor' ? 'input-erro' : undefined}
                 required
               />
@@ -230,14 +240,12 @@ function FeeFormPage() {
 
           {campos.valorBase && (
             <div className="form-group span-1">
-              <label>Valor base (R$) *</label>
-              <input
-                type="number"
+              <label htmlFor="fee-valor-base">Valor base *</label>
+              <MoneyInput
+                id="fee-valor-base"
                 name="valorBase"
-                step="0.01"
-                min="0"
                 value={formData.valorBase}
-                onChange={handleChange}
+                onChange={(numero) => handleValorChange('valorBase', numero)}
                 className={campoComErro === 'valorBase' ? 'input-erro' : undefined}
                 required
               />
@@ -276,7 +284,13 @@ function FeeFormPage() {
               <div className="form-info-item">
                 <span className="form-info-label">Valor base</span>
                 <span className="form-info-value">
-                  {formData.valorBase === '' ? '—' : formatCurrency(Number(formData.valorBase))}
+                  {/* `null` além de `''`: desde a Fase 4.3 o campo é um
+                      `MoneyInput`, e apagar tudo devolve `null` — que
+                      `Number()` transformaria em "R$ 0,00", um valor que
+                      ninguém combinou. */}
+                  {formData.valorBase == null || formData.valorBase === ''
+                    ? '—'
+                    : formatCurrency(Number(formData.valorBase))}
                 </span>
               </div>
               <div className="form-info-item">

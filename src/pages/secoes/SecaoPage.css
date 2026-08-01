@@ -19,8 +19,12 @@
   white-space: nowrap;
 }
 
+/* O `max-width: 40ch` que vivia aqui era o defeito da Fase 4.3: numa tabela de
+   layout automático, `max-width` encolhe a CAIXA e não a frase, e o trecho —
+   que herda `white-space: nowrap` de `.data-table td` — saía por cima da
+   coluna "Variáveis". Quem limita a largura agora é o `<colgroup>` da tabela,
+   e quem corta o texto é `.cell-truncate`. Ver `styles/modules.css`. */
 .secao-trecho {
-  max-width: 40ch;
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm, 0.875rem);
 }

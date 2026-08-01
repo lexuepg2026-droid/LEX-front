@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
+import Loading from '../../components/common/Loading';
 import FeeListPage from '../fees/FeeListPage';
 import InstallmentListPage from '../installments/InstallmentListPage';
 import PaymentListPage from '../payments/PaymentListPage';
@@ -40,6 +41,12 @@ function FinanceiroPage() {
   return (
     <div className="module-container">
       <PageHeader title="Financeiro" />
+
+      {/* A faixa de totais tinha três estados no código e só dois na tela: o
+          `loadingSummary` existia e não desenhava nada, então os quatro
+          cartões apareciam de repente. Padrão do projeto é `<Loading />`
+          (varredura B.5 da Fase 4.3). */}
+      {loadingSummary && <Loading />}
 
       {!loadingSummary && summaryError && (
         <div className="financeiro-summary financeiro-summary--unavailable">
