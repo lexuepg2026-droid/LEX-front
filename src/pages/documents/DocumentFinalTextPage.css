@@ -281,6 +281,38 @@
   color: var(--color-info);
 }
 
+/* ── Regerar (Fase 4.4) ──────────────────────────────────────────────────── */
+
+.final__regerar {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Por que este documento NÃO pode ser regerado. Não é erro — é estado, e por
+   isso não usa a cor de perigo: um documento de upload ou sem modelo de origem
+   está correto do jeito que está. */
+.final__cartao-impedimento {
+  margin: 0;
+  padding: var(--space-2);
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-muted);
+}
+
+/* O aviso de sobrescrita no cartão de regerar é ALERTA, e não informação: o
+   `--color-info` do aviso genérico diria "isto é uma dica" sobre a única ação
+   da tela que apaga trabalho da advogada. */
+.final__cartao .final__cartao-aviso--risco,
+.final__cartao-aviso--risco {
+  background: var(--color-warning-bg);
+}
+
+.final__cartao-aviso--risco svg {
+  color: var(--color-warning);
+}
+
 .final__portal {
   display: flex;
   align-items: center;
