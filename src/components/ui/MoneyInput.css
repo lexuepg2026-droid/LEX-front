@@ -1,0 +1,42 @@
+/* Entrada de dinheiro em pt-BR (Fase 4.3).
+
+   O "R$" é adorno POSICIONADO SOBRE o campo, e não texto dentro do valor
+   editável: dentro, o cursor pode ser levado para antes do símbolo e a
+   advogada digitaria "1R$500". Fora, ele nunca é selecionável nem apagável.
+
+   A caixa, a borda e o fundo continuam vindo de `.form-group input` — este
+   arquivo só abre espaço para o prefixo e o desenha. Redeclarar a moldura aqui
+   faria o campo de valor destoar dos vizinhos no dia em que o formulário
+   mudasse de estilo. */
+
+.money-input {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.money-input__prefixo {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  /* O clique atravessa o símbolo e cai no campo: quem mira o "R$" quer
+     escrever, não selecionar duas letras. */
+  pointer-events: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Seletor com o atributo de propósito: `.form-group input` tem a mesma
+   especificidade de `.money-input input`, e qual das duas venceria dependeria
+   da ordem em que os CSS entram no bundle — que não é decisão de ninguém. */
+.money-input input[type="text"] {
+  padding-left: 38px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.money-input--disabled .money-input__prefixo {
+  opacity: 0.5;
+}
