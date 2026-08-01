@@ -9,21 +9,31 @@
   flex-shrink: 0;
 }
 
+/* `min-width: 0` e `overflow: hidden` (Fase 4.3): "LEX › Biblioteca de Seções
+   › Editar" não cabe num cabeçalho de 360 px, e sem isto a trilha empurrava o
+   bloco do usuário para fora da tela — o cabeçalho inteiro rolava. Agora quem
+   cede é o último segmento, com reticências. */
 .breadcrumb {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .breadcrumb-sep {
   opacity: 0.4;
+  flex-shrink: 0;
 }
 
 .breadcrumb-current {
   color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .header-user {

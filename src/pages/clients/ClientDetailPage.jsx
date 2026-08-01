@@ -4,6 +4,7 @@ import clientService from '../../api/clientService';
 import { formatCPF, formatCNPJ, formatPhone, formatCEP, formatDate } from '../../utils/formatters';
 import { labelDe, SEXO_OPTIONS, ESTADO_CIVIL_OPTIONS } from '../../utils/enums';
 import { getApiErrorMessage } from '../../utils/apiError';
+import Loading from '../../components/common/Loading';
 import './ClientPage.css';
 
 function ClientDetailPage() {
@@ -31,7 +32,9 @@ function ClientDetailPage() {
     fetchCliente();
   }, [id]);
 
-  if (loading) return <p>Carregando...</p>;
+  // Padrão de carregamento do projeto (varredura B.5 da Fase 4.3): era um
+  // <p> escrito à mão, sem o spinner que todas as outras telas usam.
+  if (loading) return <Loading />;
   if (error) return <p className="error-message">{error}</p>;
 
   const {
