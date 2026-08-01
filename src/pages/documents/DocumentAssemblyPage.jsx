@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, Check, FileStack, FileText, Loader2 } from 'lucide-react';
 import documentService from '../../api/documentService';
@@ -8,6 +8,15 @@ import GenerationPanel from '../../components/documents/GenerationPanel';
 import Loading from '../../components/common/Loading';
 import { useAuth } from '../../contexts/AuthContext';
 import useSerialQueue from '../../hooks/useSerialQueue';
+import useIsMounted from '../../hooks/useIsMounted';
+import {
+  listaDeVinculos,
+  idsDasSecoes,
+  idsNaOrdem,
+  reordenarLocal,
+  removerLocal,
+  secaoIdDe,
+} from './assemblyState.js';
 import { TIPO_DOCUMENTO_OPTIONS, labelDe } from '../../utils/enums';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { toast } from '../../utils/toast';
@@ -80,22 +89,24 @@ function DocumentAssemblyPage() {
 
   // Evita setState depois do unmount — a tela navega para o editor de texto
   // final assim que a geração dá certo, e as promises em voo continuam vivas.
-  const montado = useRef(true);
-  useEffect(() => () => { montado.current = false; }, []);
+  //
+  // Era duas linhas escritas à mão AQUI, e o corpo do efeito estava vazio: só a
+  // limpeza escrevia no ref. O desmonte simulado do `<React.StrictMode>` deixava
+  // a sentinela presa em `false` com a tela viva, e TODO `setState` guardado
+  // virava no-op silencioso — foi esse o bug da folha que não atualizava. O
+  // porquê inteiro está em `hooks/useIsMounted.js`.
+  const montado = useIsMounted();
 
-  const idsUsados = useMemo(
-    () => new Set(vinculos.map((v) => String(v.secaoId?._id ?? v.secaoId))),
-    [vinculos]
-  );
+  const idsUsados = useMemo(() => idsDasSecoes(vinculos), [vinculos]);
 
   // ── Carga ────────────────────────────────────────────────────────────────
 
   const recarregarVinculos = useCallback(async () => {
     const res = await documentService.listDocumentSecoes(id);
-    const lista = res.data.data ?? res.data;
-    if (montado.current) setVinculos(Array.isArray(lista) ? lista : []);
+    const lista = listaDeVinculos(res);
+    if (montado.current) setVinculos(lista);
     return lista;
-  }, [id]);
+  }, [id, montado]);
 
   useEffect(() => {
     if (!id) {
@@ -111,8 +122,7 @@ function DocumentAssemblyPage() {
       .then(([resDoc, resVinculos]) => {
         if (!ativo) return;
         setDocumento(resDoc.data);
-        const lista = resVinculos.data.data ?? resVinculos.data;
-        setVinculos(Array.isArray(lista) ? lista : []);
+        setVinculos(listaDeVinculos(resVinculos));
       })
       .catch((err) => {
         if (!ativo) return;
@@ -167,7 +177,7 @@ function DocumentAssemblyPage() {
           if (montado.current) setEmVoo((n) => Math.max(0, n - 1));
         }
       }),
-    [enfileirar, recarregarVinculos]
+    [enfileirar, recarregarVinculos, montado]
   );
 
   // ── Inserção — os dois caminhos ──────────────────────────────────────────
@@ -217,14 +227,12 @@ function DocumentAssemblyPage() {
       }
 
       const snapshot = vinculos;
-      const reordenado = [...vinculos];
-      const [movido] = reordenado.splice(de, 1);
-      reordenado.splice(para, 0, movido);
+      const reordenado = reordenarLocal(vinculos, de, para);
 
       setVinculos(reordenado);
       setSecaoArmada(null);
 
-      const ids = reordenado.map((v) => String(v.secaoId?._id ?? v.secaoId));
+      const ids = idsNaOrdem(reordenado);
 
       executar({
         // `secoes` precisa conter exatamente as seções vinculadas — reordenar é
@@ -246,10 +254,10 @@ function DocumentAssemblyPage() {
     (vinculo) => {
       if (!id) return;
 
-      const secaoId = String(vinculo.secaoId?._id ?? vinculo.secaoId);
+      const secaoId = secaoIdDe(vinculo);
       const snapshot = vinculos;
 
-      setVinculos(vinculos.filter((v) => String(v.secaoId?._id ?? v.secaoId) !== secaoId));
+      setVinculos(removerLocal(vinculos, secaoId));
       setSecaoArmada(null);
 
       executar({

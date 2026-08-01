@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   AlertTriangle,
   Download,
@@ -8,13 +8,20 @@ import {
   FileDown,
   Info,
   PencilLine,
+  RefreshCw,
 } from 'lucide-react';
 import documentService from '../../api/documentService';
 import Loading from '../../components/common/Loading';
+import Modal from '../../components/ui/Modal';
 import { TIPO_DOCUMENTO_OPTIONS, TIPO_SECAO_OPTIONS, labelDe } from '../../utils/enums';
 import { formatDate } from '../../utils/formatters';
-import { getApiErrorMessage } from '../../utils/apiError';
+import { getApiErrorDetails, getApiErrorMessage } from '../../utils/apiError';
 import { toast } from '../../utils/toast';
+import {
+  motivoParaNaoRegerar,
+  parametrosDeRegeracao,
+  textoDaSobrescrita,
+} from './regeneration.js';
 import '../../styles/modules.css';
 import '../../components/ui/Button.css';
 import './DocumentFinalTextPage.css';
@@ -37,6 +44,7 @@ import './DocumentFinalTextPage.css';
 
 function DocumentFinalTextPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const [documento, setDocumento] = useState(null);
   const [vinculos, setVinculos] = useState([]);
@@ -51,6 +59,16 @@ function DocumentFinalTextPage() {
   const [salvando, setSalvando] = useState(false);
   const [baixando, setBaixando] = useState('');
   const [alternandoPortal, setAlternandoPortal] = useState(false);
+
+  // ── Regeração (Fase 4.4) ─────────────────────────────────────────────────
+  // `conflito` guarda as chaves do 409; enquanto ele existe, o diálogo de
+  // sobrescrita está aberto. `avisoDeNaoSalvo` é o caso anterior a ele: regerar
+  // com edição não salva descartaria o que está na caixa sem nunca ter passado
+  // pelo servidor — e aí não haveria 409 nenhum, porque o backend não sabe da
+  // edição.
+  const [regerando, setRegerando] = useState(false);
+  const [conflito, setConflito] = useState(null);
+  const [avisoDeNaoSalvo, setAvisoDeNaoSalvo] = useState(false);
 
   const areaRef = useRef(null);
 
@@ -148,6 +166,54 @@ function DocumentFinalTextPage() {
     }
   }, [id, visivelPortal]);
 
+  // ── Regerar a partir das seções ──────────────────────────────────────────
+  //
+  // A tela NÃO decide se pode sobrescrever: ela tenta, e o backend responde
+  // 409 quando o documento foi editado à mão. Antecipar a decisão aqui
+  // duplicaria a regra — e a flag da tela poderia divergir da do banco.
+  const regerar = useCallback(
+    async ({ confirmarSobrescrita } = {}) => {
+      const parametros = parametrosDeRegeracao(documento);
+      if (!parametros) return;
+
+      const { modeloId, ...payload } = parametros;
+
+      setRegerando(true);
+      try {
+        const res = await documentService.gerarDocumento(modeloId, {
+          ...payload,
+          confirmarSobrescrita,
+        });
+        setConflito(null);
+        toast.success('Documento regerado a partir das seções.');
+        // O documento novo é OUTRO registro. Navegar para ele é o que evita a
+        // tela continuar mostrando um documento que acabou de ser substituído.
+        navigate(`/dashboard/documentos/${res.data._id}/texto`, { replace: true });
+      } catch (err) {
+        if (err?.response?.status === 409) {
+          setConflito(getApiErrorDetails(err) ?? {});
+          return;
+        }
+        // 422 de pendência de cadastro cai aqui de propósito: a tela de
+        // montagem é que sabe listar pendência item a item, e mandar a
+        // advogada resolver cadastro daqui seria inventar um segundo lugar
+        // para o mesmo fluxo. A mensagem do backend já nomeia o que falta.
+        toast.error(getApiErrorMessage(err, 'Não foi possível regerar o documento.'));
+      } finally {
+        setRegerando(false);
+      }
+    },
+    [documento, navigate]
+  );
+
+  const tentarRegerar = useCallback(() => {
+    if (sujo) {
+      setAvisoDeNaoSalvo(true);
+      return;
+    }
+    regerar();
+  }, [sujo, regerar]);
+
   // Leva o cursor até a lacuna. `inicio` vem do backend em posição de caractere
   // sobre o mesmo texto que está no textarea — só vale enquanto a advogada não
   // editou, e é por isso que só oferecemos o salto com o texto limpo.
@@ -164,6 +230,8 @@ function DocumentFinalTextPage() {
     },
     [texto]
   );
+
+  const impedimentoDeRegerar = useMemo(() => motivoParaNaoRegerar(documento), [documento]);
 
   const secoesDeOrigem = useMemo(
     () =>
@@ -327,6 +395,40 @@ function DocumentFinalTextPage() {
             </button>
           </section>
 
+          {/* ── Regerar a partir das seções (Fase 4.4) ────────────────────── */}
+          <section className="final__cartao">
+            <h2 className="final__cartao-titulo">Regerar</h2>
+            <p className="final__cartao-texto">
+              Recompõe o texto a partir das seções e do cadastro de hoje. Use quando o
+              cadastro do cliente mudou, ou quando uma seção foi corrigida na biblioteca.
+            </p>
+
+            {impedimentoDeRegerar ? (
+              <p className="final__cartao-impedimento">{impedimentoDeRegerar}</p>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="ui-btn ui-btn--secondary ui-btn--sm final__regerar"
+                  onClick={tentarRegerar}
+                  disabled={regerando}
+                >
+                  <RefreshCw size={14} aria-hidden="true" />
+                  {regerando ? 'Regerando…' : 'Regerar a partir das seções'}
+                </button>
+                {editadoManualmente && (
+                  <p className="final__cartao-aviso final__cartao-aviso--risco">
+                    <AlertTriangle size={13} aria-hidden="true" />
+                    <span>
+                      Este texto foi editado à mão. Regerar <strong>substitui</strong> a
+                      revisão — o sistema vai pedir confirmação.
+                    </span>
+                  </p>
+                )}
+              </>
+            )}
+          </section>
+
           {/* ── Rastreabilidade de origem ─────────────────────────────────── */}
           <section className="final__cartao">
             <h2 className="final__cartao-titulo">Seções de origem</h2>
@@ -354,6 +456,35 @@ function DocumentFinalTextPage() {
           </section>
         </aside>
       </div>
+
+      {/* Texto não salvo: o backend não sabe desta edição, então não haveria
+          409 nenhum — o aviso precisa vir da tela. */}
+      <Modal
+        open={avisoDeNaoSalvo}
+        title="Há alterações não salvas"
+        message="O texto na caixa ainda não foi salvo. Regerar agora descarta essas alterações, e elas não são recuperáveis porque nunca chegaram ao servidor."
+        variant="danger"
+        confirmLabel="Descartar e regerar"
+        cancelLabel="Voltar e salvar"
+        onConfirm={() => {
+          setAvisoDeNaoSalvo(false);
+          regerar();
+        }}
+        onCancel={() => setAvisoDeNaoSalvo(false)}
+      />
+
+      {/* O 409 do backend vira confirmação explícita. O reenvio leva
+          `confirmarSobrescrita: true` — é o contrato da 2C. */}
+      <Modal
+        open={conflito !== null}
+        title="Substituir o texto editado à mão?"
+        message={textoDaSobrescrita(conflito, { formatarData: formatDate })}
+        variant="danger"
+        confirmLabel="Substituir e regerar"
+        cancelLabel="Manter o texto atual"
+        onConfirm={() => regerar({ confirmarSobrescrita: true })}
+        onCancel={() => setConflito(null)}
+      />
     </div>
   );
 }
