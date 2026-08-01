@@ -12,6 +12,48 @@ export const formatCurrency = (value) => {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
 
+// Moeda compacta, para rótulo sobre barra e tick de eixo: "R$ 12,5 mil".
+//
+// `Intl` com `notation: "compact"` já sabe dizer "mil", "mi" e "bi" em
+// português — não há tabela de sufixo escrita à mão, e nenhuma dependência
+// nova. O que existia antes no gráfico era `R$${(v/1000).toFixed(0)}k`, com o
+// "k" do inglês e sem separador decimal brasileiro.
+//
+// O valor por extenso continua saindo pelo `formatCurrency` no tooltip: o
+// rótulo compacto é para caber sobre a barra, e nunca é a única forma de ler
+// o número.
+export const formatCurrencyCompact = (value) => {
+  if (value === undefined || value === null) return '—';
+  const numero = Number(value);
+  if (!Number.isFinite(numero)) return '—';
+  return numero.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  });
+};
+
+// "2026-07" → "julho/2026". O `mesReferencia` do resumo financeiro e o eixo do
+// gráfico de honorários por mês usam a mesma chave `AAAA-MM`.
+//
+// A data é montada em UTC (`Date.UTC`) porque a chave não tem dia nem hora:
+// `new Date("2026-07")` é interpretado como UTC pelo próprio parser, e um
+// `new Date(2026, 6, 1)` local traria de volta o desencontro de fuso que o
+// backend fecha ao recortar o mês em UTC.
+export const formatMonthKey = (chave, { curto = false } = {}) => {
+  if (typeof chave !== 'string') return '—';
+  const [ano, mes] = chave.split('-').map(Number);
+  if (!Number.isInteger(ano) || !Number.isInteger(mes) || mes < 1 || mes > 12) return chave;
+
+  const nome = new Date(Date.UTC(ano, mes - 1, 1)).toLocaleDateString('pt-BR', {
+    month: curto ? 'short' : 'long',
+    timeZone: 'UTC',
+  }).replace('.', '');
+
+  return `${nome}/${ano}`;
+};
+
 // "10%", "12,5%", "33,33%" — o percentual contratado do honorário (Fase 4.1).
 //
 // Espelha `percentual` de `utils/templateFormatters.js` no backend, que é quem

@@ -79,6 +79,17 @@
 .summary-card--success .card-value { color: var(--color-success); }
 .summary-card--info    .card-value { color: var(--color-info); }
 
+/* Texto secundário do cartão (Fase 4.3): a contagem de parcelas vencidas ao
+   lado do valor, e a frase que explica um zero real ("nenhum recebimento no
+   mês"). Fica esmaecido de propósito — é a nota de rodapé do número, não um
+   segundo número. */
+.card-note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-tight);
+}
+
 /* --- Parcelas Urgentes --- */
 .upcoming-section {
   margin-bottom: var(--space-8);
@@ -118,6 +129,22 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* A descrição virou link para a parcela (Fase 4.3). Herda a cor do texto em
+   vez do verde de `a`: dentro de uma lista de itens, quinze linhas verdes
+   deixariam de parecer conteúdo e passariam a parecer menu. O sublinhado no
+   hover é o que sinaliza que é clicável. */
+.upcoming-link {
+  color: var(--color-text-primary);
+  text-decoration: none;
+  display: block;
+}
+
+.upcoming-link:hover,
+.upcoming-link:focus-visible {
+  color: var(--color-primary-light);
+  text-decoration: underline;
 }
 
 .upcoming-due {
@@ -183,6 +210,54 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin: var(--space-6) 0;
+  text-align: center;
+}
+
+/* ── Legenda dos donuts (Fase 4.3) ─────────────────────────────────────────
+   Os três gráficos não tinham legenda nenhuma: eram anéis coloridos sem nada
+   dizendo o que cada cor significava. A cor do ponto sai de
+   `utils/statusVisual.js`, o MESMO módulo que pinta o `StatusBadge` das
+   listagens — o ponto vermelho da legenda é o vermelho do badge "Vencido". */
+.chart-legend {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.chart-legend-dot {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: var(--radius-full);
+}
+
+/* O rótulo é quem cede espaço quando o cartão é estreito; a quantidade nunca
+   trunca, porque é o dado. */
+.chart-legend-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chart-legend-value {
+  flex-shrink: 0;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .chart-bar-wrapper {
