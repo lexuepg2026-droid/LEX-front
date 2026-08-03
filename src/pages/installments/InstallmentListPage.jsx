@@ -20,14 +20,37 @@ function InstallmentListPage({ embedded = false }) {
   const [searchParams] = useSearchParams();
   const processoId = searchParams.get('processoId') || undefined;
   const [statusFiltro, setStatusFiltro] = useState('');
+  // Modo "desativadas" (Fase 4.5) — ver a nota em PaymentListPage.
+  const [verInativos, setVerInativos] = useState(false);
+  const [reativando, setReativando] = useState(null);
 
   useEffect(() => {
     setLoading(true);
-    installmentService.listInstallments({ processoId, status: statusFiltro || undefined })
+    installmentService.listInstallments({
+      processoId,
+      status: statusFiltro || undefined,
+      inativos: verInativos || undefined
+    })
       .then(res => setInstallments(res.data.data ?? res.data))
       .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao buscar parcelas.')))
       .finally(() => setLoading(false));
-  }, [processoId, statusFiltro]);
+  }, [processoId, statusFiltro, verInativos]);
+
+  // Reativar devolve a parcela ao conjunto do honorário e dispara o recálculo
+  // dos dois níveis no backend.
+  const handleReativar = async (id) => {
+    setReativando(id);
+    try {
+      await installmentService.reativarInstallment(id);
+      setInstallments(installments.filter(i => i._id !== id));
+      toast.success('Parcela reativada. O status do honorário foi recalculado.');
+    } catch (err) {
+      // 409 com `dependencia: "honorario"` quando o honorário está desativado.
+      toast.error(getFinancialErrorMessage(err, 'Não foi possível reativar a parcela.'));
+    } finally {
+      setReativando(null);
+    }
+  };
 
   const confirmDelete = (id) => setDeleteModal({ open: true, id });
 
@@ -59,12 +82,25 @@ function InstallmentListPage({ embedded = false }) {
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
+
+        <label className="filter-toggle">
+          <input
+            type="checkbox"
+            checked={verInativos}
+            onChange={(e) => setVerInativos(e.target.checked)}
+          />
+          Mostrar desativadas
+        </label>
       </div>
 
       {installments.length === 0 ? (
         <EmptyState
-          title="Nenhuma cobrança encontrada"
-          description="Tente ajustar os filtros ou crie uma nova parcela."
+          title={verInativos ? 'Nenhuma parcela desativada' : 'Nenhuma cobrança encontrada'}
+          description={
+            verInativos
+              ? 'Parcelas excluídas aparecem aqui e podem ser reativadas.'
+              : 'Tente ajustar os filtros ou crie uma nova parcela.'
+          }
         />
       ) : (
         <div className="table-wrapper">
@@ -109,8 +145,21 @@ function InstallmentListPage({ embedded = false }) {
                   <td><StatusBadge status={inst.status} /></td>
                   <td>{formatDate(inst.dataPagamento)}</td>
                   <td className="actions-cell">
-                    <Link to={`/dashboard/parcelas/editar/${inst._id}`} className="btn-action btn-edit">Editar</Link>
-                    <button onClick={() => confirmDelete(inst._id)} className="btn-action btn-delete">Excluir</button>
+                    {inst.ativo === false ? (
+                      <button
+                        type="button"
+                        onClick={() => handleReativar(inst._id)}
+                        disabled={reativando === inst._id}
+                        className="btn-action btn-edit"
+                      >
+                        {reativando === inst._id ? 'Reativando…' : 'Reativar'}
+                      </button>
+                    ) : (
+                      <>
+                        <Link to={`/dashboard/parcelas/editar/${inst._id}`} className="btn-action btn-edit">Editar</Link>
+                        <button onClick={() => confirmDelete(inst._id)} className="btn-action btn-delete">Excluir</button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}

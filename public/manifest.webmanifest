@@ -1,0 +1,27 @@
+{
+  "name": "LEX — Gestão de Advocacia",
+  "short_name": "LEX",
+  "description": "Clientes, processos, documentos e financeiro do escritório.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "theme_color": "#B89D4B",
+  "background_color": "#111A12",
+  "icons": [
+    {
+      "src": "/icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -22,14 +22,45 @@ function PaymentListPage({ embedded = false }) {
   // Um recibo por vez, por id: sem isso o botão de TODAS as linhas ficaria em
   // "Baixando…" enquanto um só está sendo gerado.
   const [reciboEmCurso, setReciboEmCurso] = useState(null);
+  // ── Modo "desativados" (Fase 4.5) ────────────────────────────────────────
+  // A listagem padrão só traz pagamento ativo, então o desativado era invisível
+  // e a rota de reativação não tinha porta de entrada na interface. O modo é
+  // exclusivo, e não um "incluir": misturar os dois conjuntos faria a coluna de
+  // valor somar o que foi estornado sem nada dizendo isso na linha.
+  const [verInativos, setVerInativos] = useState(false);
+  const [reativando, setReativando] = useState(null);
 
   useEffect(() => {
     setLoading(true);
-    paymentService.listPayments({ page: 1, limit: 20, processoId, formaPagamento: formaPagamento || undefined })
+    paymentService.listPayments({
+      page: 1,
+      limit: 20,
+      processoId,
+      formaPagamento: formaPagamento || undefined,
+      inativos: verInativos || undefined
+    })
       .then(res => setPayments(res.data.data ?? res.data))
       .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao buscar pagamentos.')))
       .finally(() => setLoading(false));
-  }, [processoId, formaPagamento]);
+  }, [processoId, formaPagamento, verInativos]);
+
+  // Reativar devolve o pagamento ao conjunto e dispara o recálculo da parcela e
+  // do honorário no backend. A linha sai da lista de desativados na hora — é
+  // esta lista que ela deixa de pertencer.
+  const handleReativar = async (id) => {
+    setReativando(id);
+    try {
+      await paymentService.reativarPayment(id);
+      setPayments(payments.filter(p => p._id !== id));
+      toast.success('Pagamento reativado. O status da parcela e do honorário foi recalculado.');
+    } catch (err) {
+      // 409 com `dependencia: "parcela"` quando a parcela está desativada. A
+      // mensagem do backend já diz o que fazer ("Reative a parcela antes").
+      toast.error(getFinancialErrorMessage(err, 'Não foi possível reativar o pagamento.'));
+    } finally {
+      setReativando(null);
+    }
+  };
 
   const confirmDelete = (id) => setDeleteModal({ open: true, id });
 
@@ -79,12 +110,25 @@ function PaymentListPage({ embedded = false }) {
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
+
+        <label className="filter-toggle">
+          <input
+            type="checkbox"
+            checked={verInativos}
+            onChange={(e) => setVerInativos(e.target.checked)}
+          />
+          Mostrar desativados
+        </label>
       </div>
 
       {payments.length === 0 ? (
         <EmptyState
-          title="Nenhum recebimento encontrado"
-          description="Tente ajustar os filtros ou registre um novo pagamento."
+          title={verInativos ? 'Nenhum pagamento desativado' : 'Nenhum recebimento encontrado'}
+          description={
+            verInativos
+              ? 'Pagamentos removidos aparecem aqui e podem ser reativados.'
+              : 'Tente ajustar os filtros ou registre um novo pagamento.'
+          }
         />
       ) : (
         <div className="table-wrapper">
@@ -125,6 +169,21 @@ function PaymentListPage({ embedded = false }) {
                   <td className="cell-truncate">{labelDe(FORMA_PAGAMENTO_OPTIONS, p.formaPagamento)}</td>
                   <td className="cell-truncate" title={p.observacoes || undefined}>{p.observacoes || '—'}</td>
                   <td className="actions-cell">
+                    {/* Desativado só oferece "Reativar": editar ou baixar
+                        recibo de um pagamento estornado são as duas coisas que
+                        o backend recusa, e oferecer o botão seria prometer o
+                        que a rota nega. */}
+                    {p.ativo === false ? (
+                      <button
+                        type="button"
+                        onClick={() => handleReativar(p._id)}
+                        disabled={reativando === p._id}
+                        className="btn-action btn-edit"
+                      >
+                        {reativando === p._id ? 'Reativando…' : 'Reativar'}
+                      </button>
+                    ) : (
+                      <>
                     {/* Só pagamento ATIVO tem recibo. A rota responde 404 para
                         o desativado, e oferecer o botão seria prometer um papel
                         que o backend recusa emitir — de propósito. */}
@@ -140,6 +199,8 @@ function PaymentListPage({ embedded = false }) {
                     )}
                     <Link to={`/dashboard/pagamentos/editar/${p._id}`} className="btn-action btn-edit">Editar</Link>
                     <button onClick={() => confirmDelete(p._id)} className="btn-action btn-delete">Remover</button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}

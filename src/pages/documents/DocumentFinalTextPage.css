@@ -218,7 +218,6 @@
 }
 
 .final__textarea:focus {
-  outline: none;
   border-color: var(--color-primary);
 }
 

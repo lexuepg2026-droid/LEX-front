@@ -1,11 +1,14 @@
 import api from './axiosConfig';
 import { nomeDoAnexo } from '../utils/download';
 
-const listPayments = ({ page = 1, limit = 20, installmentId, processoId, formaPagamento } = {}) => {
+const listPayments = ({ page = 1, limit = 20, installmentId, processoId, formaPagamento, inativos } = {}) => {
   const params = { page, limit };
   if (installmentId) params.installmentId = installmentId;
   if (processoId) params.processoId = processoId;
   if (formaPagamento) params.formaPagamento = formaPagamento;
+  // `inativos=true` lista SÓ os desativados — é um modo, não um "incluir".
+  // Ver a nota em `paymentService.findAll` no backend.
+  if (inativos) params.inativos = true;
   return api.get('/payments', { params });
 };
 const getPaymentById = (id) => api.get(`/payments/${id}`);
@@ -13,6 +16,9 @@ const createPayment = (data) => api.post('/payments', data);
 // PATCH, e não PUT — ver a nota em `feeService.js`.
 const updatePayment = (id, data) => api.patch(`/payments/${id}`, data);
 const removePayment = (id) => api.delete(`/payments/${id}`);
+// Reativação (Fase 4.5): rota própria, sem corpo. Não é `PATCH { ativo: true }`
+// — reativar tem guarda de integridade, e o backend recusa `ativo` no corpo.
+const reativarPayment = (id) => api.patch(`/payments/${id}/reativar`);
 
 // ── Recibo de pagamento (Fase 4.1 no backend, Fase 4.2 na tela) ────────────
 //
@@ -58,6 +64,7 @@ export default {
   getPaymentById,
   createPayment,
   updatePayment,
+  reativarPayment,
   removePayment,
   baixarRecibo,
   baixarEsalvarRecibo,
