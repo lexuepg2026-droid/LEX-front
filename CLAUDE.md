@@ -484,6 +484,38 @@ que explica o defeito contém a expressão, e uma varredura ingênua derrubaria 
 própria explicação — a saída óbvia seria apagar o comentário.
 
 
+
+## A lista de pendências é UM componente (Fase 4.6)
+
+`components/documents/PendenciaList.jsx`, usado pela tela de **montagem** e pela
+tela do **documento**. Vivia inteiro dentro do `GenerationPanel`.
+
+**O defeito que originou a extração não era duplicação — era ausência.** A tela
+do documento, que ganhou "Regerar" na Fase 4.4, tratava o mesmo 422 com
+`toast.error(getApiErrorMessage(err))`. O `message` do backend é *"Não é
+possível gerar o documento: há informações faltando no cadastro"*, que **não
+nomeia nada**; os nomes vivem em `errors.pendencias[]`, que aquela tela
+descartava. O comentário no código afirmava o contrário.
+
+**A tela separa os motivos.** `motivo` vem do vocabulário fechado do backend:
+
+| `motivo` | Como aparece |
+|---|---|
+| `campoVazio` | "Faltam N dados no cadastro", cor de aviso |
+| `tipoIncompativel`, `tipoHonorarioIncompativel`, `parcelasDesiguais` | bloco **separado e primeiro**, cor de impedimento |
+
+Separar não é estética: incompatibilidade **não se resolve preenchendo
+cadastro**, e listá-la junto de "faltam 3 dados" convida à ação errada — que é o
+beco original com outra roupa.
+
+**O aviso preventivo** (`GET /documents/modelos/:id/compatibilidade`) aparece ao
+escolher o cliente, antes de qualquer clique. **Não bloqueia**: `podeGerar` não
+depende dele, e há teste travando isso. A advogada pode querer gerar e apagar o
+trecho incompatível no texto final — o poder moderador dela, desde a Fase 2C.
+Falha na consulta não reporta nada: o pior caso é o aviso não aparecer, que é o
+comportamento anterior à fase, e o 422 continua sendo a rede.
+
+
 ## Testes
 
 `npm test` → `node --test tests/`. **Sem DOM e sem dependência de render**, por
@@ -725,6 +757,29 @@ havia `public/` até esta fase): toda página pedia um arquivo ausente e recebia
 **Não tocado:** contrato de rota nenhum, `axiosConfig.js`, telas do portal.
 **Nenhuma dependência nova** — `package.json` idêntico a `main`. Os ícones
 saíram de script descartável com o PIL do ambiente.
+
+---
+
+
+### Fase 4.6 — Mensagens que orientam
+
+**Resumo:** a lista de pendências vira componente único, a tela do documento
+deixa de engolir o 422, e nasce o aviso preventivo de PF/PJ. Frontend 240 → **250**.
+
+**Arquivos novos:** `components/documents/PendenciaList.jsx` + `.css`,
+`tests/documents/mensagens.test.js`.
+**Alterados:** `components/documents/GenerationPanel.jsx` + `.css`,
+`pages/documents/DocumentFinalTextPage.jsx`, `api/documentService.js`.
+
+As regras de estilo da lista **mudaram de folha junto com o JSX**: a folha é
+importada pelo componente que aplica as classes, e não pela tela que o monta —
+dependência que só existe pela árvore de componentes não é alcançável por
+análise estática, e foi esse o defeito que a varredura pegou nas telas do portal
+na Fase 3.2.
+
+**Não tocado:** contrato de rota nenhum além do consumo da rota nova,
+`axiosConfig.js`, telas do portal, módulo financeiro.
+**Nenhuma dependência nova.**
 
 ---
 

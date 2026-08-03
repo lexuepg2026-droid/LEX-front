@@ -1624,6 +1624,74 @@ Dados que vários passos usam:
   desinstalar o servidor.
   Fase de origem: 4.5
 
+
+## 19. Fase 4.6 — Mensagens que orientam
+
+> Numeração contínua a partir do 142. Cinco passos novos: **143 a 147**.
+> O total pendente vai de **137 para 142**.
+>
+> Todos são `[só olho humano]`, e o motivo é o mesmo nos cinco: a suíte prova
+> que a mensagem CONTÉM o texto certo e que a ação sugerida leva ao 201
+> (`tests/documents/mensagens.test.js` do backend, blocos ANTI-BECO). Nenhum
+> teste prova que a advogada **entende** a mensagem e sabe o que fazer — e esse
+> era exatamente o defeito: as frases antigas estavam gramaticalmente corretas.
+
+- [ ] **143. ⭐ Gerar modelo de PJ para cliente PF e LER a pendência**
+  Pré-condição: `npm run seed:fresh`; um modelo com a seção "Qualificação da
+  outorgante — pessoa jurídica"; o processo "Execucao Fiscal - IPTU", cujo
+  participante é pessoa física.
+  Passos: montar/gerar esse modelo para o cliente PF.
+  Esperado: a tela mostra um bloco **separado** e em cor de impedimento —
+  "3 variáveis não se aplicam a esta combinação" —, com a frase
+  "Esta variável é de pessoa jurídica e Joao Paulo Oliveira é pessoa física.
+  Vincule um cliente pessoa jurídica a este processo e gere para ele, ou use um
+  modelo para pessoa física."
+  O que se confere: se ela entende que **não adianta ir preencher cadastro**.
+  Antes a frase era "Preencha 'CNPJ' no cadastro do cliente" — e o cadastro de
+  um cliente PF não tem CNPJ, nem passaria a ter.
+  Fase de origem: 4.6
+
+- [ ] **144. ⭐ O aviso preventivo, ao ESCOLHER o cliente**
+  Pré-condição: a mesma do 143, sem clicar em Gerar.
+  Passos: no painel de geração, escolher o processo e depois o cliente PF.
+  Esperado: **antes de qualquer clique em Gerar**, aparece o aviso vermelho
+  dizendo quantas variáveis não servem e **em quais seções** elas estão. O botão
+  Gerar continua **habilitado** — é aviso, não bloqueio.
+  Por que continua habilitado: a advogada pode querer gerar e apagar o trecho
+  incompatível no texto final, que é o poder moderador dela desde a Fase 2C.
+  Fase de origem: 4.6
+
+- [ ] **145. ⭐🚨 Regerar com pendência e ver a LISTA na tela do documento**
+  Pré-condição: um documento gerado cujo cadastro passou a ter uma pendência
+  (por exemplo, apague a profissão do cliente depois de gerar).
+  Passos: abrir `/dashboard/documentos/:id/texto` e clicar em **Regerar a partir
+  das seções**.
+  Esperado: a **lista completa** aparece no cartão de regeração, com rótulo e
+  orientação item a item — a mesma lista da tela de montagem.
+  Antes desta fase: um toast dizendo "há informações faltando no cadastro",
+  **sem dizer quais**, e a advogada tinha de voltar à montagem e refazer a
+  escolha de processo e cliente para descobrir.
+  Fase de origem: 4.6
+
+- [ ] **146. Digitar `{{nomeAdvogado}}` numa seção e receber a sugestão**
+  Passos: em `/dashboard/secoes/nova`, escrever um texto com `{{nomeAdvogado}}`
+  (o nome ANTIGO da chave, anterior à Fase 2D.2) e salvar.
+  Esperado: 400 com "Variáveis inválidas no texto: {{nomeAdvogado}} (você quis
+  dizer {{nomeAdvogada}}?)".
+  Conferir também que `{{xptoQualquer}}` **não** recebe sugestão inventada.
+  Fase de origem: 4.6
+
+- [ ] **147. ⭐ Seguir uma orientação de ponta a ponta até gerar**
+  Passos: com um honorário do tipo **fixo** e uma seção usando
+  `{{percentualHonorario}}`, tentar gerar; ler a orientação; **fazer exatamente
+  o que ela manda** (mudar o tipo do honorário para percentual, informando
+  percentual e valor base); gerar de novo.
+  Esperado: o documento é gerado, com o percentual no texto.
+  Por que este passo é o mais importante da fase: é a régua. Se em algum momento
+  a orientação mandar fazer algo que a tela não permite, o beco voltou — e
+  nenhum teste de texto pegaria isso.
+  Fase de origem: 4.6
+
 ---
 
 ## Validado

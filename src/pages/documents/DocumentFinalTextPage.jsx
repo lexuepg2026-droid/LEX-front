@@ -15,7 +15,8 @@ import Loading from '../../components/common/Loading';
 import Modal from '../../components/ui/Modal';
 import { TIPO_DOCUMENTO_OPTIONS, TIPO_SECAO_OPTIONS, labelDe } from '../../utils/enums';
 import { formatDate } from '../../utils/formatters';
-import { getApiErrorDetails, getApiErrorMessage } from '../../utils/apiError';
+import PendenciaList from '../../components/documents/PendenciaList';
+import { getApiErrorDetails, getApiErrorMessage, getApiErrorPendencias } from '../../utils/apiError';
 import { toast } from '../../utils/toast';
 import {
   motivoParaNaoRegerar,
@@ -68,6 +69,8 @@ function DocumentFinalTextPage() {
   // edição.
   const [regerando, setRegerando] = useState(false);
   const [conflito, setConflito] = useState(null);
+  // Pendências do 422 de regeração (Fase 4.6). Ver o `catch` de `regerar`.
+  const [pendencias, setPendencias] = useState([]);
   const [avisoDeNaoSalvo, setAvisoDeNaoSalvo] = useState(false);
 
   const areaRef = useRef(null);
@@ -185,6 +188,7 @@ function DocumentFinalTextPage() {
           confirmarSobrescrita,
         });
         setConflito(null);
+        setPendencias([]);
         toast.success('Documento regerado a partir das seções.');
         // O documento novo é OUTRO registro. Navegar para ele é o que evita a
         // tela continuar mostrando um documento que acabou de ser substituído.
@@ -194,10 +198,28 @@ function DocumentFinalTextPage() {
           setConflito(getApiErrorDetails(err) ?? {});
           return;
         }
-        // 422 de pendência de cadastro cai aqui de propósito: a tela de
-        // montagem é que sabe listar pendência item a item, e mandar a
-        // advogada resolver cadastro daqui seria inventar um segundo lugar
-        // para o mesmo fluxo. A mensagem do backend já nomeia o que falta.
+        // ── 422: a lista completa, aqui mesmo (Fase 4.6) ──────────────────
+        //
+        // Até a 4.5 este caminho caía num `toast.error(message)` seco, com o
+        // comentário afirmando que "a mensagem do backend já nomeia o que
+        // falta". **Ela não nomeia**: o `message` é "Não é possível gerar o
+        // documento: há informações faltando no cadastro", e os nomes vivem em
+        // `errors.pendencias[]` — que esta tela descartava.
+        //
+        // O resultado prático era o pior beco do módulo: a advogada clicava em
+        // Regerar, lia "faltam informações" e não tinha como descobrir QUAIS
+        // sem voltar à montagem e refazer a escolha de processo e cliente.
+        //
+        // A lista é o MESMO componente da tela de montagem, não uma segunda
+        // implementação — duas cópias divergiriam justamente nas mensagens,
+        // que são o produto desta fase.
+        if (err?.response?.status === 422) {
+          const lista = getApiErrorPendencias(err);
+          if (lista.length > 0) {
+            setPendencias(lista);
+            return;
+          }
+        }
         toast.error(getApiErrorMessage(err, 'Não foi possível regerar o documento.'));
       } finally {
         setRegerando(false);
@@ -425,6 +447,12 @@ function DocumentFinalTextPage() {
                     </span>
                   </p>
                 )}
+
+                {/* A lista completa do 422, aqui mesmo (Fase 4.6). Antes esta
+                    tela mostrava só "há informações faltando no cadastro", sem
+                    dizer quais — e obrigava a voltar à montagem para descobrir.
+                    É o MESMO componente da tela de geração. */}
+                <PendenciaList pendencias={pendencias} />
               </>
             )}
           </section>

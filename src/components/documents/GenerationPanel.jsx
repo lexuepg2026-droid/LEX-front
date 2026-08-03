@@ -1,15 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CircleDollarSign, Sparkles } from 'lucide-react';
+import { AlertCircle, Sparkles, UserX } from 'lucide-react';
 import documentService from '../../api/documentService';
 import processService from '../../api/processService';
 import Modal from '../ui/Modal';
+import PendenciaList, { EscolhaDeHonorario } from './PendenciaList';
 import {
   PAPEL_PROCESSO_OPTIONS,
   documentoDoCliente,
   labelDe,
   nomeDoCliente,
 } from '../../utils/enums';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+import { formatDate } from '../../utils/formatters';
 import { getApiErrorDetails, getApiErrorMessage, getApiErrorPendencias } from '../../utils/apiError';
 import './GenerationPanel.css';
 
@@ -101,6 +102,12 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
   // Documento gerado anterior desta combinação que está VISÍVEL no portal.
   // `null` quando não há — e é a ausência que libera a geração direta.
   const [anteriorVisivel, setAnteriorVisivel] = useState(null);
+  // ── Aviso preventivo de compatibilidade (Fase 4.6) ──────────────────────
+  // Um usuário real montou modelo de PJ e gerou para cliente PF. A pendência
+  // que ele recebeu ("Preencha 'CNPJ' no cadastro do cliente") era impossível
+  // de seguir. O 422 continua sendo a rede; isto é o alerta, no momento em que
+  // ela escolhe o cliente — antes de clicar em Gerar e antes de qualquer erro.
+  const [incompat, setIncompat] = useState(null);
   // Diálogo de "isto sai do portal", no caminho SEM 409.
   const [avisoDePortal, setAvisoDePortal] = useState(false);
   // Documento recém-gerado que substituiu um visível: a oferta de liberar o
@@ -191,6 +198,28 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
 
     return () => { ativo = false; };
   }, [modeloId, processoId, clienteId]);
+
+  // Consulta a compatibilidade assim que modelo E cliente estão escolhidos.
+  useEffect(() => {
+    setIncompat(null);
+    if (!modeloId || !clienteId) return;
+
+    let ativo = true;
+    documentService
+      .compatibilidadeModelo(modeloId, clienteId)
+      .then((res) => {
+        if (!ativo) return;
+        setIncompat(res.data?.compativel === false ? res.data : null);
+      })
+      .catch(() => {
+        // Falhar aqui NÃO bloqueia nem reporta: o pior caso é o aviso não
+        // aparecer, que é o comportamento que existia antes desta fase. O 422
+        // da geração continua pegando o caso.
+        if (ativo) setIncompat(null);
+      });
+
+    return () => { ativo = false; };
+  }, [modeloId, clienteId]);
 
   // A pendência de escolha de honorário é a única que a tela resolve sozinha —
   // as outras dependem de a advogada ir ao cadastro.
@@ -377,85 +406,54 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
       </div>
 
       {/* ── 422: escolha de honorário ─────────────────────────────────────── */}
-      {escolhaDeHonorario && (
-        <div className="geracao__honorario">
-          <p className="geracao__honorario-titulo">
-            <CircleDollarSign size={15} aria-hidden="true" />
-            {escolhaDeHonorario.rotulo}
+      <EscolhaDeHonorario
+        escolha={escolhaDeHonorario}
+        sintomas={sintomasDeHonorario}
+        honorarioId={honorarioId}
+        onEscolher={setHonorarioId}
+        onConfirmar={tentarGerar}
+        gerando={gerando}
+      />
+
+      {/* ── 422: pendências de cadastro ───────────────────────────────────
+          A lista mora em `PendenciaList`, compartilhada com a tela do
+          documento — que tratava o mesmo 422 com um toast seco. Ver o
+          cabeçalho daquele arquivo. */}
+      <PendenciaList pendencias={pendenciasDeCadastro} />
+
+      {/* ── Aviso preventivo: o modelo não serve para este cliente ─────────
+          Aparece na ESCOLHA, não no erro. Gerar continua permitido — o 422 é a
+          rede, e bloquear aqui impediria a advogada de gerar um documento cujo
+          trecho incompatível ela pretenda apagar no texto final. */}
+      {incompat && (
+        <div className="geracao__incompat">
+          <p className="geracao__incompat-titulo">
+            <UserX size={15} aria-hidden="true" />
+            {incompat.totalVariaveis === 1
+              ? 'Uma variável deste modelo não serve para este cliente'
+              : `${incompat.totalVariaveis} variáveis deste modelo não servem para este cliente`}
           </p>
-          <p className="geracao__honorario-orientacao">{escolhaDeHonorario.orientacao}</p>
-
-          {sintomasDeHonorario > 0 && (
-            <p className="geracao__honorario-nota">
-              {sintomasDeHonorario === 1
-                ? 'Há 1 variável de honorário no texto esperando esta escolha.'
-                : `Há ${sintomasDeHonorario} variáveis de honorário no texto esperando esta escolha.`}{' '}
-              Elas se resolvem sozinhas quando você escolher — não é dado faltando no cadastro.
-            </p>
-          )}
-
-          <ul className="geracao__opcoes">
-            {escolhaDeHonorario.opcoes.map((opcao) => {
-              const id = String(opcao.honorarioId);
-              return (
-                <li key={id}>
-                  <label className={`geracao__opcao${honorarioId === id ? ' geracao__opcao--ativa' : ''}`}>
-                    <input
-                      type="radio"
-                      name="honorario"
-                      value={id}
-                      checked={honorarioId === id}
-                      onChange={() => setHonorarioId(id)}
-                    />
-                    <span className="geracao__opcao-texto">
-                      <strong>{formatCurrency(opcao.valor)}</strong>
-                      {opcao.descricao ? ` — ${opcao.descricao}` : ''}
-                      <span className="geracao__opcao-meta">
-                        {opcao.tipo ? `tipo: ${opcao.tipo}` : ''}
-                        {opcao.dataVencimento ? ` · vence em ${formatDate(opcao.dataVencimento)}` : ''}
-                      </span>
-                    </span>
-                  </label>
-                </li>
-              );
-            })}
-          </ul>
-
-          <button
-            type="button"
-            className="ui-btn ui-btn--primary ui-btn--sm"
-            onClick={tentarGerar}
-            disabled={!honorarioId || gerando}
-          >
-            {gerando ? 'Gerando…' : 'Gerar com este honorário'}
-          </button>
-        </div>
-      )}
-
-      {/* ── 422: pendências de cadastro ───────────────────────────────────── */}
-      {pendenciasDeCadastro.length > 0 && (
-        <div className="geracao__pendencias">
-          <p className="geracao__pendencias-titulo">
-            <AlertCircle size={15} aria-hidden="true" />
-            {pendenciasDeCadastro.length === 1
-              ? 'Falta um dado no cadastro'
-              : `Faltam ${pendenciasDeCadastro.length} dados no cadastro`}
+          <p className="geracao__incompat-texto">
+            {incompat.nomeCliente} é{' '}
+            <strong>
+              {incompat.tipoPessoaCliente === 'fisica' ? 'pessoa física' : 'pessoa jurídica'}
+            </strong>
+            , e este modelo usa variáveis do outro tipo. Elas não têm como ser
+            preenchidas no cadastro — o campo não existe para este tipo de cliente.
           </p>
-          <p className="geracao__pendencias-ajuda">
-            O documento não é gerado pela metade. Preencha o que falta e volte aqui.
-          </p>
-
-          <ul className="geracao__pendencias-lista">
-            {pendenciasDeCadastro.map((pendencia) => (
-              <li key={pendencia.variavel} className="geracao__pendencia">
-                {/* O RÓTULO é o que a advogada reconhece. A chave aparece
-                    discreta, no fim, só para quem for conferir a seção. */}
-                <span className="geracao__pendencia-rotulo">{pendencia.rotulo}</span>
-                <span className="geracao__pendencia-orientacao">{pendencia.orientacao}</span>
-                <code className="geracao__pendencia-chave">{`{{${pendencia.variavel}}}`}</code>
+          <ul className="geracao__incompat-lista">
+            {incompat.secoes.map((secao) => (
+              <li key={secao.secaoId}>
+                <strong>{secao.titulo}</strong>
+                {': '}
+                {secao.variaveis.map((v) => v.rotulo).join(', ')}
               </li>
             ))}
           </ul>
+          <p className="geracao__incompat-acao">
+            Escolha um cliente {incompat.tipoPessoaCliente === 'fisica' ? 'pessoa jurídica' : 'pessoa física'}{' '}
+            deste processo, ou use um modelo para {incompat.tipoPessoaCliente === 'fisica' ? 'pessoa física' : 'pessoa jurídica'}.
+          </p>
         </div>
       )}
 
