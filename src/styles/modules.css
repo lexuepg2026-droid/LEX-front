@@ -21,7 +21,6 @@
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
   padding: var(--space-2) var(--space-3);
-  outline: none;
   min-width: 160px;
   height: 34px;
 }

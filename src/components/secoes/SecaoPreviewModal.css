@@ -63,7 +63,6 @@
 .secao-preview__close:focus-visible {
   background: var(--color-surface-raised);
   color: var(--color-text-primary);
-  outline: none;
 }
 
 .secao-preview__aviso {

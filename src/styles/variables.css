@@ -8,6 +8,12 @@
   --color-accent:         #B89D4B;
   --color-accent-muted:   rgba(184, 157, 75, 0.15);
 
+  /* Foco visível (Fase 4.5, achado #9). É o dourado da marca: o verde
+     primário se confunde com o fundo no tema escuro, que é o padrão do app. */
+  --color-focus:          #B89D4B;
+  --focus-ring-width:     2px;
+  --focus-ring-offset:    2px;
+
   /* Backgrounds — dark mode */
   --color-bg:             #111A12;
   --color-surface:        #1A2B1B;
@@ -100,6 +106,10 @@ body.light-mode {
   --color-text-muted:     #8A8580;
   --color-border:         rgba(0, 0, 0, 0.12);
   --color-border-strong:  rgba(0, 0, 0, 0.25);
+
+  /* No tema claro o dourado da marca perde contraste contra o branco; o anel
+     escurece para continuar visível sem trocar de identidade. */
+  --color-focus:          #7A6528;
 
   /* Legado */
   --bg-color:    var(--color-bg);

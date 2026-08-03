@@ -40,3 +40,35 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FOCO VISÍVEL — global (Fase 4.5, achado #9)
+
+   Havia SEIS `outline: none` no projeto, e dois deles estavam DENTRO de regras
+   `:focus-visible` — ou seja, a regra escrita para desenhar o foco era a que o
+   apagava. Quem navega por teclado (e quem depende disso para navegar) perdia a
+   noção de onde está, sobretudo no tema escuro, que é o padrão do app.
+
+   `:focus-visible` e não `:focus`: o navegador só aplica quando o foco veio de
+   teclado ou de navegação assistiva. Clicar num botão com o mouse não desenha
+   anel — que é justamente o motivo pelo qual alguém escreveu `outline: none` em
+   primeiro lugar, e o motivo de a correção não ser simplesmente removê-los.
+
+   `outline` e não `box-shadow`: outline não participa do layout, não desloca
+   nada e acompanha o border-radius nos navegadores atuais. `outline-offset`
+   descola o anel da borda do controle para ele não se confundir com a borda de
+   um input.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm, 4px);
+}
+
+/* O textarea do texto final ocupa a largura toda e tem borda própria; o offset
+   positivo faria o anel encostar no cartão. Aqui ele fica rente. */
+.final__textarea:focus-visible,
+.biblioteca__busca input:focus-visible,
+.var-selector__search input:focus-visible {
+  outline-offset: 0;
+}

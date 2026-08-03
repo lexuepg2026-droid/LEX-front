@@ -67,7 +67,6 @@
 }
 
 .biblioteca__busca input:focus {
-  outline: none;
 }
 
 .biblioteca__filtros select {
