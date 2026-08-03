@@ -41,6 +41,11 @@ const gerarDocumento = (modeloId, { processoId, clienteId, honorarioId, confirma
     confirmarSobrescrita,
   });
 
+// Compatibilidade modelo × cliente (Fase 4.6). Leitura: diz se o modelo tem
+// variáveis que não se aplicam ao tipo do cliente, ANTES de gerar. Não bloqueia.
+const compatibilidadeModelo = (modeloId, clienteId) =>
+  api.get(`/documents/modelos/${modeloId}/compatibilidade`, { params: { clienteId } });
+
 const previewDocumento = (id, { processoId, clienteId, honorarioId } = {}) => {
   const params = {};
   if (processoId) params.processoId = processoId;
@@ -151,6 +156,7 @@ export default {
   criarModelo,
   listModelos,
   gerarDocumento,
+  compatibilidadeModelo,
   previewDocumento,
   listDocumentSecoes,
   vincularSecao,
