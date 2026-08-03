@@ -1508,6 +1508,122 @@ Dados que vários passos usam:
   Fase de origem: 4.4
 
 
+
+## 18. Fase 4.5 — Auditoria Geral nº 2: reativação, PWA, foco e produção
+
+> Numeração contínua a partir do 135. Sete passos novos: **136 a 142**.
+> O total pendente vai de **130 para 137**.
+>
+> Cinco dos sete são `[só olho humano]` — e não por preguiça de automatizar. O
+> PWA precisa de um navegador de verdade (instalabilidade e ciclo de vida do
+> service worker não existem fora dele) e o foco visível precisa de um olho que
+> enxergue o anel. A suíte cobre o que dá: `tests/pwa/pwa.test.js` executa o SW
+> num `self` falso e prova que `/api/*` nunca é cacheado; `tests/css/foco.test.js`
+> prova que nenhum `outline: none` voltou.
+
+### Reativação
+
+- [ ] **136. Reativar pagamento e ver o status recalcular**
+  `[automatizável]` — coberto por `tests/integrity/reativacao.test.js`
+  Pré-condição: `npm run seed:fresh`; um honorário com parcela integralmente
+  paga (status `pago`).
+  Passos: 1) em `/dashboard/pagamentos`, remover o pagamento dessa parcela;
+  2) conferir em `/dashboard/honorarios` que o honorário virou `pendente`;
+  3) marcar **Mostrar desativados** na lista de pagamentos; 4) clicar
+  **Reativar** na linha do pagamento removido.
+  Esperado: a linha some da lista de desativados, o toast confirma, e o
+  honorário volta a `pago` — sem recarregar nada além da própria listagem.
+  Por que este passo existe: reativar é escrita que muda o CONJUNTO, não o valor
+  de um registro. É a classe de operação em que uma soma desnormalizada
+  (`valorPago`) se perde sem ninguém notar.
+  Fase de origem: 4.5
+
+- [ ] **137. Reativar parcela**
+  `[automatizável]` — coberto por `tests/integrity/reativacao.test.js`
+  Pré-condição: uma parcela sem pagamentos ativos, excluída.
+  Passos: 1) em `/dashboard/parcelas`, marcar **Mostrar desativadas**;
+  2) clicar **Reativar**.
+  Esperado: a parcela volta ao honorário, o status do honorário é recalculado, e
+  a linha some da lista de desativadas.
+  Fase de origem: 4.5
+
+- [ ] **138. ⭐ Reativar pagamento de parcela inativa — a mensagem de dependência**
+  `[só olho humano]`
+  Pré-condição: um pagamento desativado **cuja parcela também está desativada**
+  (remova o pagamento, depois a parcela).
+  Passos: 1) em `/dashboard/pagamentos`, marcar **Mostrar desativados**;
+  2) clicar **Reativar** no pagamento.
+  Esperado: nada é reativado, e o toast diz **"Não é possível reativar este
+  pagamento: a parcela dele está desativada. Reative a parcela antes."**
+  O que se confere aqui: se a advogada **sai da mensagem sabendo o que fazer**.
+  O 409 traz `dependencia: "parcela"`, mas quem lê a tela lê a frase — e a frase
+  precisa apontar a porta certa, não apenas recusar. É a mesma régua que a Fase
+  4.6 aplica às pendências do módulo de documentos.
+  Fase de origem: 4.5
+
+### PWA
+
+- [ ] **139. ⭐ Instalar o app pelo navegador**
+  `[só olho humano]`
+  Pré-condição: `npm run build && npm run preview` (o SW **não** roda em
+  `npm run dev`, de propósito — ver o `CLAUDE.md` do frontend).
+  Passos: 1) abrir `http://localhost:4173`; 2) DevTools → Application →
+  **Manifest**: conferir nome, ícones 192 e 512, `standalone` e
+  `start_url: /dashboard`; 3) Application → **Service Workers**: conferir
+  `sw.js` **activated and is running**; 4) usar o botão de instalar do navegador.
+  Esperado: o app instala, abre em janela própria (sem barra de endereço), com o
+  ícone dourado do LEX e a barra do sistema na cor do tema.
+  Fase de origem: 4.5
+
+- [ ] **140. ⭐🚨 Recarregar OFFLINE e ver a casca do app**
+  `[só olho humano]`
+  Pré-condição: passo 139 feito, app já aberto uma vez (o SW precisa ter
+  instalado e cacheado os assets).
+  Passos: 1) DevTools → Network → **Offline**; 2) recarregar a página.
+  Esperado: a **casca do app sobe** — layout, menu, tipografia. A primeira
+  chamada de API falha e a tela mostra o erro **no padrão do próprio app**, não
+  no dinossauro do navegador nem numa página de erro do service worker.
+  Por que este passo existe: é a única prova de que o precache pegou os assets
+  com hash. E o comportamento do erro é deliberado — uma tela "sem conexão"
+  genérica do SW jogaria fora o estado e a navegação do React.
+  Conferir também, em Application → Cache Storage: **nenhuma entrada de
+  `/api/`**. Se houver, é vazamento — resposta autenticada em cache compartilhado
+  com o próximo usuário do navegador.
+  Fase de origem: 4.5
+
+### Foco visível
+
+- [ ] **141. ⭐ Navegar o formulário de honorário só pelo teclado**
+  `[só olho humano]`
+  Pré-condição: `/dashboard/honorarios/novo`, **tema escuro** (o padrão — é onde
+  o anel dourado precisa se destacar do fundo verde).
+  Passos: 1) sem tocar no mouse, percorrer o formulário inteiro com `Tab`,
+  incluindo o `<select>` de tipo, os campos de dinheiro e os botões;
+  2) repetir na biblioteca de seções (filtros e busca), na montagem e nos
+  diálogos de regeração; 3) abrir um diálogo e fechá-lo com `Esc`.
+  Esperado: **em todo controle** há um anel dourado visível, deslocado da borda.
+  Nenhum ponto do percurso deixa o foco invisível. `Esc` continua fechando o
+  modal.
+  O que se confere aqui: a suíte prova que nenhum `outline: none` sobreviveu;
+  ela **não** prova que o anel é visível contra o fundo daquele componente. Dois
+  dos seis casos removidos estavam dentro de regras `:focus-visible` — a regra
+  que desenhava o foco era a que o apagava.
+  Fase de origem: 4.5
+
+### Produção
+
+- [ ] **142. Conferir os cabeçalhos no preview de produção**
+  `[automatizável]` — coberto por `tests/infra/producao.test.js`
+  Pré-condição: backend rodando com `NODE_ENV=production`.
+  Passos: DevTools → Network → qualquer requisição → **Headers**.
+  Esperado: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+  `Referrer-Policy: strict-origin-when-cross-origin` e
+  `Strict-Transport-Security` presentes; **`X-Powered-By` ausente**.
+  Em desenvolvimento, **o HSTS não pode aparecer** — se aparecer, o navegador
+  passa a exigir HTTPS de `localhost` por um ano, e o efeito sobrevive a
+  desinstalar o servidor.
+  Fase de origem: 4.5
+
 ---
 
 ## Validado

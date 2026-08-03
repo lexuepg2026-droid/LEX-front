@@ -429,6 +429,61 @@ de `GenerationPanel` e `PortalLoginPage`.
 
 ---
 
+
+## PWA mínimo, escrito à mão (Fase 4.5)
+
+Sem workbox e sem plugin de Vite — a fase proíbe dependência nova, e o que este
+app precisa cabe em três estratégias.
+
+| Peça | O que faz |
+|---|---|
+| `public/manifest.webmanifest` | `display: standalone`, `start_url: /dashboard`, ícones 192/512, cores do tema |
+| `public/sw.js` | precache do shell no `install`, cache-first nos assets com hash, network-first na navegação, limpeza por versão no `activate` |
+| `src/registrarSW.js` | registra **só** com `import.meta.env.PROD` |
+
+**`/api/*` NUNCA é cacheado.** É a decisão mais importante do arquivo e a que um
+gerador não tomaria por nós: toda resposta da API é autenticada e pertence a uma
+advogada — cache dela é vazamento esperando o segundo usuário no mesmo
+navegador. E número financeiro velho servido sem aviso faria a advogada planejar
+o mês com o dado do mês passado.
+
+**O SW não roda em desenvolvimento**, de propósito: cachearia os módulos que o
+Vite serve sem hash e a tela pararia de refletir o código — sem erro nenhum, que
+é o mesmo formato de armadilha silenciosa da sentinela de montagem da Fase 4.4.
+
+**O precache descobre os assets sozinho.** Os nomes têm hash e este arquivo é
+copiado verbatim de `public/`; em vez de gerar a lista no build (plugin, ou um
+passo que alguém esqueceria de rodar), o `install` baixa o `index.html` e extrai
+os `/assets/…` dele. A fonte da verdade continua sendo o HTML que o servidor
+entrega.
+
+**Navegação é network-first**, e não cache-first, porque `index.html` **não tem
+hash**: servi-lo do cache primeiro entregaria a casca velha apontando para
+assets que o deploy novo já apagou — tela branca depois de atualizar.
+
+`tests/pwa/pwa.test.js` **executa** o service worker num `self` falso
+(`node:vm`) e dispara eventos de fetch nele. Verificar por leitura provaria que
+a linha existe, não que ela decide.
+
+## Foco visível (Fase 4.5)
+
+`:focus-visible` global em `styles/global.css`, com `--color-focus` declarado
+nos dois temas — dourado da marca no escuro (o padrão do app), `#7A6528` no
+claro, onde o dourado perde contraste contra o branco.
+
+Havia **seis** `outline: none`, e **dois estavam dentro de regras
+`:focus-visible`**: a regra escrita para desenhar o foco era a que o apagava.
+
+`:focus-visible` e não `:focus` porque o navegador só o aplica em foco de
+teclado — clicar com o mouse continua sem anel, que era o motivo de alguém ter
+escrito `outline: none` em primeiro lugar. É por isso que a correção não era
+apenas removê-los.
+
+`tests/css/foco.test.js` varre por **declaração**, não por string: o comentário
+que explica o defeito contém a expressão, e uma varredura ingênua derrubaria a
+própria explicação — a saída óbvia seria apagar o comentário.
+
+
 ## Testes
 
 `npm test` → `node --test tests/`. **Sem DOM e sem dependência de render**, por
@@ -627,6 +682,49 @@ provaria apenas que o código roda.
 **Não tocado:** contrato de rota nenhum, `axiosConfig.js`, telas do portal,
 módulo financeiro. **Nenhuma dependência nova** — `package.json` idêntico a
 `main`.
+
+---
+
+
+### Fase 4.5 — Auditoria Geral nº 2: foco, reativação, PWA e vetores
+
+**Resumo:** foco visível global, a interface de reativação de pagamento e
+parcela, o PWA mínimo escrito à mão e os vetores compartilhados da fórmula
+percentual. Frontend 213 → **240**.
+
+**Arquivos novos:** `public/manifest.webmanifest`, `public/sw.js`,
+`public/icone-192.png`, `public/icone-512.png`, `src/registrarSW.js`,
+`tests/css/foco.test.js`, `tests/pwa/pwa.test.js`,
+`tests/financial/percentualVetores.test.js`,
+`tests/fixtures/percentualVetores.json`.
+
+**Alterados:** `styles/variables.css` (tokens de foco), `styles/global.css` (o
+anel), `styles/modules.css` (`.filter-toggle`), as cinco folhas que tinham
+`outline: none`, `pages/payments/PaymentListPage.jsx` e
+`pages/installments/InstallmentListPage.jsx` (modo "mostrar desativados" e ação
+"Reativar"), `api/paymentService.js` e `api/installmentService.js`,
+`index.html`, `src/main.jsx`, `README.md`.
+
+**Decisões:** o modo de inativos é EXCLUSIVO e não um "incluir" — misturar os
+conjuntos faria a coluna de valor somar o que foi estornado sem nada dizendo
+isso na linha; linha desativada oferece **só** "Reativar", porque editar e
+baixar recibo são exatamente o que o backend recusa; os vetores da fórmula são
+conferidos por hash contra o arquivo idêntico do backend, e editar um lado sem o
+outro derruba as duas suítes.
+
+**Um erro meu, pego pela asserção de guarda do próprio teste:** o caso escolhido
+para provar a ORDEM do arredondamento (`33.33% de 1000`) tem `1000 * 33.33`
+exatamente igual a 33330 em ponto flutuante — as duas ordens coincidiam e o
+teste não provava nada. O `assert.notEqual` reprovou o par; o caso passou a ser
+`8.75% de 987654.32`.
+
+**O favicon apontava para `/vite.svg`, que não existe neste repositório** (não
+havia `public/` até esta fase): toda página pedia um arquivo ausente e recebia
+404. Corrigido de passagem, porque o `public/` nasceu aqui.
+
+**Não tocado:** contrato de rota nenhum, `axiosConfig.js`, telas do portal.
+**Nenhuma dependência nova** — `package.json` idêntico a `main`. Os ícones
+saíram de script descartável com o PIL do ambiente.
 
 ---
 
