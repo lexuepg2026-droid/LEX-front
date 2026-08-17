@@ -556,6 +556,92 @@ relativos (`'./enums.js'`): o Vite resolve sem ela, `node --test` não.
 
 ---
 
+## Backlog de achados de validação visual
+
+> Achado que só aparece com olho humano na interface. Entra aqui quando o passo
+> do roteiro **REPROVA**, e sai quando o passo for revalidado — não quando o
+> código for alterado. O roteiro (`docs/validacao-manual.md`) mantém o passo na
+> lista pendente enquanto o achado estiver aberto; os dois se referem um ao
+> outro de propósito.
+
+### V-2 — 401 de senha atual incorreta DERRUBA a sessão · **ALTA**
+
+**Sessão de 17/08/2026, passo 12.** Trocar a senha no Perfil informando a senha
+atual **errada** leva a usuária para a tela de login, em vez de mostrar o erro
+no formulário.
+
+**Por que é alta, e não cosmética:** o sistema **expulsa a advogada por um erro
+de digitação**. Ela não descobre que errou a senha — descobre que "caiu", e a
+leitura natural é "o sistema me desconectou sozinho". Perde o que estava
+fazendo em outra aba, e a única pista do que aconteceu é uma tela de login.
+
+**Causa provável, não confirmada:** o interceptor de `api/axiosConfig.js:19`
+reage a **qualquer** 401 que não seja de `/auth/me`, estando fora de `/login`,
+com `window.location.href = '/login'` e o toast "Sessão expirada". O backend
+responde **401** em `POST /auth/alterar-senha` quando a senha atual não confere
+(`"Senha atual incorreta"`) — que é um 401 de *validação de campo*, não de
+sessão morta. O interceptor não distingue os dois.
+
+**Não corrigir de passagem.** A correção mexe no interceptor que governa a
+sessão inteira do app, e o critério de "quais 401 são sessão expirada" precisa
+ser decidido de uma vez — provavelmente por rota isenta, como `/auth/me` já é,
+ou por código de erro estável do backend, no padrão que o portal usa desde a
+3.1 (`portalErrors.js`). Candidato à **F-2**.
+
+**Confirmaria/descartaria:** logar em `/dashboard/perfil`, submeter troca de
+senha com senha atual errada, e observar se a navegação para `/login` parte do
+interceptor (toast "Sessão expirada" antes do redirecionamento) ou do
+`catch` da própria tela.
+
+### V-1 — campo de e-mail não é destacado no cadastro duplicado · MÉDIA
+
+**Sessão de 17/08/2026, passo 4.** Cadastrar com um e-mail que já existe
+(`demo@lex.dev`) volta corretamente para a etapa 1 e mostra a mensagem, mas o
+**input de e-mail não fica destacado**.
+
+**A ligação existe pela metade, e é o que torna o achado sutil.**
+`RegisterPage` já chama `getApiErrorField(err)` e já age sobre ele — mas
+**só para navegar**: `if (campo === 'email') setStep(1)`
+(`RegisterPage.jsx:136-138`). O valor nunca vira estado nem classe. A tela não
+tem `campoComErro`, e nenhum `<input>` dela recebe `.input-erro`
+condicionalmente. Volta para a etapa certa e não diz qual campo é.
+
+Todo o resto do encanamento está pronto: `POST /auth/register` responde **409**
+com `campo: "email"` (DEC-031); `getApiErrorField` lê `data.campo` independente
+do status (`utils/apiError.js:19`); e `.input-erro` tem regra alcançável — o
+elo que a 2E.1 tinha quebrado e a 2E.2 travou em teste.
+
+**Por que passou despercebido até agora:** a varredura do passo 81
+(`tests/regressions/telas2E1.test.js:109-113`) cobre quatro formulários —
+Processo, Parcela, Pagamento e Honorário. `RegisterPage` está fora dela.
+
+**Por que média e não baixa:** é o primeiro contato de qualquer pessoa nova com
+o sistema — os colegas do Daniel, a banca — e a etapa 1 tem quatro campos. Sem
+o destaque, quem errou lê "e-mail já cadastrado" e ainda precisa procurar qual
+dos quatro é o e-mail.
+
+---
+
+## A validação visual dos passos 90–154 foi ADIADA (17/08/2026)
+
+Decisão do Daniel, consciente e registrada. A sessão de 17/08 cobriu os passos
+**1 a 89** — cadastro, login, perfil, clientes, processos, seções, o módulo de
+documentos inteiro e as cinco primeiras do portal. Do 90 em diante fica para
+depois.
+
+**Não é dívida esquecida: é dívida com dois prazos escritos.**
+
+| Prazo | O quê | Por quê |
+|---|---|---|
+| **Antes de QUALQUER demonstração pública** | passo **85** — conferir que `NODE_ENV` não é `production` | O `express-rate-limit` conta **por IP**. Numa banca, três pessoas no mesmo wifi saem do mesmo IP: com o teto de produção (5), o terceiro leva **429 sem ninguém atacar nada**, e a demonstração morre com uma mensagem de bloqueio na tela. É conferir uma variável, não mudar código. |
+| **Antes de qualquer cliente REAL usar o portal** | passos **90 a 98** | São os passos de confirmação de visualização e de isolamento do portal. O artefato que a Fase 3.1 existe para produzir é probatório; entregá-lo a um cliente de verdade sem tê-lo olhado uma vez é o pior momento para descobrir um defeito. |
+
+O passo 85 está em `## Validado` porque foi executado em 17/08 — **mas ele é
+pré-voo, não conquista**. Vale para aquela execução, e volta a valer a cada
+demonstração. Está escrito assim na nota da seção.
+
+---
+
 ## Registro de sessões
 
 ### Fase 4.2 — Financeiro na tela: campos condicionais, ficha, recibo e PATCH

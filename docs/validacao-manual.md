@@ -49,30 +49,9 @@ Dados que vários passos usam:
 
 ## 1. Cadastro (`/registrar`)
 
-- [ ] **1. Cadastro — assistente de duas etapas**
-  Pré-condição: deslogado.
-  Passos: 1) abrir `/registrar`; 2) preencher a etapa 1 (nome, e-mail, senha,
-  confirmação); 3) avançar; 4) preencher a etapa 2 (CPF, telefone, OAB,
-  escritório, endereço); 5) enviar.
-  Esperado: as duas etapas aparecem separadas, com o botão de voltar
-  preservando o que já foi digitado.
-  Fase de origem: 1
-
-- [ ] **2. Cadastro — máscaras de CPF, telefone e CEP**
-  Pré-condição: etapa 2 do cadastro aberta.
-  Passos: digitar apenas dígitos em CPF, telefone e CEP.
-  Esperado: CPF vira `000.000.000-00`, telefone vira `(00) 00000-0000`, CEP
-  vira `00000-000`, enquanto se digita.
-  Fase de origem: 1
-
-- [ ] **3. Cadastro — ViaCEP preenche o endereço**
-  Pré-condição: etapa 2 do cadastro aberta.
-  Passos: digitar um CEP válido (ex.: `84010-330`) e sair do campo.
-  Esperado: logradouro, bairro, cidade e UF chegam preenchidos; o foco vai
-  para o número.
-  Fase de origem: 1
-
 - [ ] **4. Cadastro — e-mail duplicado volta para a etapa 1**
+  **Executado em 17/08/2026 — REPROVOU: campo de e-mail não foi destacado.
+  Achado V-1.** Permanece pendente até a correção.
   Pré-condição: usar `demo@lex.dev` na etapa 1 e completar a etapa 2.
   Passos: enviar o formulário.
   Esperado: erro dizendo que o e-mail já está cadastrado, a tela **volta para
@@ -80,62 +59,19 @@ Dados que vários passos usam:
   perde.
   Fase de origem: 1
 
-- [ ] **5. Cadastro leva direto ao sistema autenticado**
-  Pré-condição: dados novos e válidos nas duas etapas.
-  Passos: concluir o cadastro.
-  Esperado: **não passa pela tela de login**. Cai em `/dashboard` já
-  autenticada, com o nome no cabeçalho, e o toast diz "Conta criada com
-  sucesso. Bem-vinda ao LEX!". Recarregar a página (F5) continua autenticada —
-  o cookie `lex-token` foi emitido no cadastro.
-  Fase de origem: 2D.1
-
 ---
 
 ## 2. Login (`/login`)
-
-- [ ] **6. Login com o usuário do seed**
-  Pré-condição: deslogado.
-  Passos: entrar com `demo@lex.dev` / `Lex123456`.
-  Esperado: vai para `/dashboard`; o cabeçalho mostra o nome; F5 mantém a
-  sessão.
-  Fase de origem: 1
-
-- [ ] **7. Login com senha errada**
-  Passos: entrar com `demo@lex.dev` e uma senha qualquer errada.
-  Esperado: mensagem "Credenciais inválidas" — a mesma para e-mail
-  inexistente, sem dizer qual dos dois falhou.
-  Fase de origem: 1
-
-- [ ] **8. Sessão expirada redireciona**
-  Pré-condição: autenticada, em qualquer tela interna.
-  Passos: apagar o cookie `lex-token` pelo DevTools e clicar em algo que
-  chame a API.
-  Esperado: toast "Sessão expirada" e volta para `/login`, sem tela quebrada.
-  Fase de origem: 1
 
 ---
 
 ## 3. Perfil (`/dashboard/perfil`)
 
-- [ ] **9. Perfil — os 5 blocos**
-  Passos: abrir o perfil.
-  Esperado: os cinco blocos aparecem preenchidos com os dados do seed —
-  dados pessoais, OAB, escritório, endereço e segurança.
-  Fase de origem: 1
-
-- [ ] **10. Perfil — salvar alterações**
-  Passos: alterar o telefone e salvar.
-  Esperado: toast de sucesso e o valor persiste após F5. O cabeçalho reflete a
-  mudança na hora, sem recarregar.
-  Fase de origem: 1
-
-- [ ] **11. Perfil — campo apagado grava de fato**
-  Passos: apagar o conteúdo do Instagram (ou da chave PIX), salvar, dar F5.
-  Esperado: o campo continua vazio depois do F5. Se voltar com o valor antigo,
-  o backend ignorou a limpeza — que é exatamente o bug que a Fase 1.3 corrigiu.
-  Fase de origem: 1
-
 - [ ] **12. Perfil — troca de senha**
+  **Executado em 17/08/2026 — REPROVOU: 401 de senha atual incorreta derruba
+  a sessão. Achado V-2.** Tentar trocar a senha informando a senha atual
+  errada levou para a tela de login em vez de mostrar o erro no formulário.
+  Permanece pendente até a correção.
   Passos: trocar a senha para `Lex654321`, sair, entrar com a nova; depois
   voltar a senha para `Lex123456`.
   Esperado: a troca exige a senha atual; senha atual errada é recusada; o
@@ -143,6 +79,8 @@ Dados que vários passos usam:
   Fase de origem: 1
 
 - [ ] **13. Perfil — logo de 800 KB é redimensionado e aceito** ⚠️
+  **Não executado na sessão de 17/08/2026** — exige um arquivo de ~800 KB à
+  mão, que não estava disponível. Permanece pendente, sem veredito.
   Pré-condição: ter à mão um JPG/PNG de **cerca de 800 KB** (bem acima do
   teto de 200 KB do backend).
   Passos: 1) abrir o perfil; 2) escolher esse arquivo como logo do escritório;
@@ -154,522 +92,37 @@ Dados que vários passos usam:
   no Node — nunca pôde ser executado por script.
   Fase de origem: 2C
 
-- [ ] **14. Perfil — remover o logo**
-  Pré-condição: ter um logo salvo (passo 13).
-  Passos: remover o logo e salvar; dar F5.
-  Esperado: a miniatura some e não volta depois do F5. O documento gerado
-  depois disso continua baixando normalmente, com cabeçalho só de texto
-  (conferir no passo 30).
-  Fase de origem: 2C / 2D.1
-
 ---
 
 ## 4. Clientes (`/dashboard/clientes`)
-
-- [ ] **15. Cliente PF — cadastro completo**
-  Passos: criar um cliente pessoa física preenchendo todos os campos.
-  Esperado: máscaras de CPF, telefone e CEP funcionando; ViaCEP preenchendo o
-  endereço; salva e aparece na lista.
-  Fase de origem: 1
-
-- [ ] **16. Cliente PJ — cadastro completo**
-  Passos: criar um cliente pessoa jurídica, com representante legal.
-  Esperado: ao trocar para PJ o formulário troca os campos (razão social,
-  nome fantasia, CNPJ com máscara `00.000.000/0000-00`, bloco de representante
-  legal). Salva e aparece na lista.
-  Fase de origem: 1
-
-- [ ] **17. Cliente — CPF duplicado destaca o campo**
-  Passos: cadastrar um cliente com um CPF que já existe.
-  Esperado: erro 409 com mensagem clara e **o campo CPF destacado em
-  vermelho** — não uma mensagem genérica no topo. Nada do que foi digitado se
-  perde.
-  Fase de origem: 1
-
-- [ ] **18. Cliente — campo apagado grava de fato**
-  Passos: editar um cliente, apagar o RG (ou a profissão), salvar, dar F5.
-  Esperado: o campo continua vazio depois do F5.
-  Fase de origem: 1
-
-- [ ] **19. Cliente — busca**
-  Passos: digitar parte de um nome no campo de busca.
-  Esperado: a lista filtra sozinha depois de uma pausa curta (debounce), sem
-  botão de buscar.
-  Fase de origem: 1
-
-- [ ] **20. Cliente — excluir com processo ativo é recusado**
-  Passos: tentar excluir "Maria Aparecida Costa" (tem processo).
-  Esperado: recusa com 409 dizendo quantos processos impedem. O cliente
-  continua na lista.
-  Fase de origem: 2B
 
 ---
 
 ## 5. Processos (`/dashboard/processos`)
 
-- [ ] **21. Processo — lista de participantes no formulário**
-  Pré-condição: criar processo novo.
-  Passos: 1) abrir o formulário; 2) acrescentar dois clientes como
-  participantes; 3) dar um papel a cada um (autor, litisconsorte...); 4)
-  marcar um como principal; 5) salvar.
-  Esperado: o seletor é uma **lista de participantes**, não um cliente único.
-  O principal é escolhido por **rádio** — marcar um desmarca o outro. Salvar
-  sem participante nenhum, ou sem principal, é barrado antes de chamar a API.
-  Fase de origem: 2B *(reconstruído — ver nota no fim)*
-
-- [ ] **22. Processo — litisconsórcio visível na listagem**
-  Passos: abrir a lista de processos e localizar "Inventário e Partilha de
-  Bens".
-  Esperado: mostra o cliente principal seguido de **"+1"**, indicando que há
-  outro participante.
-  Fase de origem: 2B *(reconstruído)*
-
-- [ ] **23. Processo — detalhe mostra todos os participantes**
-  Passos: abrir o detalhe de "Inventário e Partilha de Bens".
-  Esperado: seção com os dois participantes, cada um com nome, tipo de pessoa
-  e papel; o principal aparece destacado.
-  Fase de origem: 2B *(reconstruído)*
-
-- [ ] **24. Processo — código de acesso é buscado sob demanda e copiado**
-  Passos: no detalhe do processo, clicar no botão de código de acesso de um
-  participante.
-  Esperado: o código **não aparece antes do clique** (não vem na listagem).
-  Ao clicar, aparece no formato `LEX-XXXX-XXXX` (13 caracteres) e é copiado
-  para a área de transferência — colar em algum lugar confirma. Toast
-  confirmando a cópia.
-  Fase de origem: 2B *(reconstruído)*
-
-- [ ] **25. Processo — trocar o principal e remover participante**
-  Passos: 1) editar um processo com dois participantes; 2) marcar o outro como
-  principal; 3) remover o que deixou de ser principal; 4) salvar.
-  Esperado: salva sem erro. O backend recusa remover o principal enquanto
-  houver outros, e a tela promove o novo **antes** de remover — se a ordem
-  estiver errada, aparece um 409.
-  Fase de origem: 2B *(reconstruído)*
-
 ---
 
 ## 6. Biblioteca de Seções (`/dashboard/secoes`)
-
-- [ ] **26. Seções — entrada no menu e lista**
-  Passos: clicar em "Seções" no menu lateral.
-  Esperado: o item existe entre "Documentos" e "Perfil". A lista traz as 10
-  seções do seed com título, tipo (badge), trecho inicial do texto e a
-  contagem de variáveis.
-  Fase de origem: 2D.1
-
-- [ ] **27. Seções — filtro por tipo**
-  Passos: escolher "Qualificação" no filtro de tipo.
-  Esperado: sobram só as 3 seções de qualificação. Voltar para "Todos os
-  tipos" traz as 10 de volta.
-  Fase de origem: 2D.1
-
-- [ ] **28. Seções — busca por título, com e sem acento**
-  Passos: digitar `qualificacao` (sem acento), depois `qualificação` (com).
-  Esperado: **os dois** trazem as mesmas 3 seções. A lista filtra sozinha após
-  uma pausa curta (debounce). `HONORARIOS` em maiúsculas também acha a
-  cláusula de honorários.
-  Fase de origem: 2D.1
-
-- [ ] **29. Seções — estado vazio útil**
-  Passos: buscar por algo inexistente, ex.: `zzzz`.
-  Esperado: **não é tela em branco** — traz texto explicativo e um botão
-  "Limpar filtros" que devolve a lista completa.
-  Fase de origem: 2D.1
-
-- [ ] **30. Seções — pré-visualização (modal)**
-  Passos: clicar em "Ver" numa seção que use variáveis (ex.: a de
-  qualificação).
-  Esperado: modal com título e tipo no topo; o texto aparece **cru**, em fonte
-  monoespaçada, com as quebras de linha preservadas e as chaves `{{...}}`
-  **destacadas em cor**, sem nada resolvido. O rodapé diz quantas variáveis o
-  texto tem.
-  Fase de origem: 2D.1
-
-- [ ] **31. Seções — o modal fecha por Esc, clique fora e prende o foco**
-  Pré-condição: modal de pré-visualização aberto.
-  Passos: 1) apertar **Esc**; 2) reabrir e clicar **fora** do modal; 3)
-  reabrir e apertar **Tab** várias vezes.
-  Esperado: fecha nos dois primeiros. No terceiro, o foco **circula apenas
-  dentro do modal** e não escapa para a página atrás. Ao fechar, o foco volta
-  para o botão "Ver" que o abriu.
-  Fase de origem: 2D.1
-
-- [ ] **32. Seções — criar seção com inserção de variável no cursor** ⭐
-  Passos: 1) "Nova Seção"; 2) título e tipo; 3) no texto, escrever
-  `Eu, , portador do CPF.` ; 4) **clicar entre a vírgula e o espaço**, no meio
-  da frase; 5) no painel da direita, clicar em "Nome completo" (grupo
-  Cliente).
-  Esperado: `{{nomeCliente}}` entra **exatamente onde o cursor estava**, não
-  no fim do texto. O foco volta para o textarea com o cursor **logo depois**
-  do que foi inserido — dá para continuar digitando sem clicar de novo.
-  Fase de origem: 2D.1
-
-- [ ] **33. Seções — o seletor mostra nomes legíveis, não a chave**
-  Passos: olhar o painel de variáveis.
-  Esperado: cada item mostra em destaque o **rótulo em português**
-  ("Nome completo", "CPF", "Estado civil"), abaixo a **descrição** dizendo de
-  onde o dado vem, e só então a chave `{{...}}` em cinza e monoespaçada.
-  **Não pode aparecer "Nome Cliente" ou "Cpf Cliente"** — se aparecer, o
-  rótulo está sendo derivado da chave. Os grupos são "Cliente", "Processo",
-  "Advogada e escritório", "Honorário" e "Sistema", com o total de 47 no topo.
-  Fase de origem: 2D.1
-
-- [ ] **34. Seções — busca dentro do seletor de variáveis**
-  Passos: digitar `cpf` no campo de busca do painel.
-  Esperado: sobram as entradas de CPF (cliente, representante legal,
-  advogada), agrupadas. Buscar por `extenso` acha "Valor por extenso".
-  Fase de origem: 2D.1
-
-- [ ] **35. Seções — variável inexistente é recusada pelo backend**
-  Passos: escrever `{{naoExiste}}` no texto e salvar.
-  Esperado: erro 400 com a mensagem do backend dizendo que a variável é
-  desconhecida. A tela apenas exibe — não inventa validação própria.
-  Fase de origem: 2D.1
-
-- [ ] **36. Seções — título duplicado**
-  Passos: criar uma seção com um título que já existe.
-  Esperado: erro 409 dizendo que já existe seção com esse título.
-  Fase de origem: 2D.1
-
-- [ ] **37. Seções — editar**
-  Passos: editar uma seção, mudar o texto e salvar.
-  Esperado: volta para a lista com toast de sucesso; o trecho inicial na lista
-  reflete o texto novo; a contagem de variáveis acompanha.
-  Fase de origem: 2D.1
-
-- [ ] **38. Seções — desativar pede confirmação**
-  Passos: clicar em "Desativar" numa seção **não usada** por documento.
-  Esperado: modal de confirmação nomeando a seção. Confirmando, ela sai da
-  lista.
-  Fase de origem: 2D.1
-
-- [ ] **39. Seções — desativar seção em uso é recusado**
-  Passos: tentar desativar uma seção que compõe um modelo (ex.: a de
-  qualificação).
-  Esperado: recusa com 409, e a mensagem **nomeia os documentos** que a usam.
-  A seção continua na lista.
-  Fase de origem: 2D.1
 
 ---
 
 ## 7. Documentos (`/dashboard/documentos`)
 
-- [ ] **40. Documento — download em PDF abre com acentuação correta**
-  Passos: baixar um contrato gerado em PDF e abrir.
-  Esperado: acentuação correta em "ação", "inventário", "cônjuge",
-  "supérstite", "domiciliado(a)" e "nº" — sem quadradinhos nem letras trocadas.
-  Margens de 2,5 cm, A4, corpo justificado, parágrafos preservados.
-  Fase de origem: 2C
-
-- [ ] **41. Documento — timbrado com e sem logo**
-  Passos: baixar o mesmo documento **com** logo salvo no perfil e depois
-  **sem** logo (passo 14).
-  Esperado: com logo, ele aparece no cabeçalho. Sem logo, o cabeçalho usa só
-  texto e continua bem diagramado — **sem buraco** no lugar da imagem.
-  Fase de origem: 2C / 2D.1
-
-- [ ] **42. Documento — rodapé "página X de Y"**
-  Pré-condição: um documento com várias páginas (o contrato longo).
-  Passos: abrir o PDF e conferir o rodapé em três páginas diferentes.
-  Esperado: numeração correta e coerente em todas — não "página 1 de 1"
-  repetido.
-  Fase de origem: 2C
-
-- [ ] **43. DOCX abre no Word e no LibreOffice sem aviso de reparo** ⚠️
-  Passos: baixar o mesmo documento em DOCX e abrir **no Microsoft Word** e
-  **no LibreOffice Writer**.
-  Esperado: abre nos dois **sem caixa de diálogo de reparo/recuperação**, com
-  o mesmo timbrado, as mesmas margens e a mesma acentuação do PDF.
-  Por que só aqui: a estrutura OOXML foi validada por script, mas a abertura
-  nos aplicativos reais nunca foi.
-  Fase de origem: 2C
-
-- [ ] **44. Documento editado à mão baixa o texto editado**
-  Pré-condição: o seed marca um contrato como editado à mão.
-  Passos: baixar esse documento.
-  Esperado: o arquivo traz o **texto editado**, não o recomposto a partir das
-  seções. Se o parágrafo acrescentado à mão sumir, a edição está sendo
-  descartada.
-  Fase de origem: 2C
-
-- [ ] **45. Documento com lacuna avisa mas não bloqueia**
-  Passos: abrir o documento que contém `[...]` e baixá-lo.
-  Esperado: a tela avisa da lacuna, e **o download acontece mesmo assim** —
-  lacuna é aviso, não impedimento.
-  Fase de origem: 2C
-
-- [ ] **46. Geração com pendência é bloqueada e orienta**
-  Passos: gerar documento para o processo "Usucapião de Imóvel Urbano"
-  (a cliente Beatriz não tem profissão).
-  Esperado: recusa com 422 apontando `{{profissaoCliente}}` e dizendo **onde
-  preencher** ("no cadastro do cliente"). Não gera documento pela metade.
-  Fase de origem: 2C
-
 ---
 
 ## 8. Montagem de documento (`/dashboard/documentos/montar`)
-
-- [ ] **47. Montagem — duas portas de entrada no menu**
-  Passos: olhar o menu lateral, no grupo de Documentos.
-  Esperado: existem **dois** itens novos entre "Documentos" e "Seções":
-  **"Gerar documento"** e **"Montar modelo"**. Levam à mesma tela. Estando numa
-  delas, **só a porta correspondente fica acesa** no menu — não as duas.
-  Fase de origem: 2D.2
-
-- [ ] **48. Montagem — o modo MODELO fica visível o tempo todo** ⭐
-  Passos: 1) "Montar modelo"; 2) dar nome e tipo; 3) "Começar a montar";
-  4) acrescentar uma seção; 5) rolar a tela.
-  Esperado: o cabeçalho traz o selo **"Montando um MODELO"** e a faixa lateral
-  dourada, e eles **continuam ali** depois de montar, não só na entrada. O
-  subtítulo diz "reutilizável, sem processo e sem cliente". **Não aparece**
-  painel de geração.
-  Fase de origem: 2D.2
-
-- [ ] **49. Montagem — o modo DOCUMENTO fica visível o tempo todo** ⭐
-  Passos: 1) "Gerar documento"; 2) escolher um modelo da lista.
-  Esperado: selo **"Montando um DOCUMENTO"**, faixa lateral verde, e o painel
-  "Gerar o documento" no fim da tela. Em nenhum momento fica dúvida sobre qual
-  dos dois modos está aberto.
-  Fase de origem: 2D.2
-
-- [ ] **50. Montagem — canvas em A4 com timbrado e logo**
-  Pré-condição: ter logo salvo no perfil (passo 13).
-  Passos: abrir a montagem de um modelo com seções.
-  Esperado: a folha é **branca nos dois temas** (é papel), em proporção A4, com
-  margens visíveis de 2,5 cm. O cabeçalho traz o logo à esquerda e, à direita,
-  nome do escritório, `Nome — OAB/UF nº`, endereço em uma linha e
-  `telefone · e-mail`. Rodapé no pé da folha.
-  Fase de origem: 2D.2
-
-- [ ] **51. Montagem — timbrado sem logo não abre buraco** ⭐
-  Pré-condição: **remover** o logo no perfil (passo 14).
-  Passos: voltar à montagem.
-  Esperado: o bloco de texto do timbrado passa a ocupar a **largura inteira**.
-  **Não sobra espaço reservado** onde a imagem estava. Mesma regra da Fase 2C.
-  Fase de origem: 2D.2
-
-- [ ] **52. Montagem — biblioteca com filtro e busca sem acento**
-  Passos: na barra lateral, 1) escolher "Qualificação" no filtro; 2) limpar;
-  3) digitar `qualificacao` sem acento; 4) digitar `qualificação` com acento.
-  Esperado: o filtro deixa só as de qualificação; as duas buscas trazem o
-  **mesmo** resultado. Cada miniatura mostra título, tipo e trecho inicial.
-  Fase de origem: 2D.2 (reusa a busca da 2D.1)
-
-- [ ] **53. Montagem — inserir pelo botão "Adicionar"**
-  Passos: clicar em "Adicionar" numa miniatura.
-  Esperado: a seção entra **no fim** do documento, numerada na sequência. O
-  indicador mostra "salvando…" e depois "salvo às HH:MM:SS".
-  Fase de origem: 2D.2
-
-- [ ] **54. Montagem — inserir arrastando da barra para a folha**
-  Pré-condição: **mouse** (o arrastar não dispara em toque — ver passo 55).
-  Passos: arrastar uma miniatura e soltar **entre dois blocos** da folha.
-  Esperado: uma faixa tracejada marca onde vai cair, e a seção entra
-  **exatamente naquela posição**, não no fim.
-  Fase de origem: 2D.2
-
-- [ ] **55. Montagem — inserir na posição por TOQUE, sem arrastar** ⚠️ ⭐
-  Pré-condição: abrir o LEX **no tablet** (ou no emulador de toque do DevTools,
-  com "touch" ativado).
-  Passos: 1) **tocar no corpo** de uma miniatura (não no botão "Adicionar");
-  2) observar a folha; 3) tocar em "Inserir aqui" no ponto desejado.
-  Esperado: a miniatura fica destacada, aparece a faixa
-  "«título» pronta para entrar", e a folha mostra botões **"Inserir aqui"**
-  entre os blocos. A seção entra na posição escolhida — **o mesmo resultado do
-  arrastar, sem arrastar**.
-  Por que só aqui: `dragstart`/`dragover`/`drop` **não disparam em toque**, e
-  este é o caminho que substitui o arrastar no tablet. Não há como exercitá-lo
-  por script.
-  Fase de origem: 2D.2
-
-- [ ] **56. Montagem — soltar em posição ocupada empurra as demais**
-  Passos: inserir uma seção na **posição 2**, com o documento já tendo 4 ou
-  mais.
-  Esperado: a nova fica na 2, e quem estava na 2 vai para a 3, e assim por
-  diante. A numeração continua **1, 2, 3… sem repetir e sem pular**. O empurrão
-  é regra do backend — a tela só mostra o resultado.
-  Fase de origem: 2D.2
-
-- [ ] **57. Montagem — seção já usada aparece marcada e não entra de novo**
-  Passos: 1) olhar na barra lateral uma seção que já está na folha; 2) tentar
-  arrastá-la.
-  Esperado: a miniatura fica esmaecida, com o selo verde **"no documento"** em
-  vez do botão "Adicionar", e **não é arrastável**. A restrição real é o índice
-  único do banco; a tela só antecipa.
-  Fase de origem: 2D.2
-
-- [ ] **58. Montagem — reordenar por ↑ e ↓**
-  Passos: clicar em ↑ e ↓ na barra de um bloco.
-  Esperado: o bloco troca de lugar, a numeração acompanha na hora, e o
-  indicador vai a "salvando…" e volta a "salvo". O ↑ do primeiro bloco e o ↓ do
-  último ficam **desabilitados**.
-  Fase de origem: 2D.2
-
-- [ ] **59. Montagem — reordenar arrastando bloco na folha**
-  Pré-condição: mouse.
-  Passos: arrastar um bloco pela folha e soltar em outra posição.
-  Esperado: mesmo resultado do ↑/↓. O bloco arrastado fica translúcido durante
-  o arraste.
-  Fase de origem: 2D.2
-
-- [ ] **60. Montagem — remover bloco**
-  Passos: clicar em "Remover" num bloco.
-  Esperado: sai da folha na hora, a numeração dos demais **fecha sem buraco**,
-  e a miniatura correspondente **volta a ficar disponível** na barra lateral.
-  Fase de origem: 2D.2
-
-- [ ] **61. Montagem — recarregar mantém a ordem**
-  Passos: depois de montar e reordenar, dar **F5**.
-  Esperado: a mesma sequência volta, na mesma ordem. Não há botão "Salvar" em
-  nenhum momento — cada operação já persistiu.
-  Fase de origem: 2D.2
-
-- [ ] **62. Montagem — rollback visível quando a rede falha** ⭐
-  Passos: 1) montar com 4 seções; 2) no DevTools, aba Network, marcar
-  **Offline**; 3) clicar em ↓ num bloco; 4) observar.
-  Esperado: o bloco **desce na hora** (atualização otimista) e em seguida
-  **volta para o lugar de origem** — o rollback é visível. Aparece toast de
-  erro, a faixa vermelha "não salvo — a ordem anterior foi restaurada" no
-  cabeçalho, e a mensagem do erro abaixo. Voltando a rede, a próxima
-  reordenação funciona normalmente.
-  Fase de origem: 2D.2
-
-- [ ] **63. Montagem — cinco reordenações rápidas não embaralham** ⭐
-  Passos: clicar em ↑/↓ **cinco vezes seguidas, o mais rápido que conseguir**,
-  em blocos diferentes.
-  Esperado: a ordem final na tela é exatamente a que se vê depois do último
-  clique, e o **F5 confirma a mesma**. As chamadas são serializadas — se
-  embaralhar, a fila não está funcionando.
-  Fase de origem: 2D.2
 
 ---
 
 ## 9. Geração do documento (painel no fim da montagem, modo documento)
 
-- [ ] **64. Geração — escolha de processo e do cliente com o papel**
-  Passos: 1) modo documento; 2) escolher o processo "Inventário e Partilha de
-  Bens"; 3) abrir o seletor de cliente.
-  Esperado: o seletor de cliente só habilita **depois** de escolher o processo,
-  e lista os participantes com **nome — papel**, dizendo qual é o
-  **(principal)** e o CPF/CNPJ. Processo com um participante só já vem
-  escolhido; com dois, nenhum vem marcado.
-  Fase de origem: 2D.2
-
-- [ ] **65. Geração — cliente PF gera**
-  Passos: gerar a procuração de pessoa física para um cliente PF com cadastro
-  completo (ex.: Joao Paulo Oliveira).
-  Esperado: toast de sucesso e a tela vai para o **editor de texto final**.
-  Fase de origem: 2D.2
-
-- [ ] **66. Geração — cliente PJ gera pela interface** ⭐
-  Passos: escolher o modelo **"Procuração Ad Judicia — Pessoa Jurídica"**,
-  processo com cliente PJ (ex.: Tech Solutions Brasil S.A.), e gerar.
-  Esperado: gera. O texto final traz razão social, CNPJ, sede e o representante
-  legal — **não** os campos de pessoa física.
-  Por que importa: este caminho nunca havia sido exercitado pela interface.
-  Fase de origem: 2D.2
-
-- [ ] **67. Geração — 422 mostra o RÓTULO, nunca a chave crua** ⭐
-  Passos: gerar a procuração de pessoa física para **Beatriz Ramos Pereira**
-  (o seed a deixa sem profissão de propósito).
-  Esperado: bloco de aviso dizendo **"Falta um dado no cadastro"**, e o item
-  traz em destaque **"Profissão"** — o rótulo — com a orientação
-  **"Preencha «Profissão» no cadastro do cliente"**. A chave
-  `{{profissaoCliente}}` aparece **discreta e por último**, em cinza. **Não pode
-  aparecer JSON**, nem a chave no lugar do nome.
-  Fase de origem: 2D.2
-
-- [ ] **68. Geração — escolha de honorário oferecida na própria tela** ⭐
-  Passos: gerar o **"Contrato de Prestação de Serviços Advocatícios"** para
-  "Indenizacao por Danos Morais" / Ana Lima Santos (o processo tem 2 honorários
-  ativos).
-  Esperado: bloco azul com a orientação do backend e a **lista de honorários
-  para escolher**, cada um com valor, descrição, tipo e vencimento. Abaixo, a
-  nota de que **"6 variáveis de honorário estão esperando esta escolha"** e que
-  se resolvem sozinhas — elas **não** aparecem na lista de dados faltando.
-  Escolhendo um e clicando em "Gerar com este honorário", gera.
-  Fase de origem: 2D.2
-
-- [ ] **69. Geração — diálogo do 409 ao regerar texto revisado** ⭐
-  Pré-condição: ter um documento gerado e **editado à mão** (passo 70).
-  Passos: 1) voltar à montagem no modo documento, mesmo modelo, mesmo processo
-  e mesmo cliente; 2) gerar de novo.
-  Esperado: **não gera direto.** Abre diálogo dizendo explicitamente que o
-  texto revisado será **SUBSTITUÍDO** e que o documento atual **sai da lista**,
-  com a data do atual. "Manter o texto revisado" cancela e nada muda.
-  "Regerar e substituir" gera o novo — e o anterior desaparece da listagem.
-  Fase de origem: 2D.2
-
 ---
 
 ## 10. Texto final do documento (`/dashboard/documentos/:id/texto`)
 
-- [ ] **70. Texto final — editar e salvar marca "editado à mão"**
-  Passos: 1) abrir um documento gerado; 2) acrescentar um parágrafo no fim;
-  3) "Salvar texto".
-  Esperado: enquanto há mudança pendente aparece "alterações não salvas" e o
-  botão habilita. Depois de salvar, toast de sucesso e o selo dourado
-  **"editado à mão"** no cabeçalho. F5 mantém o texto novo.
-  Fase de origem: 2D.2
-
-- [ ] **71. Texto final — seções de origem são rastreabilidade, não conteúdo** ⭐
-  Passos: 1) no documento editado do passo 70, olhar o cartão "Seções de
-  origem"; 2) ir a Seções e **editar o texto** de uma delas; 3) voltar ao
-  documento e dar F5.
-  Esperado: o cartão lista as seções na ordem, com um aviso dizendo que o texto
-  **já não vem delas**. Depois de editar a seção, **o texto do documento não
-  muda** — é isso que garante que a revisão dela não é descartada.
-  Fase de origem: 2D.2
-
-- [ ] **72. Texto final — aviso de lacuna com contexto, sem bloquear**
-  Passos: abrir o documento que contém `[...]` (o seed cria um).
-  Esperado: faixa amarela dizendo quantos trechos faltam preencher, cada um com
-  o **rótulo**, a **linha** e o **trecho de contexto** ao redor. "ir até o
-  trecho" leva o cursor até lá e o seleciona. O texto diz que é aviso, não
-  impedimento — e **o download funciona** mesmo assim.
-  Fase de origem: 2D.2 (a lacuna vem da 2C)
-
-- [ ] **73. Texto final — download em PDF pela interface**
-  Passos: clicar em "PDF".
-  Esperado: o arquivo baixa com o nome vindo do servidor
-  (`procuracao-nome-do-cliente-aaaa-mm-dd.pdf`), e o toast informa nome e
-  tamanho. Abrindo, é o **texto editado** que está lá, com o timbrado.
-  Fase de origem: 2D.2
-
-- [ ] **74. Texto final — download em DOCX pela interface**
-  Passos: clicar em "DOCX".
-  Esperado: mesmo comportamento, extensão `.docx`. Conferir a abertura no Word
-  e no LibreOffice é o passo 43.
-  Fase de origem: 2D.2
-
-- [ ] **75. Texto final — alternar a visibilidade no portal**
-  Passos: 1) clicar no botão de portal; 2) dar F5; 3) clicar de novo; 4) F5.
-  Esperado: começa **"Oculto do portal"** (padrão desligado). Ligando, fica
-  verde com "Visível no portal" e **persiste depois do F5**. Desligando,
-  volta — e também persiste. O portal em si é a Fase 3; aqui só o interruptor.
-  Fase de origem: 2D.2
-
 ---
 
 ## 11. Lista de Documentos, revisada (`/dashboard/documentos`)
-
-- [ ] **76. Documentos — a lista mostra só documentos gerados**
-  Passos: abrir a lista.
-  Esperado: **nenhum modelo** aparece (modelo tem tela própria) e **não há
-  coluna de arquivo nem link de URL** — upload está fora da interface. As
-  colunas são Nome, Tipo, Processo, Gerado em, Situação e Ações. O tipo sai por
-  extenso ("Procuração", "Contrato de prestação de serviços"), nunca o
-  identificador cru.
-  Fase de origem: 2D.2
-
-- [ ] **77. Documentos — selos de situação e download direto da lista**
-  Passos: 1) localizar o documento editado à mão e um com portal ligado;
-  2) clicar em "PDF" e em "DOCX" na linha.
-  Esperado: os selos "editado à mão" e "no portal" aparecem na coluna Situação;
-  os demais mostram "gerado". Os dois downloads funcionam **direto da lista**,
-  sem precisar abrir o documento. "Abrir" leva ao editor de texto final.
-  Fase de origem: 2D.2
 
 ---
 
@@ -688,21 +141,6 @@ Dados que vários passos usam:
 > `## Validado`. Sobra o 82, que é `[só olho humano]` — e entra o 84, que a
 > própria 2E.2 criou ao mexer em CSS.
 
-- [ ] **82. Aparência das telas depois da remoção das classes CSS**
-  `[só olho humano]`
-  Pré-condição: logada.
-  Passos: 1) abrir **Processos** e o **detalhe de um processo** (a tela que
-  usava `ProcessTabs.css`); 2) percorrer as telas que carregam
-  `utilities.css`, que é global — Dashboard, Clientes, Financeiro; 3) olhar os
-  botões em geral (`Button.css` perdeu `--ghost` e `--lg`).
-  Esperado: **nada mudou visualmente**. Foram removidas 12 classes e 3 tokens
-  que nenhuma tela aplicava, mais `Card.css` inteiro. Procurar especificamente
-  por: bloco sem borda, botão sem cor de fundo, texto sem cor, espaçamento
-  colapsado.
-  Por que só olho humano: remoção de CSS não quebra `lint` nem `build` — o
-  sintoma é visual e só aparece na tela.
-  Fase de origem: 2E.1
-
 ---
 
 ## 13. Fase 2E.2 — o que a suíte não alcança
@@ -712,28 +150,6 @@ Dados que vários passos usam:
 > e mudança de CSS é a única coisa ali que a própria suíte não consegue
 > conferir: a varredura prova que a regra **chega** na tela, nunca que o
 > resultado **está bonito**.
-
-- [ ] **84. Aparência depois da correção do `ui-btn` e das remoções da 2E.2**
-  `[só olho humano]`
-  Pré-condição: logada, base recém-seedada.
-  Passos: 1) abrir **Montagem de documento**, **Texto final do documento** e
-  **nova Seção** — as três telas cujos botões `ui-btn` **estavam sem estilo** e
-  passaram a receber `Button.css`; 2) abrir qualquer **modal de confirmação**
-  (excluir uma seção, por exemplo) e olhar o botão vermelho de confirmar; 3)
-  percorrer **Cadastro** (as duas etapas do assistente) e o **breadcrumb** do
-  topo em três telas diferentes; 4) abrir o **detalhe de um processo**, que
-  usava `.btn-action.btn-cancel`.
-  Esperado: nos passos 1 e 2, os botões agora **têm** aparência de botão —
-  é mudança visual **intencional**, e o que se confere é que ficou coerente
-  com os botões das demais telas, não que nada mudou. Nos passos 3 e 4,
-  **nada mudou**: foram removidas 5 classes que não casavam com seletor
-  nenhum (`wizard-step`, `breadcrumb-item`, `text-muted`, `text-secondary`,
-  `.btn-action.btn-cancel`) e o arquivo `utilities.css` inteiro.
-  Por que só olho humano: a varredura de `tests/css/appliedClasses.test.js`
-  garante que toda classe aplicada tem regra alcançável, e `npm run build`
-  garante que compila. **Nenhum dos dois enxerga o resultado.** Botão que
-  ganhou estilo errado e bloco que colapsou passam limpos nos dois.
-  Fase de origem: 2E.2
 
 ---
 
@@ -749,75 +165,6 @@ Dados que vários passos usam:
 > Por isso esta fase faz o roteiro crescer, e está certo. Cresce com
 > disciplina: cada passo diz o que se confere e por que script nenhum
 > conferiria.
-
-- [ ] **85. ⭐🚨 BLOQUEANTE — a demonstração NÃO roda com `NODE_ENV=production`**
-  `[automatizável]`
-  Pré-condição: nenhuma. **Fazer isto ANTES de qualquer demonstração
-  pública**, e antes dos demais passos desta seção.
-  Passos: 1) conferir o `NODE_ENV` do processo do backend
-  (`echo $NODE_ENV`, ou o `.env` em uso); 2) confirmar que **não** é
-  `production`.
-  Esperado: fora de produção, o teto do rate limit do portal é multiplicado
-  por **20** (`portalRoutes.js:34,44-47`) — 5 vira 100 tentativas por janela.
-  Por que é bloqueante: **o `express-rate-limit` conta por IP.** Numa banca,
-  três professores tentando o portal do mesmo wifi saem do mesmo IP: com o
-  teto de produção (5), o terceiro bate em **429 sem ninguém atacar nada**, e
-  a demonstração morre com uma mensagem de bloqueio na tela. É conferir uma
-  variável, **não mudar código**.
-
-- [ ] **86. Entrar no portal com o código ditado por telefone — minúsculas e
-  com espaço** `[automatizável]`
-  Pré-condição: base recém-seedada; o código de acesso de Maria Aparecida
-  Costa ("Inventario e Partilha de Bens") sai no resumo do seed.
-  Passos: 1) abrir `/portal` **no celular**; 2) digitar o código **todo em
-  minúsculas e com um espaço sobrando no fim** (`lex-xxxx-xxxx `); 3) senha
-  `MinhaSenha2026`; 4) entrar.
-  Esperado: **entra normalmente.** A tela não recusa, não reclama de formato e
-  não "corrige" o que foi digitado enquanto se digita.
-  Por que este passo existe: a advogada dita o código por telefone e o cliente
-  o recebe por WhatsApp ou num papel. **A tela nunca pode ser mais rígida que
-  a API** — o backend normaliza caixa e espaço de propósito, e uma máscara na
-  tela recusaria o que o servidor aceita, deixando o cliente de fora do
-  próprio processo por causa de uma letra minúscula.
-  Fase de origem: 3.2
-
-- [ ] **87. Código errado e excesso de tentativas dizem coisas DIFERENTES**
-  `[só olho humano]`
-  Passos: 1) errar o código uma vez e ler a mensagem; 2) errar a senha de um
-  código válido e ler a mensagem; 3) insistir até estourar o limite.
-  Esperado: **1 e 2 dão a mesma mensagem, palavra por palavra** — a tela não
-  diz se o código existe, se a senha está errada ou se o acesso foi revogado.
-  O 3 dá uma mensagem **visivelmente diferente**, em amarelo, explicando que
-  houve muitas tentativas e para aguardar.
-  Por que só olho humano: o teste estático prova que os dois caminhos existem
-  e escrevem em estados distintos; **não prova que a pessoa percebe a
-  diferença ao ler.** É a percepção que evita o cliente insistir e estender o
-  próprio bloqueio.
-  Fase de origem: 3.2
-
-- [ ] **88. A troca de senha é inescapável** `[automatizável]`
-  Pré-condição: entrar como **Ana Lima Santos**, senha provisória
-  `Portal2026`.
-  Passos: 1) entrar; 2) tentar ir a `/portal/processo` **pela barra de
-  endereço**; 3) voltar e ler a explicação da tela de troca; 4) trocar a senha.
-  Esperado: o passo 2 **cai de volta na tela de troca**, sempre. A tela
-  explica em uma frase por que a troca é obrigatória. Depois de trocar, segue
-  para o processo, e a senha antiga não serve mais.
-  Fase de origem: 3.2
-
-- [ ] **89. Processo e documentos legíveis no celular** `[só olho humano]`
-  Pré-condição: sessão do portal, **num celular de verdade**, não no
-  redimensionador do navegador.
-  Passos: 1) ler a tela do processo inteira sem dar zoom; 2) conferir que
-  "Em andamento" e "Autor" aparecem em português comum, com a explicação do
-  papel; 3) tocar nos botões de download **com o polegar**, em pé.
-  Esperado: uma coluna, fonte legível sem zoom, botões que o dedo acerta de
-  primeira. **Nenhum valor financeiro em lugar nenhum**, e nenhum outro
-  participante do processo.
-  Por que só olho humano: alvo de toque, contraste e comprimento de linha são
-  exatamente o que nenhuma análise estática enxerga. E o emulador mente sobre
-  o tamanho do dedo.
-  Fase de origem: 3.2
 
 - [ ] **90. Baixar PDF e DOCX no aparelho** `[só olho humano]`
   Passos: 1) baixar o PDF pelo portal, no celular; 2) baixar o DOCX; 3)
@@ -1780,6 +1127,7 @@ Dados que vários passos usam:
 
 ## Validado
 
+
 > Passo **executado por olho humano e aprovado**, com data. Continua sendo
 > verificação manual — só não está mais pendente. Não se apaga: daqui a três
 > fases ninguém lembra o que foi verificado de fato.
@@ -1787,6 +1135,650 @@ Dados que vários passos usam:
 > Isto **não é** a mesma coisa que `## Automatizado`. Lá o passo virou teste e
 > nunca mais precisa de olho humano; aqui ele foi olhado uma vez, naquela
 > versão do código, e uma mudança grande no assunto pede que volte à lista.
+
+> **Sessão de 17/08/2026 — passos 1 a 89.** O Daniel percorreu a interface inteira
+> das telas de cadastro, login, perfil, clientes, processos, seções, documentos
+> (biblioteca, montagem, geração, texto final e listagem) e as cinco primeiras
+> do portal. **81 passos passaram** e estão abaixo, ao lado do 78, validado em
+> 30/07/2026. Três não entraram: os **4** e **12** REPROVARAM (achados V-1 e
+> V-2, registrados no CLAUDE.md do frontend) e o **13** não foi executado — os
+> três continuam na lista pendente, cada um com o motivo escrito no próprio
+> passo.
+>
+> A validação dos passos **90 a 154 foi adiada conscientemente**. Dois prazos
+> ficam registrados: o passo **85** (`NODE_ENV` do rate limit) é pré-voo de
+> **toda** demonstração pública, e não vale "uma vez só" — está aqui como
+> executado, não como resolvido para sempre; e os **90 a 98** precisam
+> acontecer **antes de qualquer cliente real usar o portal**.
+
+- [x] **1. Cadastro — assistente de duas etapas**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: deslogado.
+  Passos: 1) abrir `/registrar`; 2) preencher a etapa 1 (nome, e-mail, senha,
+  confirmação); 3) avançar; 4) preencher a etapa 2 (CPF, telefone, OAB,
+  escritório, endereço); 5) enviar.
+  Esperado: as duas etapas aparecem separadas, com o botão de voltar
+  preservando o que já foi digitado.
+  Fase de origem: 1
+
+- [x] **2. Cadastro — máscaras de CPF, telefone e CEP**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: etapa 2 do cadastro aberta.
+  Passos: digitar apenas dígitos em CPF, telefone e CEP.
+  Esperado: CPF vira `000.000.000-00`, telefone vira `(00) 00000-0000`, CEP
+  vira `00000-000`, enquanto se digita.
+  Fase de origem: 1
+
+- [x] **3. Cadastro — ViaCEP preenche o endereço**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: etapa 2 do cadastro aberta.
+  Passos: digitar um CEP válido (ex.: `84010-330`) e sair do campo.
+  Esperado: logradouro, bairro, cidade e UF chegam preenchidos; o foco vai
+  para o número.
+  Fase de origem: 1
+
+- [x] **5. Cadastro leva direto ao sistema autenticado**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: dados novos e válidos nas duas etapas.
+  Passos: concluir o cadastro.
+  Esperado: **não passa pela tela de login**. Cai em `/dashboard` já
+  autenticada, com o nome no cabeçalho, e o toast diz "Conta criada com
+  sucesso. Bem-vinda ao LEX!". Recarregar a página (F5) continua autenticada —
+  o cookie `lex-token` foi emitido no cadastro.
+  Fase de origem: 2D.1
+
+- [x] **6. Login com o usuário do seed**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: deslogado.
+  Passos: entrar com `demo@lex.dev` / `Lex123456`.
+  Esperado: vai para `/dashboard`; o cabeçalho mostra o nome; F5 mantém a
+  sessão.
+  Fase de origem: 1
+
+- [x] **7. Login com senha errada**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: entrar com `demo@lex.dev` e uma senha qualquer errada.
+  Esperado: mensagem "Credenciais inválidas" — a mesma para e-mail
+  inexistente, sem dizer qual dos dois falhou.
+  Fase de origem: 1
+
+- [x] **8. Sessão expirada redireciona**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: autenticada, em qualquer tela interna.
+  Passos: apagar o cookie `lex-token` pelo DevTools e clicar em algo que
+  chame a API.
+  Esperado: toast "Sessão expirada" e volta para `/login`, sem tela quebrada.
+  Fase de origem: 1
+
+- [x] **9. Perfil — os 5 blocos**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: abrir o perfil.
+  Esperado: os cinco blocos aparecem preenchidos com os dados do seed —
+  dados pessoais, OAB, escritório, endereço e segurança.
+  Fase de origem: 1
+
+- [x] **10. Perfil — salvar alterações**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: alterar o telefone e salvar.
+  Esperado: toast de sucesso e o valor persiste após F5. O cabeçalho reflete a
+  mudança na hora, sem recarregar.
+  Fase de origem: 1
+
+- [x] **11. Perfil — campo apagado grava de fato**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: apagar o conteúdo do Instagram (ou da chave PIX), salvar, dar F5.
+  Esperado: o campo continua vazio depois do F5. Se voltar com o valor antigo,
+  o backend ignorou a limpeza — que é exatamente o bug que a Fase 1.3 corrigiu.
+  Fase de origem: 1
+
+- [x] **14. Perfil — remover o logo**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: ter um logo salvo (passo 13).
+  Passos: remover o logo e salvar; dar F5.
+  Esperado: a miniatura some e não volta depois do F5. O documento gerado
+  depois disso continua baixando normalmente, com cabeçalho só de texto
+  (conferir no passo 30).
+  Fase de origem: 2C / 2D.1
+
+- [x] **15. Cliente PF — cadastro completo**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: criar um cliente pessoa física preenchendo todos os campos.
+  Esperado: máscaras de CPF, telefone e CEP funcionando; ViaCEP preenchendo o
+  endereço; salva e aparece na lista.
+  Fase de origem: 1
+
+- [x] **16. Cliente PJ — cadastro completo**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: criar um cliente pessoa jurídica, com representante legal.
+  Esperado: ao trocar para PJ o formulário troca os campos (razão social,
+  nome fantasia, CNPJ com máscara `00.000.000/0000-00`, bloco de representante
+  legal). Salva e aparece na lista.
+  Fase de origem: 1
+
+- [x] **17. Cliente — CPF duplicado destaca o campo**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: cadastrar um cliente com um CPF que já existe.
+  Esperado: erro 409 com mensagem clara e **o campo CPF destacado em
+  vermelho** — não uma mensagem genérica no topo. Nada do que foi digitado se
+  perde.
+  Fase de origem: 1
+
+- [x] **18. Cliente — campo apagado grava de fato**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: editar um cliente, apagar o RG (ou a profissão), salvar, dar F5.
+  Esperado: o campo continua vazio depois do F5.
+  Fase de origem: 1
+
+- [x] **19. Cliente — busca**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: digitar parte de um nome no campo de busca.
+  Esperado: a lista filtra sozinha depois de uma pausa curta (debounce), sem
+  botão de buscar.
+  Fase de origem: 1
+
+- [x] **20. Cliente — excluir com processo ativo é recusado**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: tentar excluir "Maria Aparecida Costa" (tem processo).
+  Esperado: recusa com 409 dizendo quantos processos impedem. O cliente
+  continua na lista.
+  Fase de origem: 2B
+
+- [x] **21. Processo — lista de participantes no formulário**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: criar processo novo.
+  Passos: 1) abrir o formulário; 2) acrescentar dois clientes como
+  participantes; 3) dar um papel a cada um (autor, litisconsorte...); 4)
+  marcar um como principal; 5) salvar.
+  Esperado: o seletor é uma **lista de participantes**, não um cliente único.
+  O principal é escolhido por **rádio** — marcar um desmarca o outro. Salvar
+  sem participante nenhum, ou sem principal, é barrado antes de chamar a API.
+  Fase de origem: 2B *(reconstruído — ver nota no fim)*
+
+- [x] **22. Processo — litisconsórcio visível na listagem**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: abrir a lista de processos e localizar "Inventário e Partilha de
+  Bens".
+  Esperado: mostra o cliente principal seguido de **"+1"**, indicando que há
+  outro participante.
+  Fase de origem: 2B *(reconstruído)*
+
+- [x] **23. Processo — detalhe mostra todos os participantes**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: abrir o detalhe de "Inventário e Partilha de Bens".
+  Esperado: seção com os dois participantes, cada um com nome, tipo de pessoa
+  e papel; o principal aparece destacado.
+  Fase de origem: 2B *(reconstruído)*
+
+- [x] **24. Processo — código de acesso é buscado sob demanda e copiado**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: no detalhe do processo, clicar no botão de código de acesso de um
+  participante.
+  Esperado: o código **não aparece antes do clique** (não vem na listagem).
+  Ao clicar, aparece no formato `LEX-XXXX-XXXX` (13 caracteres) e é copiado
+  para a área de transferência — colar em algum lugar confirma. Toast
+  confirmando a cópia.
+  Fase de origem: 2B *(reconstruído)*
+
+- [x] **25. Processo — trocar o principal e remover participante**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: 1) editar um processo com dois participantes; 2) marcar o outro como
+  principal; 3) remover o que deixou de ser principal; 4) salvar.
+  Esperado: salva sem erro. O backend recusa remover o principal enquanto
+  houver outros, e a tela promove o novo **antes** de remover — se a ordem
+  estiver errada, aparece um 409.
+  Fase de origem: 2B *(reconstruído)*
+
+- [x] **26. Seções — entrada no menu e lista**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: clicar em "Seções" no menu lateral.
+  Esperado: o item existe entre "Documentos" e "Perfil". A lista traz as 10
+  seções do seed com título, tipo (badge), trecho inicial do texto e a
+  contagem de variáveis.
+  Fase de origem: 2D.1
+
+- [x] **27. Seções — filtro por tipo**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: escolher "Qualificação" no filtro de tipo.
+  Esperado: sobram só as 3 seções de qualificação. Voltar para "Todos os
+  tipos" traz as 10 de volta.
+  Fase de origem: 2D.1
+
+- [x] **28. Seções — busca por título, com e sem acento**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: digitar `qualificacao` (sem acento), depois `qualificação` (com).
+  Esperado: **os dois** trazem as mesmas 3 seções. A lista filtra sozinha após
+  uma pausa curta (debounce). `HONORARIOS` em maiúsculas também acha a
+  cláusula de honorários.
+  Fase de origem: 2D.1
+
+- [x] **29. Seções — estado vazio útil**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: buscar por algo inexistente, ex.: `zzzz`.
+  Esperado: **não é tela em branco** — traz texto explicativo e um botão
+  "Limpar filtros" que devolve a lista completa.
+  Fase de origem: 2D.1
+
+- [x] **30. Seções — pré-visualização (modal)**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: clicar em "Ver" numa seção que use variáveis (ex.: a de
+  qualificação).
+  Esperado: modal com título e tipo no topo; o texto aparece **cru**, em fonte
+  monoespaçada, com as quebras de linha preservadas e as chaves `{{...}}`
+  **destacadas em cor**, sem nada resolvido. O rodapé diz quantas variáveis o
+  texto tem.
+  Fase de origem: 2D.1
+
+- [x] **31. Seções — o modal fecha por Esc, clique fora e prende o foco**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: modal de pré-visualização aberto.
+  Passos: 1) apertar **Esc**; 2) reabrir e clicar **fora** do modal; 3)
+  reabrir e apertar **Tab** várias vezes.
+  Esperado: fecha nos dois primeiros. No terceiro, o foco **circula apenas
+  dentro do modal** e não escapa para a página atrás. Ao fechar, o foco volta
+  para o botão "Ver" que o abriu.
+  Fase de origem: 2D.1
+
+- [x] **32. Seções — criar seção com inserção de variável no cursor** ⭐
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: 1) "Nova Seção"; 2) título e tipo; 3) no texto, escrever
+  `Eu, , portador do CPF.` ; 4) **clicar entre a vírgula e o espaço**, no meio
+  da frase; 5) no painel da direita, clicar em "Nome completo" (grupo
+  Cliente).
+  Esperado: `{{nomeCliente}}` entra **exatamente onde o cursor estava**, não
+  no fim do texto. O foco volta para o textarea com o cursor **logo depois**
+  do que foi inserido — dá para continuar digitando sem clicar de novo.
+  Fase de origem: 2D.1
+
+- [x] **33. Seções — o seletor mostra nomes legíveis, não a chave**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: olhar o painel de variáveis.
+  Esperado: cada item mostra em destaque o **rótulo em português**
+  ("Nome completo", "CPF", "Estado civil"), abaixo a **descrição** dizendo de
+  onde o dado vem, e só então a chave `{{...}}` em cinza e monoespaçada.
+  **Não pode aparecer "Nome Cliente" ou "Cpf Cliente"** — se aparecer, o
+  rótulo está sendo derivado da chave. Os grupos são "Cliente", "Processo",
+  "Advogada e escritório", "Honorário" e "Sistema", com o total de 47 no topo.
+  Fase de origem: 2D.1
+
+- [x] **34. Seções — busca dentro do seletor de variáveis**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: digitar `cpf` no campo de busca do painel.
+  Esperado: sobram as entradas de CPF (cliente, representante legal,
+  advogada), agrupadas. Buscar por `extenso` acha "Valor por extenso".
+  Fase de origem: 2D.1
+
+- [x] **35. Seções — variável inexistente é recusada pelo backend**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: escrever `{{naoExiste}}` no texto e salvar.
+  Esperado: erro 400 com a mensagem do backend dizendo que a variável é
+  desconhecida. A tela apenas exibe — não inventa validação própria.
+  Fase de origem: 2D.1
+
+- [x] **36. Seções — título duplicado**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: criar uma seção com um título que já existe.
+  Esperado: erro 409 dizendo que já existe seção com esse título.
+  Fase de origem: 2D.1
+
+- [x] **37. Seções — editar**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: editar uma seção, mudar o texto e salvar.
+  Esperado: volta para a lista com toast de sucesso; o trecho inicial na lista
+  reflete o texto novo; a contagem de variáveis acompanha.
+  Fase de origem: 2D.1
+
+- [x] **38. Seções — desativar pede confirmação**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: clicar em "Desativar" numa seção **não usada** por documento.
+  Esperado: modal de confirmação nomeando a seção. Confirmando, ela sai da
+  lista.
+  Fase de origem: 2D.1
+
+- [x] **39. Seções — desativar seção em uso é recusado**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: tentar desativar uma seção que compõe um modelo (ex.: a de
+  qualificação).
+  Esperado: recusa com 409, e a mensagem **nomeia os documentos** que a usam.
+  A seção continua na lista.
+  Fase de origem: 2D.1
+
+- [x] **40. Documento — download em PDF abre com acentuação correta**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: baixar um contrato gerado em PDF e abrir.
+  Esperado: acentuação correta em "ação", "inventário", "cônjuge",
+  "supérstite", "domiciliado(a)" e "nº" — sem quadradinhos nem letras trocadas.
+  Margens de 2,5 cm, A4, corpo justificado, parágrafos preservados.
+  Fase de origem: 2C
+
+- [x] **41. Documento — timbrado com e sem logo**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: baixar o mesmo documento **com** logo salvo no perfil e depois
+  **sem** logo (passo 14).
+  Esperado: com logo, ele aparece no cabeçalho. Sem logo, o cabeçalho usa só
+  texto e continua bem diagramado — **sem buraco** no lugar da imagem.
+  Fase de origem: 2C / 2D.1
+
+- [x] **42. Documento — rodapé "página X de Y"**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: um documento com várias páginas (o contrato longo).
+  Passos: abrir o PDF e conferir o rodapé em três páginas diferentes.
+  Esperado: numeração correta e coerente em todas — não "página 1 de 1"
+  repetido.
+  Fase de origem: 2C
+
+- [x] **43. DOCX abre no Word e no LibreOffice sem aviso de reparo** ⚠️
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: baixar o mesmo documento em DOCX e abrir **no Microsoft Word** e
+  **no LibreOffice Writer**.
+  Esperado: abre nos dois **sem caixa de diálogo de reparo/recuperação**, com
+  o mesmo timbrado, as mesmas margens e a mesma acentuação do PDF.
+  Por que só aqui: a estrutura OOXML foi validada por script, mas a abertura
+  nos aplicativos reais nunca foi.
+  Fase de origem: 2C
+
+- [x] **44. Documento editado à mão baixa o texto editado**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: o seed marca um contrato como editado à mão.
+  Passos: baixar esse documento.
+  Esperado: o arquivo traz o **texto editado**, não o recomposto a partir das
+  seções. Se o parágrafo acrescentado à mão sumir, a edição está sendo
+  descartada.
+  Fase de origem: 2C
+
+- [x] **45. Documento com lacuna avisa mas não bloqueia**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: abrir o documento que contém `[...]` e baixá-lo.
+  Esperado: a tela avisa da lacuna, e **o download acontece mesmo assim** —
+  lacuna é aviso, não impedimento.
+  Fase de origem: 2C
+
+- [x] **46. Geração com pendência é bloqueada e orienta**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: gerar documento para o processo "Usucapião de Imóvel Urbano"
+  (a cliente Beatriz não tem profissão).
+  Esperado: recusa com 422 apontando `{{profissaoCliente}}` e dizendo **onde
+  preencher** ("no cadastro do cliente"). Não gera documento pela metade.
+  Fase de origem: 2C
+
+- [x] **47. Montagem — duas portas de entrada no menu**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: olhar o menu lateral, no grupo de Documentos.
+  Esperado: existem **dois** itens novos entre "Documentos" e "Seções":
+  **"Gerar documento"** e **"Montar modelo"**. Levam à mesma tela. Estando numa
+  delas, **só a porta correspondente fica acesa** no menu — não as duas.
+  Fase de origem: 2D.2
+
+- [x] **48. Montagem — o modo MODELO fica visível o tempo todo** ⭐
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: 1) "Montar modelo"; 2) dar nome e tipo; 3) "Começar a montar";
+  4) acrescentar uma seção; 5) rolar a tela.
+  Esperado: o cabeçalho traz o selo **"Montando um MODELO"** e a faixa lateral
+  dourada, e eles **continuam ali** depois de montar, não só na entrada. O
+  subtítulo diz "reutilizável, sem processo e sem cliente". **Não aparece**
+  painel de geração.
+  Fase de origem: 2D.2
+
+- [x] **49. Montagem — o modo DOCUMENTO fica visível o tempo todo** ⭐
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: 1) "Gerar documento"; 2) escolher um modelo da lista.
+  Esperado: selo **"Montando um DOCUMENTO"**, faixa lateral verde, e o painel
+  "Gerar o documento" no fim da tela. Em nenhum momento fica dúvida sobre qual
+  dos dois modos está aberto.
+  Fase de origem: 2D.2
+
+- [x] **50. Montagem — canvas em A4 com timbrado e logo**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: ter logo salvo no perfil (passo 13).
+  Passos: abrir a montagem de um modelo com seções.
+  Esperado: a folha é **branca nos dois temas** (é papel), em proporção A4, com
+  margens visíveis de 2,5 cm. O cabeçalho traz o logo à esquerda e, à direita,
+  nome do escritório, `Nome — OAB/UF nº`, endereço em uma linha e
+  `telefone · e-mail`. Rodapé no pé da folha.
+  Fase de origem: 2D.2
+
+- [x] **51. Montagem — timbrado sem logo não abre buraco** ⭐
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: **remover** o logo no perfil (passo 14).
+  Passos: voltar à montagem.
+  Esperado: o bloco de texto do timbrado passa a ocupar a **largura inteira**.
+  **Não sobra espaço reservado** onde a imagem estava. Mesma regra da Fase 2C.
+  Fase de origem: 2D.2
+
+- [x] **52. Montagem — biblioteca com filtro e busca sem acento**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: na barra lateral, 1) escolher "Qualificação" no filtro; 2) limpar;
+  3) digitar `qualificacao` sem acento; 4) digitar `qualificação` com acento.
+  Esperado: o filtro deixa só as de qualificação; as duas buscas trazem o
+  **mesmo** resultado. Cada miniatura mostra título, tipo e trecho inicial.
+  Fase de origem: 2D.2 (reusa a busca da 2D.1)
+
+- [x] **53. Montagem — inserir pelo botão "Adicionar"**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: clicar em "Adicionar" numa miniatura.
+  Esperado: a seção entra **no fim** do documento, numerada na sequência. O
+  indicador mostra "salvando…" e depois "salvo às HH:MM:SS".
+  Fase de origem: 2D.2
+
+- [x] **54. Montagem — inserir arrastando da barra para a folha**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: **mouse** (o arrastar não dispara em toque — ver passo 55).
+  Passos: arrastar uma miniatura e soltar **entre dois blocos** da folha.
+  Esperado: uma faixa tracejada marca onde vai cair, e a seção entra
+  **exatamente naquela posição**, não no fim.
+  Fase de origem: 2D.2
+
+- [x] **55. Montagem — inserir na posição por TOQUE, sem arrastar** ⚠️ ⭐
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: abrir o LEX **no tablet** (ou no emulador de toque do DevTools,
+  com "touch" ativado).
+  Passos: 1) **tocar no corpo** de uma miniatura (não no botão "Adicionar");
+  2) observar a folha; 3) tocar em "Inserir aqui" no ponto desejado.
+  Esperado: a miniatura fica destacada, aparece a faixa
+  "«título» pronta para entrar", e a folha mostra botões **"Inserir aqui"**
+  entre os blocos. A seção entra na posição escolhida — **o mesmo resultado do
+  arrastar, sem arrastar**.
+  Por que só aqui: `dragstart`/`dragover`/`drop` **não disparam em toque**, e
+  este é o caminho que substitui o arrastar no tablet. Não há como exercitá-lo
+  por script.
+  Fase de origem: 2D.2
+
+- [x] **56. Montagem — soltar em posição ocupada empurra as demais**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: inserir uma seção na **posição 2**, com o documento já tendo 4 ou
+  mais.
+  Esperado: a nova fica na 2, e quem estava na 2 vai para a 3, e assim por
+  diante. A numeração continua **1, 2, 3… sem repetir e sem pular**. O empurrão
+  é regra do backend — a tela só mostra o resultado.
+  Fase de origem: 2D.2
+
+- [x] **57. Montagem — seção já usada aparece marcada e não entra de novo**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: 1) olhar na barra lateral uma seção que já está na folha; 2) tentar
+  arrastá-la.
+  Esperado: a miniatura fica esmaecida, com o selo verde **"no documento"** em
+  vez do botão "Adicionar", e **não é arrastável**. A restrição real é o índice
+  único do banco; a tela só antecipa.
+  Fase de origem: 2D.2
+
+- [x] **58. Montagem — reordenar por ↑ e ↓**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: clicar em ↑ e ↓ na barra de um bloco.
+  Esperado: o bloco troca de lugar, a numeração acompanha na hora, e o
+  indicador vai a "salvando…" e volta a "salvo". O ↑ do primeiro bloco e o ↓ do
+  último ficam **desabilitados**.
+  Fase de origem: 2D.2
+
+- [x] **59. Montagem — reordenar arrastando bloco na folha**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: mouse.
+  Passos: arrastar um bloco pela folha e soltar em outra posição.
+  Esperado: mesmo resultado do ↑/↓. O bloco arrastado fica translúcido durante
+  o arraste.
+  Fase de origem: 2D.2
+
+- [x] **60. Montagem — remover bloco**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: clicar em "Remover" num bloco.
+  Esperado: sai da folha na hora, a numeração dos demais **fecha sem buraco**,
+  e a miniatura correspondente **volta a ficar disponível** na barra lateral.
+  Fase de origem: 2D.2
+
+- [x] **61. Montagem — recarregar mantém a ordem**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: depois de montar e reordenar, dar **F5**.
+  Esperado: a mesma sequência volta, na mesma ordem. Não há botão "Salvar" em
+  nenhum momento — cada operação já persistiu.
+  Fase de origem: 2D.2
+
+- [x] **62. Montagem — rollback visível quando a rede falha** ⭐
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: 1) montar com 4 seções; 2) no DevTools, aba Network, marcar
+  **Offline**; 3) clicar em ↓ num bloco; 4) observar.
+  Esperado: o bloco **desce na hora** (atualização otimista) e em seguida
+  **volta para o lugar de origem** — o rollback é visível. Aparece toast de
+  erro, a faixa vermelha "não salvo — a ordem anterior foi restaurada" no
+  cabeçalho, e a mensagem do erro abaixo. Voltando a rede, a próxima
+  reordenação funciona normalmente.
+  Fase de origem: 2D.2
+
+- [x] **63. Montagem — cinco reordenações rápidas não embaralham** ⭐
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: clicar em ↑/↓ **cinco vezes seguidas, o mais rápido que conseguir**,
+  em blocos diferentes.
+  Esperado: a ordem final na tela é exatamente a que se vê depois do último
+  clique, e o **F5 confirma a mesma**. As chamadas são serializadas — se
+  embaralhar, a fila não está funcionando.
+  Fase de origem: 2D.2
+
+- [x] **64. Geração — escolha de processo e do cliente com o papel**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: 1) modo documento; 2) escolher o processo "Inventário e Partilha de
+  Bens"; 3) abrir o seletor de cliente.
+  Esperado: o seletor de cliente só habilita **depois** de escolher o processo,
+  e lista os participantes com **nome — papel**, dizendo qual é o
+  **(principal)** e o CPF/CNPJ. Processo com um participante só já vem
+  escolhido; com dois, nenhum vem marcado.
+  Fase de origem: 2D.2
+
+- [x] **65. Geração — cliente PF gera**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: gerar a procuração de pessoa física para um cliente PF com cadastro
+  completo (ex.: Joao Paulo Oliveira).
+  Esperado: toast de sucesso e a tela vai para o **editor de texto final**.
+  Fase de origem: 2D.2
+
+- [x] **66. Geração — cliente PJ gera pela interface** ⭐
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: escolher o modelo **"Procuração Ad Judicia — Pessoa Jurídica"**,
+  processo com cliente PJ (ex.: Tech Solutions Brasil S.A.), e gerar.
+  Esperado: gera. O texto final traz razão social, CNPJ, sede e o representante
+  legal — **não** os campos de pessoa física.
+  Por que importa: este caminho nunca havia sido exercitado pela interface.
+  Fase de origem: 2D.2
+
+- [x] **67. Geração — 422 mostra o RÓTULO, nunca a chave crua** ⭐
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: gerar a procuração de pessoa física para **Beatriz Ramos Pereira**
+  (o seed a deixa sem profissão de propósito).
+  Esperado: bloco de aviso dizendo **"Falta um dado no cadastro"**, e o item
+  traz em destaque **"Profissão"** — o rótulo — com a orientação
+  **"Preencha «Profissão» no cadastro do cliente"**. A chave
+  `{{profissaoCliente}}` aparece **discreta e por último**, em cinza. **Não pode
+  aparecer JSON**, nem a chave no lugar do nome.
+  Fase de origem: 2D.2
+
+- [x] **68. Geração — escolha de honorário oferecida na própria tela** ⭐
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: gerar o **"Contrato de Prestação de Serviços Advocatícios"** para
+  "Indenizacao por Danos Morais" / Ana Lima Santos (o processo tem 2 honorários
+  ativos).
+  Esperado: bloco azul com a orientação do backend e a **lista de honorários
+  para escolher**, cada um com valor, descrição, tipo e vencimento. Abaixo, a
+  nota de que **"6 variáveis de honorário estão esperando esta escolha"** e que
+  se resolvem sozinhas — elas **não** aparecem na lista de dados faltando.
+  Escolhendo um e clicando em "Gerar com este honorário", gera.
+  Fase de origem: 2D.2
+
+- [x] **69. Geração — diálogo do 409 ao regerar texto revisado** ⭐
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: ter um documento gerado e **editado à mão** (passo 70).
+  Passos: 1) voltar à montagem no modo documento, mesmo modelo, mesmo processo
+  e mesmo cliente; 2) gerar de novo.
+  Esperado: **não gera direto.** Abre diálogo dizendo explicitamente que o
+  texto revisado será **SUBSTITUÍDO** e que o documento atual **sai da lista**,
+  com a data do atual. "Manter o texto revisado" cancela e nada muda.
+  "Regerar e substituir" gera o novo — e o anterior desaparece da listagem.
+  Fase de origem: 2D.2
+
+- [x] **70. Texto final — editar e salvar marca "editado à mão"**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: 1) abrir um documento gerado; 2) acrescentar um parágrafo no fim;
+  3) "Salvar texto".
+  Esperado: enquanto há mudança pendente aparece "alterações não salvas" e o
+  botão habilita. Depois de salvar, toast de sucesso e o selo dourado
+  **"editado à mão"** no cabeçalho. F5 mantém o texto novo.
+  Fase de origem: 2D.2
+
+- [x] **71. Texto final — seções de origem são rastreabilidade, não conteúdo** ⭐
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: 1) no documento editado do passo 70, olhar o cartão "Seções de
+  origem"; 2) ir a Seções e **editar o texto** de uma delas; 3) voltar ao
+  documento e dar F5.
+  Esperado: o cartão lista as seções na ordem, com um aviso dizendo que o texto
+  **já não vem delas**. Depois de editar a seção, **o texto do documento não
+  muda** — é isso que garante que a revisão dela não é descartada.
+  Fase de origem: 2D.2
+
+- [x] **72. Texto final — aviso de lacuna com contexto, sem bloquear**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: abrir o documento que contém `[...]` (o seed cria um).
+  Esperado: faixa amarela dizendo quantos trechos faltam preencher, cada um com
+  o **rótulo**, a **linha** e o **trecho de contexto** ao redor. "ir até o
+  trecho" leva o cursor até lá e o seleciona. O texto diz que é aviso, não
+  impedimento — e **o download funciona** mesmo assim.
+  Fase de origem: 2D.2 (a lacuna vem da 2C)
+
+- [x] **73. Texto final — download em PDF pela interface**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: clicar em "PDF".
+  Esperado: o arquivo baixa com o nome vindo do servidor
+  (`procuracao-nome-do-cliente-aaaa-mm-dd.pdf`), e o toast informa nome e
+  tamanho. Abrindo, é o **texto editado** que está lá, com o timbrado.
+  Fase de origem: 2D.2
+
+- [x] **74. Texto final — download em DOCX pela interface**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: clicar em "DOCX".
+  Esperado: mesmo comportamento, extensão `.docx`. Conferir a abertura no Word
+  e no LibreOffice é o passo 43.
+  Fase de origem: 2D.2
+
+- [x] **75. Texto final — alternar a visibilidade no portal**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: 1) clicar no botão de portal; 2) dar F5; 3) clicar de novo; 4) F5.
+  Esperado: começa **"Oculto do portal"** (padrão desligado). Ligando, fica
+  verde com "Visível no portal" e **persiste depois do F5**. Desligando,
+  volta — e também persiste. O portal em si é a Fase 3; aqui só o interruptor.
+  Fase de origem: 2D.2
+
+- [x] **76. Documentos — a lista mostra só documentos gerados**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: abrir a lista.
+  Esperado: **nenhum modelo** aparece (modelo tem tela própria) e **não há
+  coluna de arquivo nem link de URL** — upload está fora da interface. As
+  colunas são Nome, Tipo, Processo, Gerado em, Situação e Ações. O tipo sai por
+  extenso ("Procuração", "Contrato de prestação de serviços"), nunca o
+  identificador cru.
+  Fase de origem: 2D.2
+
+- [x] **77. Documentos — selos de situação e download direto da lista**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: 1) localizar o documento editado à mão e um com portal ligado;
+  2) clicar em "PDF" e em "DOCX" na linha.
+  Esperado: os selos "editado à mão" e "no portal" aparecem na coluna Situação;
+  os demais mostram "gerado". Os dois downloads funcionam **direto da lista**,
+  sem precisar abrir o documento. "Abrir" leva ao editor de texto final.
+  Fase de origem: 2D.2
 
 - [x] **78. ⭐🚨 BLOQUEANTE — login real e navegação completa após a subida do
   `axios` e do `react-router-dom`** `[só olho humano]`
@@ -1806,6 +1798,119 @@ Dados que vários passos usam:
   `lint` e `build` passam limpos com o app quebrado. **Se este passo falhar,
   nada mais neste roteiro importa:** reverter a atualização e reportar.
   Fase de origem: 2E.1
+
+- [x] **82. Aparência das telas depois da remoção das classes CSS**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  `[só olho humano]`
+  Pré-condição: logada.
+  Passos: 1) abrir **Processos** e o **detalhe de um processo** (a tela que
+  usava `ProcessTabs.css`); 2) percorrer as telas que carregam
+  `utilities.css`, que é global — Dashboard, Clientes, Financeiro; 3) olhar os
+  botões em geral (`Button.css` perdeu `--ghost` e `--lg`).
+  Esperado: **nada mudou visualmente**. Foram removidas 12 classes e 3 tokens
+  que nenhuma tela aplicava, mais `Card.css` inteiro. Procurar especificamente
+  por: bloco sem borda, botão sem cor de fundo, texto sem cor, espaçamento
+  colapsado.
+  Por que só olho humano: remoção de CSS não quebra `lint` nem `build` — o
+  sintoma é visual e só aparece na tela.
+  Fase de origem: 2E.1
+
+- [x] **84. Aparência depois da correção do `ui-btn` e das remoções da 2E.2**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  `[só olho humano]`
+  Pré-condição: logada, base recém-seedada.
+  Passos: 1) abrir **Montagem de documento**, **Texto final do documento** e
+  **nova Seção** — as três telas cujos botões `ui-btn` **estavam sem estilo** e
+  passaram a receber `Button.css`; 2) abrir qualquer **modal de confirmação**
+  (excluir uma seção, por exemplo) e olhar o botão vermelho de confirmar; 3)
+  percorrer **Cadastro** (as duas etapas do assistente) e o **breadcrumb** do
+  topo em três telas diferentes; 4) abrir o **detalhe de um processo**, que
+  usava `.btn-action.btn-cancel`.
+  Esperado: nos passos 1 e 2, os botões agora **têm** aparência de botão —
+  é mudança visual **intencional**, e o que se confere é que ficou coerente
+  com os botões das demais telas, não que nada mudou. Nos passos 3 e 4,
+  **nada mudou**: foram removidas 5 classes que não casavam com seletor
+  nenhum (`wizard-step`, `breadcrumb-item`, `text-muted`, `text-secondary`,
+  `.btn-action.btn-cancel`) e o arquivo `utilities.css` inteiro.
+  Por que só olho humano: a varredura de `tests/css/appliedClasses.test.js`
+  garante que toda classe aplicada tem regra alcançável, e `npm run build`
+  garante que compila. **Nenhum dos dois enxerga o resultado.** Botão que
+  ganhou estilo errado e bloco que colapsou passam limpos nos dois.
+  Fase de origem: 2E.2
+
+- [x] **85. ⭐🚨 BLOQUEANTE — a demonstração NÃO roda com `NODE_ENV=production`**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  `[automatizável]`
+  Pré-condição: nenhuma. **Fazer isto ANTES de qualquer demonstração
+  pública**, e antes dos demais passos desta seção.
+  Passos: 1) conferir o `NODE_ENV` do processo do backend
+  (`echo $NODE_ENV`, ou o `.env` em uso); 2) confirmar que **não** é
+  `production`.
+  Esperado: fora de produção, o teto do rate limit do portal é multiplicado
+  por **20** (`portalRoutes.js:34,44-47`) — 5 vira 100 tentativas por janela.
+  Por que é bloqueante: **o `express-rate-limit` conta por IP.** Numa banca,
+  três professores tentando o portal do mesmo wifi saem do mesmo IP: com o
+  teto de produção (5), o terceiro bate em **429 sem ninguém atacar nada**, e
+  a demonstração morre com uma mensagem de bloqueio na tela. É conferir uma
+  variável, **não mudar código**.
+
+- [x] **86. Entrar no portal com o código ditado por telefone — minúsculas e
+  com espaço** `[automatizável]`
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: base recém-seedada; o código de acesso de Maria Aparecida
+  Costa ("Inventario e Partilha de Bens") sai no resumo do seed.
+  Passos: 1) abrir `/portal` **no celular**; 2) digitar o código **todo em
+  minúsculas e com um espaço sobrando no fim** (`lex-xxxx-xxxx `); 3) senha
+  `MinhaSenha2026`; 4) entrar.
+  Esperado: **entra normalmente.** A tela não recusa, não reclama de formato e
+  não "corrige" o que foi digitado enquanto se digita.
+  Por que este passo existe: a advogada dita o código por telefone e o cliente
+  o recebe por WhatsApp ou num papel. **A tela nunca pode ser mais rígida que
+  a API** — o backend normaliza caixa e espaço de propósito, e uma máscara na
+  tela recusaria o que o servidor aceita, deixando o cliente de fora do
+  próprio processo por causa de uma letra minúscula.
+  Fase de origem: 3.2
+
+- [x] **87. Código errado e excesso de tentativas dizem coisas DIFERENTES**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  `[só olho humano]`
+  Passos: 1) errar o código uma vez e ler a mensagem; 2) errar a senha de um
+  código válido e ler a mensagem; 3) insistir até estourar o limite.
+  Esperado: **1 e 2 dão a mesma mensagem, palavra por palavra** — a tela não
+  diz se o código existe, se a senha está errada ou se o acesso foi revogado.
+  O 3 dá uma mensagem **visivelmente diferente**, em amarelo, explicando que
+  houve muitas tentativas e para aguardar.
+  Por que só olho humano: o teste estático prova que os dois caminhos existem
+  e escrevem em estados distintos; **não prova que a pessoa percebe a
+  diferença ao ler.** É a percepção que evita o cliente insistir e estender o
+  próprio bloqueio.
+  Fase de origem: 3.2
+
+- [x] **88. A troca de senha é inescapável** `[automatizável]`
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: entrar como **Ana Lima Santos**, senha provisória
+  `Portal2026`.
+  Passos: 1) entrar; 2) tentar ir a `/portal/processo` **pela barra de
+  endereço**; 3) voltar e ler a explicação da tela de troca; 4) trocar a senha.
+  Esperado: o passo 2 **cai de volta na tela de troca**, sempre. A tela
+  explica em uma frase por que a troca é obrigatória. Depois de trocar, segue
+  para o processo, e a senha antiga não serve mais.
+  Fase de origem: 3.2
+
+- [x] **89. Processo e documentos legíveis no celular** `[só olho humano]`
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Pré-condição: sessão do portal, **num celular de verdade**, não no
+  redimensionador do navegador.
+  Passos: 1) ler a tela do processo inteira sem dar zoom; 2) conferir que
+  "Em andamento" e "Autor" aparecem em português comum, com a explicação do
+  papel; 3) tocar nos botões de download **com o polegar**, em pé.
+  Esperado: uma coluna, fonte legível sem zoom, botões que o dedo acerta de
+  primeira. **Nenhum valor financeiro em lugar nenhum**, e nenhum outro
+  participante do processo.
+  Por que só olho humano: alvo de toque, contraste e comprimento de linha são
+  exatamente o que nenhuma análise estática enxerga. E o emulador mente sobre
+  o tamanho do dedo.
+  Fase de origem: 3.2
 
 ---
 
