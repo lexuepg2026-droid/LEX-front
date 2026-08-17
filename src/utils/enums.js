@@ -119,6 +119,17 @@ export const FORMA_PAGAMENTO_OPTIONS = [
   { value: 'transferencia', label: 'Transferência' },
 ];
 
+// Tipo de pagamento, do enum do model `Payment` (F-1a).
+//
+// A distinção é do PEDIDO, não do resultado: os dois passam pelo mesmo motor de
+// alocação, e um pagamento `comum` que sobra também alimenta o saldo. O tipo
+// diz o que a advogada quis fazer, e é isso que o extrato precisa mostrar meses
+// depois.
+export const TIPO_PAGAMENTO_OPTIONS = [
+  { value: 'comum', label: 'Pagamento comum' },
+  { value: 'adiantamento', label: 'Adiantamento' },
+];
+
 // Nome de exibição de um cliente, que depende do tipo de pessoa. Repetido em
 // três telas antes desta função existir.
 export const nomeDoCliente = (cliente) => {

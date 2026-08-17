@@ -133,6 +133,10 @@
    Estreitá-la para caber mais texto é o que reintroduz a sobreposição — os
    botões não encolhem, eles escapam. Quatro medidas, por quantidade de botão. */
 .col-acoes-2    { width: 180px; }
+/* Dois botões, um deles com rótulo longo ("Baixar recibo"). Nasceu na F-1a:
+   a listagem de pagamentos perdeu o botão "Remover" — pagamento não se apaga,
+   se estorna — e a coluna encolheu de três botões para dois. */
+.col-acoes-2-lg { width: 230px; }
 .col-acoes-3    { width: 240px; }
 .col-acoes-3-lg { width: 300px; }
 .col-acoes-4    { width: 340px; }
@@ -228,4 +232,27 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   border-radius: var(--radius-sm);
+}
+
+/* ── Valor líquido de um pagamento estornado (F-1a) ────────────────────────
+   Marca a célula do LÍQUIDO quando ele difere do bruto, para a linha dizer
+   que houve estorno sem precisar de uma coluna a mais. Cor de aviso, e não de
+   perigo: um estorno é um fato registrado, não um erro. */
+.data-table .valor-estornado {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+/* ── Ação indisponível numa linha de listagem (F-1a) ───────────────────────
+   Ocupa o lugar dos botões quando a linha não admite ação nenhuma — hoje a
+   parcela cancelada por reparcelamento. Texto em vez de botão desabilitado:
+   um botão apagado convida ao clique e não explica por quê; a palavra explica.
+   Fica na coluna de ações, com a altura da fileira de botões, para a tabela
+   não pular de linha em linha. */
+.data-table .acao-indisponivel {
+  display: inline-block;
+  padding: 0.35rem 0;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--color-text-secondary);
 }

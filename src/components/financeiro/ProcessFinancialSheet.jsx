@@ -159,6 +159,16 @@ function ProcessFinancialSheet({ processoId }) {
                 <div className="ficha-honorario__totais">
                   <span>Contratado: <strong>{formatCurrency(h.totais.contratado)}</strong></span>
                   <span>Recebido: <strong>{formatCurrency(h.totais.pago)}</strong></span>
+                  {/* Rótulo discreto e condicional: `saldoAdiantado` é zero na
+                      maioria dos honorários, e uma linha "R$ 0,00" em todos
+                      eles só acrescentaria ruído. Quando existe, precisa
+                      aparecer — é ele que explica por que o em aberto é menor
+                      do que "contratado menos recebido". */}
+                  {h.totais.saldoAdiantado > 0 && (
+                    <span className="ficha-saldo">
+                      Saldo adiantado: <strong>{formatCurrency(h.totais.saldoAdiantado)}</strong>
+                    </span>
+                  )}
                   <span>Em aberto: <strong>{formatCurrency(h.totais.emAberto)}</strong></span>
                 </div>
 
@@ -192,26 +202,34 @@ function ProcessFinancialSheet({ processoId }) {
                           <StatusBadge status={p.status} />
                         </div>
 
-                        {/* ── Pagamentos da parcela ─────────────────────────
-                            A ficha só traz pagamento ATIVO, então todo item
-                            aqui tem recibo. */}
-                        {p.pagamentos.length > 0 && (
+                        {/* ── ALOCAÇÕES da parcela (F-1a) ───────────────────
+                            Era `p.pagamentos` até a F-0, quando o pagamento
+                            pertencia a UMA parcela. Agora são as ALOCAÇÕES: os
+                            pedaços de pagamento que encostaram nela. Um mesmo
+                            pagamento pode aparecer em duas parcelas, e o valor
+                            exibido é o pedaço, não o depósito inteiro — por
+                            isso a data do pagamento sai ao lado.
+                            A ficha só traz alocação ATIVA, então todo item aqui
+                            veio de um pagamento que ainda vale. */}
+                        {p.alocacoes.length > 0 && (
                           <ul className="ficha-pagamentos">
-                            {p.pagamentos.map(pg => (
-                              <li key={pg._id} className="ficha-pagamento">
+                            {p.alocacoes.map(a => (
+                              <li key={a._id} className="ficha-pagamento">
                                 <span>
-                                  {formatDate(pg.dataPagamento)} —{' '}
-                                  <strong>{formatCurrency(pg.valorPago)}</strong>{' '}
-                                  ({labelDe(FORMA_PAGAMENTO_OPTIONS, pg.formaPagamento)})
-                                  {pg.observacoes ? ` · ${pg.observacoes}` : ''}
+                                  {formatDate(a.dataPagamento ?? a.data)} —{' '}
+                                  <strong>{formatCurrency(a.valor)}</strong>{' '}
+                                  {a.origem === 'saldoAdiantado'
+                                    ? '(saldo adiantado)'
+                                    : `(${labelDe(FORMA_PAGAMENTO_OPTIONS, a.formaPagamento)})`}
+                                  {a.observacoes ? ` · ${a.observacoes}` : ''}
                                 </span>
                                 <button
                                   type="button"
                                   className="btn-action btn-edit"
-                                  onClick={() => baixarRecibo(pg._id)}
-                                  disabled={reciboEmCurso === pg._id}
+                                  onClick={() => baixarRecibo(a.pagamentoId)}
+                                  disabled={reciboEmCurso === a.pagamentoId}
                                 >
-                                  {reciboEmCurso === pg._id ? 'Baixando…' : 'Baixar recibo'}
+                                  {reciboEmCurso === a.pagamentoId ? 'Baixando…' : 'Baixar recibo'}
                                 </button>
                               </li>
                             ))}

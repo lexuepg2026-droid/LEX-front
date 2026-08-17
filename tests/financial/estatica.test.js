@@ -324,12 +324,45 @@ describe("ProcessFinancialSheet exibe os totais que vieram", () => {
 // ═════════════════════════════════════════════════════════════════════════
 
 describe("recibo", () => {
-  test("a listagem esconde o botão quando o pagamento está desativado", () => {
+  test("a listagem esconde o botão quando o pagamento foi integralmente estornado", () => {
+    // ── Mudou a CONDIÇÃO, não a regra (F-1a) ─────────────────────────────
+    //
+    // Era `p.ativo !== false`: o pagamento tinha soft delete, e a rota do
+    // recibo respondia 404 para o desativado. Com a DEC-032 o pagamento deixou
+    // de ser desativável — desfazer entrada é ESTORNO — e a rota passou a
+    // responder 404 quando o valor LÍQUIDO zera.
+    //
+    // A regra que este teste protege é a mesma desde a 4.2: a tela não oferece
+    // um papel que o backend recusa emitir. O que mudou é como se pergunta.
     const codigo = ler("src/pages/payments/PaymentListPage.jsx");
     assert.match(
       codigo,
-      /p\.ativo\s*!==\s*false\s*&&/,
-      "o botão de recibo deixou de checar `ativo`; a rota responde 404 ali"
+      /\(p\.valorLiquido\s*\?\?\s*p\.valor\)\s*>\s*0\s*&&/,
+      "o botão de recibo deixou de checar o líquido; a rota responde 404 ali"
+    );
+  });
+
+  test("a listagem não oferece mais Remover nem Reativar", () => {
+    // As duas rotas morreram (DEC-032/DEC-034) e respondem 404. Um botão que
+    // só sabe produzir erro é pior que botão nenhum: ele afirma que a ação
+    // existe.
+    const codigo = ler("src/pages/payments/PaymentListPage.jsx");
+    assert.ok(!/reativarPayment/.test(codigo), "a tela ainda chama reativarPayment");
+    assert.ok(!/removePayment/.test(codigo), "a tela ainda chama removePayment");
+
+    const servico = ler("src/api/paymentService.js");
+    assert.ok(!/const\s+reativarPayment/.test(servico), "o método de reativação continua no serviço");
+    assert.ok(!/const\s+removePayment/.test(servico), "o método de remoção continua no serviço");
+  });
+
+  test("a listagem de parcelas não oferece mais Reativar", () => {
+    const codigo = ler("src/pages/installments/InstallmentListPage.jsx");
+    assert.ok(!/reativarInstallment/.test(codigo), "a tela ainda chama reativarInstallment");
+
+    const servico = ler("src/api/installmentService.js");
+    assert.ok(
+      !/const\s+reativarInstallment/.test(servico),
+      "o método de reativação continua no serviço"
     );
   });
 

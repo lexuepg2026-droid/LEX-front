@@ -273,3 +273,13 @@
   .upcoming-item { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
   .upcoming-right { width: 100%; justify-content: space-between; }
 }
+
+/* ── Nota de rodapé de um bloco de cartões (F-1a) ──────────────────────────
+   Explica um termo que entra na conta dos cartões acima sem ter cartão
+   próprio — hoje o saldo adiantado. Renderizada só quando o valor existe. */
+.summary-nota {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}

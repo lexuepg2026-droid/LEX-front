@@ -13,14 +13,16 @@ const createInstallment = (data) => api.post('/installments', data);
 // PATCH, e não PUT — ver a nota em `feeService.js`.
 const updateInstallment = (id, data) => api.patch(`/installments/${id}`, data);
 const deleteInstallment = (id) => api.delete(`/installments/${id}`);
-// Reativação (Fase 4.5): rota própria, sem corpo.
-const reativarInstallment = (id) => api.patch(`/installments/${id}/reativar`);
+
+// `reativarInstallment` SAIU na F-1a: a rota morreu (DEC-034) e responde 404.
+// Parcela que sai de circulação por decisão da advogada sai por REPARCELAMENTO,
+// cancelada COM vínculo — "reativar" uma dessas ressuscitaria uma cobrança que
+// foi substituída, ao lado da que a substituiu.
 
 export default {
   listInstallments,
   getInstallmentById,
   createInstallment,
   updateInstallment,
-  reativarInstallment,
   deleteInstallment
 };
