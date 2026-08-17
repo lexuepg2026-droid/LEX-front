@@ -622,6 +622,38 @@ dos quatro é o e-mail.
 
 ---
 
+## O smoke test de 17/08/2026 — o que foi corrigido e o que ficou aberto
+
+O Daniel exercitou o Financeiro 2.0 à mão na main mergeada da F-1a e achou
+**quatro defeitos que as duas suítes não pegavam**. Os quatro foram corrigidos
+na F-1a.1 (A-1 e A-2 no backend, A-3 e A-4 na tela).
+
+**Duas verificações daquele smoke test NÃO foram executadas**, e ficam
+registradas como pendência do Daniel — não como defeito conhecido. A diferença
+importa: ninguém as tomou por validadas.
+
+| | O quê | Por que ainda aberta |
+|---|---|---|
+| **S-5** | os cartões do dashboard com os números da DEC-040 | o painel muda na F-1b; validar agora seria validar duas vezes |
+| **S-7** | a imutabilidade do pagamento **na tela** — que a edição não oferece valor, data nem forma | o fluxo de estorno, que é o caminho alternativo que a tela precisa oferecer, é da F-1b |
+
+### A seção 21 do roteiro nasceu ANTES do previsto, e não é a seção do módulo
+
+A F-1a registrou que a **seção 21 nasceria na F-1c**, quando as telas do
+Financeiro 2.0 existissem. Ela nasceu na F-1a.1, com três passos (**155 a
+157**), e isso não antecipa a F-1c.
+
+O que entrou são só os passos que **estas quatro correções** exigem e que
+nenhuma varredura estática alcança: o foco do teclado, o texto de um documento
+jurídico assinado, e a única conferência independente da soma da ficha. A
+validação visual **completa** do módulo — extrato na tela, preview de alocação,
+reparcelamento ponta a ponta — continua sendo da F-1c.
+
+Fica escrito aqui para que a conta do roteiro (154 → **157**) não pareça a
+seção 21 tendo sido feita adiantada.
+
+---
+
 ## A validação visual dos passos 90–154 foi ADIADA (17/08/2026)
 
 Decisão do Daniel, consciente e registrada. A sessão de 17/08 cobriu os passos
@@ -643,6 +675,31 @@ demonstração. Está escrito assim na nota da seção.
 ---
 
 ## Registro de sessões
+
+### Fase F-1a.1 — correções do smoke test
+
+**Resumo:** dois dos quatro achados são de tela. Frontend 289 → **305**.
+Roteiro 154 → **157**. Ver o bloco "As correções do smoke test", acima.
+
+**Arquivos novos:** `tests/regressions/f1a1.test.js`.
+**Alterados:** `components/financeiro/ProcessFinancialSheet.jsx` + `.css`,
+`utils/statusVisual.js`, `pages/clients/ClientListPage.jsx`,
+`pages/fees/FeeListPage.jsx`, `pages/processes/ProcessListPage.jsx`,
+`pages/payments/PaymentListPage.jsx`,
+`pages/installments/InstallmentListPage.jsx`, `docs/validacao-manual.md`.
+
+**A varredura de CSS pegou um defeito meu, na hora.** A primeira versão da
+parcela reparcelada aplicava `.status-badge status-badge--info` à mão na ficha,
+e a folha do badge é importada pelo `StatusBadge`, não pela ficha —
+`tests/css/appliedClasses.test.js` acusou classe sem regra alcançável. A
+correção foi a certa por dois motivos: usar o componente **e** pôr o rótulo na
+fonte única de status.
+
+**Não tocado:** `axiosConfig.js`, telas do portal, catálogo de variáveis,
+módulo de documentos, contrato de payload de rota nenhuma.
+**Nenhuma dependência nova.**
+
+---
 
 ### Fase F-1a — Financeiro 2.0: o frontend mínimo
 
@@ -1122,6 +1179,95 @@ O nome mudou porque a coisa mudou. Cada alocação traz `pagamentoId` — o vín
 que a tela navega — e a data do PAGAMENTO ao lado do valor do pedaço, porque o
 pedaço não é o depósito. Alocação de origem `saldoAdiantado` se identifica como
 tal: aquela parcela não teve dinheiro entrando naquela data.
+
+---
+
+## As correções do smoke test — o que é de INTERFACE (F-1a.1)
+
+> DEC-040 (piso zero + crédito nomeado) e DEC-041 (recibo por alocação) são de
+> **contrato** e moram no `CLAUDE.md` do backend, por extenso, com o caso
+> numérico observado. Aqui está só o que é decisão de tela.
+
+### A parcela reparcelada não mostra dívida fantasma
+
+Parcela `cancelado` com `reparcelamentoId` imprimia "em aberto R$ 2.250,00" na
+ficha. Ela **nunca entrou em soma nenhuma** — o problema era de leitura, e
+leitura é o que a ficha é.
+
+| O que | Como fica |
+|---|---|
+| rótulo | **"Reparcelada"**, não "Cancelado" |
+| "em aberto" | **omitido** |
+| valor e recebido | **mantidos**, atenuados |
+| a operação | uma linha: "Substituída pelo reparcelamento de DD/MM/AAAA" |
+
+**"Reparcelada" e "Cancelado" são o mesmo status no banco e leituras
+diferentes**: uma cobrança cancelada foi desfeita, uma reparcelada foi
+SUBSTITUÍDA — o dinheiro continua devido, em outras parcelas. Chamar as duas de
+"Cancelado" faz a advogada ler baixa onde houve renegociação.
+
+**O rótulo entra em `utils/statusVisual.js`**, e não como string na tela. Aquele
+arquivo é a fonte ÚNICA de rótulo e cor desde a 4.3 — badge e fatia de gráfico
+saem dele —, e um rótulo escrito à mão seria o segundo mapa que a fase existiu
+para eliminar. Tom `info` e não `danger`: nada se perdeu, o plano mudou.
+
+**Valor e recebido ficam porque é histórico auditável.** Omitir a parcela
+inteira levaria junto o registro de que aquela cobrança existiu e do que foi
+recebido nela — o mesmo raciocínio que mantém o honorário cancelado na ficha.
+
+**A linha da operação é texto simples, sem link.** Navegação para o
+reparcelamento é F-1b.
+
+### O `return <Loading/>` antecipado é o que fazia a busca perder o foco
+
+A causa, confirmada por leitura antes de qualquer correção:
+
+```js
+if (loading) return <Loading />;   // ← troca a ÁRVORE INTEIRA
+…
+<input value={busca} onChange={…} />   // ← desmonta e remonta a cada refetch
+```
+
+Cada tecla digitada refazia a consulta (com debounce), o efeito punha `loading`
+em `true`, e o return antecipado substituía tudo por `<Loading/>`. O React
+desmontava o `<input>` e montava **outro** quando a resposta chegava: foco
+perdido, cursor no começo, e a advogada clicando de novo no campo a cada
+palavra. **Não era `key`.**
+
+A correção é estrutural: o indicador passa para **dentro do JSX, abaixo dos
+controles**, e o input nunca desmonta. `SecaoListPage` já usava esse padrão e
+virou a referência — as outras é que estavam fora dele.
+
+**Cinco listagens** têm filtro próprio e sofriam o defeito: clientes,
+honorários, processos, pagamentos e parcelas. As telas de **detalhe** não
+sofrem: o `loading` delas é do carregamento inicial e não volta a `true`.
+
+**Não se corrige com `autoFocus` nem com `.focus()` em efeito.** Os dois tratam
+o sintoma e criam um defeito pior — roubam o foco de quem está navegando por
+teclado, e num efeito disparado por refetch fazem isso a cada tecla. Há
+varredura proibindo os dois.
+
+**O que a suíte prova e o que ela não prova.** Não há como provar foco sem DOM
+(a suíte é `node --test` sem renderizador, decisão da 2E.2).
+`tests/regressions/f1a1.test.js` trava a **causa** por varredura estática — o
+padrão do return antecipado e as duas saídas fáceis —, e o **passo 155** do
+roteiro manual fecha a outra metade. Inventar um teste de foco frágil seria
+pior que o passo manual honesto.
+
+A varredura limpa comentários antes de analisar: sem isso, o comentário de
+`ClientListPage` que EXPLICA a remoção — e cita a linha removida entre crases —
+derrubaria a varredura que o explica, e a saída óbvia seria apagar a
+explicação. Mesma armadilha de `css/foco.test.js` desde a 4.5.
+
+### `saldoAdiantado` deixou de ser subtraído em qualquer lugar
+
+Consequência da DEC-040 para a tela: o crédito sai **sempre nomeado** e nunca
+como abatimento silencioso. A ficha já o exibia em rótulo condicional desde a
+F-1a; o que mudou é que agora ele não participa de nenhuma conta, e o "em
+aberto" ao lado passou a ser a dívida real.
+
+A nota do dashboard continua valendo e ficou mais verdadeira: ela existe
+justamente para explicar um valor que aparece na tela sem entrar na subtração.
 
 ---
 

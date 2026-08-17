@@ -1125,6 +1125,73 @@ Dados que vários passos usam:
 
 ---
 
+## 21. Fase F-1a.1 — as correções do smoke test
+
+> Numeração contínua a partir do 154. Três passos novos: **155 a 157**.
+> O total pendente vai de **149 para 152**.
+>
+> **Esta seção NÃO é a seção do Financeiro 2.0.** A validação visual completa
+> do módulo — extrato na tela, preview de alocação, reparcelamento ponta a
+> ponta — continua sendo da **F-1c**, quando as telas existirem. O que entra
+> aqui são só os passos que estas quatro correções exigem, e que nenhuma
+> varredura estática alcança.
+>
+> Dois deles são de **texto entregue a terceiro** (o recibo) e de **foco de
+> teclado** — as duas coisas que só olho humano confere.
+
+- [ ] **155. O campo de busca não perde o foco ao digitar**
+  Passos: abrir `/dashboard/clientes`, clicar no campo de busca e digitar um
+  nome **inteiro, sem parar**, com pelo menos 8 letras. Repetir em
+  `/dashboard/honorarios` e `/dashboard/processos`.
+  Esperado: o cursor permanece no campo do começo ao fim, e o texto sai
+  completo e na ordem. **Nunca** perder o foco no meio, nem precisar clicar de
+  novo.
+  Conferir também, no mesmo caminho: mudar o `<select>` de forma de pagamento
+  em `/dashboard/pagamentos` e o de status em `/dashboard/parcelas` — o
+  controle continua focado depois de a lista atualizar.
+  Por que só olho humano: a suíte é `node --test` sem DOM e **não tem como ler
+  `document.activeElement`**. `tests/regressions/f1a1.test.js` trava a CAUSA
+  (nenhuma listagem com filtro pode ter `return <Loading/>` antecipado), e este
+  passo fecha a outra metade. Inventar um teste de foco frágil seria pior.
+  Fase de origem: F-1a.1
+
+- [ ] **156. ⭐ Ler os recibos: o texto descreve o que foi quitado**
+  Pré-condição: `npm run seed:fresh`.
+  Passos: baixar o recibo de cada um destes pagamentos e **ler o parágrafo
+  "Recebi de…" e o de quitação**, do começo ao fim:
+  1) o de 4.500 do divórcio litigioso (atravessa duas parcelas);
+  2) o de 3.500 do recurso administrativo (sobra vira crédito);
+  3) o de 2.500 da ação de cobrança (quita a parcela única);
+  4) o de 4.000 do usucapião (estornado em 1.500 — sai pelo líquido).
+  Esperado: no 1, o valor **de cada parcela** por extenso; no 2, o crédito
+  nomeado e a quitação dizendo **PARCIAL**; no 3, "pagamento único" e quitação
+  **plena e geral**; no 4, o valor líquido de 2.500.
+  Por que só olho humano: é **texto jurídico assinado pela advogada e entregue
+  ao cliente**. A suíte confere que as palavras estão lá; se a frase **soa**
+  como quitação de mais do que se recebeu, quem percebe é quem lê. Foi
+  exatamente esse o defeito A-2: o texto estava gramaticalmente perfeito e
+  quitava a obrigação inteira.
+  **A redação é PROVISÓRIA (DEC-041) e precisa passar pela Laís** antes de
+  qualquer recibo ir a cliente real.
+  Fase de origem: F-1a.1
+
+- [ ] **157. A ficha do processo: dívida real, crédito nomeado, sem fantasma**
+  Pré-condição: `npm run seed:fresh`.
+  Passos: abrir a aba financeira do processo "Processo Administrativo
+  Tributario" (tem os três casos juntos) e conferir, na tela:
+  1) o honorário com crédito mostra **em aberto R$ 0,00** e o crédito **com
+     nome**, nunca um valor negativo em lugar nenhum;
+  2) o "em aberto" do processo é a **soma** dos "em aberto" dos honorários —
+     confira na calculadora;
+  3) as parcelas do reparcelamento aparecem com o rótulo **"Reparcelada"**,
+     **sem** o "em aberto", atenuadas, com a linha dizendo por qual operação
+     saíram — e **com** valor e recebido à vista.
+  Por que só olho humano: o item 2 é a única verificação **independente** da
+  soma. A tela não recalcula nada (decisão da 4.2), então um erro de soma do
+  backend chegaria intacto — e foi assim que o defeito A-1 sobreviveu à suíte
+  inteira da F-1a, com um teste que recomputava a mesma fórmula que estava
+  errada.
+  Fase de origem: F-1a.1
 ## Validado
 
 
@@ -1145,11 +1212,28 @@ Dados que vários passos usam:
 > três continuam na lista pendente, cada um com o motivo escrito no próprio
 > passo.
 >
-> A validação dos passos **90 a 154 foi adiada conscientemente**. Dois prazos
+> A validação dos passos **90 a 157 foi adiada conscientemente**. Dois prazos
 > ficam registrados: o passo **85** (`NODE_ENV` do rate limit) é pré-voo de
 > **toda** demonstração pública, e não vale "uma vez só" — está aqui como
 > executado, não como resolvido para sempre; e os **90 a 98** precisam
 > acontecer **antes de qualquer cliente real usar o portal**.
+>
+> **Os passos 155 a 157 (Fase F-1a.1) nasceram de um SMOKE TEST**, não do
+> roteiro: o Daniel exercitou o Financeiro 2.0 à mão em 17/08/2026, na main
+> mergeada, e achou quatro defeitos que as duas suítes não pegavam. Os três
+> passos novos são o que impede cada um de voltar sem ninguém notar.
+>
+> **Duas verificações daquele smoke test continuam PENDENTES** e não têm passo
+> próprio ainda, porque dependem de tela que a F-1b vai redesenhar:
+>
+> | | O quê | Por que ainda aberta |
+> |---|---|---|
+> | **S-5** | os cartões do dashboard, com os números da DEC-040 | o painel muda na F-1b; validar agora seria validar duas vezes |
+> | **S-7** | a imutabilidade do pagamento **na tela** — que o formulário de edição não oferece valor, data nem forma | o fluxo de estorno, que é o caminho alternativo que a tela precisa oferecer, é da F-1b |
+>
+> As duas estão registradas no `CLAUDE.md` como pendência de verificação
+> manual do Daniel. Não são defeitos conhecidos: são verificações não feitas, e
+> a diferença está escrita para ninguém as tomar por validadas.
 
 - [x] **1. Cadastro — assistente de duas etapas**
   **Validado em 17/08/2026 pelo Daniel. Passou.**
