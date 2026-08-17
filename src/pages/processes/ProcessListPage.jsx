@@ -59,7 +59,10 @@ function ProcessoListPage() {
     return outros > 0 ? `${nome} +${outros}` : nome;
   };
 
-  if (loading) return <Loading />;
+  // O `return <Loading/>` antecipado saiu daqui na F-1a.1: ele trocava a árvore
+  // inteira — inclusive os controles de filtro — a cada refetch, e o React
+  // desmontava e remontava o input, perdendo o foco. O indicador passou para
+  // baixo dos controles. Ver a nota longa em `ClientListPage`.
 
   return (
     <div className="module-container">
@@ -82,7 +85,9 @@ function ProcessoListPage() {
         </select>
       </div>
 
-      {processos.length === 0 ? (
+      {loading ? (
+        <Loading />
+      ) : processos.length === 0 ? (
         <EmptyState title="Nenhum processo encontrado." description="Tente ajustar os filtros ou cadastre um novo processo." />
       ) : (
         <div className="table-wrapper">

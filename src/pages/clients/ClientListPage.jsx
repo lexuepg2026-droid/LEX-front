@@ -55,8 +55,22 @@ function ClienteListPage() {
     ].filter(Boolean).join(', ');
   };
 
-  if (loading) return <Loading />;
-
+  // ── O `return <Loading/>` ANTECIPADO saiu daqui (F-1a.1) ─────────────────
+  //
+  // Era `if (loading) return <Loading />;`, e era a causa da perda de foco na
+  // busca. Cada tecla digitada refazia a consulta (com debounce), o efeito
+  // punha `loading` em `true`, e o return antecipado trocava a ÁRVORE INTEIRA
+  // por `<Loading/>` — o React desmontava o `<input>` e montava outro quando a
+  // resposta chegava. Foco perdido, cursor no começo, e a advogada clicando de
+  // novo no campo a cada palavra.
+  //
+  // A correção é estrutural: o indicador de carregamento passa a viver ABAIXO
+  // dos controles, dentro do JSX, e o input nunca desmonta. É o padrão que
+  // `SecaoListPage` já usava — esta tela é que estava fora dele.
+  //
+  // **Não se corrige com `autoFocus` nem `.focus()` em efeito**: os dois
+  // tratam o sintoma e roubam o foco de quem está navegando por teclado, que é
+  // um defeito pior que o original.
   return (
     <div className="module-container">
       <PageHeader title="Clientes Registrados" actionLabel="Novo Cliente" actionTo="/dashboard/clientes/novo" />
@@ -72,7 +86,9 @@ function ClienteListPage() {
         />
       </div>
 
-      {clientes.length === 0 ? (
+      {loading ? (
+        <Loading />
+      ) : clientes.length === 0 ? (
         <EmptyState title="Nenhum cliente encontrado." description="Tente ajustar os filtros ou cadastre um novo cliente." />
       ) : (
         <div className="table-wrapper">

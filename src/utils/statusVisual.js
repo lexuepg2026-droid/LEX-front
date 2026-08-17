@@ -55,6 +55,21 @@ export const STATUS_VISUAL = {
   recebido:          { label: 'Recebido',          tom: 'success' },
   vencido:           { label: 'Vencido',           tom: 'danger'  },
   cancelado:         { label: 'Cancelado',         tom: 'danger'  },
+  // ── `reparcelada` NÃO é um status do backend (F-1a.1) ────────────────────
+  //
+  // No banco ela é `cancelado` com `reparcelamentoId` preenchido. A distinção
+  // é de LEITURA e importa: uma cobrança cancelada foi desfeita, uma
+  // reparcelada foi SUBSTITUÍDA — o dinheiro continua devido, em outras
+  // parcelas. Chamar as duas de "Cancelado" faz a advogada ler baixa onde
+  // houve renegociação.
+  //
+  // Entra aqui, e não numa string solta na ficha, porque este arquivo é a
+  // fonte ÚNICA de rótulo e cor desde a 4.3 — badge e fatia de gráfico saem
+  // dele, e um rótulo escrito à mão na tela seria o segundo mapa que a 4.3
+  // existiu para eliminar.
+  //
+  // Tom `info`, e não `danger`: nada se perdeu, o plano mudou.
+  reparcelada:       { label: 'Reparcelada',       tom: 'info'    },
 
   // Estado do participante no portal (Fase 3.2), de `config/portalEstados.js`.
   // A distinção que importa é entre ACESSAR e CONFIRMAR: abrir a página é

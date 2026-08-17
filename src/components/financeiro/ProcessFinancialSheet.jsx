@@ -186,21 +186,55 @@ function ProcessFinancialSheet({ processoId }) {
                   </p>
                 ) : (
                   <ul className="ficha-parcelas">
-                    {h.parcelas.map(p => (
-                      <li key={p._id} className="ficha-parcela">
+                    {h.parcelas.map(p => {
+                      // ── Parcela SUBSTITUÍDA por reparcelamento (F-1a.1) ──
+                      //
+                      // Ela não entra em soma nenhuma — isso já valia. O que
+                      // mudou é a leitura: a ficha imprimia "em aberto
+                      // R$ 2.250,00" numa cobrança que foi substituída, e quem
+                      // lê vê dívida que não existe.
+                      //
+                      // Ela CONTINUA na lista, com valor e recebido à vista:
+                      // é histórico e precisa ser auditável. O que sai é só o
+                      // "em aberto", que é a única coluna que afirma uma
+                      // dívida viva.
+                      const reparcelada = Boolean(p.reparcelamentoId);
+                      return (
+                      <li
+                        key={p._id}
+                        className={`ficha-parcela${reparcelada ? ' ficha-parcela--reparcelada' : ''}`}
+                      >
                         <div className="ficha-parcela__linha">
                           <span className="ficha-parcela__numero">Parcela {p.numeroParcela}</span>
                           <span className="ficha-parcela__valores">
                             {formatCurrency(p.valor)}
                             {' · recebido '}{formatCurrency(p.valorPago)}
-                            {' · em aberto '}
-                            <strong>{formatCurrency(p.emAberto)}</strong>
+                            {/* O "em aberto" some na reparcelada, e só nela:
+                                cancelamento avulso continua mostrando o que
+                                ficou por cobrar. */}
+                            {!reparcelada && (
+                              <>
+                                {' · em aberto '}
+                                <strong>{formatCurrency(p.emAberto)}</strong>
+                              </>
+                            )}
                           </span>
                           <span className="ficha-parcela__data">
                             vence {formatDate(p.dataVencimento)}
                           </span>
-                          <StatusBadge status={p.status} />
+                          {/* "Reparcelada" e não "Cancelado": as duas coisas
+                              são cancelamento no banco e leituras diferentes
+                              para a advogada — uma foi substituída, a outra
+                              foi desfeita. */}
+                          <StatusBadge status={reparcelada ? 'reparcelada' : p.status} />
                         </div>
+
+                        {reparcelada && (
+                          <p className="ficha-parcela__reparcelada">
+                            Substituída pelo reparcelamento
+                            {p.reparceladaEm ? ` de ${formatDate(p.reparceladaEm)}` : ''}.
+                          </p>
+                        )}
 
                         {/* ── ALOCAÇÕES da parcela (F-1a) ───────────────────
                             Era `p.pagamentos` até a F-0, quando o pagamento
@@ -236,7 +270,8 @@ function ProcessFinancialSheet({ processoId }) {
                           </ul>
                         )}
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
 
