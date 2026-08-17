@@ -644,6 +644,41 @@ demonstração. Está escrito assim na nota da seção.
 
 ## Registro de sessões
 
+### Fase F-1a — Financeiro 2.0: o frontend mínimo
+
+**Resumo:** o suficiente para o app funcionar com o modelo novo do backend.
+Frontend 264 → **289**. Ver o bloco "Financeiro 2.0 na tela", acima, para o
+porquê de cada escolha.
+
+**Arquivos novos:** `pages/payments/allocationSummary.js`,
+`pages/payments/paymentRow.js`, `tests/financial/financeiro2.test.js`.
+
+**Alterados:** `pages/payments/PaymentFormPage.jsx` (reescrita),
+`pages/payments/PaymentListPage.jsx`,
+`pages/installments/InstallmentListPage.jsx`,
+`components/financeiro/ProcessFinancialSheet.jsx` + `.css`,
+`pages/dashboard/DashboardHomePage.jsx` + `DashboardPage.css`,
+`api/paymentService.js`, `api/installmentService.js`, `api/feeService.js`,
+`utils/enums.js`, `styles/modules.css`,
+`tests/financial/estatica.test.js`, `tests/regressions/telas2E1.test.js`.
+
+**Dois testes estáticos foram ATUALIZADOS, não apagados:** o do botão de recibo
+passou a checar o líquido em vez de `ativo` (mesma regra, condição diferente), e
+o de destaque de campo do `PaymentFormPage` passou de `valorPago` para `valor`,
+que é o nome que o backend emite em `campo` desde a DEC-032. O que testava
+reativação virou **teste de ausência**: nenhuma tela e nenhum serviço chamam as
+rotas mortas.
+
+**Quatro métodos de API nasceram sem tela**, de propósito, para a F-1b não
+precisar de backend: `preverAlocacao`, `listReversals`/`createReversal`,
+`getStatement` e `listRenegotiations`/`createRenegotiation`.
+
+**Não tocado:** `axiosConfig.js`, telas do portal, catálogo de variáveis,
+módulo de documentos. **Nenhuma dependência nova** — `package.json` idêntico a
+`main`.
+
+---
+
 ### Fase 4.2 — Financeiro na tela: campos condicionais, ficha, recibo e PATCH
 
 **Resumo:** as telas financeiras passam a conhecer o contrato que a Fase 4.1
@@ -989,6 +1024,104 @@ sem erro.
 fase: escrita como busca pela string `eslint-env`, ela reprovou o comentário que
 explicava a remoção. Passou a procurar a **forma de diretiva**, e o comentário
 deixou de soletrá-la — o mesmo arranjo de `css/foco.test.js` desde a 4.5.
+
+---
+
+## Financeiro 2.0 na tela — o que a F-1a fez, e o que ela NÃO fez
+
+> As decisões DEC-032 a DEC-039 são de **contrato** e moram no `CLAUDE.md` do
+> backend, por extenso. Aqui está só o que é decisão de interface.
+
+**A fase tocou o frontend o mínimo para o app funcionar com o modelo novo.** A
+UX rica do dinheiro é a **F-1b** e nada dela foi antecipado: sem preview de
+alocação na tela, sem estorno em modal, sem extrato desenhado, sem paginador
+real. Antecipar meia tela seria pior que não ter — a advogada aprenderia um
+fluxo que muda na fase seguinte.
+
+### O pagamento nasce contra o HONORÁRIO
+
+O seletor de **parcela** virou seletor de **honorário**. Quem decide em quais
+parcelas o dinheiro encosta é o motor do backend, do vencimento mais antigo em
+diante.
+
+**A tela não reproduz essa regra.** Reproduzi-la seria escrevê-la duas vezes, e
+a cópia divergiria na primeira mudança — é exatamente por isso que o preview e a
+criação compartilham a mesma função no backend.
+
+**O bloco "valor da parcela / já recebido / saldo restante" SAIU.** Ele servia
+ao 409 de excedente, que foi revogado (DEC-035): a conta que ele mostrava
+deixou de ser a pergunta. O que sobra vira saldo adiantado, e o resultado é
+mostrado **depois** de gravar, a partir do que o 201 devolveu.
+
+**O resumo do resultado é função pura** (`pages/payments/allocationSummary.js`),
+pela razão de sempre: a suíte é `node --test` sem DOM, e frase montada dentro do
+componente só se testaria por varredura de texto — que prova que a linha existe,
+não que ela diz a coisa certa. Aqui há plural, concordância e três casos que se
+combinam.
+
+### A edição de pagamento tem UM campo
+
+A allowlist do backend aceita `observacoes` e mais nada (DEC-032). O formulário
+exibe valor, data, tipo e forma como **somente-leitura**, e não os esconde: é o
+que faz a advogada entender o que está editando. Um campo editável que o
+servidor recusa é a tela sendo mais permissiva que a API, e o erro só apareceria
+no Salvar.
+
+### O que sumiu das listagens, e por quê
+
+| Sumiu | Motivo |
+|---|---|
+| "Reativar" (pagamento e parcela) | as rotas respondem 404 (DEC-034) |
+| "Remover" (pagamento) | `DELETE /payments/:id` não existe (DEC-032) |
+| modo "mostrar desativados" (pagamento) | filtro que nunca devolve nada sugere que existe um conjunto para olhar |
+
+**Um botão que só sabe produzir erro é pior que botão nenhum: ele afirma que a
+ação existe.** O modal de confirmação de remoção saiu junto — ele perguntava
+"esta ação não pode ser desfeita" sobre uma ação que agora nem existe.
+
+O modo "mostrar desativadas" **continua** na listagem de PARCELAS: a parcela
+ainda é excluível. O que mudou é o texto — deixou de prometer reativação e passa
+a dizer que se recria uma parcela nova.
+
+### A coluna "Parcela" virou "Aplicado em"
+
+Um pagamento pode encostar em duas parcelas, ou em nenhuma. Exibir "Parcela N"
+obrigaria a escolher uma das duas, escondendo a outra. A decisão vive em
+`pages/payments/paymentRow.js`, em função pura — tem ordenação, plural e um caso
+de borda que merece asserção de verdade: **sem alocação ativa, o líquido é o que
+distingue "saldo adiantado" de "estornado"**. Dizer "saldo adiantado" sobre um
+pagamento estornado afirmaria que o dinheiro está no caixa da advogada.
+
+### O valor líquido aparece AO LADO do bruto, nunca no lugar
+
+Os dois são fatos distintos, e trocar um pelo outro apagaria a informação de que
+houve estorno. A célula do líquido ganha `.valor-estornado` quando difere —
+**cor de aviso, não de perigo**: um estorno é um fato registrado, não um erro.
+
+**O botão de recibo passou a checar o LÍQUIDO**, e não `ativo`. A regra que ele
+protege é a mesma desde a 4.2 — a tela não oferece um papel que o backend recusa
+emitir —, e o que mudou é como se pergunta: a rota responde 404 quando o
+pagamento foi integralmente estornado.
+
+### `saldoAdiantado` na ficha e a nota do dashboard
+
+A ficha exibe o saldo em rótulo **condicional**: é zero na maioria dos
+honorários, e uma linha "R$ 0,00" em todos eles seria ruído em cima do que
+importa. Quando existe, precisa aparecer — é ele que explica por que o em aberto
+é menor do que "contratado menos recebido".
+
+No dashboard entrou uma **nota**, e não um quarto cartão. `pendente` passou a
+ser `contratado − recebido − saldoAdiantado`, e sem a nota a advogada subtrai os
+dois cartões de cima, não chega ao terceiro, e conclui que o painel está errado.
+Um cartão permanente em R$ 0,00 ocuparia o lugar de informação real; redesenho
+de painel é F-1b.
+
+### A ficha lê ALOCAÇÕES, não `parcela.pagamentos`
+
+O nome mudou porque a coisa mudou. Cada alocação traz `pagamentoId` — o vínculo
+que a tela navega — e a data do PAGAMENTO ao lado do valor do pedaço, porque o
+pedaço não é o depósito. Alocação de origem `saldoAdiantado` se identifica como
+tal: aquela parcela não teve dinheiro entrando naquela data.
 
 ---
 
