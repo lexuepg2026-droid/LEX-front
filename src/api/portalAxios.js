@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+import { BASE_URL } from './baseURL';
+
 // ═══════════════════════════════════════════════════════════════════════════
 // INSTÂNCIA DE HTTP DO PORTAL DO CLIENTE — separada da da advogada
 //
@@ -23,10 +25,15 @@ import axios from 'axios';
 //
 // `withCredentials` é obrigatório do mesmo jeito: a sessão do portal é o
 // cookie httpOnly `lex-portal-token`, que o navegador só envia com ele ligado.
+//
+// A URL base vem de `api/baseURL.js` — módulo de infraestrutura compartilhada,
+// como `utils/apiError` e `utils/toast`. Não é a instância da advogada nem
+// carrega decisão dela: as duas superfícies falam com a MESMA API, e ter dois
+// jeitos de descobrir o endereço dela é o que faz um deles ficar para trás.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const portalApi = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api',
+  baseURL: BASE_URL,
   withCredentials: true,
 });
 

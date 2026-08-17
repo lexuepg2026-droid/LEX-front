@@ -39,4 +39,24 @@ export default defineConfig([
       }],
     },
   },
+
+  // ── Contextos que não são o navegador (Fase F-0) ─────────────────────────
+  //
+  // O bloco acima declara `globals.browser` para todo `**/*.{js,jsx}`, o que
+  // inclui dois arquivos que nunca rodam numa aba. Os dois eram tratados por
+  // comentário dentro do próprio arquivo — forma que o flat config do ESLint 9
+  // já ignora (com aviso) e que o ESLint 10 passa a reportar como erro. A
+  // declaração migra para cá, que é onde o flat config a lê de verdade.
+  {
+    // Configuração e build: rodam em Node, e `vite.config.js` usa
+    // `process.cwd()` para a guarda de `VITE_API_URL`.
+    files: ['vite.config.js', 'eslint.config.js'],
+    languageOptions: { globals: globals.node },
+  },
+  {
+    // O service worker roda em `ServiceWorkerGlobalScope`: `self`, `caches`,
+    // `clients` e `skipWaiting` não existem em `globals.browser`.
+    files: ['public/sw.js'],
+    languageOptions: { globals: globals.serviceworker },
+  },
 ])

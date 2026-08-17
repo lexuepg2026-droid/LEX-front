@@ -1,6 +1,16 @@
-/* eslint-env serviceworker */
 // ═══════════════════════════════════════════════════════════════════════════
 // SERVICE WORKER DO LEX — escrito à mão (Fase 4.5, achado #5)
+//
+// Os globais de service worker (`self`, `caches`, `clients`, `skipWaiting`)
+// são declarados em `eslint.config.js`, num bloco `files: ["public/sw.js"]`.
+// Havia aqui, na primeira linha, uma diretiva de ambiente do ESLint no formato
+// antigo — o flat config do ESLint 9 já a ignora (com aviso) e o ESLint 10 a
+// reporta como ERRO. O comentário que existia para calar o lint passaria a ser
+// o motivo de ele falhar (Fase F-0).
+//
+// A diretiva NÃO é reescrita aqui de propósito: `tests/regressions/f0.test.js`
+// varre este arquivo procurando por ela, e um exemplo dentro da explicação
+// derrubaria a varredura que a explica. Já derrubou uma vez, nesta fase.
 //
 // Sem workbox e sem plugin de Vite: a fase proíbe dependência nova, e o que
 // este app precisa cabe em três estratégias. Um gerador traria trinta opções e

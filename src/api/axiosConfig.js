@@ -1,11 +1,13 @@
 import axios from 'axios';
 import { toast } from '../utils/toast';
+import { BASE_URL } from './baseURL';
 
 // URL da API por variável de ambiente: endereço de máquina dentro de código
 // comitado é a mesma classe de problema do CORS_ORIGIN que derrubou o login
-// numa apresentação. O fallback mantém o `npm run dev` funcionando sem .env.
+// numa apresentação. A resolução (e o fallback só-em-dev) mora em
+// `api/baseURL.js`, compartilhada com a instância do portal.
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api',
+  baseURL: BASE_URL,
   withCredentials: true,
 });
 

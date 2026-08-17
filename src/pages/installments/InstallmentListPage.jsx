@@ -23,15 +23,29 @@ function InstallmentListPage({ embedded = false }) {
   // Modo "desativadas" (Fase 4.5) — ver a nota em PaymentListPage.
   const [verInativos, setVerInativos] = useState(false);
   const [reativando, setReativando] = useState(null);
+  // Total do conjunto, para saber se a lista exibida está completa (Fase F-0).
+  const [total, setTotal] = useState(null);
+
+  // Teto da API. Ver a nota em `PaymentListPage`: esta tela não passava `limit`
+  // nenhum e recebia o processo inteiro, porque o caminho de `?processoId=` no
+  // backend ignorava a paginação. Corrigido isso, o default de 20 truncaria em
+  // silêncio — a tela pede o teto e avisa quando ele não bastou.
+  const LIMITE = 100;
 
   useEffect(() => {
     setLoading(true);
     installmentService.listInstallments({
+      page: 1,
+      limit: LIMITE,
       processoId,
       status: statusFiltro || undefined,
       inativos: verInativos || undefined
     })
-      .then(res => setInstallments(res.data.data ?? res.data))
+      .then(res => {
+        const corpo = res.data;
+        setInstallments(corpo.data ?? corpo);
+        setTotal(typeof corpo.total === 'number' ? corpo.total : null);
+      })
       .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao buscar parcelas.')))
       .finally(() => setLoading(false));
   }, [processoId, statusFiltro, verInativos]);
@@ -104,6 +118,13 @@ function InstallmentListPage({ embedded = false }) {
         />
       ) : (
         <div className="table-wrapper">
+          {/* Aviso de lista incompleta (Fase F-0) — ver a nota em PaymentListPage. */}
+          {total !== null && total > installments.length && (
+            <p className="aviso-lista-parcial" role="status">
+              Mostrando {installments.length} de {total} parcelas. Use os filtros
+              para reduzir o conjunto.
+            </p>
+          )}
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
           <table className="data-table data-table--fixed">
             <colgroup>
