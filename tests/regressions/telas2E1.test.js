@@ -109,7 +109,9 @@ describe("passo 81: os formulários leem `campo` do 409 e destacam o input", () 
   const FORMULARIOS = [
     ["src/pages/processes/ProcessFormPage.jsx", "numeroProcesso"],
     ["src/pages/installments/InstallmentFormPage.jsx", "numeroParcela"],
-    ["src/pages/payments/PaymentFormPage.jsx", "valorPago"],
+    // `valorPago` virou `valor` na F-1a: o campo do payload mudou de nome
+    // junto com o modelo (DEC-032), e é `valor` que o backend emite em `campo`.
+    ["src/pages/payments/PaymentFormPage.jsx", "valor"],
     ["src/pages/fees/FeeFormPage.jsx", "percentual"]
   ];
 

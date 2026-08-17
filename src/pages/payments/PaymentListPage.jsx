@@ -3,32 +3,34 @@ import { Link, useSearchParams } from 'react-router-dom';
 import paymentService from '../../api/paymentService';
 import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
-import Modal from '../../components/ui/Modal';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { FORMA_PAGAMENTO_OPTIONS, labelDe } from '../../utils/enums';
+import { rotuloDasParcelas, temEstorno } from './paymentRow.js';
 import '../../styles/modules.css';
 
 function PaymentListPage({ embedded = false }) {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
   const [searchParams] = useSearchParams();
   const processoId = searchParams.get('processoId') || undefined;
   const [formaPagamento, setFormaPagamento] = useState('');
   // Um recibo por vez, por id: sem isso o botão de TODAS as linhas ficaria em
   // "Baixando…" enquanto um só está sendo gerado.
   const [reciboEmCurso, setReciboEmCurso] = useState(null);
-  // ── Modo "desativados" (Fase 4.5) ────────────────────────────────────────
-  // A listagem padrão só traz pagamento ativo, então o desativado era invisível
-  // e a rota de reativação não tinha porta de entrada na interface. O modo é
-  // exclusivo, e não um "incluir": misturar os dois conjuntos faria a coluna de
-  // valor somar o que foi estornado sem nada dizendo isso na linha.
-  const [verInativos, setVerInativos] = useState(false);
-  const [reativando, setReativando] = useState(null);
+  // ── O modo "desativados" SAIU na F-1a ────────────────────────────────────
+  //
+  // Ele existia para a rota de reativação ter porta de entrada na interface. A
+  // rota morreu (DEC-034) e o pagamento deixou de ser desativável: desfazer
+  // entrada é ESTORNO, e o pagamento estornado continua na listagem — com o
+  // valor líquido dizendo quanto dele ainda vale.
+  //
+  // Um filtro que nunca devolve nada é pior que a ausência dele: sugere que
+  // existe um conjunto para olhar, e a advogada procuraria ali o pagamento que
+  // ela estornou.
   // Total do conjunto, para saber se a lista exibida está completa (Fase F-0).
   const [total, setTotal] = useState(null);
 
@@ -50,8 +52,7 @@ function PaymentListPage({ embedded = false }) {
       page: 1,
       limit: LIMITE,
       processoId,
-      formaPagamento: formaPagamento || undefined,
-      inativos: verInativos || undefined
+      formaPagamento: formaPagamento || undefined
     })
       .then(res => {
         const corpo = res.data;
@@ -60,39 +61,20 @@ function PaymentListPage({ embedded = false }) {
       })
       .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao buscar pagamentos.')))
       .finally(() => setLoading(false));
-  }, [processoId, formaPagamento, verInativos]);
+  }, [processoId, formaPagamento]);
 
-  // Reativar devolve o pagamento ao conjunto e dispara o recálculo da parcela e
-  // do honorário no backend. A linha sai da lista de desativados na hora — é
-  // esta lista que ela deixa de pertencer.
-  const handleReativar = async (id) => {
-    setReativando(id);
-    try {
-      await paymentService.reativarPayment(id);
-      setPayments(payments.filter(p => p._id !== id));
-      toast.success('Pagamento reativado. O status da parcela e do honorário foi recalculado.');
-    } catch (err) {
-      // 409 com `dependencia: "parcela"` quando a parcela está desativada. A
-      // mensagem do backend já diz o que fazer ("Reative a parcela antes").
-      toast.error(getFinancialErrorMessage(err, 'Não foi possível reativar o pagamento.'));
-    } finally {
-      setReativando(null);
-    }
-  };
-
-  const confirmDelete = (id) => setDeleteModal({ open: true, id });
-
-  const handleRemove = async () => {
-    const { id } = deleteModal;
-    setDeleteModal({ open: false, id: null });
-    try {
-      await paymentService.removePayment(id);
-      setPayments(payments.filter(p => p._id !== id));
-      toast.success('Pagamento removido com sucesso.');
-    } catch (err) {
-      toast.error(getFinancialErrorMessage(err, 'Erro ao remover pagamento.'));
-    }
-  };
+  // ── `handleReativar`, `confirmDelete` e `handleRemove` SAÍRAM na F-1a ────
+  //
+  // As três rotas por trás delas morreram: `PATCH /:id/reativar` e
+  // `DELETE /:id` respondem 404 desde a DEC-032/DEC-034.
+  //
+  // Não há "Remover pagamento" porque um registro de dinheiro não se apaga —
+  // ele se ESTORNA, e o estorno diz QUANDO e POR QUÊ o valor voltou. O modal de
+  // confirmação saiu junto: ele perguntava "esta ação não pode ser desfeita",
+  // sobre uma ação que agora nem existe.
+  //
+  // A tela de estorno é da F-1b. Até ela, a listagem já mostra o líquido de
+  // cada linha — que é a informação que o estorno produz.
 
   // ── Recibo ────────────────────────────────────────────────────────────────
   //
@@ -128,25 +110,12 @@ function PaymentListPage({ embedded = false }) {
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
-
-        <label className="filter-toggle">
-          <input
-            type="checkbox"
-            checked={verInativos}
-            onChange={(e) => setVerInativos(e.target.checked)}
-          />
-          Mostrar desativados
-        </label>
       </div>
 
       {payments.length === 0 ? (
         <EmptyState
-          title={verInativos ? 'Nenhum pagamento desativado' : 'Nenhum recebimento encontrado'}
-          description={
-            verInativos
-              ? 'Pagamentos removidos aparecem aqui e podem ser reativados.'
-              : 'Tente ajustar os filtros ou registre um novo pagamento.'
-          }
+          title="Nenhum recebimento encontrado"
+          description="Tente ajustar os filtros ou registre um novo pagamento."
         />
       ) : (
         <div className="table-wrapper">
@@ -172,50 +141,44 @@ function PaymentListPage({ embedded = false }) {
               <col className="col-xs" />
               <col className="col-sm" />
               <col />
-              <col className="col-acoes-3-lg" />
+              <col className="col-acoes-2-lg" />
             </colgroup>
             <thead>
               <tr>
-                <th>Parcela</th>
+                {/* "Parcela" virou "Honorário" na primeira coluna: o pagamento
+                    deixou de pertencer a UMA parcela (DEC-032). Quais parcelas
+                    ele tocou sai na coluna "Aplicado em", que pode dizer duas. */}
                 <th>Honorário</th>
                 <th>Processo</th>
-                <th>Valor Pago</th>
+                <th>Aplicado em</th>
+                <th>Valor</th>
+                <th>Líquido</th>
                 <th>Data</th>
                 <th>Forma</th>
-                <th>Observações</th>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody>
               {payments.map(p => (
                 <tr key={p._id}>
-                  <td>Parcela {p.installmentId?.numeroParcela ?? '—'}</td>
-                  <td className="cell-truncate" title={p.installmentId?.feeId?.descricao ?? undefined}>{p.installmentId?.feeId?.descricao ?? '—'}</td>
-                  <td className="cell-truncate" title={p.installmentId?.feeId?.processoId?.titulo ?? undefined}>{p.installmentId?.feeId?.processoId?.titulo ?? '—'}</td>
-                  <td className="cell-num">{formatCurrency(p.valorPago)}</td>
-                  <td>{formatDate(p.dataPagamento)}</td>
+                  <td className="cell-truncate" title={p.honorarioId?.descricao ?? undefined}>{p.honorarioId?.descricao ?? '—'}</td>
+                  <td className="cell-truncate" title={p.honorarioId?.processoId?.titulo ?? undefined}>{p.honorarioId?.processoId?.titulo ?? '—'}</td>
+                  <td className="cell-truncate" title={rotuloDasParcelas(p)}>{rotuloDasParcelas(p)}</td>
+                  <td className="cell-num">{formatCurrency(p.valor)}</td>
+                  {/* O líquido é o que ainda vale depois dos estornos. Exibido
+                      ao lado do bruto, e não no lugar dele: os dois números são
+                      fatos distintos, e trocar um pelo outro apagaria a
+                      informação de que houve estorno. */}
+                  <td className={`cell-num${temEstorno(p) ? ' valor-estornado' : ''}`}>
+                    {formatCurrency(p.valorLiquido ?? p.valor)}
+                  </td>
+                  <td>{formatDate(p.data)}</td>
                   <td className="cell-truncate">{labelDe(FORMA_PAGAMENTO_OPTIONS, p.formaPagamento)}</td>
-                  <td className="cell-truncate" title={p.observacoes || undefined}>{p.observacoes || '—'}</td>
                   <td className="actions-cell">
-                    {/* Desativado só oferece "Reativar": editar ou baixar
-                        recibo de um pagamento estornado são as duas coisas que
-                        o backend recusa, e oferecer o botão seria prometer o
-                        que a rota nega. */}
-                    {p.ativo === false ? (
-                      <button
-                        type="button"
-                        onClick={() => handleReativar(p._id)}
-                        disabled={reativando === p._id}
-                        className="btn-action btn-edit"
-                      >
-                        {reativando === p._id ? 'Reativando…' : 'Reativar'}
-                      </button>
-                    ) : (
-                      <>
-                    {/* Só pagamento ATIVO tem recibo. A rota responde 404 para
-                        o desativado, e oferecer o botão seria prometer um papel
-                        que o backend recusa emitir — de propósito. */}
-                    {p.ativo !== false && (
+                    {/* Pagamento integralmente estornado não tem recibo: a rota
+                        responde 404 de propósito, e oferecer o botão seria
+                        prometer um papel que o backend recusa emitir. */}
+                    {(p.valorLiquido ?? p.valor) > 0 && (
                       <button
                         type="button"
                         onClick={() => baixarRecibo(p._id)}
@@ -226,9 +189,6 @@ function PaymentListPage({ embedded = false }) {
                       </button>
                     )}
                     <Link to={`/dashboard/pagamentos/editar/${p._id}`} className="btn-action btn-edit">Editar</Link>
-                    <button onClick={() => confirmDelete(p._id)} className="btn-action btn-delete">Remover</button>
-                      </>
-                    )}
                   </td>
                 </tr>
               ))}
@@ -236,16 +196,6 @@ function PaymentListPage({ embedded = false }) {
           </table>
         </div>
       )}
-
-      <Modal
-        open={deleteModal.open}
-        title="Remover pagamento"
-        message="Tem certeza que deseja remover este pagamento? Esta ação não pode ser desfeita."
-        variant="danger"
-        confirmLabel="Remover"
-        onConfirm={handleRemove}
-        onCancel={() => setDeleteModal({ open: false, id: null })}
-      />
     </>
   );
 

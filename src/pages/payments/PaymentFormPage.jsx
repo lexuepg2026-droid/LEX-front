@@ -1,43 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import paymentService from '../../api/paymentService';
-import installmentService from '../../api/installmentService';
+import feeService from '../../api/feeService';
 import MoneyInput from '../../components/ui/MoneyInput';
 import { formatCurrency } from '../../utils/formatters';
-import { FORMA_PAGAMENTO_OPTIONS } from '../../utils/enums';
+import { FORMA_PAGAMENTO_OPTIONS, TIPO_PAGAMENTO_OPTIONS } from '../../utils/enums';
 import Loading from '../../components/common/Loading';
 import { toast } from '../../utils/toast';
 import { getApiErrorField } from '../../utils/apiError';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
+import { resumoDaAlocacao } from './allocationSummary.js';
 import '../clients/ClientPage.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// FORMULÁRIO DE PAGAMENTO
+// FORMULÁRIO DE PAGAMENTO — reescrito na Fase F-1a
 //
-// O erro que mais importa nesta tela é o 409 de excedente. A prosa do servidor
-// diz que o valor passa da parcela; a pergunta seguinte da advogada é sempre
-// "então quanto ainda cabe?", e a resposta está em `saldoDisponivel`, no mesmo
-// corpo. `utils/financialErrors.js` a compõe — nunca por regex sobre a
-// mensagem, que é como a Fase 1.3 quebrou.
+// ── O pagamento nasce contra o HONORÁRIO, não contra a parcela ────────────
+// O seletor de parcela virou seletor de honorário (DEC-032/DEC-035). Quem
+// decide em quais parcelas o dinheiro encosta é o motor de alocação do
+// backend, do vencimento mais antigo em diante — e é ele que devolve, no 201,
+// o que fez.
 //
-// O saldo do 409 é mais confiável que o calculado aqui embaixo: na EDIÇÃO o
-// backend exclui o próprio pagamento em edição do total, e é por isso que ele
-// não lê o `valorPago` desnormalizado da parcela para esta conta.
+// A tela não reproduz essa regra. Reproduzi-la seria escrevê-la duas vezes, e
+// a cópia divergiria na primeira mudança; foi por isso que o preview e a
+// criação compartilham a mesma função no backend.
+//
+// ── O 409 de excedente NÃO EXISTE MAIS ────────────────────────────────────
+// A guarda que recusava pagamento maior que a parcela caiu com a DEC-035: ela
+// recusava um fato. O bloco que exibia "valor da parcela / já recebido / saldo
+// restante" saiu junto — a conta que ele mostrava deixou de ser a pergunta.
+// O que sobra vira `saldoAdiantado` e o resultado é mostrado DEPOIS de gravar,
+// a partir do que o backend respondeu.
+//
+// ── Sem preview de alocação nesta fase ────────────────────────────────────
+// `POST /payments/preview` existe e está testada, mas a tela que a consome é a
+// F-1b. Aqui o resumo aparece no toast, em texto simples, com o que o 201
+// devolveu — informação verdadeira, sem inventar interface que a fase seguinte
+// vai desenhar melhor.
+//
+// ── Edição: um campo só ───────────────────────────────────────────────────
+// A allowlist do backend tem `observacoes` e mais nada. O formulário de edição
+// exibe o resto como somente-leitura, coerente com ela — um campo editável que
+// o servidor recusa é a tela sendo mais permissiva que a API, e o erro só
+// apareceria no Salvar.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const EMPTY_FORM = {
-  installmentId: '',
-  valorPago: '',
-  dataPagamento: new Date().toISOString().substring(0, 10),
+  honorarioId: '',
+  valor: '',
+  data: new Date().toISOString().substring(0, 10),
+  tipo: 'comum',
   formaPagamento: 'pix',
   observacoes: '',
 };
 
 function PaymentFormPage() {
   const [formData, setFormData] = useState(EMPTY_FORM);
-  const [installments, setInstallments] = useState([]);
-  const [selectedInstallment, setSelectedInstallment] = useState(null);
-  const [valorJaPago, setValorJaPago] = useState(0);
+  const [fees, setFees] = useState([]);
+  // Em modo edição, o pagamento gravado — é dele que saem os campos
+  // somente-leitura.
+  const [pagamento, setPagamento] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [campoComErro, setCampoComErro] = useState(null);
@@ -57,20 +79,27 @@ function PaymentFormPage() {
   // quadro a mais.
   const [carregandoRegistro, setCarregandoRegistro] = useState(Boolean(id));
 
-
   useEffect(() => {
-    installmentService.listInstallments({ limit: 200 })
-      .then(res => setInstallments(res.data.data ?? res.data))
-      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar parcelas.')));
+    // Só honorários que podem receber dinheiro. Um honorário `cancelado`
+    // responde 409 no POST, e oferecê-lo no seletor seria a tela convidando
+    // para um erro que ela já sabe evitar.
+    feeService.listFees({ limit: 100 })
+      .then(res => {
+        const lista = res.data.data ?? res.data;
+        setFees(lista.filter(f => f.status !== 'cancelado'));
+      })
+      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar honorários.')));
 
     if (isEditing) {
       paymentService.getPaymentById(id)
         .then(res => {
           const p = res.data;
+          setPagamento(p);
           setFormData({
-            installmentId: p.installmentId?._id || p.installmentId || '',
-            valorPago: p.valorPago || '',
-            dataPagamento: p.dataPagamento ? p.dataPagamento.substring(0, 10) : '',
+            honorarioId: p.honorarioId?._id || p.honorarioId || '',
+            valor: p.valor ?? '',
+            data: p.data ? p.data.substring(0, 10) : '',
+            tipo: p.tipo || 'comum',
             formaPagamento: p.formaPagamento || 'pix',
             observacoes: p.observacoes || '',
           });
@@ -80,23 +109,6 @@ function PaymentFormPage() {
     }
   }, [id, isEditing]);
 
-  useEffect(() => {
-    if (!formData.installmentId || installments.length === 0) {
-      setSelectedInstallment(null);
-      setValorJaPago(0);
-      return;
-    }
-    const inst = installments.find(i => i._id === formData.installmentId);
-    setSelectedInstallment(inst || null);
-    paymentService.listPayments({ installmentId: formData.installmentId, limit: 200 })
-      .then(res => {
-        const list = res.data.data ?? res.data;
-        const filtrado = isEditing ? list.filter(p => p._id !== id) : list;
-        setValorJaPago(filtrado.reduce((acc, p) => acc + Number(p.valorPago || 0), 0));
-      })
-      .catch(() => setValorJaPago(0));
-  }, [formData.installmentId, installments, id, isEditing]);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -105,9 +117,9 @@ function PaymentFormPage() {
 
   // O campo de dinheiro não passa pelo `handleChange` genérico: `MoneyInput`
   // devolve o número já convertido (ou `null`), e não o evento.
-  const handleValorPagoChange = (numero) => {
-    setFormData(prev => ({ ...prev, valorPago: numero }));
-    if (campoComErro === 'valorPago') setCampoComErro(null);
+  const handleValorChange = (numero) => {
+    setFormData(prev => ({ ...prev, valor: numero }));
+    if (campoComErro === 'valor') setCampoComErro(null);
   };
 
   const handleSubmit = async (e) => {
@@ -116,24 +128,28 @@ function PaymentFormPage() {
     setError('');
     setCampoComErro(null);
     try {
-      const payload = {
-        installmentId: formData.installmentId,
-        valorPago: Number(formData.valorPago),
-        dataPagamento: formData.dataPagamento,
-        formaPagamento: formData.formaPagamento,
-        observacoes: formData.observacoes,
-      };
       if (isEditing) {
-        await paymentService.updatePayment(id, payload);
+        // Payload de UM campo, explícito. Mandar o resto levaria 400 com
+        // `campo`, e a advogada leria "campo não permitido" sobre um input que
+        // a tela nem oferece para edição.
+        await paymentService.updatePayment(id, { observacoes: formData.observacoes });
+        toast.success('Observações do pagamento atualizadas.');
       } else {
-        await paymentService.createPayment(payload);
+        const res = await paymentService.createPayment({
+          honorarioId: formData.honorarioId,
+          valor: Number(formData.valor),
+          data: formData.data,
+          tipo: formData.tipo,
+          formaPagamento: formData.formaPagamento,
+          observacoes: formData.observacoes,
+        });
+        // O 201 devolve `{ pagamento, alocacoes, sobra, saldoAdiantado }` — o
+        // que o motor fez com o dinheiro. Sem isto a advogada registraria um
+        // pagamento e não saberia em quais parcelas ele encostou.
+        toast.success(resumoDaAlocacao(res.data));
       }
-      toast.success(isEditing ? 'Pagamento atualizado com sucesso.' : 'Pagamento registrado com sucesso.');
       navigate('/dashboard/pagamentos');
     } catch (err) {
-      // No 409 de excedente a mensagem já sai com o saldo que ainda cabe, e
-      // `campo: "valorPago"` marca o input — os dois juntos dizem o que fazer,
-      // e não só que deu errado.
       setError(getFinancialErrorMessage(err, 'Erro ao salvar pagamento.'));
       setCampoComErro(getApiErrorField(err));
     } finally {
@@ -141,9 +157,10 @@ function PaymentFormPage() {
     }
   };
 
-  const formatInstallmentLabel = (inst) => {
-    const valor = inst.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    return `Parcela ${inst.numeroParcela} — ${valor} (${inst.status})`;
+  const formatFeeLabel = (fee) => {
+    const valor = formatCurrency(fee.valor);
+    const processo = fee.processoId?.titulo || fee.processoId?.numeroProcesso || '';
+    return `${fee.descricao} — ${valor}${processo ? ` (${processo})` : ''}`;
   };
 
   if (carregandoRegistro) return <Loading />;
@@ -156,79 +173,137 @@ function PaymentFormPage() {
         <div className="form-grid section">
           <h3>Dados do Pagamento</h3>
 
-          <div className="form-group span-3">
-            <label>Parcela *</label>
-            <select name="installmentId" value={formData.installmentId} onChange={handleChange} required>
-              <option value="">Selecione uma parcela</option>
-              {installments.map(inst => (
-                <option key={inst._id} value={inst._id}>
-                  {formatInstallmentLabel(inst)}
-                </option>
-              ))}
-            </select>
-          </div>
+          {isEditing ? (
+            // ── Somente leitura, coerente com a allowlist ────────────────────
+            //
+            // Valor, data, tipo e forma de pagamento não se editam: corrigir
+            // dinheiro gravado é ESTORNAR (DEC-033), não reescrever. Exibi-los
+            // como campo desabilitado, e não escondê-los, é o que faz a
+            // advogada entender o que está editando.
+            <>
+              <div className="form-info-box span-3">
+                <div className="form-info-item">
+                  <span className="form-info-label">Honorário</span>
+                  <span className="form-info-value">
+                    {pagamento?.honorarioId?.descricao ?? '—'}
+                  </span>
+                </div>
+                <div className="form-info-item">
+                  <span className="form-info-label">Valor</span>
+                  <span className="form-info-value">{formatCurrency(pagamento?.valor)}</span>
+                </div>
+                <div className="form-info-item">
+                  <span className="form-info-label">Valor líquido</span>
+                  <span className="form-info-value">
+                    {formatCurrency(pagamento?.valorLiquido ?? pagamento?.valor)}
+                  </span>
+                </div>
+              </div>
 
-          {selectedInstallment && (
-            <div className="form-info-box span-3">
-              <div className="form-info-item">
-                <span className="form-info-label">Valor da parcela</span>
-                <span className="form-info-value">{formatCurrency(selectedInstallment.valor)}</span>
+              <p className="form-hint span-3">
+                Valor, data e forma de pagamento não são editáveis: um registro de
+                dinheiro que muda de valor não é registro. Para corrigir, registre
+                um estorno.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="form-group span-3">
+                <label htmlFor="pagamento-honorario">Honorário *</label>
+                <select
+                  id="pagamento-honorario"
+                  name="honorarioId"
+                  value={formData.honorarioId}
+                  onChange={handleChange}
+                  required
+                  className={campoComErro === 'honorarioId' ? 'input-erro' : undefined}
+                >
+                  <option value="">Selecione um honorário</option>
+                  {fees.map(fee => (
+                    <option key={fee._id} value={fee._id}>
+                      {formatFeeLabel(fee)}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div className="form-info-item">
-                <span className="form-info-label">Já recebido</span>
-                <span className="form-info-value">{formatCurrency(valorJaPago)}</span>
+
+              <div className="form-group span-1">
+                <label htmlFor="pagamento-valor">Valor *</label>
+                {/* `MoneyInput` devolve Number em reais (ou `null`). */}
+                <MoneyInput
+                  id="pagamento-valor"
+                  name="valor"
+                  value={formData.valor}
+                  onChange={handleValorChange}
+                  required
+                  className={campoComErro === 'valor' ? 'input-erro' : undefined}
+                />
               </div>
-              <div className="form-info-item">
-                <span className="form-info-label">Saldo restante</span>
-                <span className={`form-info-value${selectedInstallment.valor - valorJaPago <= 0 ? ' form-info-value--danger' : ''}`}>
-                  {formatCurrency(Math.max(0, selectedInstallment.valor - valorJaPago))}
-                </span>
+
+              <div className="form-group span-1">
+                <label htmlFor="pagamento-data">Data do Pagamento *</label>
+                <input
+                  id="pagamento-data"
+                  type="date"
+                  name="data"
+                  value={formData.data}
+                  onChange={handleChange}
+                  required
+                  className={campoComErro === 'data' ? 'input-erro' : undefined}
+                />
               </div>
-            </div>
+
+              <div className="form-group span-1">
+                <label htmlFor="pagamento-forma">Forma de Pagamento *</label>
+                <select
+                  id="pagamento-forma"
+                  name="formaPagamento"
+                  value={formData.formaPagamento}
+                  onChange={handleChange}
+                  required
+                  className={campoComErro === 'formaPagamento' ? 'input-erro' : undefined}
+                >
+                  {FORMA_PAGAMENTO_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group span-1">
+                <label htmlFor="pagamento-tipo">Tipo *</label>
+                <select
+                  id="pagamento-tipo"
+                  name="tipo"
+                  value={formData.tipo}
+                  onChange={handleChange}
+                  required
+                  className={campoComErro === 'tipo' ? 'input-erro' : undefined}
+                >
+                  {TIPO_PAGAMENTO_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <p className="form-hint span-3">
+                O valor é distribuído automaticamente entre as parcelas em aberto
+                deste honorário, do vencimento mais antigo para o mais novo. O que
+                sobrar fica como saldo adiantado e é usado quando novas parcelas
+                forem criadas.
+              </p>
+            </>
           )}
 
-          <div className="form-group span-1">
-            <label htmlFor="pagamento-valor">Valor a registrar *</label>
-            {/* `MoneyInput` devolve Number em reais (ou `null`). O payload
-                continua fazendo `Number(formData.valorPago)` e não mudou. */}
-            <MoneyInput
-              id="pagamento-valor"
-              name="valorPago"
-              value={formData.valorPago}
-              onChange={handleValorPagoChange}
-              required
-              className={campoComErro === 'valorPago' ? 'input-erro' : undefined}
-            />
-          </div>
-
-          <div className="form-group span-1">
-            <label>Data do Pagamento *</label>
-            <input
-              type="date"
-              name="dataPagamento"
-              value={formData.dataPagamento}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="form-group span-1">
-            <label>Forma de Pagamento *</label>
-            <select name="formaPagamento" value={formData.formaPagamento} onChange={handleChange} required>
-              {FORMA_PAGAMENTO_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
-
           <div className="form-group span-3">
-            <label>Observações</label>
+            <label htmlFor="pagamento-observacoes">Observações</label>
             <input
+              id="pagamento-observacoes"
               type="text"
               name="observacoes"
               maxLength={1000}
               value={formData.observacoes}
               onChange={handleChange}
+              className={campoComErro === 'observacoes' ? 'input-erro' : undefined}
             />
           </div>
         </div>

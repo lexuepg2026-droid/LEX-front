@@ -17,4 +17,26 @@ const createFee = (data) => api.post('/fees', data);
 const updateFee = (id, data) => api.patch(`/fees/${id}`, data);
 const deleteFee = (id) => api.delete(`/fees/${id}`);
 
-export default { listFees, getFeeById, createFee, updateFee, deleteFee };
+// ── Sub-recursos do honorário (F-1a) ───────────────────────────────────────
+//
+// O EXTRATO é a linha do tempo do dinheiro desta cobrança — pagamentos,
+// estornos, alocações com vínculo, reparcelamentos e mudanças de status,
+// mesclados por data e paginados no padrão da F-0. A tela é da F-1b.
+//
+// O REPARCELAMENTO (DEC-037) recebe o plano de parcelas novas, cuja soma
+// precisa igualar o saldo em aberto. A tela ponta a ponta é da F-1c.
+const getStatement = (id, { page = 1, limit = 100 } = {}) =>
+  api.get(`/fees/${id}/statement`, { params: { page, limit } });
+const listRenegotiations = (id) => api.get(`/fees/${id}/renegotiations`);
+const createRenegotiation = (id, data) => api.post(`/fees/${id}/renegotiations`, data);
+
+export default {
+  listFees,
+  getFeeById,
+  createFee,
+  updateFee,
+  deleteFee,
+  getStatement,
+  listRenegotiations,
+  createRenegotiation
+};

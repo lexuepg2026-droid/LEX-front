@@ -214,3 +214,12 @@
   .ficha-totais { grid-template-columns: 1fr; }
   .ficha-parcela__linha { gap: var(--space-2); }
 }
+
+/* ── Saldo adiantado do honorário (F-1a) ───────────────────────────────────
+   Rótulo discreto, na mesma linha dos demais totais. Cor de informação e não
+   de aviso: dinheiro adiantado é bom para a advogada — o que ele exige é
+   explicação, não alarme. Só é renderizado quando existe (ver o JSX): uma
+   linha "R$ 0,00" em todo honorário seria ruído em cima do que importa. */
+.ficha-saldo {
+  color: var(--color-info);
+}

@@ -22,7 +22,6 @@ function InstallmentListPage({ embedded = false }) {
   const [statusFiltro, setStatusFiltro] = useState('');
   // Modo "desativadas" (Fase 4.5) — ver a nota em PaymentListPage.
   const [verInativos, setVerInativos] = useState(false);
-  const [reativando, setReativando] = useState(null);
   // Total do conjunto, para saber se a lista exibida está completa (Fase F-0).
   const [total, setTotal] = useState(null);
 
@@ -50,21 +49,16 @@ function InstallmentListPage({ embedded = false }) {
       .finally(() => setLoading(false));
   }, [processoId, statusFiltro, verInativos]);
 
-  // Reativar devolve a parcela ao conjunto do honorário e dispara o recálculo
-  // dos dois níveis no backend.
-  const handleReativar = async (id) => {
-    setReativando(id);
-    try {
-      await installmentService.reativarInstallment(id);
-      setInstallments(installments.filter(i => i._id !== id));
-      toast.success('Parcela reativada. O status do honorário foi recalculado.');
-    } catch (err) {
-      // 409 com `dependencia: "honorario"` quando o honorário está desativado.
-      toast.error(getFinancialErrorMessage(err, 'Não foi possível reativar a parcela.'));
-    } finally {
-      setReativando(null);
-    }
-  };
+  // ── `handleReativar` SAIU na F-1a ────────────────────────────────────────
+  //
+  // `PATCH /installments/:id/reativar` morreu (DEC-034) e responde 404. Parcela
+  // que sai de circulação por decisão da advogada sai por REPARCELAMENTO,
+  // cancelada COM vínculo: ressuscitá-la colocaria a cobrança substituída ao
+  // lado da que a substituiu, e as duas somariam.
+  //
+  // A exclusão continua existindo para a parcela SEM dinheiro em cima — o 409
+  // de alocação ativa barra o resto — e uma parcela excluída por engano se
+  // recria por `POST /installments`.
 
   const confirmDelete = (id) => setDeleteModal({ open: true, id });
 
@@ -112,7 +106,12 @@ function InstallmentListPage({ embedded = false }) {
           title={verInativos ? 'Nenhuma parcela desativada' : 'Nenhuma cobrança encontrada'}
           description={
             verInativos
-              ? 'Parcelas excluídas aparecem aqui e podem ser reativadas.'
+              // O modo continua existindo — a parcela ainda é excluível — mas
+              // deixou de oferecer reativação na F-1a (DEC-034). É leitura:
+              // "quais eu excluí". Uma parcela excluída por engano se recria
+              // por "+ Nova Parcela", com o mesmo número, que continua
+              // reservado enquanto a antiga existir.
+              ? 'Parcelas excluídas aparecem aqui. Para voltar a cobrar, crie uma parcela nova.'
               : 'Tente ajustar os filtros ou crie uma nova parcela.'
           }
         />
@@ -150,7 +149,7 @@ function InstallmentListPage({ embedded = false }) {
                 <th>Em aberto</th>
                 <th>Vencimento</th>
                 <th>Status</th>
-                <th>Pagamento</th>
+                <th>Quitação</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -160,21 +159,23 @@ function InstallmentListPage({ embedded = false }) {
                   <td className="cell-truncate" title={inst.feeId?.descricao || undefined}>{inst.feeId?.descricao || '—'}</td>
                   <td className="cell-num">{inst.numeroParcela}</td>
                   <td className="cell-num">{formatCurrency(inst.valor)}</td>
+                  {/* `valorPago` continua sendo o campo, e continua somente
+                      leitura — o que mudou na F-1a é a FONTE: soma das
+                      ALOCAÇÕES ativas, e não mais dos pagamentos da parcela.
+                      Um estorno desaloca, e o número desce sozinho. */}
                   <td className="cell-num">{formatCurrency(inst.valorPago ?? 0)}</td>
                   <td className="cell-num">{formatCurrency(Math.max(0, Number(inst.valor || 0) - Number(inst.valorPago || 0)))}</td>
                   <td>{formatDate(inst.dataVencimento)}</td>
                   <td><StatusBadge status={inst.status} /></td>
                   <td>{formatDate(inst.dataPagamento)}</td>
                   <td className="actions-cell">
-                    {inst.ativo === false ? (
-                      <button
-                        type="button"
-                        onClick={() => handleReativar(inst._id)}
-                        disabled={reativando === inst._id}
-                        className="btn-action btn-edit"
-                      >
-                        {reativando === inst._id ? 'Reativando…' : 'Reativar'}
-                      </button>
+                    {/* Parcela CANCELADA por reparcelamento não se edita nem se
+                        exclui: ela é histórico, e o vínculo com o plano novo é
+                        o que torna a renegociação legível meses depois. A tela
+                        de reparcelamento é da F-1c; aqui a linha apenas não
+                        oferece o que o backend não deve aceitar. */}
+                    {inst.status === 'cancelado' ? (
+                      <span className="acao-indisponivel">Reparcelada</span>
                     ) : (
                       <>
                         <Link to={`/dashboard/parcelas/editar/${inst._id}`} className="btn-action btn-edit">Editar</Link>

@@ -245,6 +245,23 @@ function DashboardHomePage() {
               </div>
             ))}
           </div>
+
+          {/* ── O terceiro termo, dito em uma linha (F-1a) ──────────────────
+              `pendente` passou a ser `contratado − recebido − saldoAdiantado`.
+              Sem esta nota, a advogada faz a subtração dos dois cartões de cima
+              e não chega ao terceiro — e a conclusão natural é que o painel
+              está errado, não que existe um valor a mais na conta.
+
+              Nota condicional, e não um quarto cartão: `saldoAdiantado` é zero
+              na maioria dos escritórios, e um cartão permanente em R$ 0,00
+              ocuparia o lugar de informação real. Redesenho de painel é F-1b. */}
+          {(resumoFinanceiro.saldoAdiantado ?? 0) > 0 && (
+            <p className="summary-nota">
+              Inclui {formatCurrency(resumoFinanceiro.saldoAdiantado)} recebidos
+              como adiantamento, ainda sem parcela correspondente. Esse valor já
+              está abatido do total em aberto.
+            </p>
+          )}
         </section>
       )}
 
