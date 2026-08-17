@@ -783,6 +783,129 @@ na Fase 3.2.
 
 ---
 
+### Fase F-0 — Faxina: build que falha, carregamento e listas honestas
+
+**Resumo:** o build de produção deixa de sair quebrado em silêncio, os cinco
+formulários de edição ganham estado de leitura, e as duas listagens por processo
+param de depender de um defeito do backend. Frontend 250 → **264**.
+Roteiro manual 147 → **154**.
+
+**Arquivos novos:** `src/api/baseURL.js`, `.env.production.example`,
+`tests/regressions/f0.test.js`.
+**Alterados:** `vite.config.js`, `eslint.config.js`, `public/sw.js`,
+`src/api/axiosConfig.js`, `src/api/portalAxios.js`, os **cinco** formulários de
+edição, `pages/payments/PaymentListPage.jsx`,
+`pages/installments/InstallmentListPage.jsx`, `styles/modules.css`,
+`README.md`, `docs/validacao-manual.md`, `.gitignore`.
+
+**Ponto de restauração desta fase:** tag `v-pre-f0-2026-08-16` e branch
+`backup/pre-f0-main`, publicadas antes de qualquer edição, em `0ef1ecb`.
+
+---
+
+## O build de produção FALHA sem `VITE_API_URL` (Fase F-0)
+
+**Era o achado mais grave da auditoria de retomada, e o mais silencioso.**
+
+Não havia `.env` nem `.env.production` no repositório. O fallback de
+`axiosConfig.js` e `portalAxios.js` — `?? "http://localhost:3001/api"` —
+entrava no bundle publicado:
+
+```
+$ grep -oE "localhost:3001[^\"]*" dist/assets/index-*.js
+localhost:3001/api
+```
+
+`npm run build` saía com sucesso, `lint` saía 0, e as duas suítes passavam com
+o app apontando para uma máquina que não existe no servidor. **Nenhuma
+verificação pegava**, porque não há nada de errado com o código: o defeito é a
+ausência de uma variável. Por isso a guarda vive no **build**, e não num teste.
+
+| Peça | O que faz |
+|---|---|
+| `vite.config.js` | plugin `apply: "build"` que **aborta** o build de produção sem `VITE_API_URL`, com mensagem dizendo como resolver |
+| `api/baseURL.js` | fonte única da URL; fallback guardado por `import.meta.env.DEV` |
+| `.env.production.example` | a variável, documentada, versionada (exceção no `.gitignore`) |
+
+**`npm run dev` continua sem exigir nada.** Exigir configuração para rodar
+localmente é atrito sem ganho, e foi para isso que o fallback nasceu.
+
+### A forma do `import.meta.env.DEV` importa
+
+A primeira versão desta guarda passava `import.meta.env` como **parâmetro** e
+lia `env?.DEV` dentro da função. Ficou correta e inútil: o Vite só substitui
+`import.meta.env.DEV` por `false` quando ele aparece **literalmente**. Lido de
+um parâmetro, o ramo não vira código morto, e o literal
+`http://localhost:3001/api` viajou para o `dist/` do mesmo jeito — o `grep`
+pegou.
+
+O endereço não pode estar lá **nem como texto inerte**: é ele que alguém vai
+encontrar procurando por que a API não responde, e vai concluir a coisa errada.
+`tests/regressions/f0.test.js` trava as duas pontas — a forma literal e a
+ausência de `localhost:3001` dentro das instâncias de axios.
+
+---
+
+## Carregamento na LEITURA dos formulários de edição (Fase F-0)
+
+Os cinco formulários (honorário, pagamento, parcela, cliente, processo) tinham
+`loading`, mas só para o botão Salvar: `{loading ? "Salvando..." : "Salvar"}`.
+**Não havia estado nenhum para a leitura.** Abrir a edição pintava o formulário
+vazio, e os campos apareciam de repente quando o GET voltava — numa conexão
+lenta, a advogada começa a digitar por cima do que ainda vai ser sobrescrito.
+
+O estado novo é `carregandoRegistro`, separado do `loading` do botão, e
+**inicia em `Boolean(id)`**: iniciar em `false` mostraria o formulário vazio
+por um quadro antes do spinner, que é o mesmo defeito com um passo a mais.
+
+`setCarregandoRegistro(false)` vai num `finally`, nunca só no caminho feliz —
+um GET que falha deixaria o spinner girando para sempre, e a tela nunca chegaria
+a mostrar a mensagem de erro que ela já sabe montar. Há varredura travando isso.
+
+---
+
+## As listagens por processo pedem o teto e AVISAM quando truncam (Fase F-0)
+
+`PaymentListPage` e `InstallmentListPage` renderizam o array inteiro, sem
+paginador. Funcionavam porque o backend tinha um caminho especial para
+`?processoId=` que devolvia **tudo**, ignorando `limit` — a tela pedia 20 e
+recebia o processo inteiro.
+
+A Fase F-0 corrigiu o backend (regra central nº 4: paginação obrigatória, teto
+100). Sem mexer na tela, o default de 20 passaria a **truncar em silêncio**: uma
+lista curta com cara de completa, e a advogada somando recebimentos que não
+estão todos ali.
+
+A escolha registrada: **pedir o teto (100) explicitamente e exibir "Mostrando N
+de M" quando o conjunto for maior**. Não é o paginador — é a versão honesta
+enquanto ele não existe. O paginador de verdade é da **F-1**, que reescreve
+estas telas; truncar sem avisar é que não podia sobreviver a esta fase.
+
+A classe `.aviso-lista-parcial` mora em `styles/modules.css`, importada pelas
+duas telas que a aplicam — a regra de alcançabilidade da varredura de CSS.
+
+---
+
+## Os globais de lint saíram dos arquivos e foram para o config (Fase F-0)
+
+`public/sw.js` abria com uma diretiva de ambiente do ESLint no formato antigo.
+O flat config do ESLint 9 **já a ignora**, com aviso, e o ESLint 10 a reporta
+como **erro** — o comentário que existia para calar o lint viraria o motivo de
+ele falhar.
+
+Os globais migraram para `eslint.config.js`, em dois blocos novos:
+`public/sw.js` recebe `globals.serviceworker`; `vite.config.js` e
+`eslint.config.js` recebem `globals.node` (a guarda do build usa
+`process.cwd()`). `npm run lint` passou a sair **sem aviso nenhum**, e não só
+sem erro.
+
+**A varredura que protege isso já derrubou a própria explicação uma vez**, nesta
+fase: escrita como busca pela string `eslint-env`, ela reprovou o comentário que
+explicava a remoção. Passou a procurar a **forma de diretiva**, e o comentário
+deixou de soletrá-la — o mesmo arranjo de `css/foco.test.js` desde a 4.5.
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:

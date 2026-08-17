@@ -213,3 +213,19 @@
   .data-table th,
   .data-table td { padding: var(--space-2); font-size: var(--font-size-sm); }
 }
+
+/* ── Aviso de listagem incompleta (Fase F-0) ────────────────────────────────
+   Aparece quando o total do conjunto é maior do que o que a página trouxe.
+   Até a F-0 as listagens por processo recebiam TUDO, porque o backend pulava a
+   paginação nesse caminho; corrigido isso, uma lista truncada em silêncio
+   pareceria completa — e a advogada somaria valores que não estão todos ali.
+   Tom de aviso, não de erro: não há nada quebrado, há mais dado do que cabe. */
+.aviso-lista-parcial {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--color-warning);
+  background-color: var(--color-warning-bg);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-sm);
+}

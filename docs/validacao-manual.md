@@ -1692,6 +1692,90 @@ Dados que vários passos usam:
   nenhum teste de texto pegaria isso.
   Fase de origem: 4.6
 
+
+## 20. Fase F-0 — Faxina: build, filtros, paginação e carregamento
+
+> Numeração contínua a partir do 147. Sete passos novos: **148 a 154**.
+> O total pendente vai de **142 para 149**.
+>
+> Três dos quatro defeitos desta fase eram invisíveis para `lint`, `build` e
+> para as duas suítes — não havia erro no código, havia comportamento errado.
+> Os passos abaixo cobrem o que a varredura estática não alcança: o que a
+> advogada vê.
+
+- [ ] **148. ⭐🚨 BLOQUEANTE — o build de produção falha sem `VITE_API_URL`**
+  Pré-condição: nenhum `.env.production` no repositório do frontend.
+  Passos: 1) `npm run build`; 2) ler a mensagem; 3)
+  `cp .env.production.example .env.production`, editar a URL, e
+  `npm run build` de novo.
+  Esperado: a primeira execução **aborta** com a mensagem nomeando
+  `VITE_API_URL` e dizendo como resolver; a segunda conclui. Depois do build
+  bem-sucedido, `grep -r localhost:3001 dist/` precisa devolver **zero**.
+  Por que só olho humano: o que se avalia aqui é se a mensagem de erro é
+  **acionável** por quem for publicar — provavelmente o Daniel, no dia da
+  defesa, sem tempo de ler código. Até esta fase o build saía com sucesso
+  embutindo `http://localhost:3001/api`, e o deploy subia e falhava em toda
+  requisição, sem nada acusando.
+  Fase de origem: F-0
+
+- [ ] **149. Abrir a edição de cada formulário e ver o spinner**
+  Passos: abrir para EDIÇÃO um registro de cada um dos cinco formulários —
+  honorário, pagamento, parcela, cliente e processo. Se a rede local for rápida
+  demais para ver, usar o `throttling` do DevTools (Network → Slow 3G).
+  Esperado: o spinner do projeto (`<Loading />`) enquanto o registro é lido, e
+  os campos aparecendo já preenchidos. **Nunca** o formulário vazio primeiro.
+  O que se confere: que não dá para começar a digitar num campo que o GET vai
+  sobrescrever alguns instantes depois.
+  Fase de origem: F-0
+
+- [ ] **150. A leitura que FALHA não deixa o spinner girando**
+  Passos: abrir a edição de um registro e, com o backend derrubado (ou o id
+  trocado por um inexistente na URL), recarregar.
+  Esperado: o spinner some e a **mensagem de erro** da tela aparece. Spinner
+  eterno é o modo de falha que o passo 149 poderia introduzir.
+  Fase de origem: F-0
+
+- [ ] **151. ⭐ Filtro de recebimentos por processo E por parcela, juntos**
+  Pré-condição: `npm run seed:fresh`; um processo com pagamentos em mais de
+  uma parcela.
+  Passos: abrir a aba financeira do processo, conferir a lista de recebimentos;
+  depois restringir também por parcela.
+  Esperado: a lista com os dois filtros é **menor ou igual** à de cada um
+  isolado. Se ficar maior, o segundo filtro foi descartado — era o defeito:
+  `?processoId=X&installmentId=Y` devolvia 3 onde `?installmentId=Y`
+  devolvia 1.
+  Fase de origem: F-0
+
+- [ ] **152. O aviso de lista incompleta aparece quando precisa**
+  Pré-condição: um processo com **mais de 100** parcelas ou pagamentos. Não há
+  no seed — precisa ser montado à mão (ou por script) para este passo.
+  Esperado: acima da tabela, "Mostrando 100 de N …". Sem ele, a lista truncada
+  pareceria completa e a advogada somaria valores que não estão todos ali.
+  Se o processo tiver 100 ou menos, o aviso **não** pode aparecer.
+  Por que só olho humano: a suíte prova que o aviso existe e que a condição
+  está escrita; não prova que ele é legível no lugar onde está.
+  Fase de origem: F-0
+
+- [ ] **153. Um link com id quebrado dá mensagem de campo, não lista errada**
+  Passos: editar a URL à mão para um `?processoId=` inválido (por exemplo
+  `/dashboard/recebimentos?processoId=xyz`) e carregar.
+  Esperado: a tela mostra a mensagem de erro do backend nomeando o filtro —
+  **não** a listagem inteira, e **não** uma lista vazia com cara de "não há
+  nada aqui". Antes desta fase, `/documents` e `/fees` devolviam TUDO e
+  `/installments` e `/payments` devolviam VAZIO, para a mesma URL torta.
+  O que se confere: se a tela trata o 400 novo sem quebrar o layout.
+  Fase de origem: F-0
+
+- [ ] **154. As duas mensagens reescritas, lidas por quem não escreveu o código**
+  Passos: 1) tentar salvar um honorário com `status` inválido **e** sem data
+  de vencimento — ler a mensagem; 2) gerar um modelo de PJ para um cliente PF —
+  ler o **título** do erro, não a lista.
+  Esperado: em (1), a lista de status válidos não se funde com o erro seguinte
+  (o separador é `;`); em (2), o topo diz que o modelo não serve para o tipo
+  de pessoa — e **não** "há informações faltando no cadastro", que mandava
+  procurar um campo que não existe.
+  Fase de origem: F-0
+
 ---
 
 ## Validado

@@ -29,17 +29,35 @@ function PaymentListPage({ embedded = false }) {
   // valor somar o que foi estornado sem nada dizendo isso na linha.
   const [verInativos, setVerInativos] = useState(false);
   const [reativando, setReativando] = useState(null);
+  // Total do conjunto, para saber se a lista exibida está completa (Fase F-0).
+  const [total, setTotal] = useState(null);
+
+  // Quantos itens a tela pede. É o TETO da API (`Math.min(100, …)` no
+  // controller), e não 20, por causa da Fase F-0: até ela, `?processoId=`
+  // tinha um caminho próprio no backend que devolvia TUDO, ignorando `limit`.
+  // Esta tela pedia 20, recebia o processo inteiro e renderizava o array sem
+  // paginador — funcionava por causa do defeito.
+  //
+  // Corrigido o backend, pedir 20 passaria a truncar em silêncio. Pedir o teto
+  // e DIZER quando ele foi atingido é a troca honesta: quem tem mais de 100
+  // pagamentos num processo vê o aviso em vez de uma lista curta que parece
+  // completa. O paginador de verdade entra na F-1, que reescreve estas telas.
+  const LIMITE = 100;
 
   useEffect(() => {
     setLoading(true);
     paymentService.listPayments({
       page: 1,
-      limit: 20,
+      limit: LIMITE,
       processoId,
       formaPagamento: formaPagamento || undefined,
       inativos: verInativos || undefined
     })
-      .then(res => setPayments(res.data.data ?? res.data))
+      .then(res => {
+        const corpo = res.data;
+        setPayments(corpo.data ?? corpo);
+        setTotal(typeof corpo.total === 'number' ? corpo.total : null);
+      })
       .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao buscar pagamentos.')))
       .finally(() => setLoading(false));
   }, [processoId, formaPagamento, verInativos]);
@@ -132,6 +150,16 @@ function PaymentListPage({ embedded = false }) {
         />
       ) : (
         <div className="table-wrapper">
+          {/* O aviso de lista incompleta (Fase F-0). Só aparece quando o
+              conjunto é maior do que o que coube — o silêncio no lugar dele
+              seria uma lista curta com cara de completa, e a advogada somaria
+              recebimentos que não estão todos ali. */}
+          {total !== null && total > payments.length && (
+            <p className="aviso-lista-parcial" role="status">
+              Mostrando {payments.length} de {total} recebimentos. Use os filtros
+              para reduzir o conjunto.
+            </p>
+          )}
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`.
               "Observações" é texto livre digitado pela advogada, sem teto: era
               a coluna mais exposta ao defeito que a fase corrigiu. */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import Loading from '../../components/common/Loading';
 import processService from '../../api/processService';
 import clientService from '../../api/clientService';
 import { toast } from '../../utils/toast';
@@ -45,6 +46,18 @@ function ProcessoFormPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditing = Boolean(id);
+  // ── Carregamento da leitura em modo edição (Fase F-0) ────────────────────
+  //
+  // `loading`, logo acima, é o do botão Salvar. Não havia estado nenhum para a
+  // LEITURA: abrir a edição pintava o formulário vazio e os campos apareciam de
+  // repente quando o GET voltava. Numa conexão lenta a advogada começa a digitar
+  // por cima de um formulário que ainda vai ser sobrescrito.
+  //
+  // Inicia em `true` já no primeiro render quando há `id` — inicia em `false`
+  // faria o formulário vazio piscar antes do spinner, que é o defeito com um
+  // quadro a mais.
+  const [carregandoRegistro, setCarregandoRegistro] = useState(Boolean(id));
+
 
   useEffect(() => {
     const fetchClientes = async () => {
@@ -88,6 +101,8 @@ function ProcessoFormPage() {
         });
       } catch {
         setError('Falha ao carregar dados do processo.');
+      } finally {
+        setCarregandoRegistro(false);
       }
     };
     fetchProcesso();
@@ -239,6 +254,8 @@ function ProcessoFormPage() {
   };
 
   const clienteLabel = (c) => `${nomeDoCliente(c)} — ${documentoDoCliente(c)}`;
+
+  if (carregandoRegistro) return <Loading />;
 
   return (
     <div className="page-container">

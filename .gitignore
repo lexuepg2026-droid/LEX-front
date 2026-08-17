@@ -39,7 +39,11 @@ yarn-error.log*
 # Vite
 .vite/
 
-# Variáveis de ambiente (o .env.example fica versionado)
+# Variáveis de ambiente (os *.example ficam versionados)
 .env
 .env.*
 !.env.example
+# O `.env.*` acima engoliria também o exemplo do build de produção, que É para
+# ser versionado — é ele que documenta a única variável sem a qual o build
+# falha (Fase F-0). Mesmo padrão do `.env.test.example` no backend.
+!.env.production.example

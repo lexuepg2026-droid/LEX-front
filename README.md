@@ -18,20 +18,33 @@ npm run dev            # http://localhost:5173
 
 ## Variáveis de ambiente
 
-| Variável | Obrigatória | Padrão | Descrição |
+| Variável | Em `npm run dev` | Em `npm run build` | Descrição |
 | --- | --- | --- | --- |
-| `VITE_API_URL` | Não | `http://localhost:3001/api` | URL base da API, já com o prefixo `/api`. |
+| `VITE_API_URL` | opcional (padrão `http://localhost:3001/api`) | **obrigatória** | URL base da API, já com o prefixo `/api`. |
 
 O `.env` não é versionado; use o `.env.example` como ponto de partida. Sem a
-variável, o app cai no padrão de desenvolvimento — então o `npm run dev` local
-funciona sem configuração alguma. Em outro ambiente (deploy, backend em outra
-porta ou máquina), defina `VITE_API_URL` antes do build: o Vite injeta o valor
-em tempo de compilação, alterar depois não tem efeito.
+variável, o `npm run dev` cai no padrão de desenvolvimento e funciona sem
+configuração alguma.
+
+**No build de produção ela é obrigatória e o build FALHA sem ela** (Fase F-0).
+Até então o build saía com sucesso embutindo `http://localhost:3001/api` no
+bundle: o deploy subia, abria a tela de login e falhava em toda requisição, sem
+nada no build acusando. Nem `lint`, nem as suítes pegavam — não há erro no
+código, o defeito é a ausência de uma variável.
+
+```bash
+cp .env.production.example .env.production   # e edite o valor
+# ou, direto:
+VITE_API_URL=https://api.seu-dominio/api npm run build
+```
+
+O Vite injeta o valor em **tempo de compilação**: alterar depois do build não
+tem efeito.
 
 ## Build e PWA
 
 ```bash
-npm run build     # gera dist/
+npm run build     # gera dist/  — exige VITE_API_URL (ver acima)
 npm run preview   # serve o build em http://localhost:4173
 ```
 
