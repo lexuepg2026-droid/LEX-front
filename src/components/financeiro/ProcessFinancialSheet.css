@@ -223,3 +223,19 @@
 .ficha-saldo {
   color: var(--color-info);
 }
+
+/* ── Parcela substituída por reparcelamento (F-1a.1) ───────────────────────
+   Ela continua na lista porque é histórico auditável, e fica ATENUADA porque
+   não é cobrança viva. O "em aberto" dela não é renderizado — ver o JSX. */
+.ficha-parcela--reparcelada {
+  opacity: 0.7;
+}
+
+/* A linha que liga a parcela à operação que a substituiu. Texto simples, sem
+   link: navegação para o reparcelamento é F-1b. */
+.ficha-parcela__reparcelada {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--color-text-secondary);
+}

@@ -77,7 +77,10 @@ function InstallmentListPage({ embedded = false }) {
     }
   };
 
-  if (loading) return <Loading />;
+  // O `return <Loading/>` antecipado saiu daqui na F-1a.1: ele trocava a árvore
+  // inteira — inclusive os controles de filtro — a cada refetch, e o React
+  // desmontava e remontava o input, perdendo o foco. O indicador passou para
+  // baixo dos controles. Ver a nota longa em `ClientListPage`.
 
   const body = (
     <>
@@ -101,7 +104,9 @@ function InstallmentListPage({ embedded = false }) {
         </label>
       </div>
 
-      {installments.length === 0 ? (
+      {loading ? (
+        <Loading />
+      ) : installments.length === 0 ? (
         <EmptyState
           title={verInativos ? 'Nenhuma parcela desativada' : 'Nenhuma cobrança encontrada'}
           description={
