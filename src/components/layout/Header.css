@@ -66,3 +66,25 @@
   .app-header { padding: 0 var(--space-3); }
   .header-greeting { display: none; }
 }
+
+/* ── O rótulo do registro na trilha (F-1b) ────────────────────────────────
+   Em telas de detalhe o último segmento passou a ser o NOME do registro
+   ("LEX › Honorários › Assessoria tributária — processo administrativo"), que
+   é texto livre digitado pela advogada e pode ser longo.
+
+   O teto existe para o nome não empurrar o bloco do usuário para fora da tela
+   em 360 px. `.breadcrumb-current` já corta com reticências desde a 4.3; o que
+   faltava era um limite de largura para o corte acontecer antes de a linha
+   estourar. O `title` no elemento não é necessário: a página inteira mostra a
+   descrição por extenso logo abaixo. */
+@media (max-width: 480px) {
+  .breadcrumb-current {
+    max-width: 180px;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 767px) {
+  .breadcrumb-current {
+    max-width: 260px;
+  }
+}

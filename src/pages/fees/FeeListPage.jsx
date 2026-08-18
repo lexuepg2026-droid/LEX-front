@@ -141,7 +141,15 @@ function FeeListPage({ embedded = false }) {
                   className={fee.status === STATUS_CANCELADO ? 'row-inativa' : undefined}
                 >
                   <td className="cell-truncate" title={fee.processoId?.titulo ?? undefined}>{fee.processoId?.titulo ?? '—'}</td>
-                  <td className="cell-truncate" title={fee.descricao}>{fee.descricao}</td>
+                  {/* O nome do honorário leva à página dele (F-1b). É o
+                      caminho principal para a tela nova, e o que responde
+                      "quanto já entrou nesta cobrança" sem passar pela
+                      parcela. */}
+                  <td className="cell-truncate" title={fee.descricao}>
+                    <Link to={`/dashboard/honorarios/${fee._id}`} className="link-interno">
+                      {fee.descricao}
+                    </Link>
+                  </td>
                   <td>{labelDe(TIPO_HONORARIO_OPTIONS, fee.tipo)}</td>
                   <td className="cell-num">{formatPercent(fee.percentual)}</td>
                   <td className="cell-num">{fee.valorBase == null ? '—' : formatCurrency(fee.valorBase)}</td>

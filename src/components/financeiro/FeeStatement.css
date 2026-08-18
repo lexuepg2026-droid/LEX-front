@@ -1,0 +1,132 @@
+/* Extrato do honorário — linha do tempo (Fase F-1b).
+   A folha é importada pelo próprio componente, e não pela tela que o monta:
+   dependência que só existe pela árvore de componentes não é alcançável por
+   análise estática. Mesma escolha de `ProcessFinancialSheet.css`. */
+
+.extrato {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.extrato__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* A faixa lateral colorida é o que dá a DIREÇÃO do dinheiro num relance:
+   entrou, saiu, ou não mexeu em dinheiro nenhum. As cores são as variáveis do
+   sistema — nada de hex solto. */
+.extrato__item {
+  position: relative;
+  padding: var(--space-3) var(--space-4);
+  padding-left: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.extrato__item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--space-2);
+  bottom: var(--space-2);
+  width: 3px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-text-secondary);
+}
+
+.extrato__item--entrada::before { background-color: var(--color-success); }
+.extrato__item--saida::before   { background-color: var(--color-danger); }
+.extrato__item--neutro::before  { background-color: var(--color-text-secondary); }
+
+.extrato__cabecalho {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.extrato__tipo {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.extrato__data {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ── MOEDA NUNCA TRUNCA (regra da F-1b) ───────────────────────────────────
+   `margin-left: auto` empurra o valor para a direita, e `white-space: nowrap`
+   com `flex-shrink: 0` garante que ele ganhe a linha inteira antes de ser
+   cortado. Numa coluna estreita quem cede espaço é o resto do cabeçalho, que
+   quebra — nunca o número. Um "R$ 3.50…" num extrato financeiro é pior que
+   não mostrar valor nenhum: parece um valor. */
+.extrato__valor {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.extrato__descricao {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+}
+
+/* O vínculo é a razão de o extrato existir, mas é leitura de apoio: menor e
+   mais discreto que o fato em si, sem deixar de ser legível. */
+.extrato__vinculo {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.extrato__acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.extrato__ref {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.extrato__mais {
+  display: flex;
+  justify-content: center;
+}
+
+/* O anel dourado de foco é preservado em todo controle novo — regra do
+   projeto desde a auditoria de acessibilidade. */
+.extrato__item button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  /* Na largura estreita o cabeçalho vira duas linhas e o valor desce inteiro,
+     em vez de disputar espaço com o rótulo. */
+  .extrato__cabecalho {
+    gap: var(--space-2);
+  }
+
+  .extrato__valor {
+    margin-left: 0;
+    width: 100%;
+  }
+}

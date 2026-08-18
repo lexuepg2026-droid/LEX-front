@@ -1319,6 +1319,147 @@ lado a lado — a contradição é visual, e nenhuma asserção de valor a pega.
 
 ---
 
+## DEC-043 na tela — o preview vem da API, e o nome do honorário é link (F-1b)
+
+> A decisão completa, com o porquê do verbo e a invariante que a sustenta, está
+> por extenso no **CLAUDE.md do backend**. Aqui fica o que ela obriga do lado
+> da tela.
+
+### O preview é FORMATADO, nunca recalculado
+
+`PaymentFormPage` mostra, antes de a advogada confirmar, o que vai acontecer
+com o dinheiro. O plano vem de `POST /payments/preview` — a mesma
+`planejarAlocacao` que a criação executa.
+
+**A tela não distribui valor entre parcelas.** `pages/payments/allocationPreview.js`
+só escreve frases a partir do que a API devolveu: não ordena, não soma e não
+decide o que cabe onde. Há teste estático proibindo `sort`, `Math.min` e
+`Math.max` nesse arquivo (`tests/financial/f1b.test.js`, bloco 3) — se alguém
+simular a alocação na tela, existirão duas regras para a mesma pergunta sobre
+dinheiro, e a advogada decidirá pela cópia.
+
+O **mesmo formatador** serve ao previsto e ao realizado: o 201 devolve
+`alocacoes` com a mesma forma de `destinos`. Dois formatadores poderiam
+discordar sobre números que precisam bater.
+
+### Três regras de tela que vieram junto
+
+**1. Enquanto o valor está incompleto, o bloco não aparece** — nem como
+"R$ 0,00". Um preview de zero reais afirma que nada vai acontecer, o que é
+diferente de "ainda não sei". É o espírito do `"—"` da 4.3.
+
+**2. A digitação não perde o foco.** O debounce é de 350 ms e o
+`<Loading />` do preview **nunca** substitui o formulário — o aviso de
+carregamento é uma palavra ao lado do título. A causa da perda de foco foi
+corrigida na F-1a.1 (o `return <Loading/>` antecipado) e não se reintroduz:
+há varredura travando o padrão.
+
+**3. A tela não navega sozinha depois de salvar.** Até a F-1a ela ia para a
+listagem e o resultado vivia num toast, que some em segundos. O ponto da fase é
+poder **comparar** previsto e realizado — e não se compara com algo que saiu da
+tela. O bloco fica, com as saídas explícitas embaixo.
+
+### `MOEDA NUNCA TRUNCA` — regra nova, e onde ela já vale
+
+Em qualquer tela desta fase, valor em reais aparece **inteiro** ou a coluna cede
+espaço. Concretamente: `white-space: nowrap` + `flex-shrink: 0` no número, grid
+com `auto-fit`/`minmax` em vez de colunas fixas, e **nenhum
+`text-overflow: ellipsis`** em regra que alcance dinheiro. Há teste varrendo as
+quatro folhas escritas na F-1b.
+
+`cell-truncate` continua valendo para a **descrição** do honorário — texto
+livre, sem teto, com `title` devolvendo o inteiro. O que a regra proíbe é
+truncar **moeda**.
+
+**As listagens antigas ainda truncam** (a coluna Líquido corta: "R$ 3.50…"). É
+trabalho declarado da **F-1b.2**, junto do paginador e dos filtros.
+
+### O nome do honorário é sempre um link
+
+Em toda tela onde a descrição do honorário aparece como texto, ela leva a
+`/dashboard/honorarios/:id`:
+
+| Tela | Arquivo |
+|---|---|
+| Listagem de honorários | `pages/fees/FeeListPage.jsx` |
+| Listagem de parcelas | `pages/installments/InstallmentListPage.jsx` |
+| Listagem de pagamentos | `pages/payments/PaymentListPage.jsx` |
+| Ficha financeira do processo | `components/financeiro/ProcessFinancialSheet.jsx` |
+| Dashboard (próximos vencimentos e vencidas) | `pages/dashboard/DashboardHomePage.jsx` |
+| Formulário de pagamento (modo edição) | `pages/payments/PaymentFormPage.jsx` |
+
+**Os `<option>` dos formulários ficam de fora, e é deliberado:** HTML não
+permite link dentro de `<option>`, e o seletor já leva ao honorário por outro
+caminho.
+
+**No dashboard a linha virou DOIS links** — o nome leva à cobrança, "Parcela N"
+leva à parcela. Não dá para aninhar um link no outro. O backend passou a mandar
+`honorarioId` em `proximosVencimentos` para isso.
+
+**Não há item de menu novo.** A página se alcança pelos links; um item apontando
+para uma listagem que já existe seria superfície nova para reduzir clique
+nenhum.
+
+### A trilha do cabeçalho passou a saber o nome do registro
+
+`contexts/BreadcrumbContext.jsx` (novo, ~70 linhas, sem dependência): a página
+publica o próprio nome e o `Header` o usa como último segmento — "LEX ›
+Honorários › «descrição»" em vez de "LEX › Honorários › Detalhe".
+
+O rótulo é **casado com o pathname**. Guardar só o texto deixaria o nome da tela
+anterior no ar entre a navegação e o GET seguinte — a advogada leria o honorário
+errado no cabeçalho da página nova.
+
+Os dois hooks moram junto do provider, com `eslint-disable` justificado, pela
+mesma razão registrada em `AuthContext.jsx`.
+
+### Componentes novos, todos à mão e sem dependência
+
+| Componente | O que é |
+|---|---|
+| `pages/fees/FeeDetailPage.jsx` | a página do honorário — cabeçalho, parcelas, extrato, ações |
+| `components/financeiro/FeeStatement.jsx` | a linha do tempo, com "carregar mais" |
+| `components/financeiro/ReversalModal.jsx` | estorno **e** anulação, dois modos |
+| `components/financeiro/statementEntry.js` | os rótulos e os **vínculos** do extrato (função pura) |
+| `components/financeiro/reversalEffect.js` | a frase do efeito do estorno (função pura) |
+| `pages/payments/allocationPreview.js` | as frases do plano (função pura) |
+
+As quatro funções puras existem pela razão de sempre neste projeto: a suíte é
+`node --test` **sem DOM**, e frase montada dentro de componente só se testaria
+por varredura de texto — que prova que a linha existe, não que ela diz a coisa
+certa.
+
+### O extrato usa "carregar mais", e isso é uma escolha declarada
+
+O contrato é paginado (`page`/`limit`, padrão da F-0) e o **paginador real é da
+F-1b.2**. Aqui o padrão honesto é acumular: o extrato se lê de cima para baixo,
+como história, e trocar de página no meio obriga a lembrar o que ficou na
+anterior. O botão diz **quantos faltam** — silêncio no lugar dele seria uma
+lista curta com cara de completa.
+
+### O modal de estorno não repete regra do backend
+
+O default do valor é o **líquido restante**, relido do servidor ao abrir. O
+`motivo` é obrigatório nos dois modos. As recusas (422 com o valor estornável,
+409 de anulação dupla) aparecem **pelo texto do backend**, via
+`getFinancialErrorMessage`/`getApiErrorField` — sem redação nova, porque
+reescrever a mensagem quebraria o roteamento por `campo` da 2E.1.
+
+**O que a tela deliberadamente NÃO afirma:** quanto do estorno sai de cada
+parcela. A desalocação é espelhada (da alocação mais recente para a mais
+antiga) e reproduzir o rateio criaria a segunda fonte de verdade que a DEC-043
+existe para impedir. A tela descreve a **ordem** — que é contrato — e nomeia as
+parcelas sustentadas hoje.
+
+### O buraco silencioso do recibo foi fechado
+
+Pagamento estornado por inteiro não tem recibo (a rota responde 404 de
+propósito). A célula ficava **vazia**, e vazio não se distingue de falha de
+carregamento. Agora diz **"estornado integralmente — sem recibo"**. O **badge**
+na coluna do valor é da F-1b.2; o que esta fase resolve é o vazio não ser mudo.
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import financeiroService from '../../api/financeiroService';
 import paymentService from '../../api/paymentService';
 import StatusBadge from '../ui/StatusBadge';
@@ -13,6 +14,12 @@ import {
 } from '../../utils/enums';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { toast } from '../../utils/toast';
+// `link-interno` e `btn-action` são as classes compartilhadas das telas de
+// módulo. Importadas aqui, e não deixadas por conta da página anfitriã: este
+// componente é montado pela ficha do processo E pela tela de Financeiro, e
+// depender de qual delas importou a folha certa é o defeito que a varredura
+// de classe CSS existe para pegar.
+import '../../styles/modules.css';
 import './ProcessFinancialSheet.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -142,7 +149,15 @@ function ProcessFinancialSheet({ processoId }) {
               >
                 <div className="ficha-honorario__cabecalho">
                   <div>
-                    <strong className="ficha-honorario__descricao">{h.descricao}</strong>
+                    {/* Da ficha para a página do honorário (F-1b): a ficha
+                        mostra a árvore do PROCESSO inteiro; a página mostra
+                        UMA cobrança por dentro, com o extrato. */}
+                    <Link
+                      to={`/dashboard/honorarios/${h._id}`}
+                      className="ficha-honorario__descricao link-interno"
+                    >
+                      {h.descricao}
+                    </Link>
                     <span className="ficha-honorario__meta">
                       {labelDe(TIPO_HONORARIO_OPTIONS, h.tipo)}
                       {/* Percentual e valor base só existem no tipo percentual;

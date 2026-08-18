@@ -1,0 +1,103 @@
+/* Modal de estorno e anulação (Fase F-1b).
+   Herda `.modal` e `.modal-overlay` de `ui/Modal.css`, importado pelo próprio
+   componente. Aqui ficam só as diferenças: o modal de estorno tem formulário,
+   e o comum tem apenas uma mensagem. */
+
+.modal--estorno {
+  max-width: 520px;
+}
+
+.estorno-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.estorno-resumo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  background-color: var(--color-bg);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* MOEDA NUNCA TRUNCA: o resumo quebra em duas linhas antes de cortar o
+   número. Ver a nota em `FeeStatement.css`. */
+.estorno-resumo strong {
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.estorno-resumo__liquido {
+  font-weight: var(--font-weight-medium);
+}
+
+/* O efeito é a frase mais importante do modal: é ela que diz o que vai
+   acontecer com as parcelas. Destacada, mas sem virar alarme — estornar é
+   operação legítima, não acidente. */
+.estorno-efeito {
+  margin: 0;
+  padding: var(--space-3);
+  border-left: 3px solid var(--color-accent);
+  background-color: var(--color-accent-muted);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+}
+
+/* Anel dourado visível em todo controle novo. */
+.estorno-form input:focus-visible,
+.estorno-form button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── As classes de formulário, DENTRO do modal ────────────────────────────
+   `.form-group`, `.input-erro` e `.error-message` têm regra em
+   `pages/clients/ClientPage.css`, que é folha de PÁGINA. Este modal é
+   componente e é aberto de telas diferentes (a página do honorário e a
+   listagem de pagamentos); depender de a página anfitriã ter importado a
+   folha certa é exatamente o defeito que a varredura de classe CSS existe
+   para pegar — a classe apareceria aplicada e sem regra na primeira tela que
+   esquecesse o import.
+
+   Por isso as regras necessárias vivem aqui, escopadas em `.modal--estorno`:
+   o componente carrega o próprio visual e não empresta o de ninguém. */
+
+.modal--estorno .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal--estorno .form-group label {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-sm);
+}
+
+.modal--estorno .form-group input {
+  width: 100%;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.modal--estorno .form-group input.input-erro {
+  border-color: var(--color-danger);
+  outline: 1px solid var(--color-danger);
+}
+
+.modal--estorno .error-message {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+}

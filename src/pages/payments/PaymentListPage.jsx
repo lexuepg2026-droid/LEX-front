@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import paymentService from '../../api/paymentService';
 import PageHeader from '../../components/ui/PageHeader';
@@ -9,6 +9,7 @@ import Loading from '../../components/common/Loading';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { FORMA_PAGAMENTO_OPTIONS, labelDe } from '../../utils/enums';
 import { rotuloDasParcelas, temEstorno } from './paymentRow.js';
+import ReversalModal from '../../components/financeiro/ReversalModal';
 import '../../styles/modules.css';
 
 function PaymentListPage({ embedded = false }) {
@@ -21,6 +22,8 @@ function PaymentListPage({ embedded = false }) {
   // Um recibo por vez, por id: sem isso o botão de TODAS as linhas ficaria em
   // "Baixando…" enquanto um só está sendo gerado.
   const [reciboEmCurso, setReciboEmCurso] = useState(null);
+  // O id do pagamento cujo modal de estorno está aberto (F-1b).
+  const [estornoAberto, setEstornoAberto] = useState(null);
   // ── O modo "desativados" SAIU na F-1a ────────────────────────────────────
   //
   // Ele existia para a rota de reativação ter porta de entrada na interface. A
@@ -46,9 +49,12 @@ function PaymentListPage({ embedded = false }) {
   // completa. O paginador de verdade entra na F-1, que reescreve estas telas.
   const LIMITE = 100;
 
-  useEffect(() => {
-    setLoading(true);
-    paymentService.listPayments({
+  // Uma função só para as duas ocasiões de ler a lista: a montagem e a volta
+  // do modal de estorno. Duplicar a chamada faria as duas divergirem no dia em
+  // que um filtro novo entrasse (e a F-1b.2 vai acrescentar vários).
+  const carregarPagamentos = useCallback(({ comSpinner }) => {
+    if (comSpinner) setLoading(true);
+    return paymentService.listPayments({
       page: 1,
       limit: LIMITE,
       processoId,
@@ -60,8 +66,12 @@ function PaymentListPage({ embedded = false }) {
         setTotal(typeof corpo.total === 'number' ? corpo.total : null);
       })
       .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao buscar pagamentos.')))
-      .finally(() => setLoading(false));
+      .finally(() => { if (comSpinner) setLoading(false); });
   }, [processoId, formaPagamento]);
+
+  useEffect(() => {
+    carregarPagamentos({ comSpinner: true });
+  }, [carregarPagamentos]);
 
   // ── `handleReativar`, `confirmDelete` e `handleRemove` SAÍRAM na F-1a ────
   //
@@ -166,7 +176,14 @@ function PaymentListPage({ embedded = false }) {
             <tbody>
               {payments.map(p => (
                 <tr key={p._id}>
-                  <td className="cell-truncate" title={p.honorarioId?.descricao ?? undefined}>{p.honorarioId?.descricao ?? '—'}</td>
+                  {/* Do pagamento ao honorário (F-1b). */}
+                  <td className="cell-truncate" title={p.honorarioId?.descricao ?? undefined}>
+                    {p.honorarioId?._id ? (
+                      <Link to={`/dashboard/honorarios/${p.honorarioId._id}`} className="link-interno">
+                        {p.honorarioId.descricao ?? 'Honorário'}
+                      </Link>
+                    ) : '—'}
+                  </td>
                   <td className="cell-truncate" title={p.honorarioId?.processoId?.titulo ?? undefined}>{p.honorarioId?.processoId?.titulo ?? '—'}</td>
                   <td className="cell-truncate" title={rotuloDasParcelas(p)}>{rotuloDasParcelas(p)}</td>
                   <td className="cell-num">{formatCurrency(p.valor)}</td>
@@ -182,8 +199,17 @@ function PaymentListPage({ embedded = false }) {
                   <td className="actions-cell">
                     {/* Pagamento integralmente estornado não tem recibo: a rota
                         responde 404 de propósito, e oferecer o botão seria
-                        prometer um papel que o backend recusa emitir. */}
-                    {(p.valorLiquido ?? p.valor) > 0 && (
+                        prometer um papel que o backend recusa emitir.
+
+                        ── O BURACO SILENCIOSO (F-1b) ──────────────────────
+                        Até aqui, nesse caso, a célula ficava simplesmente
+                        VAZIA — e uma ausência não explica nada: a advogada via
+                        um espaço em branco onde as outras linhas têm botão e
+                        não tinha como saber se era regra ou falha da tela.
+                        Agora o motivo está escrito. O badge "estornado
+                        integralmente" na coluna do valor é da F-1b.2; o que
+                        esta fase resolve é não deixar o vazio mudo. */}
+                    {(p.valorLiquido ?? p.valor) > 0 ? (
                       <button
                         type="button"
                         onClick={() => baixarRecibo(p._id)}
@@ -191,6 +217,21 @@ function PaymentListPage({ embedded = false }) {
                         className="btn-action btn-edit"
                       >
                         {reciboEmCurso === p._id ? 'Baixando…' : 'Baixar recibo'}
+                      </button>
+                    ) : (
+                      <span className="sem-recibo" title="A emissão de recibo é recusada pelo servidor para pagamento sem valor líquido.">
+                        estornado integralmente — sem recibo
+                      </span>
+                    )}
+                    {/* Estornar a partir da LINHA do pagamento (F-1b): é onde a
+                        advogada está quando percebe que o dinheiro voltou. */}
+                    {(p.valorLiquido ?? p.valor) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setEstornoAberto(p._id)}
+                        className="btn-action btn-edit"
+                      >
+                        Estornar
                       </button>
                     )}
                     <Link to={`/dashboard/pagamentos/editar/${p._id}`} className="btn-action btn-edit">Editar</Link>
@@ -204,12 +245,31 @@ function PaymentListPage({ embedded = false }) {
     </>
   );
 
-  if (embedded) return body;
+  // O modal é montado UMA vez para a tela, e não uma por linha: são dezenas de
+  // linhas, e o estado (`aberto`, `pagamentoId`) é da tela, não da linha.
+  const modal = (
+    <ReversalModal
+      open={Boolean(estornoAberto)}
+      pagamentoId={estornoAberto}
+      onFechar={() => setEstornoAberto(null)}
+      onConcluido={async (mensagem) => {
+        setEstornoAberto(null);
+        toast.success(mensagem);
+        // Sem spinner: trocar a lista inteira por um `<Loading />` depois de um
+        // estorno faria a advogada perder de vista a linha que ela acabou de
+        // mexer. Os números se atualizam no lugar.
+        await carregarPagamentos({ comSpinner: false });
+      }}
+    />
+  );
+
+  if (embedded) return <>{body}{modal}</>;
 
   return (
     <div className="module-container">
       <PageHeader title="Pagamentos" actionLabel="+ Novo Pagamento" actionTo="/dashboard/pagamentos/novo" />
       {body}
+      {modal}
     </div>
   );
 }

@@ -13,6 +13,9 @@ import Loading from '../../components/common/Loading';
 import { formatCurrency, formatDate, formatMonthKey } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import { getApiErrorMessage } from '../../utils/apiError';
+// `link-interno` (F-1b) mora em `styles/modules.css`, junto das demais
+// classes compartilhadas das telas de módulo.
+import '../../styles/modules.css';
 import './DashboardPage.css';
 
 const DashboardCharts = lazy(() => import('./DashboardCharts'));
@@ -283,12 +286,31 @@ function DashboardHomePage() {
               {proximos.map(parcela => (
                 <li key={parcela._id} className="upcoming-item">
                   <div className="upcoming-info">
-                    <Link
-                      to={`/dashboard/parcelas/editar/${parcela._id}`}
-                      className="upcoming-desc upcoming-link"
-                    >
-                      {parcela.descricaoHonorario || 'Honorário'} — Parcela {parcela.numeroParcela}
-                    </Link>
+                    {/* ── DOIS destinos, e não um (F-1b) ─────────────────
+                        A linha inteira levava à parcela, e o nome do honorário
+                        era só texto dentro do link. Agora o NOME leva à página
+                        da cobrança e "Parcela N" continua levando à parcela.
+                        Não dá para aninhar um link no outro — HTML inválido —,
+                        então são dois irmãos. */}
+                    <span className="upcoming-desc">
+                      {parcela.honorarioId ? (
+                        <Link
+                          to={`/dashboard/honorarios/${parcela.honorarioId}`}
+                          className="link-interno"
+                        >
+                          {parcela.descricaoHonorario || 'Honorário'}
+                        </Link>
+                      ) : (
+                        parcela.descricaoHonorario || 'Honorário'
+                      )}
+                      {' — '}
+                      <Link
+                        to={`/dashboard/parcelas/editar/${parcela._id}`}
+                        className="upcoming-link"
+                      >
+                        Parcela {parcela.numeroParcela}
+                      </Link>
+                    </span>
                     <span className="upcoming-due">
                       {formatDate(parcela.dataVencimento)}
                       {parcela.numeroProcesso ? ` · ${parcela.numeroProcesso}` : ''}
@@ -321,12 +343,27 @@ function DashboardHomePage() {
             {upcoming.map(inst => (
               <li key={inst._id} className="upcoming-item">
                 <div className="upcoming-info">
-                  <Link
-                    to={`/dashboard/parcelas/editar/${inst._id}`}
-                    className="upcoming-desc upcoming-link"
-                  >
-                    {inst.feeId?.descricao || 'Honorário'} — Parcela {inst.numeroParcela}
-                  </Link>
+                  {/* Mesma divisão do bloco acima: o nome leva à cobrança,
+                      "Parcela N" leva à parcela. */}
+                  <span className="upcoming-desc">
+                    {inst.feeId?._id ? (
+                      <Link
+                        to={`/dashboard/honorarios/${inst.feeId._id}`}
+                        className="link-interno"
+                      >
+                        {inst.feeId.descricao || 'Honorário'}
+                      </Link>
+                    ) : (
+                      inst.feeId?.descricao || 'Honorário'
+                    )}
+                    {' — '}
+                    <Link
+                      to={`/dashboard/parcelas/editar/${inst._id}`}
+                      className="upcoming-link"
+                    >
+                      Parcela {inst.numeroParcela}
+                    </Link>
+                  </span>
                   <span className="upcoming-due">{daysUntilLabel(inst.dataVencimento)}</span>
                 </div>
                 <div className="upcoming-right">
