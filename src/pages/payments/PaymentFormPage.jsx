@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import paymentService from '../../api/paymentService';
 import feeService from '../../api/feeService';
 import MoneyInput from '../../components/ui/MoneyInput';
@@ -10,6 +10,15 @@ import { toast } from '../../utils/toast';
 import { getApiErrorField } from '../../utils/apiError';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { resumoDaAlocacao } from './allocationSummary.js';
+import {
+  podeConsultarPreview,
+  linhasDoPlano,
+  frasePlanoDaLinha,
+  fraseDaSobra,
+  resumoDoPlano,
+} from './allocationPreview.js';
+import '../../styles/modules.css';
+import './PaymentFormPage.css';
 import '../clients/ClientPage.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -32,11 +41,25 @@ import '../clients/ClientPage.css';
 // O que sobra vira `saldoAdiantado` e o resultado é mostrado DEPOIS de gravar,
 // a partir do que o backend respondeu.
 //
-// ── Sem preview de alocação nesta fase ────────────────────────────────────
-// `POST /payments/preview` existe e está testada, mas a tela que a consome é a
-// F-1b. Aqui o resumo aparece no toast, em texto simples, com o que o 201
-// devolveu — informação verdadeira, sem inventar interface que a fase seguinte
-// vai desenhar melhor.
+// ── O PREVIEW DE ALOCAÇÃO (F-1b) ──────────────────────────────────────────
+// Escolhido o honorário e digitado o valor, a tela mostra — ANTES de confirmar
+// — em quais parcelas o dinheiro vai encostar, qual será abatida pela metade e
+// quanto sobra como crédito.
+//
+// O plano vem de `POST /payments/preview` e NÃO é recalculado aqui. A rota usa
+// a mesma `planejarAlocacao` que a criação executa, e é isso que impede o
+// preview de mentir: se a tela simulasse a distribuição, haveria duas regras
+// para a mesma pergunta sobre dinheiro, e a advogada decidiria pela cópia.
+//
+// Depois de gravar, o mesmo bloco mostra o REALIZADO, lido do 201. Previsto e
+// realizado passam pelos mesmos formatadores (`allocationPreview.js`) — dois
+// formatadores poderiam discordar sobre números que precisam bater.
+//
+// ── A digitação não pode perder o foco ────────────────────────────────────
+// A causa foi corrigida na F-1a.1 e não se reintroduz aqui: o `<Loading />` do
+// preview NUNCA substitui o formulário, e nenhum input é montado
+// condicionalmente por causa do estado do preview. O bloco aparece ao lado; a
+// árvore dos campos não muda.
 //
 // ── Edição: um campo só ───────────────────────────────────────────────────
 // A allowlist do backend tem `observacoes` e mais nada. O formulário de edição
@@ -66,7 +89,22 @@ function PaymentFormPage() {
 
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const isEditing = Boolean(id);
+
+  // ── Preview e realizado ─────────────────────────────────────────────────
+  // `preview` é o que ACONTECERIA; `realizado` é o que aconteceu, lido do 201.
+  // Estados separados porque são fatos diferentes: depois de gravar, o
+  // previsto vira histórico e o que vale é a resposta do servidor.
+  const [preview, setPreview] = useState(null);
+  const [previewCarregando, setPreviewCarregando] = useState(false);
+  const [previewErro, setPreviewErro] = useState('');
+  const [realizado, setRealizado] = useState(null);
+
+  // Ignora resposta de preview que chegou fora de ordem. Sem isto, uma
+  // consulta lenta de "1.50" poderia sobrescrever a resposta de "1.500" e a
+  // tela mostraria o plano de um valor que a advogada já não tem na frente.
+  const previewSeq = useRef(0);
   // ── Carregamento da leitura em modo edição (Fase F-0) ────────────────────
   //
   // `loading`, logo acima, é o do botão Salvar. Não havia estado nenhum para a
@@ -78,6 +116,17 @@ function PaymentFormPage() {
   // faria o formulário vazio piscar antes do spinner, que é o defeito com um
   // quadro a mais.
   const [carregandoRegistro, setCarregandoRegistro] = useState(Boolean(id));
+
+  // O honorário pode chegar PRÉ-SELECIONADO por `?honorarioId=`, que é como a
+  // página do honorário (F-1b) manda registrar um pagamento: a advogada
+  // clicou "Registrar pagamento" olhando para uma cobrança específica, e
+  // obrigá-la a procurá-la de novo no seletor seria devolver o clique que a
+  // fase existe para eliminar.
+  useEffect(() => {
+    if (isEditing) return;
+    const doQuery = searchParams.get('honorarioId');
+    if (doQuery) setFormData(prev => ({ ...prev, honorarioId: doQuery }));
+  }, [isEditing, searchParams]);
 
   useEffect(() => {
     // Só honorários que podem receber dinheiro. Um honorário `cancelado`
@@ -108,6 +157,61 @@ function PaymentFormPage() {
         .finally(() => setCarregandoRegistro(false));
     }
   }, [id, isEditing]);
+
+  // ── A consulta do preview, com debounce curto ───────────────────────────
+  //
+  // 350 ms: curto o bastante para o plano parecer imediato, longo o bastante
+  // para "1.500" não gerar quatro requisições (uma por dígito). O timer é
+  // recriado a cada tecla e limpo no cleanup — é isso que faz valer só a
+  // última pausa.
+  //
+  // O que este efeito NÃO faz: mexer no foco, remontar campo ou trocar o
+  // formulário por um spinner. A perda de foco durante a digitação foi um
+  // defeito real da F-1a.1, e a causa era exatamente isso.
+  useEffect(() => {
+    if (isEditing) return undefined;
+
+    // Depois de gravado, o que vale é o realizado: parar de consultar o
+    // preview evita a tela mostrar previsão de um pagamento que já existe.
+    if (realizado) return undefined;
+
+    if (!podeConsultarPreview(formData.honorarioId, formData.valor)) {
+      // Valor incompleto: o bloco inteiro some, e não vira "R$ 0,00".
+      setPreview(null);
+      setPreviewErro('');
+      setPreviewCarregando(false);
+      return undefined;
+    }
+
+    const meuSeq = ++previewSeq.current;
+    setPreviewCarregando(true);
+
+    const timer = setTimeout(() => {
+      paymentService.preverAlocacao({
+        honorarioId: formData.honorarioId,
+        valor: Number(formData.valor),
+        tipo: formData.tipo,
+      })
+        .then(res => {
+          if (meuSeq !== previewSeq.current) return;
+          setPreview(res.data);
+          setPreviewErro('');
+        })
+        .catch(err => {
+          if (meuSeq !== previewSeq.current) return;
+          setPreview(null);
+          // A recusa do preview é a MESMA da criação (honorário cancelado →
+          // 409, valor ≤ 0 → 400). Exibi-la aqui evita a advogada descobrir no
+          // Salvar — e o texto é o do backend, pelos helpers de sempre.
+          setPreviewErro(getFinancialErrorMessage(err, 'Não foi possível simular a alocação.'));
+        })
+        .finally(() => {
+          if (meuSeq === previewSeq.current) setPreviewCarregando(false);
+        });
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [isEditing, realizado, formData.honorarioId, formData.valor, formData.tipo]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -147,6 +251,15 @@ function PaymentFormPage() {
         // que o motor fez com o dinheiro. Sem isto a advogada registraria um
         // pagamento e não saberia em quais parcelas ele encostou.
         toast.success(resumoDaAlocacao(res.data));
+
+        // ── NÃO navega mais na hora ────────────────────────────────────────
+        // Até a F-1a a tela ia embora para a listagem e o resultado vivia num
+        // toast, que some sozinho em segundos. O ponto desta fase é a advogada
+        // poder COMPARAR o previsto com o realizado — e não dá para comparar
+        // com algo que já saiu da tela. O bloco fica, com a saída explícita
+        // logo abaixo dele.
+        setRealizado(res.data);
+        return;
       }
       navigate('/dashboard/pagamentos');
     } catch (err) {
@@ -185,7 +298,17 @@ function PaymentFormPage() {
                 <div className="form-info-item">
                   <span className="form-info-label">Honorário</span>
                   <span className="form-info-value">
-                    {pagamento?.honorarioId?.descricao ?? '—'}
+                    {/* Também aqui o nome leva à cobrança (F-1b): quem está
+                        editando a observação de um pagamento é exatamente quem
+                        pode querer ver o extrato do honorário. */}
+                    {pagamento?.honorarioId?._id ? (
+                      <Link
+                        to={`/dashboard/honorarios/${pagamento.honorarioId._id}`}
+                        className="link-interno"
+                      >
+                        {pagamento.honorarioId.descricao ?? 'Honorário'}
+                      </Link>
+                    ) : '—'}
                   </span>
                 </div>
                 <div className="form-info-item">
@@ -291,6 +414,58 @@ function PaymentFormPage() {
                 sobrar fica como saldo adiantado e é usado quando novas parcelas
                 forem criadas.
               </p>
+
+              {/* ── O PLANO: previsto antes, realizado depois ───────────────
+                  O mesmo bloco, alimentado por duas fontes que têm a mesma
+                  forma. Enquanto o valor está incompleto ele NÃO aparece — nem
+                  como "R$ 0,00" —, no espírito do `"—"` da 4.3. */}
+              {(realizado || preview || previewCarregando || previewErro) && (
+                <div className={`plano span-3${realizado ? ' plano--realizado' : ''}`}>
+                  <div className="plano__cabecalho">
+                    <strong className="plano__titulo">
+                      {realizado ? 'O que foi feito com o dinheiro' : 'O que vai acontecer'}
+                    </strong>
+                    {/* Nunca substitui o formulário: o aviso de carregamento é
+                        uma palavra ao lado do título. Trocar a tela por um
+                        spinner a cada tecla é o que tirava o foco do campo. */}
+                    {previewCarregando && !realizado && (
+                      <span className="plano__carregando" role="status">calculando…</span>
+                    )}
+                  </div>
+
+                  {previewErro && !realizado ? (
+                    <p className="plano__erro">{previewErro}</p>
+                  ) : (
+                    (realizado || preview) && (
+                      <>
+                        <p className="plano__resumo">{resumoDoPlano(realizado ?? preview)}</p>
+
+                        {linhasDoPlano(realizado ?? preview).length > 0 && (
+                          <ul className="plano__linhas">
+                            {linhasDoPlano(realizado ?? preview).map(linha => (
+                              <li key={linha.chave} className="plano__linha">
+                                {frasePlanoDaLinha(linha)}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        {fraseDaSobra(realizado ?? preview) && (
+                          <p className="plano__sobra">{fraseDaSobra(realizado ?? preview)}</p>
+                        )}
+
+                        {/* O preview é uma PROMESSA, e dizer isso evita a
+                            leitura de que o pagamento já foi registrado. */}
+                        {!realizado && (
+                          <p className="plano__aviso">
+                            Simulação — nada foi gravado ainda.
+                          </p>
+                        )}
+                      </>
+                    )
+                  )}
+                </div>
+              )}
             </>
           )}
 
@@ -310,14 +485,39 @@ function PaymentFormPage() {
 
         {error && <p className="error-message">{error}</p>}
 
-        <div className="form-actions">
-          <button type="button" onClick={() => navigate('/dashboard/pagamentos')} className="btn-cancel">
-            Cancelar
-          </button>
-          <button type="submit" disabled={loading} className="btn-primary">
-            {loading ? 'Salvando...' : 'Salvar'}
-          </button>
-        </div>
+        {/* ── Depois de gravado, salvar de novo não é uma opção ────────────
+            O pagamento já existe; o botão Salvar ali criaria um segundo
+            lançamento com o mesmo valor, que é o erro mais caro que esta tela
+            pode induzir. No lugar dele, as duas saídas reais — e o link para a
+            página do honorário, que é onde o efeito acabou de acontecer. */}
+        {realizado ? (
+          <div className="form-actions">
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard/pagamentos')}
+              className="btn-cancel"
+            >
+              Ver pagamentos
+            </button>
+            {realizado.pagamento?.honorarioId && (
+              <Link
+                to={`/dashboard/honorarios/${realizado.pagamento.honorarioId._id ?? realizado.pagamento.honorarioId}`}
+                className="btn-primary"
+              >
+                Abrir o honorário
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="form-actions">
+            <button type="button" onClick={() => navigate('/dashboard/pagamentos')} className="btn-cancel">
+              Cancelar
+            </button>
+            <button type="submit" disabled={loading} className="btn-primary">
+              {loading ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );

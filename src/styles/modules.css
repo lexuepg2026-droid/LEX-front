@@ -256,3 +256,48 @@
   font-style: italic;
   color: var(--color-text-secondary);
 }
+
+
+/* ── Link para outro registro do sistema (Fase F-1b) ──────────────────────
+   Nasceu com a página do honorário, quando o NOME do honorário virou link em
+   todas as telas onde ele aparece (listagens de honorário, parcela e
+   pagamento, ficha do processo, dashboard). Mora aqui, e não na folha da
+   página nova, porque quem aplica a classe são as telas ANTIGAS — uma regra
+   na folha da página de destino não alcançaria nenhuma delas, e a varredura
+   de classe CSS pegaria exatamente esse buraco.
+
+   Sublinhado só no hover: numa célula de tabela, texto sublinhado o tempo
+   todo compete com o dado. O anel dourado no foco por teclado é obrigatório
+   em todo controle novo. */
+.link-interno {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.link-interno:hover {
+  text-decoration: underline;
+}
+
+.link-interno:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── O motivo no lugar do botão de recibo (Fase F-1b) ─────────────────────
+   Pagamento estornado por inteiro não tem recibo: `GET /payments/:id/recibo`
+   responde 404 de propósito, e oferecer o botão prometeria um papel que o
+   servidor recusa emitir.
+
+   Até a F-1a a célula ficava VAZIA nesse caso, e vazio não explica: a advogada
+   via um branco onde as outras linhas têm botão e não tinha como distinguir
+   regra de falha. O texto ocupa o lugar e diz o porquê.
+
+   Discreto e em itálico — é uma nota de rodapé da linha, não um alerta: o
+   estorno foi uma decisão dela. */
+.sem-recibo {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
+  line-height: var(--line-height-normal);
+}

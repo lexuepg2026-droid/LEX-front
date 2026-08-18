@@ -50,7 +50,13 @@ export default defineConfig([
   {
     // Configuração e build: rodam em Node, e `vite.config.js` usa
     // `process.cwd()` para a guarda de `VITE_API_URL`.
-    files: ['vite.config.js', 'eslint.config.js'],
+    //
+    // `scripts/**` entrou na F-1b com `checarRoteiro.js`, que confere a
+    // numeração do roteiro de validação manual: é utilitário de linha de
+    // comando, lê arquivo e escreve em `process.stdout`. Declarar aqui, e não
+    // por comentário dentro do arquivo, é o que a F-0 fixou — a forma por
+    // comentário o flat config do ESLint 9 já ignora.
+    files: ['vite.config.js', 'eslint.config.js', 'scripts/**/*.js'],
     languageOptions: { globals: globals.node },
   },
   {

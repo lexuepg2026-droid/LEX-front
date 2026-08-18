@@ -1232,6 +1232,160 @@ Dados que vários passos usam:
   (`derivacao.test.js`, seção 9), e este passo fecha a outra metade.
   Fase de origem: F-1a.2
 
+## 22. Fase F-1b — a UX do dinheiro
+
+> Numeração contínua a partir do 158. Seis passos novos: **159 a 164**.
+>
+> Esta é a seção que a F-1a.1 adiou dizendo "a validação visual do Financeiro
+> 2.0 é da fase em que as telas existirem". As telas existem agora: a **página
+> do honorário** (`/dashboard/honorarios/:id`), o **extrato** na linha do
+> tempo, o **preview de alocação** e o **modal de estorno**.
+>
+> Os seis passos têm uma coisa em comum: nenhum deles falha por valor errado —
+> a suíte cobre os números, inclusive a prova de que o preview e a criação
+> produzem o mesmo plano. O que se confere aqui é se a tela **é compreendida**:
+> se a advogada lê o extrato e entende de onde saiu cada movimento, se ela
+> confia no preview a ponto de confirmar, e se ela consegue **chegar** à página
+> a partir de onde estava.
+>
+> **O que NÃO está aqui.** O reparcelamento ponta a ponta continua sendo da
+> **F-1c** (o botão está na tela, desabilitado, dizendo isso). O paginador
+> real, os filtros e o badge de "estornado integralmente" são da **F-1b.2**.
+
+- [ ] **159. ⭐ O preview bate com o realizado, depois de salvar**
+  Pré-condição: `npm run seed:fresh`.
+  Passos: em **Pagamentos › Novo Pagamento**, escolher o honorário
+  **"Assessoria tributária — processo administrativo"** (Agro Campos, em "Ação
+  de Cobrança de Dívida") e digitar **5.000,00**. Antes de salvar, **anotar num
+  papel** o que o bloco "O que vai acontecer" diz — parcela por parcela, valor
+  por valor. Só então clicar em **Salvar**.
+  Esperado: o bloco vira **"O que foi feito com o dinheiro"** e diz **a mesma
+  coisa que estava no papel**: R$ 2.000,00 na parcela 3 (quita), R$ 2.000,00 na
+  parcela 4 (quita) e R$ 1.000,00 na parcela 5 (abate parcialmente). A tela
+  **não navega sozinha** para a listagem — o previsto e o realizado precisam
+  poder ser comparados.
+  Conferir também: enquanto o valor está incompleto (campo vazio, ou "0"), o
+  bloco **não aparece de jeito nenhum** — nem como "R$ 0,00".
+  Por que só olho humano: a suíte já prova que os dois planos são **iguais**
+  (`tests/financial/f1b.test.js`, bloco 1 — é a asserção central da fase). O
+  que ela não prova é que a advogada **reconhece** que são o mesmo plano quando
+  os dois passam pela tela em momentos diferentes, com títulos diferentes. Se
+  ela não reconhecer, o preview não serve para decidir — e decidir é para o que
+  ele existe.
+  Fase de origem: F-1b
+
+- [ ] **160. ⭐ Os vínculos do extrato se leem sem explicação**
+  Pré-condição: `npm run seed:fresh`. **Não execute o 159 antes deste** — ele
+  acrescenta eventos ao mesmo honorário.
+  Passos: abrir **Honorários**, clicar no nome **"Honorários advocatícios — fase
+  inicial"** (o nome agora é link) e ler o bloco **Extrato** de cima para baixo,
+  **sem consultar esta página**.
+  Esperado: para cada linha, conseguir responder em voz alta **de onde aquilo
+  veio**. O estorno diz de qual pagamento saiu e por quê; a alocação diz de qual
+  pagamento veio e para qual parcela foi; a **desalocação** diz por qual estorno
+  a parcela voltou a dever. Entradas de dinheiro e saídas têm faixa de cor
+  diferente.
+  Esperado também: a linha **"Mudança de status"** aparece **sem valor em
+  reais** — nunca "R$ 0,00".
+  Por que só olho humano: a suíte prova que a frase **contém** o vínculo
+  (`f1b.test.js`, bloco 1). Não prova que a frase é **suficiente**: o extrato é
+  a única tela do sistema que responde "por que este dinheiro voltou", e a
+  resposta precisa caber na cabeça de quem lê sem ter o modelo de dados na
+  frente. É a razão de o Financeiro 2.0 ter sido modelado com estorno,
+  alocação e desalocação separados — se o extrato não comunicar isso, o modelo
+  custou caro por nada.
+  Fase de origem: F-1b
+
+- [ ] **161. O modal de estorno diz o efeito antes de confirmar**
+  Pré-condição: `npm run seed:fresh`.
+  Passos: em **Pagamentos**, na linha do pagamento de **R$ 4.500,00** (Carlos
+  Eduardo, divórcio litigioso — o que atravessa duas parcelas), clicar em
+  **Estornar**. **Ler o quadro do efeito antes de tocar em qualquer campo.**
+  Esperado: o campo de valor já vem preenchido com o **líquido restante**
+  (R$ 4.500,00), o quadro diz **quais parcelas voltam a ficar em aberto**, e o
+  botão só conclui com **motivo preenchido** — apagar o motivo e tentar salvar
+  precisa recusar.
+  Depois: **trocar o valor para R$ 1.000,00** e reler o quadro. Ele passa a
+  falar em ordem ("da mais recente para a mais antiga") e **não afirma quanto
+  sai de cada parcela** — isso é conta do backend, e a tela não a repete.
+  Por fim: tentar estornar **R$ 9.000,00** (acima do líquido). A mensagem
+  precisa dizer **o valor máximo em reais**, vindo do servidor.
+  **Cancelar sem salvar** — o passo 162 precisa deste pagamento intacto.
+  Por que só olho humano: o que se mede é se ela **entende o que vai
+  acontecer** antes de mexer em dinheiro já registrado. Estorno não se desfaz
+  apagando: desfaz-se com outro registro (a anulação), e por isso a hora de
+  entender é antes.
+  Fase de origem: F-1b
+
+- [ ] **162. A anulação pelo extrato, e a confirmação do efeito**
+  Pré-condição: o passo **161 cancelado sem salvar**.
+  Passos: registrar um estorno de verdade — na linha do pagamento de
+  **R$ 4.500,00**, estornar **R$ 1.000,00** com motivo "teste de anulação".
+  Depois abrir a página do honorário **"Honorários advocatícios — divórcio
+  litigioso"** (pelo nome, na listagem de pagamentos) e olhar o **Extrato**.
+  Esperado: aparecem as linhas novas — o **estorno** e a **desalocação** que
+  ele causou —, e a linha do estorno tem o botão **"Anular estorno"**. Clicar
+  nele: o texto precisa dizer, **por extenso**, que o valor **volta a ser
+  considerado recebido e é realocado**, e que um estorno só se anula **uma
+  vez**. Confirmar.
+  Esperado depois: o "Recebido" do cabeçalho volta ao valor de antes, o extrato
+  ganha a linha **"Anulação de estorno"**, e a linha do estorno original passa
+  a dizer que **foi anulado**. Tentar anular de novo: o botão **não existe
+  mais** naquela linha.
+  Por que só olho humano: a anulação é a operação mais rara e a mais fácil de
+  fazer por engano. A suíte prova as recusas (409 de anulação dupla); o que ela
+  não prova é que a advogada **sabe o que está desfazendo** ao clicar.
+  Fase de origem: F-1b
+
+- [ ] **163. A página do honorário é alcançável de todos os pontos**
+  Pré-condição: `npm run seed:fresh`.
+  Passos: chegar à página do honorário **"Assessoria tributária — processo
+  administrativo"** partindo, uma de cada vez, de **cada um** destes seis
+  lugares — sempre clicando no **nome do honorário**, sem usar o botão Voltar
+  do navegador nem a URL:
+
+  | # | De onde | O que clicar |
+  |---|---|---|
+  | 1 | **Honorários** (listagem) | o nome na coluna Honorário |
+  | 2 | **Parcelas** (listagem) | o nome na coluna Honorário |
+  | 3 | **Pagamentos** (listagem) | o nome na coluna Honorário |
+  | 4 | **Processos › "Ação de Cobrança de Dívida" › aba financeira** | o nome do honorário na ficha |
+  | 5 | **Início** (dashboard), lista de próximos vencimentos | o nome, **antes** do travessão |
+  | 6 | **Pagamentos › Editar** um pagamento dele | o nome no quadro de leitura |
+
+  Esperado: os seis caminhos chegam à **mesma página**. No dashboard e nas
+  listagens de parcela, o nome e o **"— Parcela N"** levam a lugares
+  **diferentes** (a cobrança e a parcela) — e isso precisa ficar claro ao
+  passar o mouse.
+  Esperado também: a **trilha** do topo diz **"LEX › Honorários › Assessoria
+  tributária — processo administrativo"**, e não "Detalhe". Estreitando a
+  janela para **360 px**, a descrição encurta com **reticências** e o bloco do
+  usuário continua na tela.
+  E: **não** apareceu item novo no menu lateral.
+  Por que só olho humano: é a fase inteira em um passo. O ponto da F-1b é
+  **reduzir cliques**, e clique se conta navegando — não há asserção estática
+  que prove que o caminho existe *e* é óbvio. A suíte prova que os seis
+  arquivos têm o link (`f1b.test.js`, bloco 5); só a navegação real prova que
+  ele está **onde a mão vai**.
+  Fase de origem: F-1b
+
+- [ ] **164. O pagamento estornado por inteiro não deixa buraco mudo**
+  Pré-condição: `npm run seed:fresh`.
+  Passos: em **Pagamentos**, achar o pagamento de **R$ 2.500,00** de
+  **Construtora Horizonte** que está **estornado por inteiro** (líquido zerado,
+  em "Honorários advocatícios — fase inicial") e olhar a **coluna Ações**.
+  Esperado: onde as outras linhas têm **"Baixar recibo"**, esta tem o texto
+  **"estornado integralmente — sem recibo"**. Não pode haver **espaço em
+  branco** no lugar do botão.
+  Por que só olho humano: um vazio não se distingue de uma falha de
+  carregamento. A suíte prova que o texto está no arquivo; o que se confere
+  aqui é que ele **ocupa o lugar** e é lido como explicação, e não como rótulo
+  solto de uma coluna quebrada.
+  **Observação:** o **badge** "estornado integralmente" na coluna do valor é da
+  **F-1b.2**, junto do resto do trabalho de listagem. Aqui basta o buraco não
+  ser mudo.
+  Fase de origem: F-1b
+
 ## Validado
 
 

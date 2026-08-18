@@ -161,7 +161,16 @@ function InstallmentListPage({ embedded = false }) {
             <tbody>
               {installments.map(inst => (
                 <tr key={inst._id}>
-                  <td className="cell-truncate" title={inst.feeId?.descricao || undefined}>{inst.feeId?.descricao || '—'}</td>
+                  {/* Da parcela ao honorário (F-1b): quem está olhando uma
+                      parcela quase sempre quer ver a cobrança inteira, e até
+                      aqui não havia caminho — só voltar ao menu. */}
+                  <td className="cell-truncate" title={inst.feeId?.descricao || undefined}>
+                    {inst.feeId?._id ? (
+                      <Link to={`/dashboard/honorarios/${inst.feeId._id}`} className="link-interno">
+                        {inst.feeId.descricao || 'Honorário'}
+                      </Link>
+                    ) : '—'}
+                  </td>
                   <td className="cell-num">{inst.numeroParcela}</td>
                   <td className="cell-num">{formatCurrency(inst.valor)}</td>
                   {/* `valorPago` continua sendo o campo, e continua somente

@@ -1,0 +1,81 @@
+/* O bloco do plano de alocação (Fase F-1b) — previsto antes de gravar,
+   realizado depois. Importado pela própria página. */
+
+.plano {
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* O realizado é FATO, não previsão: a faixa passa a verde para a diferença
+   ser visível sem depender de ler o título. */
+.plano--realizado {
+  border-left-color: var(--color-success);
+}
+
+.plano__cabecalho {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.plano__titulo {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+}
+
+.plano__carregando {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.plano__resumo {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.plano__linhas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* MOEDA NUNCA TRUNCA: a linha do plano quebra em duas antes de cortar um
+   valor. Ver a nota em `FeeStatement.css`. */
+.plano__linha {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.plano__sobra,
+.plano__aviso,
+.plano__erro {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.plano__sobra {
+  color: var(--color-info);
+}
+
+.plano__aviso {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.plano__erro {
+  color: var(--color-danger);
+}

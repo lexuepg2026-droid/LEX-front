@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useBreadcrumbLabel } from '../../contexts/BreadcrumbContext';
 import './Header.css';
 
 const BREADCRUMB_MAP = {
@@ -36,14 +37,19 @@ const SECTION_LABELS = {
   secoes:      'Biblioteca de Seções',
 };
 
-function buildBreadcrumb(pathname) {
+// `rotuloDaPagina` é o nome do registro aberto, publicado pela própria página
+// (F-1b). Quando existe, ele SUBSTITUI o "Detalhe" genérico: numa tela
+// alcançada por link de vários lugares, "Detalhe" não diz de qual registro se
+// trata. Quando não existe — porque a página não publica, ou porque o GET
+// ainda não voltou — a trilha antiga continua valendo inteira.
+function buildBreadcrumb(pathname, rotuloDaPagina = null) {
   if (BREADCRUMB_MAP[pathname]) return ['LEX', BREADCRUMB_MAP[pathname]];
   const parts = pathname.split('/').filter(Boolean);
   if (parts.length >= 3) {
     const section = SECTION_LABELS[parts[1]];
     if (section) {
       const action = parts[2] === 'editar' ? 'Editar' : 'Detalhe';
-      return ['LEX', section, action];
+      return ['LEX', section, rotuloDaPagina || action];
     }
   }
   return ['LEX'];
@@ -60,7 +66,8 @@ function Header() {
   // reflete aqui na hora, via updateUser, sem recarregar a página.
   const { user } = useAuth();
 
-  const breadcrumb = buildBreadcrumb(location.pathname);
+  const rotuloDaPagina = useBreadcrumbLabel(location.pathname);
+  const breadcrumb = buildBreadcrumb(location.pathname, rotuloDaPagina);
 
   const nomeCompleto = user?.nomeCompleto || '';
   const firstName = nomeCompleto.split(' ')[0] || '';

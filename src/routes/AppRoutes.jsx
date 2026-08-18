@@ -13,6 +13,7 @@ import ProcessoFormPage from '../pages/processes/ProcessFormPage';
 import ProcessoDetalhePage from '../pages/processes/ProcessDetailPage';
 import FeeListPage from '../pages/fees/FeeListPage';
 import FeeFormPage from '../pages/fees/FeeFormPage';
+import FeeDetailPage from '../pages/fees/FeeDetailPage';
 import InstallmentListPage from '../pages/installments/InstallmentListPage';
 import InstallmentFormPage from '../pages/installments/InstallmentFormPage';
 import DocumentListPage from '../pages/documents/DocumentListPage';
@@ -106,6 +107,12 @@ function AppRoutes() {
           <Route path="honorarios" element={<FeeListPage />} />
           <Route path="honorarios/novo" element={<FeeFormPage />} />
           <Route path="honorarios/editar/:id" element={<FeeFormPage />} />
+          {/* A página do honorário (F-1b) — o centro da UX do dinheiro.
+              Declarada DEPOIS de `novo` e de `editar/:id` por clareza; o
+              ranking do react-router já daria precedência ao segmento
+              estático, mas a ordem do arquivo é o que se lê. Não há item de
+              menu para ela: chega-se pelos links do nome do honorário. */}
+          <Route path="honorarios/:id" element={<FeeDetailPage />} />
 
           <Route path="parcelas" element={<InstallmentListPage />} />
           <Route path="parcelas/novo" element={<InstallmentFormPage />} />

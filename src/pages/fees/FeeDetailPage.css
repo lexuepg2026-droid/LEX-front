@@ -1,0 +1,209 @@
+/* Página do honorário (Fase F-1b) — o centro da UX do dinheiro.
+   Importada pela própria página. `module-container`, `page-title`,
+   `error-message` e `link-interno` vêm de `styles/modules.css`, que a página
+   importa no JSX — como fazem as demais telas de módulo. */
+
+.honorario-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* ── Cabeçalho ──────────────────────────────────────────────────────────── */
+
+.honorario-cabecalho {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.honorario-cabecalho__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.honorario-cabecalho__titulo .page-title {
+  margin: 0;
+}
+
+.honorario-cabecalho__tipo,
+.honorario-cabecalho__contexto {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ── Os quatro números ──────────────────────────────────────────────────── */
+
+/* `auto-fit` com `minmax` em vez de 4 colunas fixas: a moeda NUNCA TRUNCA
+   (regra da F-1b), então quem cede espaço é o grid — as caixas descem para a
+   linha de baixo antes de o número ser cortado. Com `repeat(4, 1fr)` um valor
+   como "R$ 123.456,78" numa tela estreita viraria "R$ 123.4…". */
+.honorario-totais {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.honorario-total {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  min-width: 0;
+}
+
+.honorario-total__rotulo {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* O número inteiro, sempre. `tabular-nums` alinha as casas entre as caixas;
+   a ausência de `overflow: hidden` e de `text-overflow` é deliberada. */
+.honorario-total__valor {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* O crédito é do honorário e não é dívida: cor de destaque, para não ser lido
+   como "mais um valor a receber". */
+.honorario-total--credito .honorario-total__valor {
+  color: var(--color-info);
+}
+
+/* ── Blocos ─────────────────────────────────────────────────────────────── */
+
+.honorario-bloco {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.honorario-bloco__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.honorario-bloco__contagem {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  background-color: var(--color-accent-muted);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-2);
+}
+
+.honorario-vazio {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+/* ── Parcelas ───────────────────────────────────────────────────────────── */
+
+.honorario-parcelas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.honorario-parcela {
+  padding: var(--space-3);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+/* A reparcelada fica atenuada: continua auditável, sem competir com as
+   parcelas vivas. */
+.honorario-parcela--reparcelada {
+  opacity: 0.72;
+}
+
+.honorario-parcela__linha {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.honorario-parcela__numero {
+  font-weight: var(--font-weight-semibold);
+  flex-shrink: 0;
+}
+
+/* Os valores nunca truncam: a linha quebra antes. */
+.honorario-parcela__valores {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.honorario-parcela__valores strong {
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.honorario-parcela__data {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.honorario-parcela__reparcelada {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ── Ações ──────────────────────────────────────────────────────────────── */
+
+/* O bloco de ações fecha a página com uma separação visível: acima dele está
+   o que ACONTECEU (parcelas, extrato); aqui está o que se pode FAZER. Sem a
+   linha, o botão "Registrar pagamento" parecia mais uma linha do extrato. */
+.honorario-acoes {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.honorario-acoes__botoes {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.honorario-acoes__nota {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  flex: 1 1 240px;
+}
+
+/* O anel dourado em todo controle novo. */
+.honorario-acoes__botoes button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .honorario-parcela__data {
+    margin-left: 0;
+  }
+}
