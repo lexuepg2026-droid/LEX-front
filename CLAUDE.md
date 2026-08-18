@@ -1271,6 +1271,54 @@ justamente para explicar um valor que aparece na tela sem entrar na subtração.
 
 ---
 
+## As correções da leitura dos recibos — o que é de INTERFACE (F-1a.2)
+
+> **DEC-042** (três estados de quitação, **PROVISÓRIA**) e a **emenda de
+> 17/08/2026 à DEC-028** são de **contrato** e moram no `CLAUDE.md` do backend,
+> por extenso, com o caso numérico observado. Aqui está só o que a tela precisa
+> saber — e nesta fase **não houve mudança de código no frontend**.
+
+### DEC-042 em uma frase, para quem monta tela
+
+O recibo tem **três** estados de quitação, e quem decide é a **obrigação
+alcançada**, não a sobra:
+
+| Estado | Quando | O que a advogada entrega |
+|---|---|---|
+| **Plena** | as parcelas alcançadas ficaram integralmente quitadas | "plena e geral quitação" — **mesmo havendo crédito**, que sai nomeado à parte |
+| **Parcial** | alguma parcela alcançada continua com saldo em aberto | "quitação PARCIAL […] que permanece devido" |
+| **Adiantamento** | nenhuma alocação | texto próprio; **sem** falar de saldo devido |
+
+**O defeito que a originou** (achado A-1, GRAVE): o recibo de R$ 3.500,00 do
+seed dizia, no corpo, "R$ 3.000,00 na parcela 1 de 1 e R$ 500,00 mantidos como
+crédito" — e no pé, que a quitação era PARCIAL e não alcançava "o saldo
+remanescente da obrigação, que permanece devido". **Não havia saldo
+remanescente**: a parcela valia 3.000 e foi paga inteira. O papel afirmava
+dívida inexistente **contra o cliente que pagou a mais**.
+
+**A DEC-041 continua PROVISÓRIA e agora convive com a DEC-042.** As duas
+redações aguardam ratificação da Laís, e **nenhum recibo vai a cliente real
+antes disso** — é a mesma pendência de TIPOS_HONORARIO (DEC-039).
+
+### O badge do honorário e a linha "Recebido" agora saem da MESMA fonte
+
+**Achado A-4.** Na ficha da "Ação de Cobrança de Dívida", o honorário
+"Assessoria tributária" exibia **"Recebido: R$ 1.500,00"** e o badge
+**"Pendente"** — contradição na mesma linha, entre dois valores certos cada um
+por si.
+
+Não era defeito de tela: `ProcessFinancialSheet.jsx` já renderizava `h.status` e
+`h.totais.pago` exatamente como a API os manda. Era a **derivação do status** no
+backend que olhava só as parcelas vigentes, enquanto "Recebido" somava também as
+canceladas por reparcelamento — que é onde o dinheiro fica depois da DEC-037.
+
+**Consequência para a tela: nenhuma mudança de código, e é o ponto.** A ficha
+não recalcula nada (decisão da 4.2), então ela exibia fielmente uma contradição
+do backend. O passo **158** do roteiro existe para olhar as duas informações
+lado a lado — a contradição é visual, e nenhuma asserção de valor a pega.
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:
