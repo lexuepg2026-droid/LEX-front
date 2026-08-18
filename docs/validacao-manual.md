@@ -1127,8 +1127,19 @@ Dados que vários passos usam:
 
 ## 21. Fase F-1a.1 — as correções do smoke test
 
-> Numeração contínua a partir do 154. Três passos novos: **155 a 157**.
-> O total pendente vai de **149 para 152**.
+> Numeração contínua a partir do 154. Três passos novos: **155 a 157**, mais o
+> **158** acrescentado pela F-1a.2.
+>
+> **Atualizado em 17/08/2026 pela Fase F-1a.2.** O Daniel executou o 155, o 156
+> e o 157. O **155 e o 157 passaram** e estão em `## Validado`. O **156
+> REPROVOU** — e reprovou três vezes, com os achados A-1, A-2 e A-3 —, então
+> continua pendente, agora com a lista de casos **corrigida**: a versão
+> original mandava abrir dois pagamentos que **não existem** no seed, e foi
+> parte do que fez a leitura render menos do que devia.
+>
+> A F-1a.2 acrescenta o **158** (contradição do badge com o "Recebido", achado
+> A-4). **O total pendente vai de 152 para 151**: saem o 155 e o 157, entra o
+> 158, e o 156 continua na lista.
 >
 > **Esta seção NÃO é a seção do Financeiro 2.0.** A validação visual completa
 > do módulo — extrato na tela, preview de alocação, reparcelamento ponta a
@@ -1139,59 +1150,88 @@ Dados que vários passos usam:
 > Dois deles são de **texto entregue a terceiro** (o recibo) e de **foco de
 > teclado** — as duas coisas que só olho humano confere.
 
-- [ ] **155. O campo de busca não perde o foco ao digitar**
-  Passos: abrir `/dashboard/clientes`, clicar no campo de busca e digitar um
-  nome **inteiro, sem parar**, com pelo menos 8 letras. Repetir em
-  `/dashboard/honorarios` e `/dashboard/processos`.
-  Esperado: o cursor permanece no campo do começo ao fim, e o texto sai
-  completo e na ordem. **Nunca** perder o foco no meio, nem precisar clicar de
-  novo.
-  Conferir também, no mesmo caminho: mudar o `<select>` de forma de pagamento
-  em `/dashboard/pagamentos` e o de status em `/dashboard/parcelas` — o
-  controle continua focado depois de a lista atualizar.
-  Por que só olho humano: a suíte é `node --test` sem DOM e **não tem como ler
-  `document.activeElement`**. `tests/regressions/f1a1.test.js` trava a CAUSA
-  (nenhuma listagem com filtro pode ter `return <Loading/>` antecipado), e este
-  passo fecha a outra metade. Inventar um teste de foco frágil seria pior.
-  Fase de origem: F-1a.1
-
 - [ ] **156. ⭐ Ler os recibos: o texto descreve o que foi quitado**
+  **REPROVOU em 17/08/2026** (achados A-1, A-2 e A-3 — ver o CLAUDE.md do
+  backend). Corrigido na F-1a.2; **precisa ser reexecutado** com a lista abaixo.
   Pré-condição: `npm run seed:fresh`.
+
+  > ── A LISTA ANTIGA MANDAVA ABRIR PAGAMENTO QUE NÃO EXISTE ──────────────
+  > A versão original pedia "o de 3.500 do recurso administrativo" e "o de
+  > 2.500 da ação de cobrança que quita a parcela única". O de 3.500 existe, mas
+  > está na **"Ação de Cobrança de Dívida"** e não num processo de recurso; e o
+  > pagamento de 2.500 que quita parcela única está em **"Disputas Contratuais
+  > com Fornecedor"** — o de 2.500 que aparece na área de cobrança é o do
+  > **usucapião**, que é líquido de estorno. O Daniel procurou um recibo que,
+  > pelo nome dado, não existia. A lista abaixo sai dos pagamentos **reais** do
+  > seed, cada um nomeado pelo processo em que de fato está.
+
   Passos: baixar o recibo de cada um destes pagamentos e **ler o parágrafo
-  "Recebi de…" e o de quitação**, do começo ao fim:
-  1) o de 4.500 do divórcio litigioso (atravessa duas parcelas);
-  2) o de 3.500 do recurso administrativo (sobra vira crédito);
-  3) o de 2.500 da ação de cobrança (quita a parcela única);
-  4) o de 4.000 do usucapião (estornado em 1.500 — sai pelo líquido).
-  Esperado: no 1, o valor **de cada parcela** por extenso; no 2, o crédito
-  nomeado e a quitação dizendo **PARCIAL**; no 3, "pagamento único" e quitação
-  **plena e geral**; no 4, o valor líquido de 2.500.
+  "Recebi de…" e o de quitação**, do começo ao fim. A coluna da direita diz
+  qual estado da **DEC-042** o caso exercita — se dois recibos do mesmo estado
+  disserem coisas diferentes, é defeito.
+
+  | # | Pagamento | Onde está | Estado da DEC-042 |
+  |---|---|---|---|
+  | 1 | **R$ 4.500,00** — Carlos Eduardo, divórcio litigioso | "Divorcio Litigioso" | **PARCIAL** (atravessa duas parcelas; a 2ª continua devendo) |
+  | 2 | **R$ 3.500,00** — Agro Campos, "Honorários complementares — recurso administrativo" | "Acao de Cobranca de Divida" | **PLENA COM CRÉDITO** — é o defeito **A-1** |
+  | 3 | **R$ 800,00** — Agro Campos, "Custas administrativas — taxas e emolumentos" | "Acao de Cobranca de Divida" | **PLENA SEM CRÉDITO** — contraprova: a redação não pode ter mudado |
+  | 4 | **R$ 5.000,00** — Maria Aparecida, adiantamento do inventário | "Inventario e Partilha de Bens" | **PARCIAL**, e é o defeito **A-2** (auto-alocação nomeada) |
+  | 5 | **R$ 4.000,00** — Beatriz, usucapião (estornado em 1.500) | "Usucapiao de Imovel Urbano" | **PARCIAL**, e é o defeito **A-3** (sai por 2.500, líquido) |
+  | 6 | **R$ 1.500,00** — Agro Campos, "Assessoria tributária" | "Acao de Cobranca de Divida" | **PARCIAL** (honorário reparcelado) |
+  | 7 | **R$ 2.500,00** — Construtora Horizonte, "Honorários advocatícios — ação de cobrança" | "Disputas Contratuais com Fornecedor" | **PLENA SEM CRÉDITO** ("pagamento único") |
+
+  Esperado, caso a caso:
+  1. o valor **de cada parcela** por extenso: "R$ 3.000,00 na parcela 1 de 2 e
+     R$ 1.500,00 na parcela 2 de 2"; quitação **PARCIAL**, e a palavra
+     "devido" **pode** aparecer — aqui ela é verdade.
+  2. ⭐ **o caso que reprovou.** O corpo nomeia os R$ 500,00 como crédito para
+     abatimento futuro, e o pé dá **"plena e geral quitação"** das parcelas
+     alcançadas, dizendo que os R$ 500,00 restantes **não correspondem a
+     obrigação em aberto**. A palavra **"devido" não pode aparecer em lugar
+     nenhum**: quem pagou a mais não deve nada. Era exatamente o contrário
+     antes da DEC-042.
+  3. "pagamento único" e **"plena e geral quitação do valor acima em relação à
+     obrigação a que se refere"** — a redação da 4.1, palavra por palavra.
+     Nenhuma menção a crédito, nenhuma a saldo.
+  4. ⭐ **A-2.** Precisa dizer **"R$ 5.000,00 na parcela 1 de 1"**. Dizer só
+     "pagamento único" é o defeito: quem recebe o papel não consegue ligar o
+     dinheiro à obrigação. A quitação é PARCIAL — a parcela vale R$ 12.000,00.
+  5. ⭐ **A-3.** O número em destaque é **R$ 2.500,00** (o líquido), e o corpo
+     traz a frase **"Este recibo é do valor líquido: do pagamento de
+     R$ 4.000,00 foi estornado R$ 1.500,00 em 18/05/2026, restando os
+     R$ 2.500,00 acima."** Sair só por 2.500, em silêncio, é o defeito.
+     O **motivo** do estorno **não** aparece, e é de propósito: o campo pode
+     estar vazio, e inventar motivo em documento assinado é pior que omiti-lo.
+  6. quitação PARCIAL. **Observação conhecida, não é defeito desta fase:** a
+     referência diz "na parcela 1 de **5**" porque o honorário foi reparcelado
+     e as duas parcelas substituídas continuam contando no total. Registrado
+     como pendência de leitura para a **F-1c**.
+  7. "pagamento único" e quitação plena, igual ao 3.
+
   Por que só olho humano: é **texto jurídico assinado pela advogada e entregue
   ao cliente**. A suíte confere que as palavras estão lá; se a frase **soa**
-  como quitação de mais do que se recebeu, quem percebe é quem lê. Foi
-  exatamente esse o defeito A-2: o texto estava gramaticalmente perfeito e
-  quitava a obrigação inteira.
-  **A redação é PROVISÓRIA (DEC-041) e precisa passar pela Laís** antes de
-  qualquer recibo ir a cliente real.
-  Fase de origem: F-1a.1
+  como quitação de mais — ou de menos — do que se recebeu, quem percebe é quem
+  lê. Foi assim nas duas vezes: o A-2 da F-1a.1 quitava a obrigação inteira com
+  texto gramaticalmente perfeito, e o A-1 da F-1a.2 afirmava dívida inexistente
+  contra o cliente que pagou a mais.
+  **A redação é PROVISÓRIA (DEC-041 e DEC-042) e precisa passar pela Laís**
+  antes de qualquer recibo ir a cliente real.
+  Fase de origem: F-1a.1 · lista corrigida na F-1a.2
 
-- [ ] **157. A ficha do processo: dívida real, crédito nomeado, sem fantasma**
+- [ ] **158. O honorário reparcelado não pode dizer "Pendente" com dinheiro recebido**
   Pré-condição: `npm run seed:fresh`.
-  Passos: abrir a aba financeira do processo "Processo Administrativo
-  Tributario" (tem os três casos juntos) e conferir, na tela:
-  1) o honorário com crédito mostra **em aberto R$ 0,00** e o crédito **com
-     nome**, nunca um valor negativo em lugar nenhum;
-  2) o "em aberto" do processo é a **soma** dos "em aberto" dos honorários —
-     confira na calculadora;
-  3) as parcelas do reparcelamento aparecem com o rótulo **"Reparcelada"**,
-     **sem** o "em aberto", atenuadas, com a linha dizendo por qual operação
-     saíram — e **com** valor e recebido à vista.
-  Por que só olho humano: o item 2 é a única verificação **independente** da
-  soma. A tela não recalcula nada (decisão da 4.2), então um erro de soma do
-  backend chegaria intacto — e foi assim que o defeito A-1 sobreviveu à suíte
-  inteira da F-1a, com um teste que recomputava a mesma fórmula que estava
-  errada.
-  Fase de origem: F-1a.1
+  Passos: abrir a aba financeira do processo **"Ação de Cobrança de Dívida"** e
+  olhar a **linha do honorário "Assessoria tributária — processo
+  administrativo"** — só ela, e as duas informações lado a lado.
+  Esperado: onde se lê **"Recebido: R$ 1.500,00"**, o badge diz
+  **"Parcialmente pago"**. Nunca **"Pendente"**.
+  Por que só olho humano: a contradição é **visual e de leitura** — os dois
+  valores estão certos cada um por si, e o defeito só existe quando os dois
+  aparecem na mesma linha. Nenhuma asserção de valor pega isso; foi assim que o
+  A-4 sobreviveu à suíte inteira da F-1a. A suíte agora trava a causa
+  (`derivacao.test.js`, seção 9), e este passo fecha a outra metade.
+  Fase de origem: F-1a.2
+
 ## Validado
 
 
@@ -1995,6 +2035,53 @@ Dados que vários passos usam:
   exatamente o que nenhuma análise estática enxerga. E o emulador mente sobre
   o tamanho do dedo.
   Fase de origem: 3.2
+
+- [x] **155. O campo de busca não perde o foco ao digitar**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+  Passos: abrir `/dashboard/clientes`, clicar no campo de busca e digitar um
+  nome **inteiro, sem parar**, com pelo menos 8 letras. Repetir em
+  `/dashboard/honorarios` e `/dashboard/processos`.
+  Esperado: o cursor permanece no campo do começo ao fim, e o texto sai
+  completo e na ordem. **Nunca** perder o foco no meio, nem precisar clicar de
+  novo.
+  Conferir também, no mesmo caminho: mudar o `<select>` de forma de pagamento
+  em `/dashboard/pagamentos` e o de status em `/dashboard/parcelas` — o
+  controle continua focado depois de a lista atualizar.
+  Por que só olho humano: a suíte é `node --test` sem DOM e **não tem como ler
+  `document.activeElement`**. `tests/regressions/f1a1.test.js` trava a CAUSA
+  (nenhuma listagem com filtro pode ter `return <Loading/>` antecipado), e este
+  passo fecha a outra metade. Inventar um teste de foco frágil seria pior.
+  Fase de origem: F-1a.1
+
+- [x] **157. A ficha do processo: dívida real, crédito nomeado, sem fantasma**
+  **Validado em 17/08/2026 pelo Daniel. Passou.**
+
+  > ── PROCESSO CORRIGIDO NA F-1a.2 ──────────────────────────────────────
+  > A versão original mandava abrir o **"Processo Administrativo Tributario"**,
+  > que tem **um honorário só** — os três casos juntos (crédito, reparcelamento
+  > e dívida) estão na **"Ação de Cobrança de Dívida"**. Os valores esperados
+  > abaixo são os que o seed produz de fato.
+
+  Pré-condição: `npm run seed:fresh`.
+  Passos: abrir a aba financeira do processo **"Ação de Cobrança de Dívida"**
+  (tem os três casos juntos) e conferir, na tela:
+  1) **"Honorários complementares — recurso administrativo"**: em aberto
+     **R$ 0,00**, com o crédito **nomeado** na linha "Saldo adiantado:
+     **R$ 500,00**" — nunca um valor negativo em lugar nenhum;
+  2) o **"Em aberto" do processo é R$ 6.000,00**, e é a **soma** dos "em
+     aberto" dos honorários (0,00 + 6.000,00; o de custas está cancelado e fica
+     fora) — confira na calculadora;
+  3) as parcelas **1 e 2** de **"Assessoria tributária — processo
+     administrativo"** aparecem com o rótulo **"Reparcelada"**, **sem** o "em
+     aberto", atenuadas, com a linha dizendo por qual operação saíram — e
+     **com** valor e recebido à vista (a parcela 1 mostra recebido
+     **R$ 1.500,00**).
+  Por que só olho humano: o item 2 é a única verificação **independente** da
+  soma. A tela não recalcula nada (decisão da 4.2), então um erro de soma do
+  backend chegaria intacto — e foi assim que o defeito A-1 da F-1a.1 sobreviveu
+  à suíte inteira da F-1a, com um teste que recomputava a mesma fórmula que
+  estava errada.
+  Fase de origem: F-1a.1 · processo e valores corrigidos na F-1a.2
 
 ---
 
