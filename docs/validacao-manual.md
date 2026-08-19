@@ -1138,8 +1138,22 @@ Dados que vários passos usam:
 > parte do que fez a leitura render menos do que devia.
 >
 > A F-1a.2 acrescenta o **158** (contradição do badge com o "Recebido", achado
-> A-4). **O total pendente vai de 152 para 151**: saem o 155 e o 157, entra o
-> 158, e o 156 continua na lista.
+> A-4): saem o 155 e o 157, entra o 158, e o 156 continua na lista.
+>
+> **Correção de 18/08/2026 (F-1b.2).** A frase original terminava com "o total
+> pendente vai de 152 para 151", e o número estava errado. Ele vinha de uma
+> cadeia de afirmações cumulativas que atravessa as seções 16 a 21
+> (104 → 120 → 130 → 137 → 142 → 149 → 152 → 151), cada uma somando os passos
+> que a sua fase criava — e nenhuma subtraindo os que iam para `## Validado`. A
+> contagem real por checkbox nunca foi essa: fechada a F-1b.2, o roteiro tem
+> **171 passos**, dos quais **77 pendentes** — e a fonte é `npm run roteiro`,
+> que conta os `- [ ]` do arquivo em vez de somar prosa.
+>
+> A frase foi corrigida onde ela é local (os passos que ESTA seção movimenta) e
+> a afirmação cumulativa foi removida. As seções novas não voltam a fazê-la: um
+> total escrito na prosa envelhece no primeiro passo que muda de lugar, e um
+> número errado com cara de contagem é pior que nenhum. Quem quiser o total roda
+> o script.
 >
 > **Esta seção NÃO é a seção do Financeiro 2.0.** A validação visual completa
 > do módulo — extrato na tela, preview de alocação, reparcelamento ponta a
@@ -1252,139 +1266,232 @@ Dados que vários passos usam:
 > **F-1c** (o botão está na tela, desabilitado, dizendo isso). O paginador
 > real, os filtros e o badge de "estornado integralmente" são da **F-1b.2**.
 
-- [ ] **159. ⭐ O preview bate com o realizado, depois de salvar**
+> **Executada em 18/08/2026 pelo Daniel. Os seis passos PASSARAM** e estão em
+> `## Validado`. Dois deles vieram com anotação: o **159** (*"responsividade da
+> tela não adequada"*) e o **163** (*"rever responsividade"*). Nenhuma das duas
+> é erro de conta — as duas são de **caber na tela**, e foi delas que nasceu a
+> **F-1b.2**, cuja seção é a **23**. As anotações ficam no corpo dos passos, em
+> `## Validado`, como registro de onde a fase seguinte veio.
+
+
+---
+
+## 23. Fase F-1b.2 — ler e caber
+
+> Numeração contínua a partir do 164. Sete passos novos: **165 a 171**.
+>
+> Esta seção não existe por defeito de conta. Os seis passos da seção 22
+> **passaram** em 18/08/2026, e mesmo assim duas anotações do Daniel apontaram
+> para o mesmo lugar: *"responsividade da tela não adequada"* (159) e *"rever
+> responsividade"* (163). Somando-se a isso, a leitura humana do extrato achou
+> duas linhas sem contexto que fazem a soma **parecer** errada estando certa.
+>
+> São as duas metades da fase: **ler** (DEC-044 — toda linha que deixou de
+> valer diz que deixou de valer) e **caber** (LEX é PWA; tela nova que não cabe
+> em celular é defeito, não polimento).
+>
+> **O que a suíte já cobre, e por que estes passos existem mesmo assim.** O
+> backend prova que o contrato carrega os campos novos (`f1b2.test.js`, 13
+> testes) e o frontend prova que a tela os escreve, que nenhuma coluna de
+> dinheiro trunca e que os mecanismos de responsividade estão nas folhas
+> (`f1b2.test.js`, 57 testes). Nada disso prova **aparência**: a varredura de
+> CSS alcança regra, não pixel. Os passos abaixo são exatamente o que sobra.
+>
+> **O que NÃO está aqui.** O paginador real, o filtro por honorário, a barra de
+> busca em pagamentos e o filtro por período são da **F-1b.3**. O
+> reparcelamento ponta a ponta continua na **F-1c**.
+
+- [ ] **165. ⭐ 🚨 O extrato se lê de cima a baixo sem dar um total que o sistema não reconhece**
+  Pré-condição: `npm run seed:fresh`. É o **caso que originou a DEC-044** —
+  reproduza-o exatamente.
+  Passos:
+  1) em **Pagamentos**, na linha do pagamento de **R$ 4.500,00** (Carlos
+     Eduardo, "Honorários advocatícios — divórcio litigioso"), clicar em
+     **Estornar** e registrar **R$ 1.000,00**, motivo "teste da DEC-044";
+  2) abrir a página do honorário pelo nome e, no **Extrato**, na linha do
+     estorno, clicar em **Anular estorno** e confirmar;
+  3) **pegar papel e caneta** e somar, de cima para baixo, **só o valor das
+     linhas de Alocação**.
+  Esperado: as linhas de alocação são **quatro** — R$ 3.000,00, R$ 1.500,00,
+  R$ 500,00 e R$ 1.000,00 —, e a soma ingênua delas dá **R$ 6.000,00** para um
+  pagamento de R$ 4.500,00. **Isso é o que a fase corrige, e a correção é a
+  linha dizer o que é.** Conferir, uma a uma:
+  - a de **R$ 1.500,00** está **atenuada**, com o **valor riscado**, e a frase
+    diz **"Esta alocação foi desfeita em … pelo estorno de R$ 1.000,00 — não
+    entra na soma."**;
+  - a de **R$ 500,00** diz que **"É o que restou de uma alocação maior,
+    desfeita pelo estorno de R$ 1.000,00 — não é uma alocação nova do dia do
+    pagamento."** (ela aparece no dia **08/05**, junto das originais, e sem essa
+    frase parecia que aquele dia alocou mais do que entrou);
+  - a de **R$ 1.000,00** (a que a anulação criou, datada de hoje) diz **"Do
+    pagamento de 08/05/2026"** — a data do **pagamento**, não a de hoje;
+  - a **desalocação** de R$ 1.500,00 diz que aquele estorno **foi anulado
+    depois** e que o valor voltou.
+  Esperado, então: **somando só as alocações que NÃO estão marcadas como
+  desfeitas, o total é R$ 4.500,00** — exatamente o pagamento. E o "Recebido"
+  do cabeçalho diz o mesmo número.
+  Por que só olho humano: a suíte prova que a soma das vivas é 4.500 e que toda
+  desfeita tem marca (`tests/financial/f1b2.test.js`, backend, bloco 1). O que
+  ela **não** prova é que quem lê **percebe a marca antes de somar**. A regra
+  da DEC-044 é sobre leitura, e leitura só se verifica lendo. Se o Daniel somar
+  6.000 de novo, a fase falhou mesmo com a suíte verde.
+  Fase de origem: F-1b.2
+
+- [ ] **166. Dois pagamentos no mesmo dia se distinguem no extrato**
+  Pré-condição: `npm run seed:fresh`. **Pode ser feito depois do 165**, no
+  mesmo honorário.
+  Passos: em **Honorários**, abrir **"Honorários advocatícios — divórcio
+  litigioso"** e registrar **dois pagamentos com a MESMA data** — R$ 300,00 em
+  dinheiro e R$ 200,00 por PIX, ambos em **10/06/2026**. Voltar ao **Extrato** e
+  achar as duas alocações que nasceram deles.
+  *(É este honorário, e não outro: a parcela 2 dele ainda tem saldo em aberto,
+  então os dois pagamentos viram **alocação**. Num honorário já quitado eles
+  virariam saldo adiantado e não haveria linha de alocação para comparar.)*
+  Esperado: as duas linhas de alocação **não dizem a mesma coisa**. As duas
+  caem na **parcela 2** e no **mesmo dia**; antes desta fase as duas frases eram
+  idênticas ("Do pagamento de 10/06/2026, aplicado na parcela 2."). Agora cada
+  uma traz a data **e** uma referência curta entre parênteses — "Do pagamento de
+  10/06/2026 (#52f195), aplicado na parcela 2." —, com **sufixos diferentes**.
+  Conferir também: a referência é **o mesmo formato** que a linha do próprio
+  pagamento exibe ("Pagamento #a1b2c3"), e dá para casar uma com a outra
+  olhando.
+  Por que só olho humano: a suíte prova que os sufixos **não colidem** e que as
+  frases saem diferentes. O que ela não prova é que a advogada consegue
+  **ligar** a alocação ao pagamento certo — que é a única razão de a referência
+  existir. Se os seis caracteres não servirem para casar as linhas na tela,
+  eles são ruído e a decisão precisa ser revista.
+  Fase de origem: F-1b.2
+
+- [ ] **167. ⭐ As cinco telas da F-1b em 360 px, 768 px e desktop**
+  Pré-condição: `npm run seed:fresh`. **Este passo nasce das anotações do
+  Daniel nos passos 159 e 163.**
+  Como medir: no navegador, ferramentas de desenvolvedor → modo dispositivo →
+  largura **360**, depois **768**, depois janela cheia. Em cada largura,
+  percorrer as cinco telas abaixo.
+  **A verificação que vale para todas:** *não pode existir barra de rolagem
+  **horizontal da página***. Tabela larga rola **dentro do próprio container**
+  (a mesma regra do passo 111) — isso é certo. A **página** rolando de lado é
+  defeito.
+
+  | # | Tela | Onde | O que olhar em 360 px |
+  |---|---|---|---|
+  | 1 | **Formulário de pagamento com preview** | Pagamentos › Novo, honorário "Assessoria tributária", valor 5.000,00 | o bloco "O que vai acontecer" ocupa a **largura inteira** (não uma coluna estreita); **nenhum valor em reais quebra no meio** ("R$ 3.0" numa linha e "00,00" na outra) |
+  | 2 | **Página do honorário** | Honorários › "Honorários advocatícios — divórcio litigioso" | os **quatro números** (Contratado, Recebido, Em aberto, e Saldo adiantado quando houver) **empilham** um sob o outro em vez de espremer; nenhum trunca |
+  | 3 | **Extrato** | o bloco Extrato da mesma página | o **valor desce para linha própria**, à esquerda ou abaixo — não espreme a descrição nem colide com ela |
+  | 4 | **Modal de estorno** | na linha de um pagamento, "Estornar" | o modal **cabe na largura** (sem borda cortada); **tocando no campo de valor para o teclado virtual abrir**, os botões "Cancelar" e "Registrar estorno" continuam **alcançáveis** (rolando dentro do modal), e o **quadro do efeito continua legível** — ele é o ponto do modal |
+  | 5 | **Modal de anulação** | no extrato, "Anular estorno" | o mesmo: cabe, rola, e o texto do efeito se lê inteiro |
+
+  Esperado também: a **trilha** do topo encurta com reticências e o **bloco do
+  usuário** continua na tela (é o que o 163 já exigia).
+  E: navegando **só pelo teclado**, todo botão e campo que recebe foco mostra o
+  **anel dourado** — nenhuma tela desta fase pode tê-lo perdido.
+  Por que só olho humano: a suíte varre as **folhas** e prova que as regras
+  existem — `auto-fit`/`minmax` no cabeçalho, `100dvh` no modal, `span-*`
+  voltando à coluna única em 767 px, `overflow-wrap: break-word` no plano. Ela
+  **não renderiza nada**: não há navegador, não há layout, não há teclado
+  virtual. Largura que estoura, botão embaixo do teclado e texto ilegível são,
+  por definição, o que só o olho vê.
+  Fase de origem: F-1b.2
+
+- [ ] **168. Nenhuma coluna de dinheiro trunca, em nenhuma listagem**
   Pré-condição: `npm run seed:fresh`.
-  Passos: em **Pagamentos › Novo Pagamento**, escolher o honorário
-  **"Assessoria tributária — processo administrativo"** (Agro Campos, em "Ação
-  de Cobrança de Dívida") e digitar **5.000,00**. Antes de salvar, **anotar num
-  papel** o que o bloco "O que vai acontecer" diz — parcela por parcela, valor
-  por valor. Só então clicar em **Salvar**.
-  Esperado: o bloco vira **"O que foi feito com o dinheiro"** e diz **a mesma
-  coisa que estava no papel**: R$ 2.000,00 na parcela 3 (quita), R$ 2.000,00 na
-  parcela 4 (quita) e R$ 1.000,00 na parcela 5 (abate parcialmente). A tela
-  **não navega sozinha** para a listagem — o previsto e o realizado precisam
-  poder ser comparados.
-  Conferir também: enquanto o valor está incompleto (campo vazio, ou "0"), o
-  bloco **não aparece de jeito nenhum** — nem como "R$ 0,00".
-  Por que só olho humano: a suíte já prova que os dois planos são **iguais**
-  (`tests/financial/f1b.test.js`, bloco 1 — é a asserção central da fase). O
-  que ela não prova é que a advogada **reconhece** que são o mesmo plano quando
-  os dois passam pela tela em momentos diferentes, com títulos diferentes. Se
-  ela não reconhecer, o preview não serve para decidir — e decidir é para o que
-  ele existe.
-  Fase de origem: F-1b
+  Passos: abrir, uma a uma, **Honorários**, **Parcelas** e **Pagamentos**, e ler
+  **todas** as colunas que contêm "R$" — Valor, Valor base, Líquido, Recebido,
+  Em aberto. Repetir com a janela em **1024 px** e em **1366 px**.
+  Esperado: **nenhum valor termina em reticências.** O defeito nominal da fase
+  era a coluna **Líquido** de Pagamentos exibindo "R$ 3.50…" e "R$ 1.20…" — ela
+  precisa mostrar **R$ 3.500,00** por extenso. Conferir também as **datas**
+  (Vencimento, Data, Quitação): "18/08/2026" inteiro, nunca "18/08/20…".
+  Esperado, na coluna **Honorário** de Pagamentos e de Parcelas: as linhas
+  **se distinguem**. Antes, quase toda linha dizia "Honorári…"; agora cada uma
+  mostra o **trecho distintivo** ("divórcio litigioso", "usucapião urbano",
+  "10% sobre o valor da causa"). Passando o mouse, o `title` traz a
+  **descrição inteira**, com o prefixo.
+  Conferir por último: se a tabela não couber, quem rola é **o container**, e
+  quem cede largura é a coluna de **texto livre** (Processo, Aplicado em,
+  Forma) — nunca a de número.
+  Por que só olho humano: a suíte prova que nenhuma célula tem `cell-num` junto
+  de `cell-truncate` e que as colunas de dinheiro usam `col-money`. Ela **não
+  mede texto renderizado**: numa tabela `table-layout: fixed`, largura
+  insuficiente trunca sozinha, sem classe nenhuma — foi exatamente assim que o
+  defeito passou. Só medindo com a fonte real se sabe se 150 px bastam.
+  Fase de origem: F-1b.2
 
-- [ ] **160. ⭐ Os vínculos do extrato se leem sem explicação**
-  Pré-condição: `npm run seed:fresh`. **Não execute o 159 antes deste** — ele
-  acrescenta eventos ao mesmo honorário.
-  Passos: abrir **Honorários**, clicar no nome **"Honorários advocatícios — fase
-  inicial"** (o nome agora é link) e ler o bloco **Extrato** de cima para baixo,
-  **sem consultar esta página**.
-  Esperado: para cada linha, conseguir responder em voz alta **de onde aquilo
-  veio**. O estorno diz de qual pagamento saiu e por quê; a alocação diz de qual
-  pagamento veio e para qual parcela foi; a **desalocação** diz por qual estorno
-  a parcela voltou a dever. Entradas de dinheiro e saídas têm faixa de cor
-  diferente.
-  Esperado também: a linha **"Mudança de status"** aparece **sem valor em
-  reais** — nunca "R$ 0,00".
-  Por que só olho humano: a suíte prova que a frase **contém** o vínculo
-  (`f1b.test.js`, bloco 1). Não prova que a frase é **suficiente**: o extrato é
-  a única tela do sistema que responde "por que este dinheiro voltou", e a
-  resposta precisa caber na cabeça de quem lê sem ter o modelo de dados na
-  frente. É a razão de o Financeiro 2.0 ter sido modelado com estorno,
-  alocação e desalocação separados — se o extrato não comunicar isso, o modelo
-  custou caro por nada.
-  Fase de origem: F-1b
-
-- [ ] **161. O modal de estorno diz o efeito antes de confirmar**
-  Pré-condição: `npm run seed:fresh`.
-  Passos: em **Pagamentos**, na linha do pagamento de **R$ 4.500,00** (Carlos
-  Eduardo, divórcio litigioso — o que atravessa duas parcelas), clicar em
-  **Estornar**. **Ler o quadro do efeito antes de tocar em qualquer campo.**
-  Esperado: o campo de valor já vem preenchido com o **líquido restante**
-  (R$ 4.500,00), o quadro diz **quais parcelas voltam a ficar em aberto**, e o
-  botão só conclui com **motivo preenchido** — apagar o motivo e tentar salvar
-  precisa recusar.
-  Depois: **trocar o valor para R$ 1.000,00** e reler o quadro. Ele passa a
-  falar em ordem ("da mais recente para a mais antiga") e **não afirma quanto
-  sai de cada parcela** — isso é conta do backend, e a tela não a repete.
-  Por fim: tentar estornar **R$ 9.000,00** (acima do líquido). A mensagem
-  precisa dizer **o valor máximo em reais**, vindo do servidor.
-  **Cancelar sem salvar** — o passo 162 precisa deste pagamento intacto.
-  Por que só olho humano: o que se mede é se ela **entende o que vai
-  acontecer** antes de mexer em dinheiro já registrado. Estorno não se desfaz
-  apagando: desfaz-se com outro registro (a anulação), e por isso a hora de
-  entender é antes.
-  Fase de origem: F-1b
-
-- [ ] **162. A anulação pelo extrato, e a confirmação do efeito**
-  Pré-condição: o passo **161 cancelado sem salvar**.
-  Passos: registrar um estorno de verdade — na linha do pagamento de
-  **R$ 4.500,00**, estornar **R$ 1.000,00** com motivo "teste de anulação".
-  Depois abrir a página do honorário **"Honorários advocatícios — divórcio
-  litigioso"** (pelo nome, na listagem de pagamentos) e olhar o **Extrato**.
-  Esperado: aparecem as linhas novas — o **estorno** e a **desalocação** que
-  ele causou —, e a linha do estorno tem o botão **"Anular estorno"**. Clicar
-  nele: o texto precisa dizer, **por extenso**, que o valor **volta a ser
-  considerado recebido e é realocado**, e que um estorno só se anula **uma
-  vez**. Confirmar.
-  Esperado depois: o "Recebido" do cabeçalho volta ao valor de antes, o extrato
-  ganha a linha **"Anulação de estorno"**, e a linha do estorno original passa
-  a dizer que **foi anulado**. Tentar anular de novo: o botão **não existe
-  mais** naquela linha.
-  Por que só olho humano: a anulação é a operação mais rara e a mais fácil de
-  fazer por engano. A suíte prova as recusas (409 de anulação dupla); o que ela
-  não prova é que a advogada **sabe o que está desfazendo** ao clicar.
-  Fase de origem: F-1b
-
-- [ ] **163. A página do honorário é alcançável de todos os pontos**
-  Pré-condição: `npm run seed:fresh`.
-  Passos: chegar à página do honorário **"Assessoria tributária — processo
-  administrativo"** partindo, uma de cada vez, de **cada um** destes seis
-  lugares — sempre clicando no **nome do honorário**, sem usar o botão Voltar
-  do navegador nem a URL:
-
-  | # | De onde | O que clicar |
-  |---|---|---|
-  | 1 | **Honorários** (listagem) | o nome na coluna Honorário |
-  | 2 | **Parcelas** (listagem) | o nome na coluna Honorário |
-  | 3 | **Pagamentos** (listagem) | o nome na coluna Honorário |
-  | 4 | **Processos › "Ação de Cobrança de Dívida" › aba financeira** | o nome do honorário na ficha |
-  | 5 | **Início** (dashboard), lista de próximos vencimentos | o nome, **antes** do travessão |
-  | 6 | **Pagamentos › Editar** um pagamento dele | o nome no quadro de leitura |
-
-  Esperado: os seis caminhos chegam à **mesma página**. No dashboard e nas
-  listagens de parcela, o nome e o **"— Parcela N"** levam a lugares
-  **diferentes** (a cobrança e a parcela) — e isso precisa ficar claro ao
-  passar o mouse.
-  Esperado também: a **trilha** do topo diz **"LEX › Honorários › Assessoria
-  tributária — processo administrativo"**, e não "Detalhe". Estreitando a
-  janela para **360 px**, a descrição encurta com **reticências** e o bloco do
-  usuário continua na tela.
-  E: **não** apareceu item novo no menu lateral.
-  Por que só olho humano: é a fase inteira em um passo. O ponto da F-1b é
-  **reduzir cliques**, e clique se conta navegando — não há asserção estática
-  que prove que o caminho existe *e* é óbvio. A suíte prova que os seis
-  arquivos têm o link (`f1b.test.js`, bloco 5); só a navegação real prova que
-  ele está **onde a mão vai**.
-  Fase de origem: F-1b
-
-- [ ] **164. O pagamento estornado por inteiro não deixa buraco mudo**
+- [ ] **169. O badge "Estornado integralmente" cabe e explica**
   Pré-condição: `npm run seed:fresh`.
   Passos: em **Pagamentos**, achar o pagamento de **R$ 2.500,00** de
-  **Construtora Horizonte** que está **estornado por inteiro** (líquido zerado,
-  em "Honorários advocatícios — fase inicial") e olhar a **coluna Ações**.
-  Esperado: onde as outras linhas têm **"Baixar recibo"**, esta tem o texto
-  **"estornado integralmente — sem recibo"**. Não pode haver **espaço em
-  branco** no lugar do botão.
-  Por que só olho humano: um vazio não se distingue de uma falha de
-  carregamento. A suíte prova que o texto está no arquivo; o que se confere
-  aqui é que ele **ocupa o lugar** e é lido como explicação, e não como rótulo
-  solto de uma coluna quebrada.
-  **Observação:** o **badge** "estornado integralmente" na coluna do valor é da
-  **F-1b.2**, junto do resto do trabalho de listagem. Aqui basta o buraco não
-  ser mudo.
-  Fase de origem: F-1b
+  **Construtora Horizonte** (estornado por inteiro, em "Honorários advocatícios
+  — fase inicial") e olhar a **coluna Líquido**.
+  Esperado: abaixo do **R$ 0,00** aparece o badge **"Estornado integralmente"**,
+  em vermelho, **quebrado em duas linhas** dentro da coluna — e **sem estourar
+  a largura dela** nem cortar palavra. Na coluna **Ações** da mesma linha, onde
+  as outras têm "Baixar recibo", há a nota **"sem recibo"**; o lugar **não fica
+  vazio**.
+  Conferir a diferença: numa linha de estorno **parcial**, o líquido aparece em
+  **laranja** e **sem badge**. Os dois estados precisam se distinguir num
+  relance — parcial é "parte do dinheiro voltou", integral é "o lançamento
+  inteiro deixou de valer".
+  Repetir em **360 px**: o badge continua legível dentro do container que rola.
+  Por que só olho humano: a suíte prova que o rótulo sai do `statusVisual` e que
+  a folha manda o badge quebrar linha. Se ele **cabe** em 150 px com a fonte
+  real, e se a distinção laranja/vermelho é perceptível, só olhando.
+  Fase de origem: F-1b.2
+
+- [ ] **170. O modal avisa antes de o servidor recusar**
+  Pré-condição: `npm run seed:fresh`.
+  Passos: em **Pagamentos**, na linha do pagamento de **R$ 4.500,00**, clicar em
+  **Estornar** e observar o **quadro do efeito** enquanto muda o valor:
+  1) com o valor que já vem preenchido (**R$ 4.500,00**);
+  2) trocando para **R$ 1.000,00**;
+  3) trocando para **R$ 9.000,00**;
+  4) **apagando o campo**.
+  Esperado, na ordem: (1) quadro na cor de sempre, dizendo **"Estorno
+  integral"**; (2) quadro na cor de sempre, falando em **ordem** ("da mais
+  recente para a mais antiga") e **sem afirmar quanto sai de cada parcela**;
+  (3) o quadro **muda de cor** (tom de aviso) e diz que **o valor passa do que
+  ainda é estornável (R$ 4.500,00)** — **não** pode continuar dizendo "Estorno
+  integral"; (4) o quadro volta ao normal, **sem alarme** — apagar para digitar
+  outro número não é erro.
+  Esperado ainda no caso (3): o botão **continua habilitado**. Clicando nele, é
+  o **servidor** que recusa, com a mensagem dele e o limite em reais. A tela
+  avisa, **não bloqueia** — quem decide o que é estornável é o backend, no
+  instante do envio (padrão do passo 102).
+  Por que só olho humano: a suíte prova as quatro frases e prova que o submit
+  não ganhou condição de valor. O que ela não prova é que a mudança de cor é
+  **notada** antes do clique — que é a única coisa que o aviso preventivo tem de
+  fazer.
+  Fase de origem: F-1b.2
+
+- [ ] **171. Os formulários antigos não regrediram com o CSS compartilhado**
+  Pré-condição: `npm run seed:fresh`. **Este passo existe porque a Parte 3
+  mexeu em folha compartilhada** — `pages/clients/ClientPage.css` e
+  `components/ui/Modal.css` são usadas por telas que a F-1b não criou.
+  O que mudou: as larguras de grade deixaram de ser escritas por par
+  (`.form-group.span-3`) e passaram a valer para a **classe** (`.span-3`), e o
+  afastamento do modal saiu da margem dele para o padding da moldura. A
+  varredura de `appliedClasses.test.js` prova **alcance de regra**, não
+  aparência — a conferência do layout destes formulários é **inteiramente olho
+  humano**, e é este passo.
+  Passos: abrir cada formulário abaixo em **desktop**, **768 px** e **360 px**:
+
+  | # | Tela | O que olhar |
+  |---|---|---|
+  | 1 | **Clientes › Novo** (PF e PJ) | as três colunas em desktop, duas em 768, uma em 360; o fieldset do representante legal acompanha; **sem rolagem horizontal da página** |
+  | 2 | **Processos › Novo** | idem |
+  | 3 | **Honorários › Novo** (tipo percentual) | o quadro de leitura com o valor calculado ocupa a **largura inteira** nas três larguras |
+  | 4 | **Parcelas › Editar** | o quadro de leitura do "já recebido", idem |
+  | 5 | **Cadastro** (`/registrar`), as duas etapas | os campos lado a lado em desktop, empilhados em 360 |
+  | 6 | **Qualquer modal de confirmação** (ex.: excluir um cliente) | cabe na largura em 360 px, com as bordas visíveis dos dois lados |
+
+  Esperado: nenhuma dessas telas ficou **pior** que antes. Especificamente: o
+  quadro de leitura (o retângulo com fundo mais claro dentro do formulário) que
+  antes ficava espremido numa coluna passa a ocupar a linha inteira — isso é
+  **melhora esperada**, não regressão. O que seria regressão: campo saindo da
+  caixa, coluna vazia sobrando à direita, ou a página rolando de lado.
+  Por que só olho humano: é o preço declarado de mexer em CSS compartilhado.
+  Não há teste de aparência neste projeto, e inventar um frágil aqui seria pior
+  que o passo honesto.
+  Fase de origem: F-1b.2
 
 ## Validado
 
@@ -2236,6 +2343,167 @@ Dados que vários passos usam:
   à suíte inteira da F-1a, com um teste que recomputava a mesma fórmula que
   estava errada.
   Fase de origem: F-1a.1 · processo e valores corrigidos na F-1a.2
+
+> **Sessão de 18/08/2026 — passos 159 a 164 (Fase F-1b).** O Daniel executou os
+> seis passos da seção 22 na main mergeada. **Os seis passaram**, e dois vieram
+> com anotação sobre o que o passo NÃO media: o **159** (*"responsividade da
+> tela não adequada"*) e o **163** (*"rever responsividade"*). As anotações
+> estão no corpo dos passos, abaixo.
+>
+> Elas não contradizem o veredito. O 159 mede se o previsto e o realizado dizem
+> a mesma coisa, e diziam; o 163 mede se os seis caminhos chegam à mesma
+> página, e chegavam. O que não cabia era a tela em 360 px — LEX é PWA, e tela
+> nova que não cabe em celular é defeito. Foi daí que nasceu a **F-1b.2**, com
+> a varredura de responsividade das cinco telas da F-1b (passo **167**).
+
+- [x] **159. ⭐ O preview bate com o realizado, depois de salvar**
+  **Validado em 18/08/2026 pelo Daniel. Passou.**
+  **Anotação do Daniel, registrada no ato:** *"responsividade da tela não
+  adequada"*. O plano de alocação e o quadro de leitura do honorário
+  estouravam a largura em tela estreita. Passou no que o passo mede (o
+  previsto e o realizado dizem a mesma coisa) e reprovou no que ele não
+  media. **Originou a Parte 3 da F-1b.2** e o passo **167**.
+  Pré-condição: `npm run seed:fresh`.
+  Passos: em **Pagamentos › Novo Pagamento**, escolher o honorário
+  **"Assessoria tributária — processo administrativo"** (Agro Campos, em "Ação
+  de Cobrança de Dívida") e digitar **5.000,00**. Antes de salvar, **anotar num
+  papel** o que o bloco "O que vai acontecer" diz — parcela por parcela, valor
+  por valor. Só então clicar em **Salvar**.
+  Esperado: o bloco vira **"O que foi feito com o dinheiro"** e diz **a mesma
+  coisa que estava no papel**: R$ 2.000,00 na parcela 3 (quita), R$ 2.000,00 na
+  parcela 4 (quita) e R$ 1.000,00 na parcela 5 (abate parcialmente). A tela
+  **não navega sozinha** para a listagem — o previsto e o realizado precisam
+  poder ser comparados.
+  Conferir também: enquanto o valor está incompleto (campo vazio, ou "0"), o
+  bloco **não aparece de jeito nenhum** — nem como "R$ 0,00".
+  Por que só olho humano: a suíte já prova que os dois planos são **iguais**
+  (`tests/financial/f1b.test.js`, bloco 1 — é a asserção central da fase). O
+  que ela não prova é que a advogada **reconhece** que são o mesmo plano quando
+  os dois passam pela tela em momentos diferentes, com títulos diferentes. Se
+  ela não reconhecer, o preview não serve para decidir — e decidir é para o que
+  ele existe.
+  Fase de origem: F-1b
+
+- [x] **160. ⭐ Os vínculos do extrato se leem sem explicação**
+  **Validado em 18/08/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run seed:fresh`. **Não execute o 159 antes deste** — ele
+  acrescenta eventos ao mesmo honorário.
+  Passos: abrir **Honorários**, clicar no nome **"Honorários advocatícios — fase
+  inicial"** (o nome agora é link) e ler o bloco **Extrato** de cima para baixo,
+  **sem consultar esta página**.
+  Esperado: para cada linha, conseguir responder em voz alta **de onde aquilo
+  veio**. O estorno diz de qual pagamento saiu e por quê; a alocação diz de qual
+  pagamento veio e para qual parcela foi; a **desalocação** diz por qual estorno
+  a parcela voltou a dever. Entradas de dinheiro e saídas têm faixa de cor
+  diferente.
+  Esperado também: a linha **"Mudança de status"** aparece **sem valor em
+  reais** — nunca "R$ 0,00".
+  Por que só olho humano: a suíte prova que a frase **contém** o vínculo
+  (`f1b.test.js`, bloco 1). Não prova que a frase é **suficiente**: o extrato é
+  a única tela do sistema que responde "por que este dinheiro voltou", e a
+  resposta precisa caber na cabeça de quem lê sem ter o modelo de dados na
+  frente. É a razão de o Financeiro 2.0 ter sido modelado com estorno,
+  alocação e desalocação separados — se o extrato não comunicar isso, o modelo
+  custou caro por nada.
+  Fase de origem: F-1b
+
+- [x] **161. O modal de estorno diz o efeito antes de confirmar**
+  **Validado em 18/08/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run seed:fresh`.
+  Passos: em **Pagamentos**, na linha do pagamento de **R$ 4.500,00** (Carlos
+  Eduardo, divórcio litigioso — o que atravessa duas parcelas), clicar em
+  **Estornar**. **Ler o quadro do efeito antes de tocar em qualquer campo.**
+  Esperado: o campo de valor já vem preenchido com o **líquido restante**
+  (R$ 4.500,00), o quadro diz **quais parcelas voltam a ficar em aberto**, e o
+  botão só conclui com **motivo preenchido** — apagar o motivo e tentar salvar
+  precisa recusar.
+  Depois: **trocar o valor para R$ 1.000,00** e reler o quadro. Ele passa a
+  falar em ordem ("da mais recente para a mais antiga") e **não afirma quanto
+  sai de cada parcela** — isso é conta do backend, e a tela não a repete.
+  Por fim: tentar estornar **R$ 9.000,00** (acima do líquido). A mensagem
+  precisa dizer **o valor máximo em reais**, vindo do servidor.
+  **Cancelar sem salvar** — o passo 162 precisa deste pagamento intacto.
+  Por que só olho humano: o que se mede é se ela **entende o que vai
+  acontecer** antes de mexer em dinheiro já registrado. Estorno não se desfaz
+  apagando: desfaz-se com outro registro (a anulação), e por isso a hora de
+  entender é antes.
+  Fase de origem: F-1b
+
+- [x] **162. A anulação pelo extrato, e a confirmação do efeito**
+  **Validado em 18/08/2026 pelo Daniel. Passou.**
+  Pré-condição: o passo **161 cancelado sem salvar**.
+  Passos: registrar um estorno de verdade — na linha do pagamento de
+  **R$ 4.500,00**, estornar **R$ 1.000,00** com motivo "teste de anulação".
+  Depois abrir a página do honorário **"Honorários advocatícios — divórcio
+  litigioso"** (pelo nome, na listagem de pagamentos) e olhar o **Extrato**.
+  Esperado: aparecem as linhas novas — o **estorno** e a **desalocação** que
+  ele causou —, e a linha do estorno tem o botão **"Anular estorno"**. Clicar
+  nele: o texto precisa dizer, **por extenso**, que o valor **volta a ser
+  considerado recebido e é realocado**, e que um estorno só se anula **uma
+  vez**. Confirmar.
+  Esperado depois: o "Recebido" do cabeçalho volta ao valor de antes, o extrato
+  ganha a linha **"Anulação de estorno"**, e a linha do estorno original passa
+  a dizer que **foi anulado**. Tentar anular de novo: o botão **não existe
+  mais** naquela linha.
+  Por que só olho humano: a anulação é a operação mais rara e a mais fácil de
+  fazer por engano. A suíte prova as recusas (409 de anulação dupla); o que ela
+  não prova é que a advogada **sabe o que está desfazendo** ao clicar.
+  Fase de origem: F-1b
+
+- [x] **163. A página do honorário é alcançável de todos os pontos**
+  **Validado em 18/08/2026 pelo Daniel. Passou.**
+  **Anotação do Daniel, registrada no ato:** *"rever responsividade"*. Os
+  seis caminhos chegam à mesma página e a trilha encurta como o passo
+  exige — o que não cabia era o resto da página do honorário em 360 px.
+  **Originou a Parte 3 da F-1b.2** e o passo **167**.
+  Pré-condição: `npm run seed:fresh`.
+  Passos: chegar à página do honorário **"Assessoria tributária — processo
+  administrativo"** partindo, uma de cada vez, de **cada um** destes seis
+  lugares — sempre clicando no **nome do honorário**, sem usar o botão Voltar
+  do navegador nem a URL:
+
+  | # | De onde | O que clicar |
+  |---|---|---|
+  | 1 | **Honorários** (listagem) | o nome na coluna Honorário |
+  | 2 | **Parcelas** (listagem) | o nome na coluna Honorário |
+  | 3 | **Pagamentos** (listagem) | o nome na coluna Honorário |
+  | 4 | **Processos › "Ação de Cobrança de Dívida" › aba financeira** | o nome do honorário na ficha |
+  | 5 | **Início** (dashboard), lista de próximos vencimentos | o nome, **antes** do travessão |
+  | 6 | **Pagamentos › Editar** um pagamento dele | o nome no quadro de leitura |
+
+  Esperado: os seis caminhos chegam à **mesma página**. No dashboard e nas
+  listagens de parcela, o nome e o **"— Parcela N"** levam a lugares
+  **diferentes** (a cobrança e a parcela) — e isso precisa ficar claro ao
+  passar o mouse.
+  Esperado também: a **trilha** do topo diz **"LEX › Honorários › Assessoria
+  tributária — processo administrativo"**, e não "Detalhe". Estreitando a
+  janela para **360 px**, a descrição encurta com **reticências** e o bloco do
+  usuário continua na tela.
+  E: **não** apareceu item novo no menu lateral.
+  Por que só olho humano: é a fase inteira em um passo. O ponto da F-1b é
+  **reduzir cliques**, e clique se conta navegando — não há asserção estática
+  que prove que o caminho existe *e* é óbvio. A suíte prova que os seis
+  arquivos têm o link (`f1b.test.js`, bloco 5); só a navegação real prova que
+  ele está **onde a mão vai**.
+  Fase de origem: F-1b
+
+- [x] **164. O pagamento estornado por inteiro não deixa buraco mudo**
+  **Validado em 18/08/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run seed:fresh`.
+  Passos: em **Pagamentos**, achar o pagamento de **R$ 2.500,00** de
+  **Construtora Horizonte** que está **estornado por inteiro** (líquido zerado,
+  em "Honorários advocatícios — fase inicial") e olhar a **coluna Ações**.
+  Esperado: onde as outras linhas têm **"Baixar recibo"**, esta tem o texto
+  **"estornado integralmente — sem recibo"**. Não pode haver **espaço em
+  branco** no lugar do botão.
+  Por que só olho humano: um vazio não se distingue de uma falha de
+  carregamento. A suíte prova que o texto está no arquivo; o que se confere
+  aqui é que ele **ocupa o lugar** e é lido como explicação, e não como rótulo
+  solto de uma coluna quebrada.
+  **Observação:** o **badge** "estornado integralmente" na coluna do valor é da
+  **F-1b.2**, junto do resto do trabalho de listagem. Aqui basta o buraco não
+  ser mudo.
+  Fase de origem: F-1b
 
 ---
 

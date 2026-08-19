@@ -71,6 +71,25 @@ export const STATUS_VISUAL = {
   // Tom `info`, e não `danger`: nada se perdeu, o plano mudou.
   reparcelada:       { label: 'Reparcelada',       tom: 'info'    },
 
+  // ── `estornado_integralmente` NÃO é um status do backend (F-1b.2) ────────
+  //
+  // No banco não existe status de pagamento: o que existe é `valorLiquido`
+  // igual a zero depois dos estornos ativos. A distinção é de LEITURA, e é a
+  // mesma escolha de `reparcelada` acima — um rótulo que o banco não tem, mas
+  // que quem lê a lista precisa, porque a linha continua ali com o valor bruto
+  // cheio e sem nada explicando por que ela não tem recibo.
+  //
+  // Entra AQUI, e não como string solta na listagem, porque este arquivo é a
+  // fonte única de rótulo e cor desde a 4.3. Um `<span>` escrito à mão na
+  // coluna seria o segundo mapa que a 4.3 existiu para eliminar — e foi
+  // exatamente o que a F-1b deixou provisoriamente na coluna de ações.
+  //
+  // Tom `danger`, e não `warning`: o estorno PARCIAL já usa o realce de aviso
+  // na célula do líquido (`.valor-estornado`), e os dois estados precisam se
+  // distinguir num relance. Parcial = parte do dinheiro voltou; integral = o
+  // lançamento inteiro deixou de valer, e nem recibo ele emite.
+  estornado_integralmente: { label: 'Estornado integralmente', tom: 'danger' },
+
   // Estado do participante no portal (Fase 3.2), de `config/portalEstados.js`.
   // A distinção que importa é entre ACESSAR e CONFIRMAR: abrir a página é
   // automático e não notifica; confirmar é clique deliberado e é o recibo. Por

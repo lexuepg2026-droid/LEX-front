@@ -50,13 +50,25 @@
   gap: var(--space-1);
 }
 
-/* MOEDA NUNCA TRUNCA: a linha do plano quebra em duas antes de cortar um
-   valor. Ver a nota em `FeeStatement.css`. */
+/* ── MOEDA NUNCA TRUNCA, E NUNCA QUEBRA NO MEIO (F-1b.2) ──────────────────
+   `overflow-wrap: anywhere` estava aqui para a linha longa não estourar a
+   caixa em tela estreita, e ele resolve isso — cortando onde der, INCLUSIVE
+   dentro do número: "R$ 3.0" numa linha e "00,00" na seguinte. Um valor
+   partido é o mesmo defeito do valor truncado, com outra aparência.
+
+   `formatCurrency` já separa "R$" dos dígitos com espaço NÃO-SEPARÁVEL
+   (U+00A0, o que o `Intl` pt-BR emite), e dígito não tem oportunidade de
+   quebra. Ou seja: sem `anywhere`, o valor é indivisível por construção, e a
+   linha continua quebrando normalmente nos espaços da frase.
+
+   `break-word` cobre o caso que sobra — uma descrição de parcela sem espaços,
+   mais larga que a caixa —, e ele NÃO parte o valor: só age em palavra que
+   sozinha não caberia. */
 .plano__linha {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .plano__sobra,

@@ -30,9 +30,51 @@ export const parcelasSustentadas = (pagamento) =>
     .slice()
     .reverse();
 
+// ═══════════════════════════════════════════════════════════════════════════
+// O AVISO PREVENTIVO — Fase F-1b.2
+//
+// Com um valor ACIMA do líquido digitado, o quadro continuava dizendo "Estorno
+// integral: a parcela 2 volta a ficar em aberto…" até o servidor recusar com
+// 422. Ou seja: descrevia com segurança um efeito que não ia acontecer.
+//
+// ── O que o aviso NÃO faz ─────────────────────────────────────────────────
+// Não impede o envio, não desabilita o botão e não valida nada. O servidor
+// continua sendo a AUTORIDADE sobre quanto ainda é estornável — é o padrão
+// fixado no passo 102, e por uma razão concreta: entre abrir o modal e
+// confirmar, outro estorno pode ter entrado, e uma tela que barrasse pelo
+// número que leu há um minuto recusaria operações legítimas sozinha, sem
+// recurso.
+//
+// O que ele faz é parar de AFIRMAR. A frase troca a descrição de um efeito
+// impossível por uma constatação verdadeira — o valor passa do estornável —,
+// e a recusa, se vier, continua sendo a do backend, com o limite que só ele
+// conhece (`errors.estornavel`, formatado por `getFinancialErrorMessage`).
+// ═══════════════════════════════════════════════════════════════════════════
+export const acimaDoEstornavel = (pagamento, valorEstorno) => {
+  const liquido = Number(pagamento?.valorLiquido ?? pagamento?.valor ?? 0);
+  const valor = Number(valorEstorno);
+  if (!Number.isFinite(valor) || valor <= 0) return false;
+  // Comparação em centavos inteiros, como em todo lugar onde este projeto
+  // compara dinheiro: `4500.00 > 4500` em float é como um aviso falso apareceria
+  // no valor exato do teto.
+  return Math.round(valor * 100) > Math.round(liquido * 100);
+};
+
 export const descricaoDoEfeito = (pagamento, valorEstorno) => {
   const liquido = Number(pagamento?.valorLiquido ?? pagamento?.valor ?? 0);
   const sustentadas = parcelasSustentadas(pagamento);
+
+  // Antes de qualquer outra leitura: se o valor não cabe, nenhuma das frases
+  // abaixo é verdadeira, e a mais perigosa delas ("Estorno integral") é
+  // justamente a que sairia — `valor >= liquido` é verdade tanto no teto
+  // quanto acima dele.
+  if (acimaDoEstornavel(pagamento, valorEstorno)) {
+    return (
+      `O valor digitado passa do que ainda é estornável neste pagamento ` +
+      `(${formatCurrency(liquido)}). O servidor vai recusar — ajuste o valor, ` +
+      'ou registre o estorno sobre outro pagamento.'
+    );
+  }
 
   if (sustentadas.length === 0) {
     // Adiantamento que virou crédito, ou pagamento já todo desalocado. O
@@ -85,4 +127,4 @@ export const descricaoDaAnulacao = (estorno) => {
   );
 };
 
-export default { parcelasSustentadas, descricaoDoEfeito, descricaoDaAnulacao };
+export default { parcelasSustentadas, acimaDoEstornavel, descricaoDoEfeito, descricaoDaAnulacao };

@@ -57,4 +57,19 @@ export const temEstorno = (pagamento) => {
   return liquido < bruto;
 };
 
-export default { rotuloDasParcelas, temEstorno };
+// Pagamento INTEGRALMENTE estornado (F-1b.2). Não é o mesmo que `temEstorno`:
+// aquele diz que sobrou menos, este diz que não sobrou nada — e são leituras
+// diferentes na tela (realce de aviso na célula contra badge no lugar do
+// valor). O backend recusa emitir recibo neste caso, e é por isso que a linha
+// perde o botão.
+//
+// A conta é a do backend, lida e não refeita: `valorLiquido` já é o bruto
+// menos os estornos ATIVOS (estorno anulado não conta). Somar estornos aqui
+// reabriria a segunda fonte de verdade que a DEC-040 fechou.
+export const estornadoIntegralmente = (pagamento) => {
+  const bruto = Number(pagamento?.valor ?? 0);
+  const liquido = Number(pagamento?.valorLiquido ?? bruto);
+  return bruto > 0 && liquido <= 0;
+};
+
+export default { rotuloDasParcelas, temEstorno, estornadoIntegralmente };

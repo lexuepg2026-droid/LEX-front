@@ -129,6 +129,48 @@
 .col-md  { width: 170px; }
 .col-lg  { width: 220px; }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOEDA NUNCA TRUNCA — a coluna de dinheiro tem largura própria (F-1b.2)
+   ═══════════════════════════════════════════════════════════════════════════
+
+   ── O defeito ────────────────────────────────────────────────────────────
+   A coluna "Líquido" da listagem de pagamentos exibia "R$ 3.50…" e
+   "R$ 1.20…". Ela era `col-xs` (100 px), e `data-table--fixed` aplica
+   `text-overflow: ellipsis` a TODA célula — não só às marcadas com
+   `cell-truncate`. Ou seja: numa tabela de largura fixa, largura insuficiente
+   já é truncamento, sem ninguém pedir.
+
+   **Valor cortado é pior que valor ausente**: uma célula vazia faz procurar o
+   número em outro lugar; "R$ 3.50…" parece um número e é lido como um.
+
+   ── Por que 150 px ───────────────────────────────────────────────────────
+   Descontados o padding (`--space-3` dos dois lados) e as bordas, sobram
+   ~122 px de conteúdo — o bastante para "R$ 1.234.567,89" inteiro. As
+   medidas anteriores não davam: `col-xs` (100 px) corta em ~8 caracteres, que
+   é exatamente onde "R$ 3.500,00" virava "R$ 3.50…", e `col-sm` (130 px) só
+   aguenta até a casa dos milhares.
+
+   A conta é dimensionada pelo VALOR MÁXIMO PLAUSÍVEL, não pelo que está no
+   banco hoje: uma coluna calibrada pelos dados atuais volta a cortar no dia
+   em que entrar um honorário de êxito sobre um monte-mor grande — e volta a
+   cortar em silêncio.
+
+   ── A regra ──────────────────────────────────────────────────────────────
+   Coluna de dinheiro usa `.col-money` e NUNCA recebe `cell-truncate`. Quando
+   faltar espaço na tabela, quem cede é a coluna de TEXTO LIVRE (a que fica
+   `auto` e tem `title` com o texto inteiro) — não a que carrega número. */
+.col-money { width: 150px; }
+
+/* Data completa ("18/08/2026") pelo mesmo motivo e com a mesma conta: em
+   `col-xs` ela saía "18/08/20…", e uma data truncada não é menos enganosa que
+   um valor truncado — "18/08/20" se lê como uma data de 2020. */
+.col-data { width: 130px; }
+
+/* Rótulo de status. "Parcialmente pago" e "Acessou, não confirmou" são os
+   valores reais do `statusVisual`, e nenhum deles cabia em `col-xs`. O badge
+   ainda tem padding próprio, que entra na conta. */
+.col-status { width: 160px; }
+
 /* A coluna de ações é dimensionada pela FILEIRA DE BOTÕES, não pelo título.
    Estreitá-la para caber mais texto é o que reintroduz a sobreposição — os
    botões não encolhem, eles escapam. Quatro medidas, por quantidade de botão. */
@@ -149,6 +191,15 @@
 .data-table .cell-truncate {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Célula de dinheiro. Existe como classe PRÓPRIA, e não só como largura de
+   coluna, para a proibição ser verificável: a varredura estática procura
+   `cell-num` junto de `cell-truncate` na mesma célula e falha se achar. Uma
+   regra que só vive num comentário volta na próxima listagem. */
+.data-table .cell-num,
+.data-table .col-money {
   white-space: nowrap;
 }
 
@@ -241,6 +292,24 @@
 .data-table .valor-estornado {
   color: var(--color-warning);
   font-weight: 600;
+}
+
+/* ── O badge "Estornado integralmente" DENTRO da coluna de dinheiro (F-1b.2)
+   A coluna é `col-money` (150 px) e é dimensionada pelo NÚMERO — alargá-la
+   para caber o badge numa linha só custaria 180 px que sairiam da coluna do
+   processo. Em vez disso o badge desce para baixo do valor e quebra em duas
+   linhas: "Estornado / integralmente" cabe, porque a palavra mais longa tem
+   13 caracteres.
+
+   `white-space: normal` precisa ser reafirmado nos dois lugares: `.data-table
+   td` impõe `nowrap` a toda célula, e `.status-badge` traz o seu próprio. A
+   altura da linha cresce, o que é certo — a célula tem duas informações. */
+.data-table .cell-num .status-badge {
+  display: block;
+  margin-top: var(--space-1);
+  white-space: normal;
+  text-align: right;
+  line-height: var(--line-height-tight);
 }
 
 /* ── Ação indisponível numa linha de listagem (F-1a) ───────────────────────

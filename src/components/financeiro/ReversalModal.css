@@ -49,6 +49,18 @@
   line-height: var(--line-height-normal);
 }
 
+/* ── O mesmo quadro, em tom de aviso (F-1b.2) ─────────────────────────────
+   Vale quando o valor digitado passa do estornável. A frase já mudou (ver
+   `reversalEffect.js`); a cor existe porque o quadro é lido de relance, e um
+   aviso sobre o fundo de sempre passa por mais uma descrição do efeito.
+
+   NÃO é `--color-danger`: nada quebrou e nada foi recusado ainda. É o mesmo
+   tom de aviso que a célula do líquido estornado usa nas listagens. */
+.estorno-efeito--aviso {
+  border-left-color: var(--color-warning);
+  background-color: var(--color-warning-bg);
+}
+
 /* Anel dourado visível em todo controle novo. */
 .estorno-form input:focus-visible,
 .estorno-form button:focus-visible {

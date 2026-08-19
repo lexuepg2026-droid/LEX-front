@@ -11,6 +11,8 @@ import {
   vinculoDoEvento,
   pagamentoDoEvento,
   podeAnular,
+  refDoPagamento,
+  eventoAtenuado,
 } from './statementEntry.js';
 import './FeeStatement.css';
 
@@ -115,8 +117,19 @@ function FeeStatement({ feeId, onEstornar, onAnular, recarregar = 0 }) {
         {eventos.map((evento) => {
           const vinculo = vinculoDoEvento(evento);
           const pagamentoId = pagamentoDoEvento(evento);
+          // DEC-044: a linha que não vale mais é ATENUADA, e a frase do
+          // vínculo diz por quê. Atenuar em vez de esconder — o extrato é
+          // rastreabilidade, e sumir com a linha apagaria o fato de a
+          // alocação ter existido.
+          const atenuado = eventoAtenuado(evento);
           return (
-            <li key={evento.id} className={`extrato__item extrato__item--${tomDoEvento(evento.tipo)}`}>
+            <li
+              key={evento.id}
+              className={
+                `extrato__item extrato__item--${tomDoEvento(evento.tipo)}` +
+                (atenuado ? ' extrato__item--desfeita' : '')
+              }
+            >
               <div className="extrato__cabecalho">
                 <span className="extrato__tipo">{rotuloDoEvento(evento.tipo)}</span>
                 <span className="extrato__data">{formatDate(evento.data)}</span>
@@ -159,8 +172,11 @@ function FeeStatement({ feeId, onEstornar, onAnular, recarregar = 0 }) {
                     Anular estorno
                   </button>
                 )}
+                {/* A mesma referência curta que o vínculo das alocações usa
+                    (DEC-044): um formato só, vindo de `refDoPagamento`. Dois
+                    formatos para a mesma coisa não seriam referência. */}
                 {pagamentoId && evento.tipo === 'pagamento' && (
-                  <span className="extrato__ref">Pagamento #{String(pagamentoId).slice(-6)}</span>
+                  <span className="extrato__ref">Pagamento {refDoPagamento(pagamentoId)}</span>
                 )}
               </div>
             </li>
