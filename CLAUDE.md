@@ -1460,6 +1460,269 @@ na coluna do valor é da F-1b.2; o que esta fase resolve é o vazio não ser mud
 
 ---
 
+## DEC-044 na tela — a linha que deixou de valer diz que deixou de valer (F-1b.2)
+
+**A fase não nasceu de erro de conta.** Os seis passos da F-1b passaram em
+18/08/2026. Ela nasceu de duas coisas que a leitura humana achou por cima
+deles: o extrato conta a história certa e deixa duas linhas sem contexto, e as
+telas novas não cabem em tela estreita.
+
+### O caso real, e por que ele quebra a leitura
+
+Estornar R$ 1.000,00 de um pagamento de R$ 4.500,00 e **anular o estorno**
+deixa o extrato do honorário assim:
+
+| Linha | Valor | Vale? |
+|---|---|---|
+| Alocação | R$ 3.000,00 | sim |
+| Alocação | R$ 1.500,00 | **não** — desfeita pelo estorno |
+| Alocação | R$ 500,00 | sim — é a **substituta**, o resto da de 1.500 |
+| Alocação | R$ 1.000,00 | sim — nasceu da **anulação** |
+| | **R$ 6.000,00** | para um pagamento de R$ 4.500,00 |
+
+A conta do sistema está **certa** (há uma desalocação de 1.500 compensando, e
+`totais.pago` diz 4.500). O que estava errado é a **leitura**: quem lê de cima
+a baixo soma 6.000 e não entende. O estorno anulado já tinha o tratamento certo
+desde a F-1b — a linha diz "este estorno foi anulado depois". A alocação
+desfeita não tinha nenhum.
+
+### A regra
+
+> **Nenhuma linha do extrato pode ser somada por quem lê e dar um total que o
+> sistema não reconhece. Se uma linha não vale mais, ela diz isso.**
+
+Quatro consequências, todas em `components/financeiro/statementEntry.js`:
+
+1. **Alocação desfeita** — renderizada **atenuada**, com o valor **riscado**, e
+   a frase diz *quando* e *por qual estorno*: "Esta alocação foi desfeita em
+   18/08/2026 pelo estorno de R$ 1.000,00 — não entra na soma." A decisão sai
+   de `alocacaoDesfeita(evento)`, que pergunta por `evento.ativa` — o campo que
+   o contrato define como a resposta — e nunca pela presença de um `estornoId`
+   (a desalocação também tem um, e não é a mesma coisa).
+2. **Alocação substituta** (nascida de estorno parcial, DEC-035) — diz de onde
+   veio. Ela **herda a data do pagamento**, então aparece no meio das
+   originais daquele dia; sem a frase, o bloco do dia parece alocar mais do que
+   o pagamento tinha.
+3. **Referência do pagamento** — o vínculo dizia "Do pagamento de 18/08/2026",
+   só pela data, e com dois pagamentos no mesmo dia a frase não os distingue.
+   Agora soma o sufixo curto: "Do pagamento de 08/05/2026 (#1ebee9)". É o
+   **mesmo formato** que a linha do pagamento já exibia, e agora sai de um lugar
+   só — `refDoPagamento()`. Dois formatos para a mesma referência não seriam
+   referência.
+4. **Desalocação com estorno anulado** — diz que o valor voltou. Sem a
+   ressalva, quem lê subtrai duas vezes.
+
+### `dataPagamento` corrigiu uma afirmação ERRADA, não só uma ambiguidade
+
+A alocação nascida de uma **anulação** grava `data` = data da anulação. A frase
+usava essa data: para o caso acima, ela dizia "Do pagamento de 18/08/2026"
+quando o pagamento é de **08/05/2026** — uma data em que pagamento nenhum
+aconteceu. O contrato passa a expor `dataPagamento` ao lado do `pagamentoId`, e
+a tela nomeia a data real. `evento.data` fica como retaguarda para contrato
+antigo, não como fonte preferida.
+
+### A ordem cronológica é DECISÃO, não divergência
+
+O extrato lista **do mais antigo para o mais novo**, contrário ao que o prompt
+da F-1b pediu. Fica assim, e por escrito: **extrato conta uma história, e
+história se lê do começo.** É também o que torna possível a verificação do
+passo 165 — somar as alocações vivas de cima para baixo e bater com o
+pagamento. Invertida, a soma teria de ser feita de trás para frente.
+
+Nota de ordenação: a criação do honorário **não** é necessariamente a primeira
+linha. `historicoStatus` é carimbado com o instante real da criação, e um
+pagamento com data retroativa (o caso normal — lançar em agosto o PIX de maio)
+o antecede. Ordenar por instante de gravação contaria a história na ordem em
+que foi digitada, não na em que aconteceu.
+
+### O que a tela continua NÃO fazendo
+
+Não soma o extrato (`reduce` é proibido por varredura), não recorta a lista por
+`ativa` (o backend manda tudo, marcado) e não reproduz o rateio da desalocação.
+Nada da DEC-040/041/042/043 foi afrouxado por conveniência de tela.
+
+---
+
+## Moeda nunca trunca — e a coluna de dinheiro tem largura própria (F-1b.2)
+
+**Valor cortado é pior que valor ausente**, porque parece legível e não é. A
+coluna "Líquido" da listagem de pagamentos exibia **"R$ 3.50…"**; a coluna
+"Honorário", **"Honorári…"** em quase toda linha.
+
+### A causa, que não era a classe de truncamento
+
+`.data-table--fixed td` aplica `text-overflow: ellipsis` a **toda** célula, não
+só às marcadas com `cell-truncate`. Numa tabela de largura fixa, **largura
+insuficiente já é truncamento**, sem ninguém pedir. As duas colunas eram
+`col-xs` (100 px), que corta em ~8 caracteres — exatamente onde
+"R$ 3.500,00" vira "R$ 3.50…" e "Honorários advocatícios" vira "Honorári…".
+
+### As regras
+
+- Coluna de dinheiro usa **`.col-money`** (150 px) e **nunca** recebe
+  `cell-truncate`. Faltando espaço na tabela, quem cede é a coluna de **texto
+  livre** — a que fica `auto` e tem `title` com o texto inteiro.
+- A largura é dimensionada pelo **valor máximo plausível**, não pelo que está
+  no banco hoje. 150 px dão ~122 px de conteúdo, o bastante para
+  "R$ 1.234.567,89". Calibrar pelos dados atuais é voltar a cortar em silêncio
+  no dia do primeiro honorário de êxito sobre um monte-mor grande.
+- **Data** usa `.col-data` (130 px) e **status** usa `.col-status` (160 px),
+  pelo mesmo argumento: "18/08/20…" se lê como uma data de 2020, e
+  "Parcialm…" não é um status.
+- A proibição é **verificável**: `f1b2.test.js` falha se achar `cell-num` e
+  `cell-truncate` na mesma célula, em **qualquer** das sete listagens — não só
+  nas financeiras. Uma regra que só vive em comentário volta na próxima
+  listagem.
+
+### A coluna "Honorário": por que largura sozinha não resolvia
+
+As descrições reais compartilham 23 caracteres de prefixo ("Honorários
+advocatícios — "). Numa coluna que comporta ~22, alargar só troca "Honorári…"
+por "Honorários advocatíci…", que continua sem diferenciar nada; caber o
+prefixo **mais** o específico passaria de 400 px, e aí some a coluna do
+processo.
+
+A saída foi o **trecho distintivo** (`utils/feeLabel.js`): a descrição segue a
+forma "categoria — específico", e a listagem exibe o específico. A regra é
+**uniforme** (corta sempre que houver separador), porque uma coluna que muda de
+critério linha a linha é pior de varrer com o olho. O separador exige **espaço
+dos dois lados**, para "pré-pago" e "extra-judicial" não serem partidos. A
+descrição inteira continua no `title` e na página para onde o link leva —
+escolhe-se qual metade aparece primeiro, não se apaga nada.
+
+### O badge "Estornado integralmente"
+
+Sai de `utils/statusVisual.js`, como todo rótulo de estado desde a 4.3 — nunca
+de string escrita no JSX. Não é status do backend: é `valorLiquido <= 0`, uma
+distinção de **leitura**, na mesma linhagem de `reparcelada`. Tom `danger`, e
+não `warning`, porque o estorno **parcial** já usa o realce de aviso na célula
+do líquido e os dois precisam se distinguir num relance.
+
+Ele mora na coluna do **valor**, e cabe lá porque **quebra em duas linhas** —
+`white-space: normal` reafirmado contra o `nowrap` da célula *e* o do próprio
+badge. Alargar a coluna para 180 px teria custado a coluna do processo.
+
+---
+
+## Responsividade — LEX é PWA, tela que não cabe é defeito (F-1b.2)
+
+O Daniel anotou "responsividade da tela não adequada" no passo 159 e "rever
+responsividade" no passo 163. As regras abaixo ficam ao lado das classes de
+tabela da 4.3.
+
+### As regras
+
+1. **Nenhuma barra de rolagem horizontal da PÁGINA em 360 px.** Tabela que não
+   cabe rola **dentro do próprio container** (`.table-wrapper`, a regra do
+   passo 111). A página rolando de lado é defeito.
+2. **Nenhum valor em reais quebra no meio nem trunca.** Os quatro números do
+   honorário **empilham** (`auto-fit` + `minmax`) em vez de espremer.
+3. **Modal em 360 px** cabe na largura, cabe na altura **com o teclado virtual
+   aberto**, os botões continuam alcançáveis e o quadro de efeito continua
+   legível — ele é o ponto do modal.
+4. **No extrato**, valor e descrição não colidem: em tela estreita o valor vai
+   para **linha própria** em vez de espremer a frase.
+5. **Breadcrumb longo** encurta com reticências e o bloco do usuário continua
+   na tela.
+6. **`:focus-visible` preservado** em tudo que ganhar CSS novo.
+
+### Os três defeitos reais que foram corrigidos
+
+**a) `span-*` valia por PAR de classes, e o bloco novo ficou de fora.** As
+larguras de grade eram escritas como `.form-group.span-3`, `.form-note.span-3`,
+`.form-fieldset.span-3` — uma lista que cada bloco novo tinha de entrar. O
+preview de alocação (`<div className="plano span-3">`) não entrou, e ocupava
+**uma** das três colunas em desktop. Pior: `.form-info-box` recebia
+`grid-column: span 2` em ≤1023 px e **nada** a devolvia para `1` em ≤767 px —
+num grid de uma coluna, `span 2` cria uma **coluna implícita** e a grade fica
+mais larga que o container. **Era essa a rolagem horizontal do passo 159.**
+
+A largura passa a ser da **classe** (`.span-1/2/3`), com os três pontos de
+quebra. Quem entrar no grid amanhã com `span-3` recebe a largura certa sem
+editar a folha — que é o que a lista por par não garantia. Os pares antigos
+ficam: são mais específicos, dizem a mesma coisa, e removê-los mexeria em seis
+telas para ganhar nada.
+
+**b) `overflow-wrap: anywhere` partia o valor ao meio.** Em `.plano__linha`, ele
+evitava o estouro da caixa cortando onde desse — **inclusive dentro do
+número**: "R$ 3.0" numa linha, "00,00" na outra. Valor partido é o mesmo defeito
+do valor truncado, com outra aparência. Trocado por `break-word`, que só age em
+palavra que sozinha não caberia.
+
+> A regra se apoia num fato do formatador: `Intl` pt-BR separa "R$" dos dígitos
+> com **espaço não-separável** (U+00A0), e dígito não tem oportunidade de
+> quebra. Sem `anywhere`, o valor é **indivisível por construção**. Há teste
+> fixando isso — se o `Intl` passasse a emitir espaço comum, a regra de CSS
+> deixaria de bastar sozinha.
+
+**c) O modal era 32 px mais largo que a tela, e o teclado cobria os botões.** O
+afastamento das bordas era `margin: var(--space-4)` no modal, que tem
+`width: 100%`: num container de 360 px isso dá 360 **mais** 32 de margem, e
+`box-sizing: border-box` não alcança margem. Virou **padding da moldura**.
+
+E `max-height: calc(100vh - …)` ignora o teclado virtual: com ele aberto, o
+modal continua dimensionado para a tela inteira e os botões ficam embaixo do
+teclado, sem rolagem que os alcance. Agora é `100dvh`, com `100vh` na linha
+anterior como retaguarda. A moldura ganhou `overflow-y: auto`, porque
+`align-items: center` com conteúdo mais alto que o container corta os **dois**
+lados e o de cima é inalcançável.
+
+### O que a suíte prova, e o que ela NÃO prova
+
+A varredura alcança **regra**, não **pixel**: ela confirma que `100dvh` está na
+folha, que `span-*` volta à coluna única em 767 px, que `anywhere` sumiu e que
+`auto-fit`/`minmax` está no cabeçalho. Ela não renderiza nada — não há
+navegador, não há layout, não há teclado virtual. **Largura que estoura, botão
+embaixo do teclado e badge que não cabe são, por definição, olho humano**, e
+estão nos passos **165 a 171** do roteiro.
+
+Duas folhas mexidas são **compartilhadas** — `pages/clients/ClientPage.css` e
+`components/ui/Modal.css`. `appliedClasses.test.js` cobre alcance de regra, não
+aparência, então a não-regressão dos formulários antigos é **inteiramente olho
+humano**: é o **passo 171**, escrito para isso.
+
+---
+
+## O aviso preventivo do estorno — avisar sem bloquear (F-1b.2)
+
+Com um valor acima do líquido digitado, o quadro continuava dizendo "Estorno
+integral" até o servidor recusar com 422 — descrevia com segurança um efeito
+que não ia acontecer, porque `valor >= liquido` é verdade tanto **no** teto
+quanto **acima** dele.
+
+`acimaDoEstornavel()` roda **antes** de qualquer outra leitura, e o quadro troca
+a descrição por uma constatação verdadeira, mudando de **tom** junto (aviso, não
+perigo — nada foi recusado ainda).
+
+**O envio continua liberado.** O servidor é a autoridade sobre quanto ainda é
+estornável — padrão do passo 102, e por uma razão concreta: entre abrir o modal
+e confirmar, outro estorno pode ter entrado, e uma tela que barrasse pelo número
+que leu há um minuto recusaria operações legítimas sozinha, sem recurso. Há
+teste fixando que o `submit` só olha `salvando`.
+
+A comparação é em **centavos inteiros**: no teto exato, `45.00 * 100` em float é
+como um aviso falso apareceria bem no valor que o botão preenche sozinho.
+
+---
+
+## O que fica para a F-1b.3 e adiante
+
+**F-1b.3 — as listagens.** Paginador real (o extrato usa "Carregar mais", que é
+o padrão honesto para uma história lida de cima para baixo, mas as três
+listagens financeiras precisam do paginador), filtro por honorário, barra de
+busca em pagamentos e filtro por período (mês atual / últimos 6 meses /
+intervalo) nas três.
+
+Também declarado, e **não** feito aqui: as colunas de **status** e **data** das
+listagens **não financeiras** (`ProcessListPage`, `ClientListPage`,
+`DocumentListPage`) não foram remedidas. Elas não têm coluna de dinheiro, então
+a regra desta fase é vacuamente satisfeita; a varredura já as cobre, e se
+ganharem dinheiro amanhã ela falha.
+
+**F-1c.** Reparcelamento ponta a ponta, a leitura do "de N" pós-reparcelamento,
+e a seção do roteiro que valida o módulo inteiro.
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:

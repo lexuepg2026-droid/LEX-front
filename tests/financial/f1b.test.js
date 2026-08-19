@@ -388,7 +388,19 @@ describe("F-1b — varreduras estáticas", () => {
 
   test("o pagamento estornado integralmente não deixa buraco silencioso", () => {
     const codigo = ler("src/pages/payments/PaymentListPage.jsx");
-    assert.match(codigo, /estornado integralmente — sem recibo/, "o motivo está escrito no lugar do botão");
+    // ── O que mudou na F-1b.2, e por que a asserção mudou junto ───────────
+    // A F-1b escreveu "estornado integralmente — sem recibo" na coluna de
+    // AÇÕES porque não havia badge; o badge era escopo declarado da fase
+    // seguinte. Agora ele existe (`statusVisual.estornado_integralmente`) e
+    // mora na coluna do valor, que é onde o fato acontece — repetir a mesma
+    // frase duas vezes na mesma linha seria ruído.
+    //
+    // O que este teste protege continua idêntico: a linha NÃO pode ficar com
+    // uma célula vazia onde as outras têm botão. Hoje ela tem as duas coisas —
+    // o badge dizendo o que houve, e a nota dizendo por que não há recibo.
+    assert.match(codigo, /estornadoIntegralmente\(p\)/, "a linha reconhece o caso");
+    assert.match(codigo, /status="estornado_integralmente"/, "e exibe o badge do statusVisual");
+    assert.match(codigo, /sem recibo/, "a ausência do botão continua explicada por escrito");
   });
 });
 

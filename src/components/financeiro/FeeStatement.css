@@ -45,6 +45,35 @@
 .extrato__item--saida::before   { background-color: var(--color-danger); }
 .extrato__item--neutro::before  { background-color: var(--color-text-secondary); }
 
+/* ── DEC-044: a linha que deixou de valer ─────────────────────────────────
+   Atenuada, como a parcela reparcelada em `FeeDetailPage.css` e a linha
+   `row-inativa` das listagens — o projeto já tem essa gramática, e inventar
+   um tratamento novo faria "desfeito" parecer outra coisa.
+
+   0.62 e não menos: a linha PRECISA continuar legível. Ela é a resposta para
+   "por que a parcela 2 voltou a dever", e uma linha que só se lê contra a luz
+   esconde exatamente a informação que o extrato existe para dar.
+
+   A faixa lateral perde a cor de direção: um dinheiro que entrou e depois foi
+   desfeito não é entrada nem saída, e deixá-la verde faria o relance na
+   coluna contar o valor como recebido — que é o defeito desta fase. */
+.extrato__item--desfeita {
+  opacity: 0.62;
+}
+
+.extrato__item--desfeita::before {
+  background-color: var(--color-text-secondary);
+}
+
+/* O valor da linha desfeita sai riscado. É o sinal mais curto que existe para
+   "não some este número", e chega antes da frase — quem varre a coluna com o
+   olho não lê o vínculo de cada linha. O risco NÃO substitui a frase: ela diz
+   quando e por qual estorno, o risco só diz que não conta. */
+.extrato__item--desfeita .extrato__valor {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
 .extrato__cabecalho {
   display: flex;
   align-items: baseline;

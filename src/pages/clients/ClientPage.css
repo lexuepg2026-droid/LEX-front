@@ -224,6 +224,39 @@
   .form-grid-inner { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   `span-*` VALE PARA QUALQUER FILHO DO GRID — correção da F-1b.2
+   ═══════════════════════════════════════════════════════════════════════════
+
+   ── O defeito, e por que ele passou ──────────────────────────────────────
+   As regras acima eram escritas por PAR de classes: `.form-group.span-3`,
+   `.form-note.span-3`, `.form-fieldset.span-3`. Cada bloco novo que entrasse
+   no grid tinha de ser acrescentado à lista, e o da F-1b — o preview de
+   alocação, `<div className="plano span-3">` — não foi. Resultado:
+
+     • em desktop o bloco do plano ocupava UMA das três colunas, espremido ao
+       lado dos campos, em vez da largura inteira;
+     • `.form-info-box` tem regra própria e recebia `grid-column: span 2` em
+       ≤1023 px, mas NADA a devolvia para `1` em ≤767 px. Num grid de uma
+       coluna, um filho com `span 2` cria uma coluna IMPLÍCITA — e a grade
+       inteira passa a ser mais larga que o container. Era a barra de rolagem
+       horizontal do formulário de pagamento em 360 px (passo 159).
+
+   ── A correção ───────────────────────────────────────────────────────────
+   A largura passa a ser da CLASSE `span-*`, não do par classe+elemento. Quem
+   entrar no grid amanhã com `span-3` recebe a largura certa sem editar esta
+   folha — que é o que a lista por par não conseguia garantir.
+
+   Os pares antigos ficam onde estão: são mais específicos, dizem a mesma
+   coisa, e removê-los agora seria mexer em seis telas para ganhar nada. */
+.span-1 { grid-column: span 1; }
+.span-2 { grid-column: span 2; }
+.span-3 { grid-column: span 3; }
+
+@media (max-width: 1023px) {
+  .span-3 { grid-column: span 2; }
+}
+
 @media (max-width: 767px) {
   .form-grid.section { grid-template-columns: 1fr; }
   .form-grid.section h3 { grid-column: 1; }
@@ -233,6 +266,13 @@
   .form-note.span-3,
   .form-fieldset.span-3 { grid-column: 1; }
   .form-grid-inner { grid-template-columns: 1fr; }
+
+  /* Numa grade de UMA coluna, `span 2` e `span 3` inventam colunas implícitas
+     e estouram a largura da página. Tudo volta para a coluna única. */
+  .span-1,
+  .span-2,
+  .span-3 { grid-column: 1; }
+  .form-info-box { grid-column: 1; }
 }
 /* Input apontado pelo backend como causa do conflito (409 com `campo`). */
 .form-group input.input-erro,

@@ -108,15 +108,19 @@ function FeeListPage({ embedded = false }) {
         <div className="table-wrapper">
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
           <table className="data-table data-table--fixed">
+            {/* Dinheiro em `col-money`, data em `col-data`, status em
+                `col-status` (F-1b.2). "Valor base" e "Valor" carregam o
+                honorário sobre monte-mor, que é o maior número do sistema —
+                era a coluna com mais chance de cortar em silêncio. */}
             <colgroup>
               <col />
               <col />
               <col className="col-xs" />
               <col className="col-xxs" />
-              <col className="col-sm" />
-              <col className="col-sm" />
-              <col className="col-sm" />
-              <col className="col-xs" />
+              <col className="col-money" />
+              <col className="col-money" />
+              <col className="col-status" />
+              <col className="col-data" />
               <col className="col-acoes-2" />
             </colgroup>
             <thead>

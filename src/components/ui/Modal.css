@@ -1,3 +1,16 @@
+/* ── A moldura, e por que ela tem PADDING e não o modal MARGEM (F-1b.2) ───
+   O afastamento das bordas era `margin: var(--space-4)` no próprio modal, que
+   tem `width: 100%`. Num flex container de 360 px isso dá 360 de largura MAIS
+   32 de margem: o modal saía 32 px mais largo que a tela, e em 360 px o
+   estorno abria com a borda direita cortada. `box-sizing: border-box` (global)
+   não alcança margem — só padding e borda.
+
+   Com o afastamento no PAI, os 360 px passam a ser o container e o modal
+   ocupa os 328 que sobram. `overflow-y: auto` fica aqui também: quando o
+   conteúdo é mais alto que a tela, quem rola é a moldura inteira, e o modal
+   não fica com metade acima da borda superior (o que `align-items: center`
+   sozinho provoca — centrar algo mais alto que o container corta os DOIS
+   lados, e o de cima é inalcançável por rolagem). */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -5,6 +18,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: var(--space-4);
+  overflow-y: auto;
   z-index: 200;
 }
 
@@ -38,10 +53,25 @@
   gap: var(--space-3);
 }
 
+/* ── O TECLADO VIRTUAL (F-1b.2) ───────────────────────────────────────────
+   `100vh` é a altura da viewport IGNORANDO as barras dinâmicas do navegador e
+   o teclado: com o teclado aberto sobre um celular de 360 px, o modal continua
+   dimensionado para a tela inteira e os botões "Cancelar" e "Registrar
+   estorno" ficam embaixo do teclado, sem rolagem que os alcance — o campo de
+   valor recebe foco, o teclado sobe, e a ação some.
+
+   `100dvh` é a altura VISÍVEL no momento, e encolhe quando o teclado abre.
+   Com o `overflow-y: auto` do modal, os botões passam a ser alcançáveis por
+   rolagem dentro dele. `100vh` fica como retaguarda na linha anterior para
+   navegador sem suporte a `dvh` — a declaração que ele não entende é
+   descartada, e ele volta ao comportamento de antes, que não é pior.
+
+   O afastamento das bordas saiu daqui: agora é padding da moldura, para o
+   modal não ficar mais largo que a tela. Ver a nota em `.modal-overlay`. */
 @media (max-width: 767px) {
   .modal {
-    margin: var(--space-4);
     max-height: calc(100vh - var(--space-8));
+    max-height: calc(100dvh - var(--space-8));
     overflow-y: auto;
   }
 }

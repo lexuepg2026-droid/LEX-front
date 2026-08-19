@@ -3,12 +3,14 @@ import { Link, useSearchParams } from 'react-router-dom';
 import paymentService from '../../api/paymentService';
 import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
+import StatusBadge from '../../components/ui/StatusBadge';
 import { formatDate, formatCurrency } from '../../utils/formatters';
+import { rotuloCurtoDoHonorario } from '../../utils/feeLabel';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { FORMA_PAGAMENTO_OPTIONS, labelDe } from '../../utils/enums';
-import { rotuloDasParcelas, temEstorno } from './paymentRow.js';
+import { rotuloDasParcelas, temEstorno, estornadoIntegralmente } from './paymentRow.js';
 import ReversalModal from '../../components/financeiro/ReversalModal';
 import '../../styles/modules.css';
 
@@ -148,13 +150,24 @@ function PaymentListPage({ embedded = false }) {
               "Observações" é texto livre digitado pela advogada, sem teto: era
               a coluna mais exposta ao defeito que a fase corrigiu. */}
           <table className="data-table data-table--fixed">
+            {/* ── As larguras, e o que a F-1b.2 corrigiu ──────────────────
+                "Honorário" era `col-xs` (100 px) e cortava em ~8 caracteres:
+                como quase toda descrição começa por "Honorários advocatícios",
+                a coluna inteira dizia "Honorári…" e não distinguia linha
+                nenhuma. "Líquido" era `col-xs` pelo mesmo motivo e saía
+                "R$ 3.50…".
+
+                Dinheiro vai em `col-money`, data em `col-data`, e o texto
+                livre ("Processo", "Aplicado em", "Forma") fica `auto`: é ele
+                que cede espaço quando a tabela não cabe, porque é o único que
+                tem `title` devolvendo o texto inteiro. */}
             <colgroup>
-              <col className="col-xs" />
+              <col className="col-lg" />
               <col />
               <col />
-              <col className="col-sm" />
-              <col className="col-xs" />
-              <col className="col-sm" />
+              <col className="col-money" />
+              <col className="col-money" />
+              <col className="col-data" />
               <col />
               <col className="col-acoes-2-lg" />
             </colgroup>
@@ -177,10 +190,14 @@ function PaymentListPage({ embedded = false }) {
               {payments.map(p => (
                 <tr key={p._id}>
                   {/* Do pagamento ao honorário (F-1b). */}
+                  {/* O TRECHO DISTINTIVO, não a descrição inteira (F-1b.2):
+                      "Honorários advocatícios — " é prefixo de quase toda
+                      linha, e era só ele que cabia na coluna. O texto integral
+                      continua no `title` e na página para onde o link leva. */}
                   <td className="cell-truncate" title={p.honorarioId?.descricao ?? undefined}>
                     {p.honorarioId?._id ? (
                       <Link to={`/dashboard/honorarios/${p.honorarioId._id}`} className="link-interno">
-                        {p.honorarioId.descricao ?? 'Honorário'}
+                        {rotuloCurtoDoHonorario(p.honorarioId.descricao)}
                       </Link>
                     ) : '—'}
                   </td>
@@ -193,6 +210,14 @@ function PaymentListPage({ embedded = false }) {
                       informação de que houve estorno. */}
                   <td className={`cell-num${temEstorno(p) ? ' valor-estornado' : ''}`}>
                     {formatCurrency(p.valorLiquido ?? p.valor)}
+                    {/* O BADGE (F-1b.2). "R$ 0,00" sozinho no líquido é um
+                        número correto e mudo: não diz se o pagamento foi
+                        estornado, se foi lançado errado ou se a tela falhou.
+                        O rótulo sai do `statusVisual`, como todo rótulo de
+                        estado desde a 4.3 — nunca de string escrita aqui. */}
+                    {estornadoIntegralmente(p) && (
+                      <StatusBadge status="estornado_integralmente" />
+                    )}
                   </td>
                   <td>{formatDate(p.data)}</td>
                   <td className="cell-truncate">{labelDe(FORMA_PAGAMENTO_OPTIONS, p.formaPagamento)}</td>
@@ -220,7 +245,7 @@ function PaymentListPage({ embedded = false }) {
                       </button>
                     ) : (
                       <span className="sem-recibo" title="A emissão de recibo é recusada pelo servidor para pagamento sem valor líquido.">
-                        estornado integralmente — sem recibo
+                        sem recibo
                       </span>
                     )}
                     {/* Estornar a partir da LINHA do pagamento (F-1b): é onde a

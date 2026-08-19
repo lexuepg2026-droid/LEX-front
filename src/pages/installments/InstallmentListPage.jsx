@@ -6,6 +6,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { formatDate, formatCurrency } from '../../utils/formatters';
+import { rotuloCurtoDoHonorario } from '../../utils/feeLabel';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
@@ -131,15 +132,19 @@ function InstallmentListPage({ embedded = false }) {
           )}
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
           <table className="data-table data-table--fixed">
+            {/* Dinheiro em `col-money`, data em `col-data`, status em
+                `col-status` (F-1b.2). "Valor", "Recebido" e "Em aberto"
+                estavam em `col-sm`, que só aguenta até a casa dos milhares;
+                as duas datas em `col-xs` saíam "18/08/20…". */}
             <colgroup>
               <col />
               <col className="col-xxs" />
-              <col className="col-sm" />
-              <col className="col-sm" />
-              <col className="col-sm" />
-              <col className="col-xs" />
-              <col className="col-xs" />
-              <col className="col-xs" />
+              <col className="col-money" />
+              <col className="col-money" />
+              <col className="col-money" />
+              <col className="col-data" />
+              <col className="col-status" />
+              <col className="col-data" />
               <col className="col-acoes-2" />
             </colgroup>
             <thead>
@@ -164,10 +169,12 @@ function InstallmentListPage({ embedded = false }) {
                   {/* Da parcela ao honorário (F-1b): quem está olhando uma
                       parcela quase sempre quer ver a cobrança inteira, e até
                       aqui não havia caminho — só voltar ao menu. */}
+                  {/* Trecho distintivo, pelo mesmo motivo da listagem de
+                      pagamentos (F-1b.2). */}
                   <td className="cell-truncate" title={inst.feeId?.descricao || undefined}>
                     {inst.feeId?._id ? (
                       <Link to={`/dashboard/honorarios/${inst.feeId._id}`} className="link-interno">
-                        {inst.feeId.descricao || 'Honorário'}
+                        {rotuloCurtoDoHonorario(inst.feeId.descricao)}
                       </Link>
                     ) : '—'}
                   </td>

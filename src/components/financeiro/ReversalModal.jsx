@@ -5,7 +5,7 @@ import Loading from '../common/Loading';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { getApiErrorField } from '../../utils/apiError';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
-import { descricaoDoEfeito, descricaoDaAnulacao } from './reversalEffect.js';
+import { descricaoDoEfeito, descricaoDaAnulacao, acimaDoEstornavel } from './reversalEffect.js';
 import '../ui/Modal.css';
 import '../ui/Button.css';
 import './ReversalModal.css';
@@ -143,8 +143,23 @@ function ReversalModal({ open, pagamentoId, estorno, onFechar, onConcluido }) {
 
             {/* O EFEITO, antes de confirmar. É o que a Parte 5 exige: a
                 advogada precisa saber quais parcelas voltam a ficar em aberto
-                antes de mexer no dinheiro. */}
-            <p className="estorno-efeito">
+                antes de mexer no dinheiro.
+
+                ── O AVISO PREVENTIVO (F-1b.2) ─────────────────────────────
+                Acima do estornável, o quadro muda de TOM junto com a frase: um
+                aviso escrito em cima do mesmo fundo de "vai dar certo" se lê
+                como mais uma descrição. O envio continua liberado — quem
+                recusa é o servidor (padrão do passo 102), e é ele que conhece
+                o limite no instante do envio. */}
+            <p
+              className={
+                'estorno-efeito' +
+                (!ehAnulacao && acimaDoEstornavel(pagamento, valor)
+                  ? ' estorno-efeito--aviso'
+                  : '')
+              }
+              role={!ehAnulacao && acimaDoEstornavel(pagamento, valor) ? 'status' : undefined}
+            >
               {ehAnulacao
                 ? descricaoDaAnulacao(estorno)
                 : descricaoDoEfeito(pagamento, valor)}
