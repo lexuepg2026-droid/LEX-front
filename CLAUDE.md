@@ -1707,20 +1707,174 @@ como um aviso falso apareceria bem no valor que o botão preenche sozinho.
 
 ## O que fica para a F-1b.3 e adiante
 
-**F-1b.3 — as listagens.** Paginador real (o extrato usa "Carregar mais", que é
-o padrão honesto para uma história lida de cima para baixo, mas as três
-listagens financeiras precisam do paginador), filtro por honorário, barra de
-busca em pagamentos e filtro por período (mês atual / últimos 6 meses /
-intervalo) nas três.
+**F-1b.3 — as listagens.** FEITA. Paginador real nas três listagens financeiras
+**e no extrato** (o "Carregar mais" saiu: ver a seção da F-1b.3 abaixo), filtro
+por honorário, barra de busca e filtro por período nas três.
 
-Também declarado, e **não** feito aqui: as colunas de **status** e **data** das
+Também declarado, e **não** feito ali: as colunas de **status** e **data** das
 listagens **não financeiras** (`ProcessListPage`, `ClientListPage`,
 `DocumentListPage`) não foram remedidas. Elas não têm coluna de dinheiro, então
-a regra desta fase é vacuamente satisfeita; a varredura já as cobre, e se
-ganharem dinheiro amanhã ela falha.
+a regra da F-1b.2 é vacuamente satisfeita; a varredura já as cobre, e se
+ganharem dinheiro amanhã ela falha. **Elas também não foram convertidas ao
+paginador novo** — o componente é genérico o bastante, e converter tela que
+ninguém pediu é o trabalho que some no meio de outro.
 
 **F-1c.** Reparcelamento ponta a ponta, a leitura do "de N" pós-reparcelamento,
 e a seção do roteiro que valida o módulo inteiro.
+
+---
+
+## RESTRIÇÃO DE PROJETO — o layout das páginas vai mudar (F-1b.3)
+
+**A decisão não é do Daniel.** O desenho das páginas do LEX deve mudar por
+decisão externa, e o desenho novo ainda não existe.
+
+**A consequência prática, e ela vale a partir de agora:** invista no que
+sobrevive a um redesenho, e gaste o mínimo possível em CSS de página.
+
+| Sobrevive ao redesenho | Não sobrevive |
+|---|---|
+| contrato de API (filtros, envelope, `campo` do 400) | grade da página, espaçamento, ordem visual das colunas |
+| comportamento (foco que não se perde, página que volta ao 1, Esc que fecha, foco que volta ao gatilho) | escolha de cor, sombra, arredondamento |
+| componente reutilizável (`Paginador`, `ActionMenu`, `FinancialFilters`) | o lugar exato onde ele é montado na tela |
+| função pura testável (`paginacao.js`, `periodo.js`, `filterSummary.js`, `statementEntry.js`) | tudo o que só existe dentro do JSX |
+
+**O que isso PROÍBE:** reestruturar tela existente por gosto. Na F-1b.3 o
+extrato ficou como está (a DEC-044 resolveu a leitura e o passo 165 provou), e
+o agrupamento por operação **não** entrou.
+
+**O que isso NÃO afrouxa:** as regras da F-1b.2 continuam valendo integralmente
+— moeda nunca trunca, `col-money`/`col-data`/`col-status` com as larguras
+declaradas, responsividade em 360 px. Um redesenho futuro não é licença para
+regredir; é motivo a mais para as regras estarem em teste e não em memória.
+
+**Consequência no roteiro:** o passo **167** (responsividade em 360/768/desktop)
+passou em 19/08/2026 e **precisa ser reexecutado** quando o desenho novo
+chegar. Está registrado lá e aqui.
+
+---
+
+## Fase F-1b.3 — achar o lançamento
+
+**A pergunta da fase:** achar um lançamento sem precisar lembrar de qual
+honorário ele é.
+
+### Paginador à mão, e as contas fora do componente
+
+`components/ui/Paginador.jsx` + `components/ui/paginacao.js`. Zero dependência
+(regra do projeto): são dois botões, um rótulo e três contas. As contas vivem
+no `.js`, testadas como função pura — o off-by-one da última página e o
+`totalPages` de um conjunto vazio (que é **1**, e não 0: "página 1 de 0" não é
+uma posição em que alguém possa estar) estão fixados em teste.
+
+Substituiu, nas três listagens financeiras **e no extrato**:
+
+- o teto 100 + `aviso-lista-parcial` da F-0 ("Mostrando 100 de 137. Use os
+  filtros para reduzir o conjunto."). Era honesto e não era navegação: quem
+  tinha 137 pagamentos não tinha como chegar no 101º;
+- o "Carregar mais" do extrato. O argumento do acúmulo — o extrato se lê como
+  história — vale para quem lê a história inteira, e não cobre quem procura UM
+  lançamento. Com acúmulo **não há como voltar**: não existe posição para onde
+  voltar.
+
+`.aviso-lista-parcial` continua em `modules.css`, **sem uso**, com comentário
+dizendo por quê: as listagens não financeiras ainda não foram convertidas.
+
+### O estado dos filtros vive num hook só
+
+`hooks/useListFilters.js`. Duas regras que ele existe para tornar impossíveis de
+esquecer:
+
+1. **mudar filtro volta para a página 1** — senão quem está na página 4 e
+   escolhe um honorário com duas páginas cai numa página vazia e conclui que o
+   honorário não tem lançamento;
+2. **trocar de página não perde filtro nem busca** — consequência de a página
+   ser mais um campo do mesmo objeto de consulta, e não um estado paralelo.
+
+Escrito como hook, e não repetido nas três telas, porque **as três telas são
+exatamente onde a regra se perde**: a que for escrita por último copia a
+anterior e esquece o `setPage(1)`.
+
+### A barra de filtros é componente de MÓDULO — a causa do passo 155
+
+`components/financeiro/FinancialFilters.jsx`, declarado no escopo do módulo.
+Um componente declarado **dentro** do render do pai é um tipo novo a cada
+consulta: o React desmonta e remonta a árvore inteira dele, e **o input perde o
+foco** — o mesmo defeito do `return <Loading/>` antecipado, por outra porta.
+
+A varredura estática (`tests/regressions/f1b3.test.js`) trava as duas portas.
+
+`children` recebe os filtros que só uma listagem tem (status, tipo, forma de
+pagamento): uma prop `mostrarStatus` por listagem viraria uma lista de
+bandeiras que só cresce.
+
+### DEC-045 — a referência do pagamento é o que o humano reconhece
+
+**O defeito, com o caso real (passo 166).** Dois pagamentos do mesmo dia saíram
+referenciados como **#e66b7a** e **#e66b7c** — diferem no **último** caractere.
+A suíte provava que não colidiam; ninguém casava as linhas de relance. A causa
+é estrutural: os seis últimos hex de um ObjectId são o **contador**, que
+incrementa de 1 em 1, então pagamentos criados em sequência **sempre** colidem
+no prefixo desses seis.
+
+**A decisão.** O vínculo nomeia o pagamento por **valor** e **forma**, além da
+data:
+
+> Do pagamento de **R$ 300,00 em dinheiro** (10/06/2026, #db9126), aplicado na
+> parcela 3.
+
+O sufixo do id **permanece**, como desempate do caso degenerado (dois
+pagamentos idênticos em valor, forma e data — duas notas de R$ 300 no mesmo
+dia é caso real). Deixou de ser a referência principal.
+
+**Uma função só, usada pelos dois lados do vínculo:** `identidadeDoPagamento`
+em `statementEntry.js`. A frase da alocação e a referência da linha do próprio
+pagamento saem dela — é isso que faz as duas se casarem na tela. Duas redações
+para a mesma identidade seria o defeito da DEC-045 outra vez, com outro
+sintoma.
+
+O backend passou a mandar `valorPagamento` e `formaPagamento` nas linhas de
+alocação e desalocação do extrato. Sem pagamento por trás (saldo adiantado) os
+dois vêm `null`, e a frase **não escreve "R$ 0,00"**.
+
+### Menu de três pontos — `components/ui/ActionMenu.jsx`
+
+A coluna Ações de Pagamentos tinha **três** botões ("Baixar recibo",
+"Estornar", "Editar") numa coluna de 230 px dimensionada para dois: o terceiro
+ficava **fora da tela**. Ação escondida atrás de rolagem que ninguém percebe é
+ação que não existe.
+
+Alargar a coluna resolveria hoje e quebraria na quarta ação. O menu tem largura
+**fixa de um botão** (`.col-acoes-menu`, 96 px), qualquer que seja o número de
+ações — é a medida que não volta a quebrar quando a F-1c acrescentar
+"Reparcelar" e a F-2, "Mudar status".
+
+Comportamento, igual ao dos modais do projeto (passo 31): abre por clique e por
+teclado (é um `<button>` de verdade — Enter e Espaço vêm de graça), fecha com
+**Esc** e com clique fora (`mousedown`, não `click`: um item que navega desmonta
+a linha antes de o `click` chegar ao documento), e **devolve o foco ao botão que
+o abriu**. `:focus-visible` vem da regra global e não é sobrescrito.
+
+**Escrito para a F-2 reusar**, e não além disso: sem submenu, sem ícone, sem
+atalho por letra, sem posicionamento automático — nada disso tem chamador.
+
+**O que NÃO entrou no menu:** a nota **"sem recibo"** do pagamento
+integralmente estornado e o **"Reparcelada"** da parcela cancelada. As duas são
+**explicação, não ação** — escondê-las devolveria o buraco silencioso que a
+F-1b fechou, com um passo a mais: a advogada teria de abrir um menu para
+descobrir por que falta um botão.
+
+### Três testes antigos foram REESCRITOS, não afrouxados
+
+| Teste | O que ele fixava | Por que mudou |
+|---|---|---|
+| `regressions/f0.test.js` | `const LIMITE = 100` e `aviso-lista-parcial` nas duas listagens | fixava o **andaime** que esta fase substituiu. Passou a exigir `POR_PAGINA`, `setTotal` e `<Paginador total={total}>` |
+| `financial/f1b.test.js` | `Carregar mais` no extrato | idem. Passou a exigir `<Paginador>` e a **proibir** o "Carregar mais" — os dois padrões dariam duas posições para a mesma lista |
+| `financial/f1b2.test.js` | a tela chama `refDoPagamento` | a DEC-045 pôs o sufixo dentro de uma identidade maior. Passou a exigir `referenciaDaLinhaDePagamento` — a regra protegida é a mesma: **formato único, num lugar só** |
+| `financial/estatica.test.js` | `(p.valorLiquido ?? p.valor) > 0 &&` literal | o líquido virou variável da linha (decide dois itens do menu). Passou a medir as duas metades: de onde o líquido sai, e que é ele quem decide o recibo |
+
+Cada um leva no próprio arquivo o porquê da mudança. **Um teste que trava o
+andaime contra a obra é um teste que precisa ser reescrito, não apagado.**
 ---
 
 ## Rotina de encerramento de sessão
