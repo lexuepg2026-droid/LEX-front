@@ -1,0 +1,90 @@
+/* Menu de ações (três pontos) — Fase F-1b.3.
+
+   ── A regra que este arquivo existe para sustentar ───────────────────────
+   A coluna de ações passa a ter largura de UM botão, qualquer que seja o
+   número de ações. É isso que impede a coluna de voltar a cortar quando a
+   F-1c acrescentar "Reparcelar" e a F-2, "Mudar status".
+
+   Nada de `outline: none` em lugar nenhum daqui: o anel de foco vem da regra
+   global (`styles/global.css`), e apagá-lo dentro de um `:focus-visible` foi
+   exatamente o defeito que a 4.5 mediu. */
+
+.action-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.action-menu__gatilho {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  /* Alvo de toque de 40 px: em 360 px o dedo erra um botão de 24 px, e errar
+     aqui abre a linha errada. */
+  min-width: 40px;
+  min-height: 40px;
+  padding: var(--space-1) var(--space-2);
+}
+
+.action-menu__gatilho:hover {
+  background-color: var(--color-surface-raised);
+  color: var(--color-text-primary);
+}
+
+/* O painel. `position: absolute` ancorado à direita do gatilho: numa tabela, a
+   coluna de ações é a última, e abrir para a esquerda é o que mantém o menu
+   dentro da tela mesmo quando a tabela rola. */
+.action-menu__lista {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--space-1));
+  z-index: 20;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  padding: var(--space-1);
+}
+
+.action-menu__item {
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: block;
+  font-size: var(--font-size-sm);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.action-menu__item:hover:not(:disabled) {
+  background-color: var(--color-surface);
+}
+
+.action-menu__item:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Ação destrutiva visualmente distinta — a mesma cor de perigo do
+   `ui-btn--danger` e do badge de status. Distinta pela COR do texto, e não por
+   um fundo cheio: um item vermelho sólido no meio da lista se lê como o item
+   selecionado. */
+.action-menu__item--destrutivo {
+  color: var(--color-danger);
+}
+
+.action-menu__item--destrutivo:hover:not(:disabled) {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+}

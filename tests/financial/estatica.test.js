@@ -334,11 +334,29 @@ describe("recibo", () => {
     //
     // A regra que este teste protege é a mesma desde a 4.2: a tela não oferece
     // um papel que o backend recusa emitir. O que mudou é como se pergunta.
+    //
+    // ── F-1b.3 ───────────────────────────────────────────────────────────
+    // As ações da linha foram para um menu de três pontos (a coluna cortava o
+    // terceiro botão), e o líquido, que agora decide DOIS itens do menu,
+    // virou uma variável da linha em vez de ser recalculado em cada condição.
+    // A asserção passou a medir as duas metades da mesma regra: de onde o
+    // líquido sai, e que é ele quem decide se o recibo é oferecido.
     const codigo = ler("src/pages/payments/PaymentListPage.jsx");
     assert.match(
       codigo,
-      /\(p\.valorLiquido\s*\?\?\s*p\.valor\)\s*>\s*0\s*&&/,
-      "o botão de recibo deixou de checar o líquido; a rota responde 404 ali"
+      /const\s+liquido\s*=\s*p\.valorLiquido\s*\?\?\s*p\.valor/,
+      "o líquido da linha deixou de sair de `valorLiquido ?? valor`"
+    );
+    assert.match(
+      codigo,
+      /liquido\s*>\s*0\s*\n?\s*\?/,
+      "o recibo deixou de checar o líquido; a rota responde 404 ali"
+    );
+    assert.match(
+      codigo,
+      /liquido\s*<=\s*0\s*&&/,
+      "a nota `sem recibo` deixou de aparecer no caso em que o backend recusa " +
+      "emitir — e o vazio mudo é o defeito que a F-1b fechou"
     );
   });
 

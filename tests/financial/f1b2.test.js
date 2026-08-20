@@ -197,8 +197,18 @@ describe("F-1b.2 — a linha diz de QUAL pagamento veio", () => {
     const tela = semComentarios(ler("src/components/financeiro/FeeStatement.jsx"));
     // Uma segunda fatia escrita à mão no JSX seria um segundo formato para a
     // mesma referência — e aí ela deixa de referenciar.
-    assert.doesNotMatch(tela, /slice\(-6\)/, "a tela não repete a fatia: chama `refDoPagamento`");
-    assert.match(tela, /refDoPagamento/);
+    assert.doesNotMatch(tela, /slice\(-6\)/, "a tela não repete a fatia");
+    // ── F-1b.3 (DEC-045) ─────────────────────────────────────────────────
+    // O sufixo do id deixou de ser a referência PRINCIPAL e virou desempate,
+    // dentro de uma identidade maior (valor, forma, data, id). Quem monta essa
+    // identidade é `identidadeDoPagamento`, e as DUAS linhas — a do vínculo e a
+    // do próprio pagamento — passam por ela. A regra protegida é a mesma:
+    // formato único, num lugar só.
+    assert.match(
+      tela,
+      /referenciaDaLinhaDePagamento/,
+      "a linha do pagamento deixou de usar a identidade compartilhada"
+    );
   });
 
   test("sem `pagamentoId` a frase não escreve `#undefined`", () => {

@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import feeService from '../../api/feeService';
 import Loading from '../common/Loading';
 import EmptyState from '../ui/EmptyState';
+import Paginador from '../ui/Paginador';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import {
@@ -11,7 +12,7 @@ import {
   vinculoDoEvento,
   pagamentoDoEvento,
   podeAnular,
-  refDoPagamento,
+  referenciaDaLinhaDePagamento,
   eventoAtenuado,
 } from './statementEntry.js';
 import './FeeStatement.css';
@@ -29,16 +30,19 @@ import './FeeStatement.css';
 // no dia em que o extrato ganhasse página 2, a ordem seria a da página, não a
 // do honorário.
 //
-// ── "Carregar mais", e não paginador ──────────────────────────────────────
-// O contrato é paginado (`page`/`limit`, padrão da F-0) e o PAGINADOR REAL é
-// da F-1b.2 — junto com os filtros e a barra de busca, que são a mesma
-// família de trabalho. Aqui o padrão honesto é acumular: o extrato se lê de
-// cima para baixo, como história, e trocar de página no meio de uma história
-// obriga a lembrar o que ficou na anterior.
+// ── De "Carregar mais" para PAGINADOR (F-1b.3) ────────────────────────────
+// A F-1b acumulava: o extrato se lê de cima para baixo, como história, e
+// trocar de página no meio de uma história obriga a lembrar o que ficou na
+// anterior. O argumento continua verdadeiro para quem LÊ a história inteira.
 //
-// O botão só aparece quando há mais o que carregar, e diz quantos faltam —
-// silêncio no lugar dele seria uma lista curta com cara de completa, que é
-// exatamente o defeito que a F-0 corrigiu nas listagens.
+// O que ele não cobre é quem procura UM lançamento — que é a pergunta desta
+// fase. Com "carregar mais", chegar ao evento mais antigo de um honorário com
+// duzentos movimentos custa dez cliques e uma lista de duzentas linhas na
+// tela; e não há como VOLTAR, porque não existe posição para onde voltar.
+//
+// O paginador é o mesmo componente das três listagens financeiras — um lugar
+// só onde as contas de página vivem. A ordem continua sendo a do backend, e a
+// tela continua não mesclando, não ordenando e não somando.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const POR_PAGINA = 20;
@@ -48,34 +52,23 @@ function FeeStatement({ feeId, onEstornar, onAnular, recarregar = 0 }) {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [carregandoMais, setCarregandoMais] = useState(false);
   const [error, setError] = useState('');
 
-  const carregar = useCallback(async (pagina, { acumular }) => {
-    try {
-      const res = await feeService.getStatement(feeId, { page: pagina, limit: POR_PAGINA });
-      const { data, total: quantos } = res.data;
-      setTotal(quantos ?? 0);
-      setEventos((anteriores) => (acumular ? [...anteriores, ...data] : data));
-      setPage(pagina);
-    } catch (err) {
-      setError(getFinancialErrorMessage(err, 'Falha ao carregar o extrato.'));
-    }
-  }, [feeId]);
+  // Um estorno acabou de ser registrado (o pai mudou `recarregar`), ou o
+  // honorário mudou: a leitura volta para a página 1. Ficar na página 4 de um
+  // extrato que acabou de ganhar um evento mostraria uma janela deslocada
+  // sobre uma história que mudou de tamanho.
+  useEffect(() => { setPage(1); }, [feeId, recarregar]);
 
   useEffect(() => {
     let ativo = true;
     setLoading(true);
     setError('');
-    // A primeira página SEMPRE recomeça a lista: quando o pai manda recarregar
-    // (um estorno acabou de ser registrado), acumular por cima deixaria o
-    // evento antigo e o novo lado a lado, contando o mesmo fato duas vezes.
-    feeService.getStatement(feeId, { page: 1, limit: POR_PAGINA })
+    feeService.getStatement(feeId, { page, limit: POR_PAGINA })
       .then((res) => {
         if (!ativo) return;
         setEventos(res.data.data ?? []);
         setTotal(res.data.total ?? 0);
-        setPage(1);
       })
       .catch((err) => {
         if (ativo) setError(getFinancialErrorMessage(err, 'Falha ao carregar o extrato.'));
@@ -84,17 +77,13 @@ function FeeStatement({ feeId, onEstornar, onAnular, recarregar = 0 }) {
         if (ativo) setLoading(false);
       });
     return () => { ativo = false; };
-  }, [feeId, recarregar]);
+  }, [feeId, recarregar, page]);
 
-  const carregarMais = async () => {
-    setCarregandoMais(true);
-    await carregar(page + 1, { acumular: true });
-    setCarregandoMais(false);
-  };
-
-  // `<Loading />` em toda leitura — regra do projeto. Só na PRIMEIRA: trocar a
-  // lista inteira por um spinner ao carregar mais faria a advogada perder o
-  // ponto onde estava lendo.
+  // `<Loading />` em toda leitura — regra do projeto. Aqui o `return`
+  // antecipado é legítimo, e a diferença com as LISTAGENS é a razão de ele
+  // continuar: o extrato não tem controle de filtro nenhum dentro de si, então
+  // não há input para desmontar. É a causa do defeito do passo 155, e não a
+  // forma dele, que a regra proíbe.
   if (loading) return <Loading />;
 
   if (error) return <p className="error-message">{error}</p>;
@@ -108,8 +97,6 @@ function FeeStatement({ feeId, onEstornar, onAnular, recarregar = 0 }) {
       />
     );
   }
-
-  const faltam = total - eventos.length;
 
   return (
     <div className="extrato">
@@ -172,11 +159,16 @@ function FeeStatement({ feeId, onEstornar, onAnular, recarregar = 0 }) {
                     Anular estorno
                   </button>
                 )}
-                {/* A mesma referência curta que o vínculo das alocações usa
-                    (DEC-044): um formato só, vindo de `refDoPagamento`. Dois
-                    formatos para a mesma coisa não seriam referência. */}
+                {/* A MESMA identidade que o vínculo das alocações escreve
+                    (DEC-045): valor, forma, data e — como desempate — o sufixo
+                    do id, tudo saindo de `identidadeDoPagamento`. Um formato
+                    só, para as duas linhas se casarem quando a advogada olha a
+                    tela. Dois formatos para a mesma coisa não seriam
+                    referência: foi exatamente esse o defeito do passo 166. */}
                 {pagamentoId && evento.tipo === 'pagamento' && (
-                  <span className="extrato__ref">Pagamento {refDoPagamento(pagamentoId)}</span>
+                  <span className="extrato__ref">
+                    Pagamento {referenciaDaLinhaDePagamento(evento)}
+                  </span>
                 )}
               </div>
             </li>
@@ -184,18 +176,13 @@ function FeeStatement({ feeId, onEstornar, onAnular, recarregar = 0 }) {
         })}
       </ol>
 
-      {faltam > 0 && (
-        <div className="extrato__mais">
-          <button
-            type="button"
-            className="ui-btn ui-btn--secondary ui-btn--md"
-            onClick={carregarMais}
-            disabled={carregandoMais}
-          >
-            {carregandoMais ? 'Carregando…' : `Carregar mais (${faltam} restantes)`}
-          </button>
-        </div>
-      )}
+      <Paginador
+        page={page}
+        limit={POR_PAGINA}
+        total={total}
+        rotulo="movimentações"
+        onMudarPagina={setPage}
+      />
     </div>
   );
 }

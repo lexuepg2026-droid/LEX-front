@@ -1,0 +1,37 @@
+/* Barra de filtros das listagens financeiras — Fase F-1b.3.
+
+   Mínimo deliberado: o layout das páginas deve mudar por decisão externa ao
+   Daniel (restrição registrada no CLAUDE.md), e o que sobrevive a um redesenho
+   é o comportamento — o foco que não se perde, a página que volta ao 1, o
+   recorte que fica visível. `.filter-bar`, que já existe em `modules.css`,
+   continua fazendo o arranjo dos controles; aqui só entra o que ela não tem. */
+
+.filtros-financeiros {
+  margin-bottom: var(--space-4);
+}
+
+/* A busca ganha mais espaço que os selects: é o único controle cujo conteúdo é
+   digitado, e o `placeholder` diz o que ela alcança. */
+.filtros-financeiros__busca {
+  flex: 1 1 260px;
+  min-width: 180px;
+}
+
+.filtros-financeiros__aplicados {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.filtros-financeiros__rotulo {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.filtros-financeiros__limpar {
+  margin-left: var(--space-2);
+}

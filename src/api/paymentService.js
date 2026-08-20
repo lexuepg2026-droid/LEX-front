@@ -10,13 +10,26 @@ import { nomeDoAnexo } from '../utils/download';
 // de reativação morreu (DEC-034) e o pagamento deixou de ser desativável —
 // desfazer entrada é ESTORNO. Um filtro que nunca devolve nada é pior que a
 // ausência dele: sugere que existe um conjunto para olhar.
-const listPayments = ({ page = 1, limit = 20, installmentId, honorarioId, processoId, formaPagamento, tipo } = {}) => {
+// `busca`, `de` e `ate` são da F-1b.3: a busca casa descrição do honorário,
+// número do processo e as observações do próprio pagamento; o par de período
+// recorta pela DATA DO PAGAMENTO, com as bordas inclusivas.
+//
+// Cada parâmetro só entra quando tem valor. Mandar `busca=""` faria a URL
+// mudar a cada tecla apagada e produziria uma consulta nova para dizer a mesma
+// coisa que a ausência do parâmetro já diz.
+const listPayments = ({
+  page = 1, limit = 20, installmentId, honorarioId, processoId, formaPagamento, tipo,
+  busca, de, ate
+} = {}) => {
   const params = { page, limit };
   if (installmentId) params.installmentId = installmentId;
   if (honorarioId) params.honorarioId = honorarioId;
   if (processoId) params.processoId = processoId;
   if (formaPagamento) params.formaPagamento = formaPagamento;
   if (tipo) params.tipo = tipo;
+  if (busca) params.busca = busca;
+  if (de) params.de = de;
+  if (ate) params.ate = ate;
   return api.get('/payments', { params });
 };
 const getPaymentById = (id) => api.get(`/payments/${id}`);
