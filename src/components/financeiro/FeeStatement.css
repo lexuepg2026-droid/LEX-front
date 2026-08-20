@@ -135,10 +135,10 @@
   font-variant-numeric: tabular-nums;
 }
 
-.extrato__mais {
-  display: flex;
-  justify-content: center;
-}
+/* `.extrato__mais` SAIU na F-1b.3, junto com o botão "Carregar mais": o
+   extrato passou a usar o mesmo paginador das três listagens financeiras, e
+   uma regra sem elemento é a próxima a ser copiada por engano. O estilo do
+   paginador vive em `ui/Paginador.css`. */
 
 /* O anel dourado de foco é preservado em todo controle novo — regra do
    projeto desde a auditoria de acessibilidade. */

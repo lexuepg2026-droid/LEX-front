@@ -1,11 +1,22 @@
 import api from './axiosConfig';
 
-const listInstallments = ({ page = 1, limit = 20, processoId, status, inativos } = {}) => {
+// `honorarioId`, `busca`, `de` e `ate` são da F-1b.3. O parâmetro chama-se
+// `honorarioId` e não `feeId`: é o `feeId` do schema, com o nome que a tela e
+// a listagem de pagamentos já usam — dois nomes para o mesmo recorte, um por
+// rota, obrigaria a tela a lembrar qual é qual. O período recorta por
+// VENCIMENTO.
+const listInstallments = ({
+  page = 1, limit = 20, processoId, honorarioId, status, inativos, busca, de, ate
+} = {}) => {
   const params = { page, limit };
   if (processoId) params.processoId = processoId;
+  if (honorarioId) params.honorarioId = honorarioId;
   if (status) params.status = status;
   // `inativos=true` lista SÓ as desativadas — é um modo, não um "incluir".
   if (inativos) params.inativos = true;
+  if (busca) params.busca = busca;
+  if (de) params.de = de;
+  if (ate) params.ate = ate;
   return api.get('/installments', { params });
 };
 const getInstallmentById = (id) => api.get(`/installments/${id}`);

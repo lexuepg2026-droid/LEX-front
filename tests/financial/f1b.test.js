@@ -339,9 +339,28 @@ describe("F-1b — varreduras estáticas", () => {
 
   test("o extrato pagina pelo contrato do backend (page/limit da F-0)", () => {
     const codigo = semComentarios(ler("src/components/financeiro/FeeStatement.jsx"));
-    assert.match(codigo, /page:/, "manda `page`");
+    // Aceita a forma abreviada (`{ page, limit: POR_PAGINA }`): o que importa
+    // é que os dois parâmetros do contrato saiam da chamada, não a sintaxe.
+    assert.match(codigo, /getStatement\(\s*feeId\s*,\s*\{[^}]*\bpage\b/, "manda `page`");
     assert.match(codigo, /limit:/, "e `limit`");
-    assert.match(codigo, /Carregar mais/, "o padrão honesto declarado para esta fase");
+    // ── F-1b.3: "Carregar mais" virou PAGINADOR ──────────────────────────
+    //
+    // O acúmulo era o padrão honesto ENQUANTO não havia paginador — o extrato
+    // se lê como história, e trocar de página no meio de uma história obriga a
+    // lembrar o que ficou na anterior. O argumento vale para quem lê a
+    // história inteira; não cobre quem procura UM lançamento, que é a pergunta
+    // da F-1b.3. Com acúmulo não há como VOLTAR: não existe posição para onde
+    // voltar.
+    //
+    // O que este teste protege continua sendo o mesmo: que a tela navegue pelo
+    // contrato do backend em vez de pedir tudo de uma vez.
+    assert.match(codigo, /<Paginador/, "o extrato navega pelo paginador comum");
+    assert.doesNotMatch(
+      codigo,
+      /Carregar mais/,
+      "os dois padrões não convivem: o acúmulo e o paginador dariam duas " +
+      "posições diferentes para a mesma lista"
+    );
   });
 
   test("o preview vem da API e NÃO é recalculado na tela", () => {

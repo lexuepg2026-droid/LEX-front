@@ -174,6 +174,19 @@
 /* A coluna de ações é dimensionada pela FILEIRA DE BOTÕES, não pelo título.
    Estreitá-la para caber mais texto é o que reintroduz a sobreposição — os
    botões não encolhem, eles escapam. Quatro medidas, por quantidade de botão. */
+/* ── A COLUNA DE UM BOTÃO SÓ (F-1b.3) ─────────────────────────────────────
+   As ações passaram para um menu de três pontos. A coluna deixa de ser
+   dimensionada pela FILEIRA de botões e passa a ter a largura de UM: 96 px
+   cabem o gatilho de 40 px, a nota "sem recibo" que fica ao lado dele (ela é
+   explicação, não ação, e por isso não entrou no menu) e o padding da célula.
+
+   É a medida que não volta a quebrar: a F-1c acrescenta "Reparcelar" e a F-2,
+   "Mudar status", e nenhuma das duas muda a largura desta coluna.
+
+   As medidas por quantidade de botão continuam abaixo — as listagens não
+   financeiras ainda as usam, e convertê-las é trabalho de outra fase. */
+.col-acoes-menu { width: 96px; }
+
 .col-acoes-2    { width: 180px; }
 /* Dois botões, um deles com rótulo longo ("Baixar recibo"). Nasceu na F-1a:
    a listagem de pagamentos perdeu o botão "Remover" — pagamento não se apaga,
@@ -270,10 +283,16 @@
 }
 
 /* ── Aviso de listagem incompleta (Fase F-0) ────────────────────────────────
-   Aparece quando o total do conjunto é maior do que o que a página trouxe.
-   Até a F-0 as listagens por processo recebiam TUDO, porque o backend pulava a
-   paginação nesse caminho; corrigido isso, uma lista truncada em silêncio
-   pareceria completa — e a advogada somaria valores que não estão todos ali.
+   SEM USO desde a F-1b.3, e mantido de propósito.
+
+   Ele avisava que a lista tinha sido truncada — "Mostrando 100 de 137. Use os
+   filtros para reduzir o conjunto." As três listagens financeiras trocaram o
+   aviso por um PAGINADOR, que responde a mesma pergunta com navegação em vez
+   de instrução. A regra fica porque as listagens NÃO financeiras (clientes,
+   processos, seções) ainda não foram convertidas — converter tela que ninguém
+   pediu é o trabalho que some no meio de outro — e é para elas que a classe
+   existe no dia em que uma delas passar a truncar.
+
    Tom de aviso, não de erro: não há nada quebrado, há mais dado do que cabe. */
 .aviso-lista-parcial {
   margin: 0 0 var(--space-3);

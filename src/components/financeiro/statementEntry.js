@@ -1,4 +1,5 @@
 import { formatCurrency, formatDate } from '../../utils/formatters.js';
+import { FORMA_PAGAMENTO_OPTIONS, labelDe } from '../../utils/enums.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // UMA ENTRADA DO EXTRATO, EM PALAVRAS — Fase F-1b
@@ -100,33 +101,100 @@ const parcelaEscrita = (evento) =>
     : 'uma parcela que não está mais na lista';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// A REFERÊNCIA CURTA DO PAGAMENTO — DEC-044, item 3
+// A REFERÊNCIA CURTA DO PAGAMENTO — DEC-044, item 3, revisto pela DEC-045
 //
+// ── O que a DEC-044 decidiu, e por que estava certa pela metade ──────────
 // "Do pagamento de 18/08/2026" não distingue nada quando houve DOIS pagamentos
 // naquele dia, e dois pagamentos no mesmo dia é o caso comum (o PIX do cliente
-// e a transferência do sócio). O `pagamentoId` já estava no contrato e a tela
-// já exibia "Pagamento #1ebee9" na linha do pagamento — o mesmo formato passa
-// a entrar no vínculo, SOMANDO à data em vez de substituí-la: a data é o que
-// situa a linha na história, o sufixo é o que a desempata.
+// e a transferência do sócio). A DEC-044 acrescentou à data o sufixo curto do
+// id, o mesmo que a linha do pagamento já exibia, e o próprio passo 166 do
+// roteiro previu a revisão: "se os seis caracteres não servirem para casar as
+// linhas, eles são ruído".
 //
-// Seis caracteres do fim do ObjectId: os últimos bytes são o contador, que é
-// o que muda entre dois documentos criados no mesmo instante. É a mesma fatia
-// que a linha do pagamento exibe — uma referência que aparecesse em dois
-// formatos não seria referência.
+// ── O caso real que provou que não servem ────────────────────────────────
+// Dois pagamentos do mesmo dia saíram como **#e66b7a** e **#e66b7c** — diferem
+// no ÚLTIMO caractere. A suíte prova que não colidem, e ninguém casa isso de
+// relance. A causa é estrutural: os seis últimos hex de um ObjectId são o
+// CONTADOR, que incrementa de 1 em 1, então pagamentos criados em sequência
+// SEMPRE colidem no prefixo desses seis — que é justamente por onde o olho lê.
+//
+// ── DEC-045 ──────────────────────────────────────────────────────────────
+// O vínculo passa a nomear o pagamento pelo que a advogada reconhece: **valor**
+// e **forma**, além da data. "Do pagamento de R$ 300,00 em dinheiro
+// (10/06/2026), aplicado na parcela 2."
+//
+// O sufixo do id NÃO sai: ele continua sendo o desempate do caso degenerado —
+// dois pagamentos idênticos em valor, forma e data, que existe (duas notas de
+// R$ 300 no mesmo dia). Ele deixa de ser a referência principal e passa a ser
+// o que é: o critério de desempate, no fim da frase, entre parênteses com a
+// data.
 // ═══════════════════════════════════════════════════════════════════════════
 export const refDoPagamento = (pagamentoId) =>
   pagamentoId ? `#${String(pagamentoId).slice(-6)}` : null;
 
-// A data do pagamento é campo PRÓPRIO no contrato (`dataPagamento`), e não a
-// data do evento. Uma alocação nascida de anulação carrega a data da anulação;
-// escrever "do pagamento de {data do evento}" ali afirmava uma data em que
-// pagamento nenhum aconteceu. `evento.data` fica como retaguarda para contrato
-// antigo, não como fonte preferida.
-const pagamentoEscrito = (evento) => {
-  const data = formatDate(evento?.dataPagamento ?? evento?.data);
-  const ref = refDoPagamento(evento?.pagamentoId);
-  return ref ? `${data} (${ref})` : data;
+// O rótulo da forma de pagamento, na redação em que a advogada a escolheu no
+// formulário. Sai de `FORMA_PAGAMENTO_OPTIONS` — a fonte única — e não de uma
+// segunda tabela escrita aqui: duas tabelas para os mesmos sete valores é o
+// formato em que uma delas fica para trás quando um valor novo entrar.
+//
+// Valor desconhecido cai no valor cru, e aparecer feio é o que faz alguém
+// notar que falta rotulá-lo — mesma escolha do `visualDoStatus`.
+export const formaEscrita = (forma) =>
+  forma ? labelDe(FORMA_PAGAMENTO_OPTIONS, forma).toLowerCase() : null;
+
+// ── A FRASE QUE NOMEIA O PAGAMENTO (DEC-045) ──────────────────────────────
+//
+// "R$ 300,00 em dinheiro (10/06/2026, #e66b7a)". A ordem é deliberada: valor
+// primeiro, porque é o que a advogada procura; forma em seguida, porque é o
+// que separa dois valores iguais; data e id entre parênteses, porque são o que
+// situa e o que desempata — nessa ordem de importância.
+//
+// **Uma função só, usada pelos dois lados do vínculo.** A frase da alocação e
+// a referência impressa na linha do próprio pagamento saem daqui — é isso que
+// faz as duas se casarem quando a advogada olha a tela. Duas redações para a
+// mesma identidade seria o defeito da DEC-045 outra vez, com outro sintoma.
+//
+// Cada pedaço entra só se veio: sem `valor`, a frase cai para data e id (o
+// formato da DEC-044) em vez de escrever "R$ 0,00" — que afirmaria um
+// pagamento de zero reais.
+export const identidadeDoPagamento = ({ valor, forma, data, pagamentoId } = {}) => {
+  const quando = data ? formatDate(data) : null;
+  const ref = refDoPagamento(pagamentoId);
+  const entreParenteses = [quando, ref].filter(Boolean).join(', ');
+
+  if (valor === null || valor === undefined) return entreParenteses || quando || '—';
+
+  const rotuloForma = formaEscrita(forma);
+  const quanto = formatCurrency(valor);
+  const comForma = rotuloForma ? `${quanto} em ${rotuloForma}` : quanto;
+  return entreParenteses ? `${comForma} (${entreParenteses})` : comForma;
 };
+
+// O pagamento visto de uma linha de ALOCAÇÃO ou DESALOCAÇÃO. Os campos têm
+// nomes próprios no contrato (`valorPagamento`, `dataPagamento`) justamente
+// porque a linha tem valor e data PRÓPRIOS, que são outra coisa: uma alocação
+// nascida de anulação carrega a data da anulação, e escrever "do pagamento de
+// {data do evento}" ali afirmava uma data em que pagamento nenhum aconteceu.
+// `evento.data` fica como retaguarda para contrato antigo, não como fonte
+// preferida.
+const pagamentoEscrito = (evento) =>
+  identidadeDoPagamento({
+    valor: evento?.valorPagamento,
+    forma: evento?.formaPagamento,
+    data: evento?.dataPagamento ?? evento?.data,
+    pagamentoId: evento?.pagamentoId
+  });
+
+// O mesmo pagamento visto da PRÓPRIA linha dele, onde os campos são os
+// simples. É esta a frase que a linha do pagamento imprime — e é por ela ser a
+// mesma que as duas se casam.
+export const referenciaDaLinhaDePagamento = (evento) =>
+  identidadeDoPagamento({
+    valor: evento?.valor,
+    forma: evento?.formaPagamento,
+    data: evento?.data,
+    pagamentoId: evento?.pagamentoId
+  });
 
 // ═══════════════════════════════════════════════════════════════════════════
 // AS DUAS LEITURAS QUE A DEC-044 CRIOU
@@ -273,6 +341,9 @@ export default {
   pagamentoDoEvento,
   podeAnular,
   refDoPagamento,
+  formaEscrita,
+  identidadeDoPagamento,
+  referenciaDaLinhaDePagamento,
   alocacaoDesfeita,
   alocacaoSubstituta,
   eventoAtenuado,

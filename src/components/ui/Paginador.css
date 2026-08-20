@@ -1,0 +1,49 @@
+/* Paginador — Fase F-1b.3.
+
+   CSS mínimo, de propósito: o layout das páginas deve mudar por decisão
+   externa (restrição de projeto registrada no CLAUDE.md desta fase), e o que
+   sobrevive a um redesenho é o comportamento, não a moldura. O que está aqui é
+   o necessário para os controles não colidirem e para a linha caber em 360 px. */
+
+.paginador {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.paginador__posicao {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.paginador__controles {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* `tabular-nums` porque o número da página muda a cada clique: sem ele, "1 de
+   9" e "10 de 12" têm larguras diferentes e os botões dançam sob o cursor. */
+.paginador__contador {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Em 360 px a linha quebra e os controles vão para baixo da posição, em vez de
+   espremerem os botões até o rótulo truncar. */
+@media (max-width: 480px) {
+  .paginador {
+    justify-content: center;
+  }
+
+  .paginador__controles {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

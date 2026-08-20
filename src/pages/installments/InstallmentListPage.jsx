@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import installmentService from '../../api/installmentService';
+import feeService from '../../api/feeService';
 import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
+import Paginador from '../../components/ui/Paginador';
+import ActionMenu from '../../components/ui/ActionMenu';
+import FinancialFilters from '../../components/financeiro/FinancialFilters';
+import { descricaoDoRecorteFinanceiro } from '../../components/financeiro/filterSummary.js';
+import useListFilters from '../../hooks/useListFilters';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import { rotuloCurtoDoHonorario } from '../../utils/feeLabel';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
-import { STATUS_PARCELA_OPTIONS } from '../../utils/enums';
+import { STATUS_PARCELA_OPTIONS, labelDe } from '../../utils/enums';
 import '../../styles/modules.css';
+
+const POR_PAGINA = 20;
 
 function InstallmentListPage({ embedded = false }) {
   const [installments, setInstallments] = useState([]);
@@ -20,35 +28,61 @@ function InstallmentListPage({ embedded = false }) {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
   const [searchParams] = useSearchParams();
   const processoId = searchParams.get('processoId') || undefined;
-  const [statusFiltro, setStatusFiltro] = useState('');
-  // Modo "desativadas" (Fase 4.5) — ver a nota em PaymentListPage.
-  const [verInativos, setVerInativos] = useState(false);
-  // Total do conjunto, para saber se a lista exibida está completa (Fase F-0).
-  const [total, setTotal] = useState(null);
+  // Modo "desativadas" (Fase 4.5) — ver a nota em PaymentListPage. Vive junto
+  // dos demais filtros para que ligá-lo também volte à página 1.
+  const [total, setTotal] = useState(0);
+  const [honorarios, setHonorarios] = useState([]);
 
-  // Teto da API. Ver a nota em `PaymentListPage`: esta tela não passava `limit`
-  // nenhum e recebia o processo inteiro, porque o caminho de `?processoId=` no
-  // backend ignorava a paginação. Corrigido isso, o default de 20 truncaria em
-  // silêncio — a tela pede o teto e avisa quando ele não bastou.
-  const LIMITE = 100;
+  // ── O teto 100 + "Mostrando N de M" SAIU (F-1b.3) ───────────────────────
+  //
+  // A tela pedia 100 e avisava quando o conjunto era maior, mandando "usar os
+  // filtros". Agora são 20 por página, um paginador de verdade, e os filtros
+  // que o aviso mandava usar existem: honorário, busca e período.
+  const {
+    filtros, buscaDebounced, page, setPage,
+    definirFiltro, aplicarPreset, limpar, temFiltro
+  } = useListFilters({ status: '', inativos: '' });
 
   useEffect(() => {
+    let ativo = true;
+    feeService.listFees({ page: 1, limit: 100 })
+      .then((res) => { if (ativo) setHonorarios(res.data.data ?? res.data ?? []); })
+      // Falhar ao carregar o seletor não derruba a listagem — ver a nota em
+      // `PaymentListPage`.
+      .catch(() => { if (ativo) setHonorarios([]); });
+    return () => { ativo = false; };
+  }, []);
+
+  useEffect(() => {
+    let ativo = true;
     setLoading(true);
+    setError('');
     installmentService.listInstallments({
-      page: 1,
-      limit: LIMITE,
+      page,
+      limit: POR_PAGINA,
       processoId,
-      status: statusFiltro || undefined,
-      inativos: verInativos || undefined
+      honorarioId: filtros.honorarioId || undefined,
+      status: filtros.status || undefined,
+      inativos: filtros.inativos || undefined,
+      busca: buscaDebounced || undefined,
+      de: filtros.de || undefined,
+      ate: filtros.ate || undefined
     })
       .then(res => {
+        if (!ativo) return;
         const corpo = res.data;
         setInstallments(corpo.data ?? corpo);
-        setTotal(typeof corpo.total === 'number' ? corpo.total : null);
+        setTotal(typeof corpo.total === 'number' ? corpo.total : 0);
       })
-      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao buscar parcelas.')))
-      .finally(() => setLoading(false));
-  }, [processoId, statusFiltro, verInativos]);
+      .catch(err => {
+        if (ativo) setError(getFinancialErrorMessage(err, 'Falha ao buscar parcelas.'));
+      })
+      .finally(() => { if (ativo) setLoading(false); });
+    return () => { ativo = false; };
+  }, [
+    processoId, page, buscaDebounced,
+    filtros.honorarioId, filtros.status, filtros.inativos, filtros.de, filtros.ate
+  ]);
 
   // ── `handleReativar` SAIU na F-1a ────────────────────────────────────────
   //
@@ -83,12 +117,37 @@ function InstallmentListPage({ embedded = false }) {
   // desmontava e remontava o input, perdendo o foco. O indicador passou para
   // baixo dos controles. Ver a nota longa em `ClientListPage`.
 
+  const verInativos = filtros.inativos === 'true';
+
+  const recorte = descricaoDoRecorteFinanceiro({
+    filtros,
+    busca: buscaDebounced,
+    honorarios,
+    extras: [
+      filtros.status ? `com status "${labelDe(STATUS_PARCELA_OPTIONS, filtros.status)}"` : null,
+      verInativos ? 'entre as desativadas' : null
+    ]
+  });
+
   const body = (
     <>
       {error && <p className="error-message">{error}</p>}
 
-      <div className="filter-bar">
-        <select value={statusFiltro} onChange={e => setStatusFiltro(e.target.value)}>
+      <FinancialFilters
+        filtros={filtros}
+        definirFiltro={definirFiltro}
+        aplicarPreset={aplicarPreset}
+        limpar={limpar}
+        temFiltro={temFiltro}
+        honorarios={honorarios}
+        placeholderBusca="Buscar por honorário ou processo…"
+        descricaoDoRecorte={recorte}
+      >
+        <select
+          value={filtros.status}
+          onChange={e => definirFiltro('status', e.target.value)}
+          aria-label="Status da parcela"
+        >
           <option value="">Todos os status</option>
           {STATUS_PARCELA_OPTIONS.map(o => (
             <option key={o.value} value={o.value}>{o.label}</option>
@@ -99,11 +158,11 @@ function InstallmentListPage({ embedded = false }) {
           <input
             type="checkbox"
             checked={verInativos}
-            onChange={(e) => setVerInativos(e.target.checked)}
+            onChange={(e) => definirFiltro('inativos', e.target.checked ? 'true' : '')}
           />
           Mostrar desativadas
         </label>
-      </div>
+      </FinancialFilters>
 
       {loading ? (
         <Loading />
@@ -118,18 +177,16 @@ function InstallmentListPage({ embedded = false }) {
               // por "+ Nova Parcela", com o mesmo número, que continua
               // reservado enquanto a antiga existir.
               ? 'Parcelas excluídas aparecem aqui. Para voltar a cobrar, crie uma parcela nova.'
-              : 'Tente ajustar os filtros ou crie uma nova parcela.'
+              : temFiltro
+                // O estado vazio diz o RECORTE (F-1b.3): "nenhuma cobrança
+                // encontrada" com três controles preenchidos faz procurar a
+                // parcela em vez de olhar os filtros.
+                ? `Nenhuma parcela ${recorte}. Limpe os filtros para ver a lista inteira.`
+                : 'Crie uma nova parcela para vê-la aqui.'
           }
         />
       ) : (
         <div className="table-wrapper">
-          {/* Aviso de lista incompleta (Fase F-0) — ver a nota em PaymentListPage. */}
-          {total !== null && total > installments.length && (
-            <p className="aviso-lista-parcial" role="status">
-              Mostrando {installments.length} de {total} parcelas. Use os filtros
-              para reduzir o conjunto.
-            </p>
-          )}
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
           <table className="data-table data-table--fixed">
             {/* Dinheiro em `col-money`, data em `col-data`, status em
@@ -145,7 +202,9 @@ function InstallmentListPage({ embedded = false }) {
               <col className="col-data" />
               <col className="col-status" />
               <col className="col-data" />
-              <col className="col-acoes-2" />
+              {/* F-1b.3: a coluna de ações tem largura de UM botão, qualquer
+                  que seja o número de ações. Ver `ActionMenu.css`. */}
+              <col className="col-acoes-menu" />
             </colgroup>
             <thead>
               <tr>
@@ -194,14 +253,25 @@ function InstallmentListPage({ embedded = false }) {
                         exclui: ela é histórico, e o vínculo com o plano novo é
                         o que torna a renegociação legível meses depois. A tela
                         de reparcelamento é da F-1c; aqui a linha apenas não
-                        oferece o que o backend não deve aceitar. */}
+                        oferece o que o backend não deve aceitar.
+
+                        "Reparcelada" é EXPLICAÇÃO, não ação: fica na célula, e
+                        não dentro do menu — pelo mesmo motivo que a nota "sem
+                        recibo" da listagem de pagamentos. */}
                     {inst.status === 'cancelado' ? (
                       <span className="acao-indisponivel">Reparcelada</span>
                     ) : (
-                      <>
-                        <Link to={`/dashboard/parcelas/editar/${inst._id}`} className="btn-action btn-edit">Editar</Link>
-                        <button onClick={() => confirmDelete(inst._id)} className="btn-action btn-delete">Excluir</button>
-                      </>
+                      <ActionMenu
+                        rotulo={`Ações da parcela ${inst.numeroParcela}`}
+                        itens={[
+                          { rotulo: 'Editar', to: `/dashboard/parcelas/editar/${inst._id}` },
+                          {
+                            rotulo: 'Excluir',
+                            destrutivo: true,
+                            onSelecionar: () => confirmDelete(inst._id)
+                          }
+                        ]}
+                      />
                     )}
                   </td>
                 </tr>
@@ -209,6 +279,18 @@ function InstallmentListPage({ embedded = false }) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* O paginador fica FORA do `loading`: some-lo durante a consulta faria a
+          página pular a cada clique em "Próxima". */}
+      {!loading && total > 0 && (
+        <Paginador
+          page={page}
+          limit={POR_PAGINA}
+          total={total}
+          rotulo="parcelas"
+          onMudarPagina={setPage}
+        />
       )}
 
       <Modal

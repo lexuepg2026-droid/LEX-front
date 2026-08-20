@@ -166,54 +166,76 @@ describe("F-0: os formulários de edição mostram carregamento na leitura", () 
 // 3 — As listagens por processo depois da paginação do backend
 //
 // Até a F-0, `?processoId=` tinha caminho próprio no backend e devolvia TUDO,
-// ignorando `limit`. Estas duas telas renderizam o array inteiro, sem paginador
-// — funcionavam por causa do defeito. Corrigido o backend, o default de 20
-// passaria a truncar em silêncio.
+// ignorando `limit`. Estas duas telas renderizavam o array inteiro, sem
+// paginador — funcionavam por causa do defeito. Corrigido o backend, o default
+// de 20 passaria a truncar em silêncio.
+//
+// ── O QUE A F-1b.3 SUBSTITUIU, e por que este bloco mudou ────────────────
+// A medida da F-0 foi: pedir o TETO (100) e escrever "Mostrando 100 de 137.
+// Use os filtros para reduzir o conjunto." Ela cumpriu o que prometia — a
+// lista curta deixou de ter cara de completa — e era explicitamente
+// provisória: o comentário que a acompanhava dizia "o paginador de verdade
+// entra na F-1, que reescreve estas telas".
+//
+// A F-1b.3 é essa fase. As duas telas passaram a pedir 20 por página, com
+// paginador e com os filtros que o aviso mandava usar. Manter aqui a asserção
+// de `const LIMITE = 100` e de `aviso-lista-parcial` seria travar a tela na
+// solução provisória — o teste passaria a defender o andaime contra a obra.
+//
+// **O que continua sendo verdade, e é o que este bloco agora afirma:** a tela
+// lê o `total` do envelope (sem ele não há como saber que há mais), declara
+// quantos itens pede por página, e o número que ela exibe NUNCA é uma lista
+// truncada sem aviso — o paginador é a forma nova de dizer a mesma coisa que o
+// aviso dizia, com navegação em vez de instrução.
 // ═══════════════════════════════════════════════════════════════════════════
-describe("F-0: listagens por processo pedem o teto e avisam quando truncam", () => {
+describe("F-0/F-1b.3: as listagens por processo dizem o tamanho do conjunto", () => {
   const LISTAGENS = [
     ["src/pages/payments/PaymentListPage.jsx", "recebimentos"],
     ["src/pages/installments/InstallmentListPage.jsx", "parcelas"]
   ];
 
-  test("as duas pedem explicitamente o teto de 100", () => {
+  test("as duas declaram quantos itens pedem por página", () => {
     for (const [arquivo] of LISTAGENS) {
       const codigo = semComentarios(ler(arquivo));
 
       assert.match(
-        codigo, /const LIMITE = 100/,
-        `${arquivo}: precisa pedir o teto da API. Pedir 20 truncaria a lista em silêncio ` +
-        "agora que o backend respeita a paginação também no caminho de processoId."
+        codigo, /const POR_PAGINA = \d+/,
+        `${arquivo}: o tamanho da página precisa ser declarado, e não escrito ` +
+        "no meio da chamada — foi assim que o `limit` implícito de 20 truncou " +
+        "em silêncio antes da F-0."
       );
-      assert.match(codigo, /limit:\s*LIMITE/, `${arquivo}: o limite pedido precisa ser o declarado`);
+      assert.match(
+        codigo, /limit:\s*POR_PAGINA/,
+        `${arquivo}: o limite pedido precisa ser o declarado`
+      );
     }
   });
 
-  test("as duas leem o `total` do envelope e avisam quando a lista está incompleta", () => {
+  test("as duas leem o `total` do envelope — é ele que dimensiona o paginador", () => {
     for (const [arquivo, rotulo] of LISTAGENS) {
       const codigo = semComentarios(ler(arquivo));
 
       assert.match(
         codigo, /setTotal\(/,
-        `${arquivo}: sem ler o \`total\`, a tela não tem como saber que truncou`
+        `${arquivo}: sem ler o \`total\`, a tela não tem como saber que há mais ` +
+        `${rotulo} do que os que estão à vista`
       );
       assert.match(
-        codigo, /total\s*!==\s*null\s*&&\s*total\s*>/,
-        `${arquivo}: o aviso precisa comparar o total com o que foi exibido`
+        codigo, /<Paginador/,
+        `${arquivo}: a lista precisa ter como chegar no item seguinte. Sem ` +
+        "paginador, uma lista curta volta a ter cara de completa."
       );
       assert.match(
-        codigo, /aviso-lista-parcial/,
-        `${arquivo}: uma lista curta com cara de completa faz a advogada somar ${rotulo} que não estão ali`
+        codigo, /total=\{total\}/,
+        `${arquivo}: o paginador precisa receber o total do CONJUNTO, e não o ` +
+        "tamanho da página"
       );
     }
   });
 
-  test("a classe do aviso alcança regra CSS pela própria tela", () => {
+  test("a folha que declara as regras aplicadas continua sendo importada", () => {
     // Mesma regra da varredura de `appliedClasses.test.js`: a folha é importada
     // pelo componente que aplica a classe, e não pelo layout que o monta.
-    const css = ler("src/styles/modules.css");
-    assert.match(css, /\.aviso-lista-parcial\s*\{/, "a classe aplicada precisa ter regra");
-
     for (const [arquivo] of LISTAGENS) {
       assert.match(
         ler(arquivo), /styles\/modules\.css/,

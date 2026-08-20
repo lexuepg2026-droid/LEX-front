@@ -5,6 +5,11 @@ import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
+import Paginador from '../../components/ui/Paginador';
+import ActionMenu from '../../components/ui/ActionMenu';
+import FinancialFilters from '../../components/financeiro/FinancialFilters';
+import { descricaoDoRecorteFinanceiro } from '../../components/financeiro/filterSummary.js';
+import useListFilters from '../../hooks/useListFilters';
 import { formatDate, formatCurrency, formatPercent } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
@@ -17,6 +22,8 @@ import {
 } from '../../utils/enums';
 import '../../styles/modules.css';
 
+const POR_PAGINA = 20;
+
 function FeeListPage({ embedded = false }) {
   const [fees, setFees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,29 +31,45 @@ function FeeListPage({ embedded = false }) {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
   const [searchParams] = useSearchParams();
   const processoId = searchParams.get('processoId');
-  const [busca, setBusca] = useState('');
-  const [buscaDebounced, setBuscaDebounced] = useState('');
-  const [tipo, setTipo] = useState('');
-  const [status, setStatus] = useState('');
+  // ── A tela nunca soube quantos honorários existiam (F-1b.3) ─────────────
+  //
+  // Ela não passava `page` nem `limit`: recebia os 20 do default do backend e
+  // renderizava o array, sem paginador e sem o aviso de lista parcial que as
+  // outras duas listagens tinham desde a F-0. Quem tivesse 25 honorários via
+  // 20 e nada dizia que faltavam cinco.
+  const [total, setTotal] = useState(0);
+
+  const {
+    filtros, buscaDebounced, page, setPage,
+    definirFiltro, aplicarPreset, limpar, temFiltro
+  } = useListFilters({ tipo: '', status: '' });
 
   useEffect(() => {
-    const t = setTimeout(() => setBuscaDebounced(busca), 300);
-    return () => clearTimeout(t);
-  }, [busca]);
-
-  useEffect(() => {
+    let ativo = true;
     setLoading(true);
     setError('');
     feeService.listFees({
+      page,
+      limit: POR_PAGINA,
       processoId,
       busca: buscaDebounced || undefined,
-      tipo: tipo || undefined,
-      status: status || undefined,
+      tipo: filtros.tipo || undefined,
+      status: filtros.status || undefined,
+      de: filtros.de || undefined,
+      ate: filtros.ate || undefined,
     })
-      .then(res => setFees(res.data.data ?? res.data))
-      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao buscar honorários.')))
-      .finally(() => setLoading(false));
-  }, [processoId, buscaDebounced, tipo, status]);
+      .then(res => {
+        if (!ativo) return;
+        const corpo = res.data;
+        setFees(corpo.data ?? corpo);
+        setTotal(typeof corpo.total === 'number' ? corpo.total : 0);
+      })
+      .catch(err => {
+        if (ativo) setError(getFinancialErrorMessage(err, 'Falha ao buscar honorários.'));
+      })
+      .finally(() => { if (ativo) setLoading(false); });
+    return () => { ativo = false; };
+  }, [processoId, page, buscaDebounced, filtros.tipo, filtros.status, filtros.de, filtros.ate]);
 
   const confirmDelete = (id) => setDeleteModal({ open: true, id });
 
@@ -69,19 +92,37 @@ function FeeListPage({ embedded = false }) {
   // desmontava e remontava o input, perdendo o foco. O indicador passou para
   // baixo dos controles. Ver a nota longa em `ClientListPage`.
 
+  const recorte = descricaoDoRecorteFinanceiro({
+    filtros,
+    busca: buscaDebounced,
+    extras: [
+      filtros.tipo ? `do tipo "${labelDe(TIPO_HONORARIO_OPTIONS, filtros.tipo)}"` : null,
+      filtros.status ? `com status "${labelDe(STATUS_HONORARIO_OPTIONS, filtros.status)}"` : null
+    ]
+  });
+
   const body = (
     <>
       {error && <p className="error-message">{error}</p>}
 
-      <div className="filter-bar">
-        <input
-          type="text"
-          placeholder="Buscar por descrição..."
-          value={busca}
-          onChange={e => setBusca(e.target.value)}
-          maxLength={80}
-        />
-        <select value={tipo} onChange={e => setTipo(e.target.value)}>
+      {/* `honorarios={null}` — a listagem DE honorários não se filtra por
+          honorário. `null` é a ausência do controle; uma lista vazia seria
+          "nenhum honorário cadastrado", que é outro estado. */}
+      <FinancialFilters
+        filtros={filtros}
+        definirFiltro={definirFiltro}
+        aplicarPreset={aplicarPreset}
+        limpar={limpar}
+        temFiltro={temFiltro}
+        honorarios={null}
+        placeholderBusca="Buscar por descrição ou número do processo…"
+        descricaoDoRecorte={recorte}
+      >
+        <select
+          value={filtros.tipo}
+          onChange={e => definirFiltro('tipo', e.target.value)}
+          aria-label="Tipo de honorário"
+        >
           <option value="">Todos os tipos</option>
           {TIPO_HONORARIO_OPTIONS.map(o => (
             <option key={o.value} value={o.value}>{o.label}</option>
@@ -89,20 +130,28 @@ function FeeListPage({ embedded = false }) {
         </select>
         {/* Os quatro status da DEC-028. `parcialmente_pago` faltava aqui, e sem
             ele o filtro escondia a maioria dos honorários em andamento. */}
-        <select value={status} onChange={e => setStatus(e.target.value)}>
+        <select
+          value={filtros.status}
+          onChange={e => definirFiltro('status', e.target.value)}
+          aria-label="Status do honorário"
+        >
           <option value="">Todos os status</option>
           {STATUS_HONORARIO_OPTIONS.map(o => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
-      </div>
+      </FinancialFilters>
 
       {loading ? (
         <Loading />
       ) : fees.length === 0 ? (
         <EmptyState
           title="Nenhum honorário encontrado"
-          description="Tente ajustar os filtros ou registre um novo honorário."
+          description={
+            temFiltro
+              ? `Nenhum honorário ${recorte}. Limpe os filtros para ver a lista inteira.`
+              : 'Registre um novo honorário para vê-lo aqui.'
+          }
         />
       ) : (
         <div className="table-wrapper">
@@ -121,7 +170,9 @@ function FeeListPage({ embedded = false }) {
               <col className="col-money" />
               <col className="col-status" />
               <col className="col-data" />
-              <col className="col-acoes-2" />
+              {/* F-1b.3: largura de UM botão, qualquer que seja o número de
+                  ações. Ver `ActionMenu.css`. */}
+              <col className="col-acoes-menu" />
             </colgroup>
             <thead>
               <tr>
@@ -161,14 +212,34 @@ function FeeListPage({ embedded = false }) {
                   <td><StatusBadge status={fee.status} /></td>
                   <td>{formatDate(fee.dataVencimento)}</td>
                   <td className="actions-cell">
-                    <Link to={`/dashboard/honorarios/editar/${fee._id}`} className="btn-action btn-edit">Editar</Link>
-                    <button onClick={() => confirmDelete(fee._id)} className="btn-action btn-delete">Excluir</button>
+                    <ActionMenu
+                      rotulo={`Ações do honorário ${fee.descricao}`}
+                      itens={[
+                        { rotulo: 'Editar', to: `/dashboard/honorarios/editar/${fee._id}` },
+                        {
+                          rotulo: 'Excluir',
+                          destrutivo: true,
+                          onSelecionar: () => confirmDelete(fee._id)
+                        }
+                      ]}
+                    />
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* O paginador fica FORA do `loading` — ver a nota em `PaymentListPage`. */}
+      {!loading && total > 0 && (
+        <Paginador
+          page={page}
+          limit={POR_PAGINA}
+          total={total}
+          rotulo="honorários"
+          onMudarPagina={setPage}
+        />
       )}
 
       <Modal

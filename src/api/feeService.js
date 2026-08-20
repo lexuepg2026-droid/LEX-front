@@ -1,11 +1,15 @@
 import api from './axiosConfig';
 
-const listFees = ({ page = 1, limit = 20, processoId, busca, tipo, status } = {}) => {
+// `busca` ALARGOU na F-1b.3 (casa também o número do processo) e ganhou o par
+// de período `de`/`ate`, por VENCIMENTO do honorário.
+const listFees = ({ page = 1, limit = 20, processoId, busca, tipo, status, de, ate } = {}) => {
   const params = { page, limit };
   if (processoId) params.processoId = processoId;
   if (busca) params.busca = busca;
   if (tipo) params.tipo = tipo;
   if (status) params.status = status;
+  if (de) params.de = de;
+  if (ate) params.ate = ate;
   return api.get('/fees', { params });
 };
 const getFeeById = (id) => api.get(`/fees/${id}`);
