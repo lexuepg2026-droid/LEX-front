@@ -180,7 +180,7 @@ function FeeStatement({ feeId, onEstornar, onAnular, recarregar = 0 }) {
         page={page}
         limit={POR_PAGINA}
         total={total}
-        rotulo="movimentações"
+        rotulo="movimentação"
         onMudarPagina={setPage}
       />
     </div>

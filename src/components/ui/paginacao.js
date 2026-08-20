@@ -13,6 +13,8 @@
 // fixados abaixo.
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { pluralizar } from './plural.js';
+
 // `total` é o do CONJUNTO FILTRADO, não o da base: é o backend que o manda,
 // junto da página, e recalculá-lo aqui a partir do que veio na tela daria o
 // tamanho da página em vez do tamanho do conjunto.
@@ -43,14 +45,28 @@ export const resumoDaPagina = ({ page = 1, limit = 20, total = 0 } = {}) => {
   };
 };
 
-// "1–20 de 137 pagamentos". O plural do rótulo é responsabilidade de quem
-// chama (`pagamentos`, `parcelas`, `honorários`): é a única parte da frase que
-// muda por listagem, e uma tabela de plurais aqui dentro seria o segundo lugar
-// onde o nome de cada listagem vive.
-export const frasePosicao = (resumo, rotulo = 'registros') => {
+// "1–20 de 137 pagamentos". O chamador passa o rótulo no SINGULAR
+// (`pagamento`, `parcela`, `honorário`, `movimentação`) e a concordância é
+// feita aqui, por `pluralizar`.
+//
+// ── Por que o singular, e não o plural (F-1b.3.1) ────────────────────────
+// Até a F-1b.3 o chamador passava o plural e a frase de um resultado só
+// escrevia "1 parcelas". Derivar o singular do plural não dá: "pagamentos" →
+// "pagamento" exigiria saber que a palavra não termina em "s" no singular, e
+// "lápis" quebraria a regra. O caminho só existe numa direção, e por isso é o
+// singular que atravessa o componente.
+//
+// ── As duas formas da frase ──────────────────────────────────────────────
+// Uma página só: "11 pagamentos" — o intervalo "1–11 de 11" é ruído, porque
+// não há outro pedaço para o leitor estar vendo.
+// Mais de uma: "21–40 de 137 pagamentos" — aí o intervalo é a informação, e
+// o total é o que responde "quanto falta".
+export const frasePosicao = (resumo, rotuloSingular = 'registro') => {
   if (resumo.total === 0) return `Nenhum resultado`;
-  if (resumo.total === 1) return `1 ${rotulo}`;
-  return `${resumo.primeiro}–${resumo.ultimo} de ${resumo.total} ${rotulo}`;
+
+  const palavra = pluralizar(resumo.total, rotuloSingular);
+  if (resumo.totalPages <= 1) return `${resumo.total} ${palavra}`;
+  return `${resumo.primeiro}–${resumo.ultimo} de ${resumo.total} ${palavra}`;
 };
 
 export default { resumoDaPagina, frasePosicao };

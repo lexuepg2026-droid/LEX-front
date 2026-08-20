@@ -46,11 +46,13 @@ const ler = (caminho) =>
 const semComentarios = (codigo) =>
   codigo.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
-// As três listagens financeiras que esta fase reescreveu.
+// As três listagens financeiras que esta fase reescreveu. O rótulo é o do
+// paginador e está no SINGULAR desde a F-1b.3.1 — a concordância passou a ser
+// de `pluralizar`, e era o plural fixo aqui que escrevia "1 parcelas".
 const LISTAGENS_FINANCEIRAS = [
-  ["src/pages/payments/PaymentListPage.jsx", "pagamentos"],
-  ["src/pages/installments/InstallmentListPage.jsx", "parcelas"],
-  ["src/pages/fees/FeeListPage.jsx", "honorários"]
+  ["src/pages/payments/PaymentListPage.jsx", "pagamento"],
+  ["src/pages/installments/InstallmentListPage.jsx", "parcela"],
+  ["src/pages/fees/FeeListPage.jsx", "honorário"]
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -286,7 +288,10 @@ describe("F-1b.3 — o paginador não perde os filtros", () => {
         codigo, /onMudarPagina=\{setPage\}/,
         `${arquivo}: trocar de página tem de mexer no MESMO estado que a consulta lê`
       );
-      assert.match(codigo, new RegExp(`rotulo="${rotulo}"`), `${arquivo}: o plural da listagem`);
+      assert.match(
+        codigo, new RegExp(`rotulo="${rotulo}"`),
+        `${arquivo}: o rótulo do paginador é o SINGULAR do item (F-1b.3.1)`
+      );
     }
   });
 

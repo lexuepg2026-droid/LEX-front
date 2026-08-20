@@ -183,9 +183,23 @@
    É a medida que não volta a quebrar: a F-1c acrescenta "Reparcelar" e a F-2,
    "Mudar status", e nenhuma das duas muda a largura desta coluna.
 
+   ── 96 px NÃO bastavam (F-1b.3.1) ─────────────────────────────────────
+   A medida de 96 px foi tirada do gatilho (40 px) mais o padding da célula
+   (12 px de cada lado), e esqueceu que a NOTA divide a célula com ele. Com
+   `overflow: hidden` em toda célula de `data-table--fixed`, largura
+   insuficiente é truncamento silencioso: "Reparcelada" saiu "Reparcelad" na
+   listagem de parcelas, e "sem recibo" ficou espremida na de pagamentos.
+
+   120 px é a medida da NOTA MAIS LONGA, não a do botão: "Reparcelada" em
+   0.85rem itálico ocupa ~80 px, e sobram os 24 px de padding mais folga. A
+   nota passou a ficar EMPILHADA acima do gatilho (`.actions-cell--menu`), e
+   é isso que segura a conta em 120 — lado a lado, os mesmos 80 px de nota
+   mais 40 de botão mais o vão exigiriam ~150, e esses 30 px sairiam da
+   coluna de texto livre da linha.
+
    As medidas por quantidade de botão continuam abaixo — as listagens não
    financeiras ainda as usam, e convertê-las é trabalho de outra fase. */
-.col-acoes-menu { width: 96px; }
+.col-acoes-menu { width: 120px; }
 
 .col-acoes-2    { width: 180px; }
 /* Dois botões, um deles com rótulo longo ("Baixar recibo"). Nasceu na F-1a:
@@ -249,6 +263,34 @@
 .actions-cell {
   display: flex;
   gap: var(--space-2);
+  white-space: nowrap;
+}
+
+/* ── A CÉLULA DO MENU: nota EM CIMA, gatilho embaixo (F-1b.3.1) ───────────
+   A alternativa era manter os dois lado a lado e alargar a coluna até caber
+   — ~150 px. Empilhar custa 120 px e devolve os 30 px de diferença à coluna
+   de texto livre, que é quem os usa para não truncar.
+
+   A altura da linha cresce SÓ nas linhas que têm nota, e isso é certo: a
+   célula tem duas informações. O mesmo raciocínio do badge "Estornado
+   integralmente" dentro da coluna de dinheiro, mais acima nesta folha.
+
+   Classe própria em vez de mudar `.actions-cell`: as listagens de clientes e
+   de processos ainda usam a fileira de botões e têm a sua própria regra de
+   `.actions-cell` — mexer na de cá as pegaria de carona. */
+.actions-cell--menu {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+/* A nota não encolhe e não quebra. `flex-shrink: 0` é o que impede o flex de
+   espremê-la até o truncamento quando a coluna aperta; o `nowrap` é
+   reafirmado aqui, e não herdado de `.data-table td`, para o truncamento ser
+   uma decisão visível ao lado do texto que ele protege. */
+.actions-cell .sem-recibo,
+.actions-cell .acao-indisponivel {
+  flex-shrink: 0;
   white-space: nowrap;
 }
 

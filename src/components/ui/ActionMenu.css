@@ -9,8 +9,11 @@
    global (`styles/global.css`), e apagá-lo dentro de um `:focus-visible` foi
    exatamente o defeito que a 4.5 mediu. */
 
+/* A raiz guarda só o GATILHO. O painel não é mais filho dela — ele é
+   `createPortal` no `body` (DEC-046) —, e por isso `position: relative` saiu:
+   não havia mais descendente posicionado para ela ancorar, e um `relative`
+   sem função é a próxima pessoa procurando o que ele posiciona. */
 .action-menu {
-  position: relative;
   display: inline-block;
 }
 
@@ -34,15 +37,33 @@
   color: var(--color-text-primary);
 }
 
-/* O painel. `position: absolute` ancorado à direita do gatilho: numa tabela, a
-   coluna de ações é a última, e abrir para a esquerda é o que mantém o menu
-   dentro da tela mesmo quando a tabela rola. */
+/* ── O PAINEL — `fixed` no `body` (DEC-046, F-1b.3.1) ─────────────────────
+   Ele era `position: absolute` dentro do `<td>`, e saía cortado nas três
+   listagens. A causa não era ordem de pintura, era RECORTE: três ancestrais
+   com `overflow` diferente de `visible` — `.data-table--fixed td`
+   (`overflow: hidden`), `.table-wrapper` (`overflow-x: auto`, que faz o eixo
+   vertical computar `auto` junto) e `.main-content` (`overflow-y: auto`).
+   Nenhum `z-index` atravessa isso.
+
+   Agora o painel é montado no `document.body`, fora dos três, e `position:
+   fixed` o ancora ao VIEWPORT. `top` e `left` vêm inline, calculados de
+   `getBoundingClientRect()` do gatilho — por isso não há `right`/`top`
+   estáticos aqui: a folha declara a caixa, o componente declara onde ela cai.
+
+   z-index 150: acima da `BottomNav` (100), que em 360 px ficaria por cima de
+   um menu aberto para cima, e abaixo do `Modal` (200), porque a confirmação
+   de exclusão que o menu dispara precisa cobrir o menu, e não o contrário. */
 .action-menu__lista {
-  position: absolute;
-  right: 0;
-  top: calc(100% + var(--space-1));
-  z-index: 20;
+  position: fixed;
+  z-index: 150;
   min-width: 180px;
+  /* O painel nunca é mais largo que a tela nem mais alto que ela. Em 360 px
+     `min-width: 180px` ainda cabe; o `max-height` é o que impede um menu de
+     muitos itens (a F-1c acrescenta "Reparcelar") de virar um painel sem
+     fim, e a rolagem é DELE, não da página atrás. */
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   background-color: var(--color-surface-raised);

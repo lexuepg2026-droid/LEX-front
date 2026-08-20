@@ -211,7 +211,7 @@ function FeeListPage({ embedded = false }) {
                   <td className="cell-num">{formatCurrency(fee.valor)}</td>
                   <td><StatusBadge status={fee.status} /></td>
                   <td>{formatDate(fee.dataVencimento)}</td>
-                  <td className="actions-cell">
+                  <td className="actions-cell actions-cell--menu">
                     <ActionMenu
                       rotulo={`Ações do honorário ${fee.descricao}`}
                       itens={[
@@ -237,7 +237,7 @@ function FeeListPage({ embedded = false }) {
           page={page}
           limit={POR_PAGINA}
           total={total}
-          rotulo="honorários"
+          rotulo="honorário"
           onMudarPagina={setPage}
         />
       )}
