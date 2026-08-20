@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { LibraryBig } from 'lucide-react';
 import secaoService from '../../api/secaoService';
 import PageHeader from '../../components/ui/PageHeader';
+import ActionMenu from '../../components/ui/ActionMenu';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import Loading from '../../components/common/Loading';
@@ -165,7 +166,7 @@ function SecaoListPage() {
                   deve receber a folga que sobrar da tela. */}
               <col />
               <col className="col-xxs" />
-              <col className="col-acoes-3" />
+              <col className="col-acoes-menu" />
             </colgroup>
             <thead>
               <tr>
@@ -190,27 +191,29 @@ function SecaoListPage() {
                       escondem informação; estas levam. */}
                   <td className="secao-trecho cell-truncate">{trechoInicial(secao.texto)}</td>
                   <td className="cell-num">{secao.variaveis?.length ?? 0}</td>
-                  <td className="actions-cell">
-                    <button
-                      type="button"
-                      onClick={() => setPreview(secao)}
-                      className="btn-action btn-view"
-                    >
-                      Ver
-                    </button>
-                    <Link
-                      to={`/dashboard/secoes/editar/${secao._id}`}
-                      className="btn-action btn-edit"
-                    >
-                      Editar
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteModal({ open: true, secao })}
-                      className="btn-action btn-delete"
-                    >
-                      Desativar
-                    </button>
+                  {/* DEC-047: a coluna de ações é o menu ⋮. "Ver" abre um MODAL
+                      de pré-visualização (não navega), e por isso é item de
+                      ação e não de navegação — a distinção que o `ActionMenu`
+                      faz entre `to` e `onSelecionar`.
+
+                      "Desativar" leva o vermelho: a seção sai da biblioteca, e
+                      a cor precisa dizer isso antes do clique. O rótulo
+                      continua "Desativar" e não virou "Excluir" — a seção não
+                      é apagada, e trocar o verbo aqui mudaria o que a tela
+                      promete. */}
+                  <td className="actions-cell actions-cell--menu">
+                    <ActionMenu
+                      rotulo={`Ações da seção ${secao.titulo || ''}`.trim()}
+                      itens={[
+                        { rotulo: 'Ver', onSelecionar: () => setPreview(secao) },
+                        { rotulo: 'Editar', to: `/dashboard/secoes/editar/${secao._id}` },
+                        {
+                          rotulo: 'Desativar',
+                          destrutivo: true,
+                          onSelecionar: () => setDeleteModal({ open: true, secao })
+                        }
+                      ]}
+                    />
                   </td>
                 </tr>
               ))}

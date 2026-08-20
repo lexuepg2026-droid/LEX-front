@@ -173,7 +173,8 @@
 
 /* A coluna de ações é dimensionada pela FILEIRA DE BOTÕES, não pelo título.
    Estreitá-la para caber mais texto é o que reintroduz a sobreposição — os
-   botões não encolhem, eles escapam. Quatro medidas, por quantidade de botão. */
+   botões não encolhem, eles escapam. (Histórico: até a DEC-047 havia uma
+   medida por quantidade de botão. Ver abaixo.) */
 /* ── A COLUNA DE UM BOTÃO SÓ (F-1b.3) ─────────────────────────────────────
    As ações passaram para um menu de três pontos. A coluna deixa de ser
    dimensionada pela FILEIRA de botões e passa a ter a largura de UM: 96 px
@@ -197,18 +198,17 @@
    mais 40 de botão mais o vão exigiriam ~150, e esses 30 px sairiam da
    coluna de texto livre da linha.
 
-   As medidas por quantidade de botão continuam abaixo — as listagens não
-   financeiras ainda as usam, e convertê-las é trabalho de outra fase. */
-.col-acoes-menu { width: 120px; }
+   ── AGORA É A ÚNICA MEDIDA DE COLUNA DE AÇÃO (DEC-047, F-1b.3.2) ──────
+   As medidas por quantidade de botão (`col-acoes-2`, `-2-lg`, `-3`, `-3-lg`,
+   `-4`, de 180 a 340 px) foram REMOVIDAS. Elas existiam porque cada listagem
+   dimensionava a coluna pela sua fileira de botões, e a DEC-047 acabou com a
+   fileira: **toda** listagem usa o menu ⋮, e o menu tem largura de um botão.
 
-.col-acoes-2    { width: 180px; }
-/* Dois botões, um deles com rótulo longo ("Baixar recibo"). Nasceu na F-1a:
-   a listagem de pagamentos perdeu o botão "Remover" — pagamento não se apaga,
-   se estorna — e a coluna encolheu de três botões para dois. */
-.col-acoes-2-lg { width: 230px; }
-.col-acoes-3    { width: 240px; }
-.col-acoes-3-lg { width: 300px; }
-.col-acoes-4    { width: 340px; }
+   Não foram deixadas "por precaução". Medida de coluna sem chamador é a
+   próxima listagem escolhendo entre seis larguras que não deveriam existir —
+   e foi exatamente assim que a listagem de pagamentos acabou com três botões
+   numa coluna dimensionada para dois (o defeito que abriu a F-1b.3). */
+.col-acoes-menu { width: 120px; }
 
 /* Célula de texto livre truncada. Explícita, e não herdada de `td`, para o
    truncamento ser uma decisão visível em cada listagem que o usa.
