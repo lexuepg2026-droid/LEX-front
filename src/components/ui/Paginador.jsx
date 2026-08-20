@@ -31,7 +31,10 @@ import './Paginador.css';
 // a única mudança seria a tabela abaixo, silenciosa.
 // ═══════════════════════════════════════════════════════════════════════════
 
-function Paginador({ page = 1, limit = 20, total = 0, rotulo = 'registros', onMudarPagina }) {
+// `rotulo` é o nome do item no SINGULAR — "pagamento", "parcela",
+// "honorário", "movimentação". A concordância com a quantidade é de
+// `frasePosicao`/`pluralizar`, e não do chamador (F-1b.3.1).
+function Paginador({ page = 1, limit = 20, total = 0, rotulo = 'registro', onMudarPagina }) {
   const resumo = resumoDaPagina({ page, limit, total });
 
   // Uma página só: não há para onde navegar, e um paginador com os dois botões

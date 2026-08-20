@@ -248,7 +248,7 @@ function InstallmentListPage({ embedded = false }) {
                   <td>{formatDate(inst.dataVencimento)}</td>
                   <td><StatusBadge status={inst.status} /></td>
                   <td>{formatDate(inst.dataPagamento)}</td>
-                  <td className="actions-cell">
+                  <td className="actions-cell actions-cell--menu">
                     {/* Parcela CANCELADA por reparcelamento não se edita nem se
                         exclui: ela é histórico, e o vínculo com o plano novo é
                         o que torna a renegociação legível meses depois. A tela
@@ -288,7 +288,7 @@ function InstallmentListPage({ embedded = false }) {
           page={page}
           limit={POR_PAGINA}
           total={total}
-          rotulo="parcelas"
+          rotulo="parcela"
           onMudarPagina={setPage}
         />
       )}

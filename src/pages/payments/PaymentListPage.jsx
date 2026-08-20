@@ -268,7 +268,7 @@ function PaymentListPage({ embedded = false }) {
                   </td>
                   <td>{formatDate(p.data)}</td>
                   <td className="cell-truncate">{labelDe(FORMA_PAGAMENTO_OPTIONS, p.formaPagamento)}</td>
-                  <td className="actions-cell">
+                  <td className="actions-cell actions-cell--menu">
                     {/* ── A NOTA "sem recibo" FICA FORA DO MENU (F-1b.3) ──
                         Pagamento integralmente estornado não tem recibo: a
                         rota responde 404 de propósito. A nota que explica isso
@@ -321,7 +321,7 @@ function PaymentListPage({ embedded = false }) {
           page={page}
           limit={POR_PAGINA}
           total={total}
-          rotulo="pagamentos"
+          rotulo="pagamento"
           onMudarPagina={setPage}
         />
       )}

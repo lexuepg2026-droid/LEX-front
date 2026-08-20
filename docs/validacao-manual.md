@@ -1333,60 +1333,40 @@ Dados que vários passos usam:
 > marcado para reexecução.
 
 - [ ] **172. ⭐ Paginar não perde o filtro nem a busca**
+  **Reescrito na F-1b.3.1: o passo mudou de Pagamentos para PARCELAS, e o
+  filtro mudou de preset para intervalo personalizado.** Contagens conferidas
+  no banco depois de `npm run seed:fresh` em 20/08/2026: o seed gera **15
+  pagamentos** e **23 parcelas**. Com 15 registros e um paginador de 20 por
+  página, Pagamentos **nunca tem segunda página** — não havia "Próxima ›" para
+  clicar, e o passo era **inverificável como estava escrito**, não reprovado.
+  As 23 parcelas dão duas páginas, a segunda com 3 linhas, que é exatamente o
+  caso que expõe o off-by-one do último item.
+  O **preset também precisou mudar**: "Últimos 6 meses" recorta as parcelas
+  para **17** (conferido no banco), e 17 volta a caber numa página só. O
+  **intervalo personalizado de 01/01/2026 a 31/12/2026** mantém as **23** e
+  ainda assim é um filtro visível — que é o que este passo precisa: um recorte
+  ativo E mais de uma página. **O seed não foi alterado para acomodar o passo**
+  — o passo é que estava mal escolhido.
   Pré-condição: `npm run seed:fresh`.
-  Passos: em **Pagamentos**, 1) escolher **Últimos 6 meses** no seletor de
-  período; 2) conferir o rodapé da lista; 3) clicar em **Próxima ›**; 4) olhar
-  os controles no topo; 5) clicar em **‹ Anterior**.
-  Esperado: no passo 2, o rodapé diz **"1–20 de N pagamentos"** e **"Página 1 de
-  X"**, com **‹ Anterior desabilitado**. No passo 4, depois de avançar: o
-  seletor de período **continua em "Últimos 6 meses"**, a barra **"Filtros
-  aplicados: … nos últimos 6 meses"** continua visível, e o rodapé diz **"21–40
-  de N"** — **o mesmo N**. Na última página, **Próxima › fica desabilitado**.
-  Conferir que o total **não muda** ao virar página: N é o tamanho do conjunto
-  filtrado, não o da página.
+  Passos: em **Parcelas**, 1) escolher **Intervalo personalizado** no seletor de
+  período e digitar **01/01/2026** a **31/12/2026**; 2) conferir o rodapé da
+  lista; 3) clicar em **Próxima ›**; 4) olhar os controles no topo; 5) clicar em
+  **‹ Anterior**.
+  Esperado: no passo 2, o rodapé diz **"1–20 de 23 parcelas"** e **"Página 1 de
+  2"**, com **‹ Anterior desabilitado**. No passo 4, depois de avançar: os
+  **dois campos de data continuam preenchidos** com 01/01/2026 e 31/12/2026, a
+  barra **"Filtros aplicados:"** continua visível, e o rodapé diz **"21–23 de 23
+  parcelas"** — **o mesmo 23** — com **Próxima › desabilitado**.
+  Conferir que o total **não muda** ao virar página: 23 é o tamanho do conjunto
+  filtrado, não o da página. Conferir que a última página mostra **3 linhas**,
+  e não 20 nem 23.
+  Conferir o **singular** (F-1b.3.1): filtrando por um honorário que tenha
+  **uma** parcela só, o rodapé diz **"1 parcela"** — nunca "1 parcelas".
   Por que só olho humano: a suíte prova que a página é mais um campo do mesmo
   objeto de consulta e que o total vem do envelope. O que ela não prova é que a
   pessoa **vê** o filtro continuar ali depois de virar a página — que é a única
   razão de ele continuar.
-  Fase de origem: F-1b.3
-
-- [ ] **173. ⭐ 🚨 A busca não rouba o foco (regressão do passo 155)**
-  Pré-condição: `npm run seed:fresh`.
-  Passos: em **Pagamentos**, clicar no campo de busca e digitar
-  **`inventário`**, letra por letra, **sem tirar a mão do teclado**. Esperar a
-  lista se atualizar (o debounce é de 300 ms). Continuar digitando ** e
-  partilha**. Repetir em **Parcelas** e em **Honorários**.
-  Esperado: **o cursor nunca sai do campo.** A lista se atualiza embaixo, o
-  indicador de carregamento aparece **abaixo dos controles** — nunca no lugar
-  deles — e o que já foi digitado permanece. Nenhuma letra se perde.
-  Esperado ainda: os resultados **casam a descrição do honorário**; digitando
-  um **número de processo** (ex.: `0000123-01.2025.8.16.0008`), casam também; e
-  em **Pagamentos**, digitando uma palavra que está só nas **observações** de um
-  pagamento, aquele pagamento aparece.
-  Por que só olho humano: **não há como provar foco sem DOM.** A suíte trava a
-  CAUSA (nenhum `return <Loading/>` antecipado, nenhuma barra de filtro
-  declarada dentro do render da página, nenhum `autoFocus`). O sintoma —
-  cursor sumindo no meio da palavra — só aparece digitando. Foi assim que o
-  defeito da F-1a.1 foi descoberto, e é assim que ele voltaria.
-  Fase de origem: F-1b.3
-
-- [ ] **174. Filtrar por honorário e por período, combinados**
-  Pré-condição: `npm run seed:fresh`.
-  Passos: em **Pagamentos**, 1) escolher um **honorário** no seletor; 2) anotar
-  quantos pagamentos aparecem; 3) acrescentar **Mês atual** no período; 4)
-  acrescentar uma **forma de pagamento**; 5) trocar para **Intervalo
-  personalizado** e digitar **01/01/2026** a **31/12/2026**.
-  Esperado: cada controle novo **estreita** o conjunto — nunca alarga. A barra
-  **"Filtros aplicados:"** cresce junto e nomeia os três recortes em português
-  ("do honorário X, pagos em pix e neste mês"). No passo 5, os **dois campos de
-  data** aparecem; nos presets, eles **não** aparecem (seriam campos
-  preenchidos que não se pode editar).
-  Conferir: invertendo as datas (de 31/12 para 01/01), a tela mostra a
-  **mensagem do servidor** dizendo que o início é posterior ao fim — e **não**
-  uma lista vazia. Lista vazia para um período impossível é indistinguível de
-  "não há lançamentos", e faria procurar o pagamento em vez de olhar as datas.
-  Fase de origem: F-1b.3
-
+  Fase de origem: F-1b.3, reescrito na F-1b.3.1
 - [ ] **175. ⭐ Mudar filtro volta para a página 1**
   Pré-condição: `npm run seed:fresh`. **É o defeito mais fácil de introduzir e
   o mais difícil de perceber**, porque a tela não erra — ela mostra,
@@ -1398,43 +1378,17 @@ Dados que vários passos usam:
   Repetir com: o campo de **busca**, o **período** e o botão **Limpar filtros**.
   Fase de origem: F-1b.3
 
-- [ ] **176. A lista curta diz se está filtrada**
-  Pré-condição: `npm run seed:fresh`.
-  Passos: em **Parcelas**, digitar na busca algo que **não existe** (ex.:
-  `zzz`). Depois, limpar e escolher um **honorário** com poucas parcelas.
-  Esperado, no primeiro caso: o estado vazio **não** diz apenas "Nenhuma
-  cobrança encontrada" — ele diz **o que está filtrando** ("Nenhuma parcela com
-  "zzz"…") e oferece **Limpar filtros**. No segundo: a lista curta vem
-  acompanhada da barra **"Filtros aplicados:"**, nomeando o honorário.
-  Por que só olho humano: a frase é montada por função pura e a suíte prova o
-  texto. O que ela não prova é que a pessoa, diante de três linhas, **sabe** que
-  a lista é curta por causa do filtro — que é a única razão de a barra existir.
-  Fase de origem: F-1b.3
-
-- [ ] **177. ⭐ 🚨 Os dois pagamentos do mesmo dia se casam com as linhas de pagamento (DEC-045)**
-  Pré-condição: `npm run seed:fresh`. **É a revisão do passo 166**, que
-  originou a DEC-045 — reproduza-o exatamente.
-  Passos: em **Honorários**, abrir **"Assessoria tributária — processo
-  administrativo"** (ou outro com parcela em aberto) e registrar **dois
-  pagamentos com a MESMA data**: **R$ 300,00 em dinheiro** e **R$ 750,00 por
-  PIX**, ambos em **10/06/2026**. Abrir o **Extrato** e achar as duas alocações.
-  Esperado: as duas frases de vínculo dizem
-  **"Do pagamento de R$ 300,00 em dinheiro (10/06/2026, #…), aplicado na parcela
-  N."** e **"Do pagamento de R$ 750,00 em pix (10/06/2026, #…), aplicado na
-  parcela N."** — e **dá para distingui-las cobrindo o sufixo do id com o
-  dedo**. Era exatamente isso que a referência da DEC-044 não permitia: os dois
-  sufixos diferiam no **último** caractere (`#e66b7a` / `#e66b7c`).
-  Esperado ainda, e é o ponto do passo: ir à listagem de **Pagamentos**, achar
-  as duas linhas, e **casar cada uma com a sua alocação** — a linha do
-  pagamento no extrato exibe **a mesma frase** ("Pagamento R$ 300,00 em
-  dinheiro (10/06/2026, #…)"). Se a advogada precisar comparar caracteres
-  hexadecimais para fazer isso, a DEC-045 falhou mesmo com a suíte verde.
-  Conferir o caso **degenerado**: registrar **dois pagamentos iguais** (mesmo
-  valor, mesma forma, mesmo dia). Aí — e só aí — o que distingue é o **sufixo do
-  id**, que continua na frase justamente para isto.
-  Fase de origem: F-1b.3
-
 - [ ] **178. ⭐ O menu de ações abre e fecha pelo teclado**
+  **🔴 REPROVADO em 20/08/2026 (validação da F-1b.3).** O botão **⋮** existe,
+  **recebe o anel de foco dourado** por Tab e **abre** o painel ao clique — o
+  comportamento estava certo. **O painel saía da tela, cortado, nas TRÊS
+  listagens.** A causa foi diagnosticada na F-1b.3.1 e é estrutural: três
+  ancestrais com `overflow` diferente de `visible` recortavam o painel
+  absoluto — a própria célula (`.data-table--fixed td`, `overflow: hidden`), a
+  `.table-wrapper` (`overflow-x: auto`) e a `.main-content`. Corrigido pela
+  **DEC-046**: o painel passou a ser renderizado em **portal** no
+  `document.body`, com `position: fixed` e coordenadas do gatilho. **Reexecutar
+  este passo por inteiro.**
   Pré-condição: `npm run seed:fresh`. **Sem usar o mouse em nenhum momento.**
   Passos: em **Pagamentos**, 1) navegar por **Tab** até o botão **⋮** de uma
   linha; 2) abrir com **Enter**; 3) percorrer os itens com **Tab**; 4) fechar
@@ -1451,9 +1405,19 @@ Dados que vários passos usam:
   reconhece `Escape`, guarda a referência do gatilho e a chama no fechamento —
   e que nenhuma regra apaga o `outline`. **Não há como provar sem DOM** que o
   foco realmente voltou nem que o anel é visível no tema escuro.
-  Fase de origem: F-1b.3
+  Fase de origem: F-1b.3, reaberto na F-1b.3.1
 
 - [ ] **179. ⭐ 🚨 Nenhuma ação ficou fora da tela, em 1024 px e em 360 px**
+  **🔴 REPROVADO em 20/08/2026 (validação da F-1b.3).** O botão **⋮** existe,
+  **recebe o anel de foco dourado** por Tab e **abre** o painel ao clique — o
+  comportamento estava certo. **O painel saía da tela, cortado, nas TRÊS
+  listagens.** A causa foi diagnosticada na F-1b.3.1 e é estrutural: três
+  ancestrais com `overflow` diferente de `visible` recortavam o painel
+  absoluto — a própria célula (`.data-table--fixed td`, `overflow: hidden`), a
+  `.table-wrapper` (`overflow-x: auto`) e a `.main-content`. Corrigido pela
+  **DEC-046**: o painel passou a ser renderizado em **portal** no
+  `document.body`, com `position: fixed` e coordenadas do gatilho. **Reexecutar
+  este passo por inteiro.**
   Pré-condição: `npm run seed:fresh`. **É o defeito nominal da Parte 6**: a
   coluna Ações de Pagamentos tinha três botões numa largura para dois, e o
   terceiro ("Editar") ficava fora da tela — ação escondida atrás de rolagem que
@@ -1476,12 +1440,17 @@ Dados que vários passos usam:
   **"sem recibo"** do pagamento integralmente estornado (ela é explicação, não
   ação — escondê-la faria a advogada abrir um menu para descobrir por que falta
   um botão) e o **"Reparcelada"** da parcela cancelada.
-  Fase de origem: F-1b.3
+  Fase de origem: F-1b.3, reaberto na F-1b.3.1
 
 - [ ] **180. O extrato pagina em vez de acumular**
   Pré-condição: `npm run seed:fresh`.
-  Passos: abrir a página de um honorário com muitas movimentações (o de
-  **divórcio litigioso**, depois de executar o passo 165) e ir ao **Extrato**.
+  **Pré-requisito de dados: o passo 165 PRECISA ter sido executado antes.**
+  O seed não gera, sozinho, honorário nenhum com mais de 20 movimentações — e
+  um extrato de 7 linhas não tem segunda página, o que torna este passo
+  **inverificável**, não reprovado. É o passo 165 que registra os pagamentos e
+  estornos que enchem o extrato. Executá-lo primeiro é parte deste passo.
+  Passos: executar o **passo 165**; depois abrir a página do honorário de
+  **divórcio litigioso** e ir ao **Extrato**.
   Esperado: no lugar do botão **"Carregar mais (N restantes)"**, há o **mesmo
   paginador** das listagens — "1–20 de N movimentações", "Página 1 de X", e os
   dois botões. Avançar e **voltar** funciona: com o acúmulo não havia como
@@ -1490,6 +1459,85 @@ Dados que vários passos usam:
   a **página 1** — ficar na página 4 de uma história que acabou de mudar de
   tamanho mostraria uma janela deslocada.
   Fase de origem: F-1b.3
+
+## 25. Fase F-1b.3.1 — o menu de ações sai da tela
+
+> Numeração contínua a partir do 180. Dois passos novos: **181 e 182**.
+>
+> Fase corretiva, só frontend, nascida da validação manual da F-1b.3: os passos
+> **173, 174, 176 e 177 passaram**; os **178 e 179 falharam**. O botão **⋮**
+> recebia o foco e abria o painel — o painel é que **saía da tela**, nas três
+> listagens.
+>
+> **A causa (DEC-046).** Todo ancestral com `overflow` diferente de `visible`
+> recorta descendente posicionado. Havia três, aninhados, e o mais interno era
+> a própria célula: `.data-table--fixed td` (`overflow: hidden`),
+> `.table-wrapper` (`overflow-x: auto` — e um eixo `auto` faz o outro computar
+> `auto` junto) e `.main-content` (`overflow-y: auto`). Recorte não é ordem de
+> pintura: nenhum `z-index` atravessa isso. O painel passou a ser renderizado
+> em **portal** no `document.body`, com `position: fixed` e coordenadas do
+> gatilho.
+>
+> **O que a suíte já cobre.** Que o painel é criado por `createPortal` no
+> `body` e que nenhuma listagem declara painel dentro da tabela; que a conta do
+> posicionamento acerta as duas viradas e **nunca** devolve coordenada fora do
+> viewport (varredura de toda a tela em 360 e 1024 px); que os ouvintes de
+> `scroll` (em captura) e `resize` são postos e devolvidos; e a pluralização
+> nas quatro palavras (`tests/regressions/f1b31.test.js`, 31 testes).
+>
+> **O que continua exigindo olho humano** é exatamente o que falhou: que o
+> painel apareça **inteiro** na tela, nas larguras reais. Nenhuma varredura
+> estática vê um retângulo cortado.
+
+- [ ] **181. ⭐ 🚨 O menu abre inteiro em 360 px, inclusive na última linha**
+  Pré-condição: `npm run seed:fresh`. **É o passo que fecha o defeito da
+  fase** — reexecutar junto com o 178 e o 179.
+  Passos: abrir **Pagamentos**, **Parcelas** e **Honorários** com a janela em
+  **360 px**. Em cada uma: 1) rolar até a **última linha visível** da tabela e
+  abrir o menu **⋮** dela; 2) abrir o menu de uma linha do **meio**; 3) com o
+  menu aberto, **rolar a página**; 4) com o menu aberto, **rolar a tabela de
+  lado**; 5) com o menu aberto, **redimensionar** a janela.
+  Esperado: nos passos 1 e 2, **o painel aparece inteiro** — nenhuma borda
+  cortada, nenhum item fora da tela, nada exigindo rolagem para ser lido. Na
+  última linha, o painel **abre para CIMA** do botão, porque abaixo não cabe.
+  Em 360 px ele **alinha pela esquerda** do botão (alinhado pela direita ele
+  sairia pela borda esquerda). Nos passos 3, 4 e 5, **o menu FECHA** — não
+  acompanha, não fica flutuando descolado da linha. Um menu apontando para a
+  linha errada é pior que menu nenhum.
+  Repetir tudo em **1024 px**: lá o painel alinha pela **direita** do botão e
+  abre para baixo, exceto nas últimas linhas.
+  Conferir que a **tabela ainda rola de lado** e o **menu não** — são coisas
+  separadas desde que ele saiu para o `body`.
+  Por que só olho humano: a suíte prova que a conta nunca devolve coordenada
+  fora do viewport, varrendo a tela inteira. **Não há como provar sem DOM** que
+  o retângulo pintado coube — a conta pode estar certa e um `overflow` novo em
+  qualquer ancestral cortaria o painel de novo, calado.
+  Fase de origem: F-1b.3.1
+
+- [ ] **182. As notas "Reparcelada" e "sem recibo" cabem inteiras**
+  Pré-condição: `npm run seed:fresh`. Conferido no banco em 20/08/2026: o seed
+  traz **2 parcelas canceladas** por reparcelamento e **1 pagamento
+  integralmente estornado** (de 2 pagamentos com estorno — o outro é parcial e
+  ainda tem líquido, então continua oferecendo recibo).
+  Passos: 1) em **Parcelas**, achar uma linha com status **cancelado** e ler a
+  última coluna; 2) em **Pagamentos**, achar a linha do pagamento
+  **integralmente estornado** (líquido R$ 0,00, com o badge "Estornado
+  integralmente") e ler a última coluna. Fazer os dois em **1024 px** e em
+  **360 px**.
+  Esperado: lê-se **"Reparcelada"** e **"sem recibo"** — as palavras
+  **inteiras**, nas duas larguras. **Não** pode aparecer "Reparcelad", nem
+  reticências, nem a palavra quebrada em duas linhas. A nota fica **acima** do
+  botão **⋮**, empilhada, e não ao lado dele.
+  Conferir a regressão da F-1b.2 no mesmo par de telas: **nenhuma coluna de
+  dinheiro trunca**. Os 24 px que a coluna de ações ganhou saíram da coluna de
+  **texto livre** (a descrição do honorário), que trunca com reticências por
+  projeto e tem o texto inteiro no `title` e no link da própria linha — nunca
+  da coluna de valores.
+  Por que só olho humano: a suíte trava a largura declarada da coluna e o
+  `nowrap` das notas. O que ela não mede é a largura **pintada** do texto, que
+  depende da fonte instalada — e foi exatamente assim que "Reparcelada" coube
+  na medida e não coube na tela.
+  Fase de origem: F-1b.3.1
 
 ## Validado
 
@@ -2717,6 +2765,93 @@ Dados que vários passos usam:
   Não há teste de aparência neste projeto, e inventar um frágil aqui seria pior
   que o passo honesto.
   Fase de origem: F-1b.2
+
+- [x] **173. ⭐ 🚨 A busca não rouba o foco (regressão do passo 155)**
+  **Validado em 20/08/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run seed:fresh`.
+  Passos: em **Pagamentos**, clicar no campo de busca e digitar
+  **`inventário`**, letra por letra, **sem tirar a mão do teclado**. Esperar a
+  lista se atualizar (o debounce é de 300 ms). Continuar digitando ** e
+  partilha**. Repetir em **Parcelas** e em **Honorários**.
+  Esperado: **o cursor nunca sai do campo.** A lista se atualiza embaixo, o
+  indicador de carregamento aparece **abaixo dos controles** — nunca no lugar
+  deles — e o que já foi digitado permanece. Nenhuma letra se perde.
+  Esperado ainda: os resultados **casam a descrição do honorário**; digitando
+  um **número de processo** (ex.: `0000123-01.2025.8.16.0008`), casam também; e
+  em **Pagamentos**, digitando uma palavra que está só nas **observações** de um
+  pagamento, aquele pagamento aparece.
+  Por que só olho humano: **não há como provar foco sem DOM.** A suíte trava a
+  CAUSA (nenhum `return <Loading/>` antecipado, nenhuma barra de filtro
+  declarada dentro do render da página, nenhum `autoFocus`). O sintoma —
+  cursor sumindo no meio da palavra — só aparece digitando. Foi assim que o
+  defeito da F-1a.1 foi descoberto, e é assim que ele voltaria.
+  Fase de origem: F-1b.3
+
+- [x] **174. Filtrar por honorário e por período, combinados**
+  **Validado em 20/08/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run seed:fresh`.
+  Passos: em **Pagamentos**, 1) escolher um **honorário** no seletor; 2) anotar
+  quantos pagamentos aparecem; 3) acrescentar **Mês atual** no período; 4)
+  acrescentar uma **forma de pagamento**; 5) trocar para **Intervalo
+  personalizado** e digitar **01/01/2026** a **31/12/2026**.
+  Esperado: cada controle novo **estreita** o conjunto — nunca alarga. A barra
+  **"Filtros aplicados:"** cresce junto e nomeia os três recortes em português
+  ("do honorário X, pagos em pix e neste mês"). No passo 5, os **dois campos de
+  data** aparecem; nos presets, eles **não** aparecem (seriam campos
+  preenchidos que não se pode editar).
+  Conferir: invertendo as datas (de 31/12 para 01/01), a tela mostra a
+  **mensagem do servidor** dizendo que o início é posterior ao fim — e **não**
+  uma lista vazia. Lista vazia para um período impossível é indistinguível de
+  "não há lançamentos", e faria procurar o pagamento em vez de olhar as datas.
+  Fase de origem: F-1b.3
+
+- [x] **176. A lista curta diz se está filtrada**
+  **Validado em 20/08/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run seed:fresh`.
+  Passos: em **Parcelas**, digitar na busca algo que **não existe** (ex.:
+  `zzz`). Depois, limpar e escolher um **honorário** com poucas parcelas.
+  Esperado, no primeiro caso: o estado vazio **não** diz apenas "Nenhuma
+  cobrança encontrada" — ele diz **o que está filtrando** ("Nenhuma parcela com
+  "zzz"…") e oferece **Limpar filtros**. No segundo: a lista curta vem
+  acompanhada da barra **"Filtros aplicados:"**, nomeando o honorário.
+  Por que só olho humano: a frase é montada por função pura e a suíte prova o
+  texto. O que ela não prova é que a pessoa, diante de três linhas, **sabe** que
+  a lista é curta por causa do filtro — que é a única razão de a barra existir.
+  Fase de origem: F-1b.3
+
+- [x] **177. ⭐ 🚨 Os dois pagamentos do mesmo dia se casam com as linhas de pagamento (DEC-045)**
+  **Validado em 20/08/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run seed:fresh`. **É a revisão do passo 166**, que
+  originou a DEC-045 — reproduza-o exatamente.
+  Passos: em **Honorários**, abrir **"Assessoria tributária — processo
+  administrativo"** (ou outro com parcela em aberto) e registrar **dois
+  pagamentos com a MESMA data**: **R$ 300,00 em dinheiro** e **R$ 750,00 por
+  PIX**, ambos em **10/06/2026**. Abrir o **Extrato** e achar as duas alocações.
+  Esperado: as duas frases de vínculo dizem
+  **"Do pagamento de R$ 300,00 em dinheiro (10/06/2026, #…), aplicado na parcela
+  N."** e **"Do pagamento de R$ 750,00 em pix (10/06/2026, #…), aplicado na
+  parcela N."** — e **dá para distingui-las cobrindo o sufixo do id com o
+  dedo**. Era exatamente isso que a referência da DEC-044 não permitia: os dois
+  sufixos diferiam no **último** caractere (`#e66b7a` / `#e66b7c`).
+  Esperado ainda, e é o ponto do passo: ir à listagem de **Pagamentos**, achar
+  as duas linhas, e **casar cada uma com a sua alocação** — a linha do
+  pagamento no extrato exibe **a mesma frase** ("Pagamento R$ 300,00 em
+  dinheiro (10/06/2026, #…)"). Se a advogada precisar comparar caracteres
+  hexadecimais para fazer isso, a DEC-045 falhou mesmo com a suíte verde.
+  Conferir o caso **degenerado**: registrar **dois pagamentos iguais** (mesmo
+  valor, mesma forma, mesmo dia). Aí — e só aí — o que distingue é o **sufixo do
+  id**, que continua na frase justamente para isto.
+  **Não testado: o caso DEGENERADO.** Os dois pagamentos registrados na
+  validação diferiam em valor e forma, e por isso a frase da DEC-045 os separou
+  sem precisar do id. O par **idêntico** — mesmo valor, mesma forma, mesmo dia
+  — **não foi executado**, e é justamente ele que exercita o desempate: os ids
+  observados (`#698600` / `#698602`) diferem no **último** caractere, que é a
+  razão de existir da DEC-045. Os hex finais do ObjectId são **contador
+  sequencial** e colidem no prefixo, e é por isso que a referência humana do
+  pagamento é **valor e forma**, com o id curto só como desempate. No caso
+  degenerado o desempate é tudo o que resta — daí a pendência.
+  Fase de origem: F-1b.3
+
 
 ## Automatizado
 

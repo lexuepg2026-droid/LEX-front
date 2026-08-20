@@ -43,6 +43,51 @@ Sessão da advogada por cookie httpOnly `lex-token`; portal do cliente por
 - **Toda classe CSS aplicada precisa de regra alcançável pela própria tela** —
   a folha é importada pelo componente que a usa, não pelo layout que o monta.
   Varredura em `tests/css/appliedClasses.test.js`.
+- **Flutuante dentro de tabela rolável vai em portal** (DEC-046). Menu,
+  tooltip, popover, seletor de data: `createPortal` no `body` + `position:
+  fixed` + `getBoundingClientRect()`. Nunca `absolute` dentro do wrapper —
+  `overflow` recorta, e `z-index` não resolve recorte.
+- **Rótulo de contagem chega no SINGULAR**; quem conjuga é
+  `components/ui/plural.js`. "1 parcelas" foi defeito de verdade.
+
+---
+
+## Convenção de fase — o relatório vira arquivo markdown (a partir da F-1b.3.1)
+
+Ao final de **toda fase**, além de exibir o relatório no terminal, o relatório
+**inteiro** é gravado em:
+
+```
+lexa_31maio/relatorios/AAAA-MM-DD-<fase>.md
+```
+
+Na F-1b.3.1: `lexa_31maio/relatorios/2026-08-20-F-1b.3.1.md`.
+
+**Onde, e por quê.** `lexa_31maio/` é a pasta que **contém** os dois repos e
+**não é repositório de nenhum deles**. O relatório fica **fora do controle de
+versão**: não entra em commit por acidente, não polui histórico, não aparece em
+`git status`. **Não se grava dentro do repo do backend nem do frontend.**
+
+Regras do arquivo:
+
+- É o relatório **completo**, com as **saídas reais coladas** — o mesmo
+  conteúdo que iria para o terminal, **não um resumo dele**. Se algo foi
+  truncado na exibição, o arquivo traz a versão inteira.
+- Markdown de verdade: títulos por parte, tabelas onde há tabela, blocos de
+  código para saídas de comando. **Vai ser lido fora do terminal, por outra
+  pessoa.**
+- Cabeçalho de identificação: nome da fase, data, **commits de merge dos dois
+  repos**, contagem final das suítes, e uma linha de **veredito** — "concluída
+  e mergeada" / "parcial, não mergeada" / "parada no portão X".
+- **A regra de segredos vale igual aqui**: nenhum segredo no relatório, nem
+  mascarado — prova por **definido/comprimento/comparação booleana**. Arquivo
+  em disco é justamente onde essa disciplina costuma relaxar.
+- No terminal, ao terminar, basta uma confirmação curta com **o caminho do
+  arquivo gerado**.
+
+A pasta é externa aos repos, mas **a regra é de processo** e por isso fica
+registrada nos **dois** CLAUDE.md: ela precisa sobreviver a troca de sessão.
+
 
 ---
 
@@ -1875,6 +1920,143 @@ descobrir por que falta um botão.
 
 Cada um leva no próprio arquivo o porquê da mudança. **Um teste que trava o
 andaime contra a obra é um teste que precisa ser reescrito, não apagado.**
+---
+
+## DEC-046 — o menu de ações é renderizado em portal, posicionado pelo viewport (F-1b.3.1)
+
+### O defeito
+
+Na validação manual da F-1b.3 o botão **⋮** passou em tudo que é
+comportamento: recebia o **anel de foco dourado** por Tab e **abria** o painel
+ao clique. **O painel saía da tela, cortado — nas três listagens.**
+
+Foco e abertura funcionando **descartam** as causas de comportamento (o
+`keydown` registrado, o estado que abre, o `outline` apagado). Sobrou
+posicionamento. E "nas três" é a assinatura de causa **estrutural**: é um
+componente só, dentro de um wrapper só.
+
+### A causa
+
+O painel era `position: absolute` dentro da própria célula. **Todo ancestral
+com `overflow` diferente de `visible` recorta descendente posicionado**, e
+havia **três**, aninhados:
+
+| # | Seletor | Arquivo | Propriedade |
+|---|---|---|---|
+| 1 | `.data-table--fixed td` | `styles/modules.css` | `overflow: hidden` |
+| 2 | `.table-wrapper` | `styles/modules.css` | `overflow-x: auto` |
+| 3 | `.main-content` | `components/layout/AppLayout.css` | `overflow-y: auto` |
+
+O mais interno é o que menos se procura: a **própria célula**, de 96 px — o
+painel de 180 px era recortado antes mesmo de chegar ao wrapper. E o wrapper
+recorta nos **dois** eixos: quando um eixo é `auto` e o outro é `visible`, o
+`visible` **computa para `auto`**. A rolagem horizontal que fez a tabela caber
+é a mesma que corta o menu para baixo.
+
+**Recorte não é ordem de pintura.** Nenhum `z-index` atravessa um `overflow` —
+foi por isso que o `z-index: 20` original não adiantou nada.
+
+### A solução
+
+O painel é renderizado por **`createPortal`** (do `react-dom`, que já é
+dependência — **zero dependência nova**) direto no **`document.body`**, fora
+dos três contêineres, com **`position: fixed`** e coordenadas calculadas do
+gatilho por **`getBoundingClientRect()`**.
+
+A conta mora em `components/ui/actionMenuPosition.js`, **módulo `.js` separado
+e função pura** — a suíte é `node --test` sem DOM, e conta dentro de `.jsx` só
+se testaria por varredura de texto.
+
+- **Alinhamento padrão:** borda direita do painel na borda direita do botão,
+  abrindo **para baixo**. A coluna de ações é a última da tabela.
+- **Virada horizontal:** se a borda esquerda ficaria fora, alinha pela
+  **esquerda** do botão. É o caso de **360 px**, onde o painel é mais largo que
+  o espaço à esquerda do gatilho.
+- **Virada vertical:** se não cabe abaixo, abre **acima**. É o caso da **última
+  linha visível**.
+- **A coordenada NUNCA sai do viewport.** Um painel maior que a própria tela
+  encosta na margem em vez de vazar. A suíte varre a tela inteira, em 360 e
+  1024 px, e não aceita uma posição fora.
+
+### Rolar fecha o menu
+
+Um painel `fixed` é ancorado ao **viewport**: o botão a que ele pertence rola,
+o painel não. Reposicionar a cada quadro seria possível e seria **pior** — o
+painel passaria por cima do cabeçalho e sairia da tabela. **Um menu apontando
+para a linha errada é pior que menu nenhum**, então ele fecha. Vale para a
+rolagem da página, para a rolagem horizontal da tabela e para o `resize`.
+
+`scroll` é escutado em **captura** (`addEventListener('scroll', fechar, true)`)
+porque **`scroll` não borbulha**: sem a captura, a rolagem da `.table-wrapper`
+e a da `.main-content` — que são exatamente as duas desta tela — nunca
+chegariam a um ouvinte do `window`. E quem põe com captura **precisa remover
+com captura**, senão o ouvinte fica.
+
+### A armadilha do portal, registrada
+
+Com o painel fora da raiz, `raizRef.contains(alvo)` **deixa de valer**: o
+clique dentro do painel passa a parecer clique fora, e o menu fecharia no
+primeiro item clicado. O fechamento por clique fora consulta **os dois**
+elementos, o gatilho e o painel.
+
+### `fixed` só é confiável porque nenhum ancestral cria bloco de contenção
+
+`transform`, `filter`, `contain` e `perspective` em **qualquer** ancestral
+criam bloco de contenção e re-ancoram o `fixed` ao elemento em vez do viewport.
+Foi conferido na Parte 1 que não há nenhum deles no caminho — os únicos hits do
+projeto são `text-transform` (que não conta) e o `filter` do logo, que não é
+ancestral de tabela. **Uma varredura estática mantém a conferência viva**: se
+alguém puser um `transform` no layout ou na tabela, o portal continua
+funcionando e o **posicionamento volta a errar, calado**.
+
+### A consequência de projeto
+
+**Qualquer flutuante futuro dentro de tabela rolável tem este mesmo problema e
+esta mesma solução** — tooltip, popover, seletor de data, autocomplete. Não é
+uma peculiaridade do menu de ações: é o que acontece com todo elemento
+posicionado que precisa escapar de um contêiner que recorta. Quem for
+construir o próximo começa por `actionMenuPosition.js` e por `createPortal`, e
+não por `z-index`.
+
+---
+
+## Singular e plural — `components/ui/plural.js` (F-1b.3.1)
+
+O rodapé de Parcelas filtradas dizia **"1 parcelas"**. O rótulo chegava ao
+paginador **já no plural**, porque as listagens passavam o nome da coleção.
+
+O rótulo passou a ser o **singular** (`rotulo="parcela"`) e a concordância é de
+`pluralizar(quantidade, singular)`. **A direção importa:** derivar o singular
+do plural exigiria saber que a palavra não termina em "s" no singular
+("lápis"), e o caminho só existe numa direção.
+
+`0` vai para o **plural** — é a concordância do português, e o singular é só o
+1. As regras cobrem as quatro palavras dos rodapés e as terminações vizinhas
+(`ão` → `ões` **antes** da regra de vogal, senão "movimentaçãos"); o que elas
+errarem entra em `PLURAIS_IRREGULARES`, e não num `if` na tela.
+
+As **duas formas** do rodapé: página única diz o total (**"11 pagamentos"**),
+paginada diz o intervalo (**"1–20 de 23 parcelas"**).
+
+---
+
+## A célula de ações comporta a NOTA, não só o botão (F-1b.3.1)
+
+`col-acoes-menu` era **96 px** — a medida do gatilho (40) mais o padding (24),
+e esquecia que a **nota divide a célula com ele**. Com `overflow: hidden` em
+toda célula de `data-table--fixed`, **largura insuficiente é truncamento
+silencioso**: "Reparcelada" saiu **"Reparcelad"**.
+
+Passou a **120 px**, que é a medida da **nota mais longa**, e a nota ficou
+**empilhada acima** do gatilho (`.actions-cell--menu`). Lado a lado exigiria
+~150 px, e os 30 px de diferença sairiam da coluna de texto livre. Os 24 px
+que a coluna ganhou saíram da coluna **auto**, que trunca por projeto — **nunca
+da coluna de dinheiro**, que continua em 150 px (regressão da F-1b.2).
+
+**"Reparcelada" e "sem recibo" são EXPLICAÇÃO, não ação** — continuam fora do
+menu, na célula. Escondê-las no menu faria a advogada abrir um menu para
+descobrir por que falta um botão.
+
 ---
 
 ## Rotina de encerramento de sessão
