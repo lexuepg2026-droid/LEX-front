@@ -49,6 +49,12 @@ Sessão da advogada por cookie httpOnly `lex-token`; portal do cliente por
   `overflow` recorta, e `z-index` não resolve recorte.
 - **Rótulo de contagem chega no SINGULAR**; quem conjuga é
   `components/ui/plural.js`. "1 parcelas" foi defeito de verdade.
+- **Toda listagem usa o menu ⋮ na coluna de ações** (DEC-047). Ação dentro do
+  menu, explicação fora dele, Excluir em vermelho e por último. Não há mais
+  fileira de botões, e `col-acoes-menu` é a única medida de coluna de ação.
+- **Portal quebra a ordem do Tab** (emenda à DEC-046). Quem abrir um flutuante
+  em `createPortal` conduz o foco explicitamente — entra, circula, volta no
+  Esc. Sem `autoFocus`, nunca.
 
 ---
 
@@ -2056,6 +2062,124 @@ da coluna de dinheiro**, que continua em 150 px (regressão da F-1b.2).
 **"Reparcelada" e "sem recibo" são EXPLICAÇÃO, não ação** — continuam fora do
 menu, na célula. Escondê-las no menu faria a advogada abrir um menu para
 descobrir por que falta um botão.
+
+---
+
+## Emenda à DEC-046 — o portal custa a ordem de tabulação (F-1b.3.2)
+
+A DEC-046 tirou o painel do contêiner que o recortava. **Tirou junto a ordem de
+foco natural** — e isso só apareceu na validação manual, no passo 178.
+
+**O defeito.** O menu abria com Enter, o anel de foco aparecia, as ações
+funcionavam ao clique e o painel ficava dentro da tela. Mas **o painel não era
+acessível por Tab, só por mouse**.
+
+**A causa é a outra metade do portal.** `createPortal` propaga **eventos** pela
+árvore do React — é por isso que o `onClick` dos itens sempre funcionou. Mas a
+**ordem de tabulação é a do DOM real**, e no DOM real o painel é o **último
+filho do `document.body`**, enquanto o gatilho está numa célula no meio da
+tabela. Tab a partir do gatilho ia para a **próxima célula da tabela**.
+
+Antes da DEC-046, o painel era irmão imediato do gatilho e o Tab caía nele de
+graça. **A correção do recorte pagou com a ordem de foco.**
+
+### O foco passa a ser conduzido
+
+| Momento | Comportamento | Por quê |
+|---|---|---|
+| **Ao abrir** | foco vai para o **primeiro item** | sem isso o Tab sai para a tabela |
+| **Ao abrir, quando** | **depois** de a posição estar calculada | focar elemento `visibility: hidden` no canto superior esquerdo faz o navegador **rolar a página até lá** |
+| **Tab** | no último item, **volta ao primeiro** | a tabela está **atrás** de um menu aberto; tabular para dentro do que está atrás é o defeito do painel cortado, só que invisível |
+| **Shift+Tab** | no primeiro, vai ao **último** | idem, no outro sentido |
+| **Esc** | fecha e devolve o foco ao gatilho | com o Tab preso no painel, é o **único caminho de volta** |
+
+A ordem é garantida pela **lista de dependências** do efeito (`[aberto,
+posicao, itensFocaveis]`), não pela ordem das linhas no arquivo: `posicao` só
+deixa de ser `null` depois do `useLayoutEffect` ter medido.
+
+**`preventDefault` é obrigatório** e é a linha que mais some numa refatoração:
+sem ela o navegador move o foco **antes** de o código correr, e o `.focus()`
+vira correção tarde demais — o foco pisca na tabela e volta.
+
+**Item desabilitado fica fora do ciclo.** Um `<button disabled>` não é
+tabulável; incluí-lo faria o ciclo parar num elemento que o navegador se recusa
+a focar, e o menu travaria no "Baixando…" do recibo em curso.
+
+**Sem `autoFocus`** — regra do projeto desde a F-1a, agora varrida no projeto
+inteiro pela suíte. **Sem setas** (`ArrowUp`/`ArrowDown`): não têm chamador, e
+generalizar antes do segundo caso é inventar requisito.
+
+### A consequência, para quem usar portal de novo
+
+**Quem usar `createPortal` outra vez — tooltip, popover, seletor de data —
+herda este custo junto com a solução.** O portal resolve o recorte e quebra a
+tabulação, sempre. Os dois vêm no mesmo pacote, e o segundo é invisível até
+alguém tentar navegar sem mouse.
+
+**Por que a suíte não pegou:** é foco, e não há DOM em `node --test`. O passo
+178 existe exatamente para isto e **funcionou como projetado** — achou o que a
+varredura não alcança. O que a suíte trava agora é a **mecânica**, que é onde o
+defeito voltaria.
+
+---
+
+## DEC-047 — a coluna de ações de toda listagem é o menu ⋮ (F-1b.3.2)
+
+Relato do Daniel: *"temos que usar o menu de ações de ⋮ em tudo, em processos
+também está sem, em documentos também, apenas a parte financeira está
+correta."*
+
+**A razão não é estética.** Até aqui, a advogada aprendia um gesto no
+Financeiro e ele **não valia nas outras telas**. Um sistema que resolve o mesmo
+problema de duas formas obriga a decorar qual tela usa qual.
+
+### A regra
+
+- **Ação vai para DENTRO do menu.** Editar, Excluir, Baixar, Ver, e o que vier.
+- **Explicação fica FORA dele, na célula.** "Reparcelada", "sem recibo" e afins
+  — esconder explicação no menu faria abrir um menu para descobrir **por que
+  falta um botão**.
+- **Excluir sempre em vermelho, sempre por último.**
+- **O componente é o mesmo `ActionMenu`. Nenhuma cópia.**
+
+### As sete listagens
+
+| Listagem | Ações, na ordem | Entrou em |
+|---|---|---|
+| Pagamentos | Baixar recibo, Estornar (só com líquido), Editar | F-1b.3 |
+| Parcelas | Editar, **Excluir** | F-1b.3 |
+| Honorários | Editar, **Excluir** | F-1b.3 |
+| Clientes | Ver, Editar, **Excluir** | F-1b.3.2 |
+| Processos | Gerenciar, **Excluir** | F-1b.3.2 |
+| Documentos | Abrir, Baixar PDF, Baixar DOCX, **Excluir** | F-1b.3.2 |
+| Seções | Ver, Editar, **Desativar** | F-1b.3.2 |
+
+**Quatro listagens entraram, e não três.** A **Biblioteca de Seções** tinha o
+mesmo padrão e não estava no relato — deixá-la de fora tornaria esta decisão
+falsa no dia em que foi escrita.
+
+### Os casos que não eram "editar/excluir"
+
+- **Documentos: PDF e DOCX** eram downloads com **ícone** e estado "baixando".
+  Os **ícones saíram**: dentro do menu o item é uma **linha de texto**, e
+  "Baixar PDF" por extenso diz mais que um ícone de 13 px ao lado de "PDF" — o
+  `title` que explicava o ícone deixou de ser necessário pelo mesmo motivo. O
+  **estado continua**: o item vira "Baixando…" e fica desabilitado.
+- **Seções: "Ver"** abre um **modal de preview**, não navega — é `onSelecionar`
+  e não `to`, que é a distinção que o `ActionMenu` já fazia.
+- **Seções: "Desativar"** leva o vermelho mas **não virou "Excluir"**: a seção
+  não é apagada, e trocar o verbo mudaria o que a tela promete.
+
+### O que a decisão apagou
+
+As medidas de coluna por quantidade de botão — `col-acoes-2`, `-2-lg`, `-3`,
+`-3-lg`, `-4`, de 180 a 340 px — **ficaram sem chamador e foram removidas**.
+Sobrou **`col-acoes-menu`, 120 px**, a largura de um botão mais a nota.
+
+Não foram deixadas "por precaução": **medida de coluna sem chamador é a próxima
+listagem escolhendo entre seis larguras que não deveriam existir** — e foi
+exatamente assim que a listagem de pagamentos acabou com três botões numa
+coluna dimensionada para dois, que é o defeito que abriu a F-1b.3.
 
 ---
 

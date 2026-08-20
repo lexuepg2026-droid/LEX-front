@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import processService from '../../api/processService';
 import PageHeader from '../../components/ui/PageHeader';
+import ActionMenu from '../../components/ui/ActionMenu';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -99,7 +99,7 @@ function ProcessoListPage() {
               <col />
               <col className="col-xs" />
               <col className="col-sm" />
-              <col className="col-acoes-2" />
+              <col className="col-acoes-menu" />
             </colgroup>
             <thead>
               <tr>
@@ -119,9 +119,22 @@ function ProcessoListPage() {
                   <td className="cell-truncate" title={nomeCliente(p)}>{nomeCliente(p)}</td>
                   <td><StatusBadge status={p.status} /></td>
                   <td>{formatDate(p.dataDistribuicao)}</td>
-                  <td className="actions-cell">
-                    <Link to={`/dashboard/processos/detalhe/${p._id}`} className="btn-action btn-edit">Gerenciar</Link>
-                    <button onClick={() => confirmDelete(p._id)} className="btn-action btn-delete">Excluir</button>
+                  {/* DEC-047: a coluna de ações é o menu ⋮. "Gerenciar" é o
+                      nome que esta tela sempre deu ao caminho do detalhe, e
+                      renomeá-lo aqui seria mudar o vocabulário numa fase que
+                      só mexe na forma. */}
+                  <td className="actions-cell actions-cell--menu">
+                    <ActionMenu
+                      rotulo={`Ações do processo ${p.numeroProcesso || ''}`.trim()}
+                      itens={[
+                        { rotulo: 'Gerenciar', to: `/dashboard/processos/detalhe/${p._id}` },
+                        {
+                          rotulo: 'Excluir',
+                          destrutivo: true,
+                          onSelecionar: () => confirmDelete(p._id)
+                        }
+                      ]}
+                    />
                   </td>
                 </tr>
               ))}

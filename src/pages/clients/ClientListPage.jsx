@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import clientService from '../../api/clientService';
 import PageHeader from '../../components/ui/PageHeader';
+import ActionMenu from '../../components/ui/ActionMenu';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import { toast } from '../../utils/toast';
@@ -103,7 +103,7 @@ function ClienteListPage() {
               <col />
               <col className="col-sm" />
               <col />
-              <col className="col-acoes-3" />
+              <col className="col-acoes-menu" />
             </colgroup>
             <thead>
               <tr>
@@ -128,10 +128,23 @@ function ClienteListPage() {
                   <td className="cell-truncate" title={cliente.email || undefined}>{cliente.email || '—'}</td>
                   <td>{cliente.telefone || '—'}</td>
                   <td className="cell-truncate" title={endereco}>{endereco}</td>
-                  <td className="actions-cell">
-                    <Link to={`/dashboard/clientes/detalhe/${cliente._id}`} className="btn-action btn-view">Ver</Link>
-                    <Link to={`/dashboard/clientes/editar/${cliente._id}`} className="btn-action btn-edit">Editar</Link>
-                    <button onClick={() => confirmDelete(cliente._id)} className="btn-action btn-delete">Excluir</button>
+                  {/* DEC-047: a coluna de ações é o menu ⋮, aqui como em toda
+                      listagem. As três ações são as mesmas de antes — nenhuma
+                      foi perdida na migração —, agora com largura de UM botão.
+                      Excluir por último e em vermelho. */}
+                  <td className="actions-cell actions-cell--menu">
+                    <ActionMenu
+                      rotulo={`Ações de ${cliente.nome}`}
+                      itens={[
+                        { rotulo: 'Ver', to: `/dashboard/clientes/detalhe/${cliente._id}` },
+                        { rotulo: 'Editar', to: `/dashboard/clientes/editar/${cliente._id}` },
+                        {
+                          rotulo: 'Excluir',
+                          destrutivo: true,
+                          onSelecionar: () => confirmDelete(cliente._id)
+                        }
+                      ]}
+                    />
                   </td>
                 </tr>
                 );

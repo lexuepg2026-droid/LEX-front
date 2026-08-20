@@ -51,6 +51,34 @@ import './ActionMenu.css';
 // rolável — tooltip, popover, seletor de data — tem exatamente este problema e
 // exatamente esta solução.
 //
+// ── EMENDA À DEC-046 (F-1b.3.2): o portal custa a ordem de tabulação ─────
+// A validação manual do passo 178 achou o que a suíte não alcança: o menu
+// abria com Enter, mas **o painel não era acessível por Tab — só por mouse**.
+//
+// A causa é a outra metade do portal. `createPortal` propaga EVENTOS pela
+// árvore do React, mas a ordem de tabulação é a do **DOM real**: o painel é o
+// último filho do `document.body`, e o gatilho está numa célula no meio da
+// tabela. Tab a partir do gatilho ia para a **próxima célula da tabela**, não
+// para dentro do menu.
+//
+// Antes da DEC-046 o painel era irmão imediato do gatilho e o Tab caía nele de
+// graça. **Tirar o painel do contêiner que recortava tirou junto a ordem de
+// foco natural.** É o custo conhecido do portal — e a partir dele o foco
+// precisa ser CONDUZIDO explicitamente:
+//
+//   • ao abrir, o foco entra no primeiro item — DEPOIS de a posição estar
+//     calculada, nunca antes (focar elemento ainda invisível no canto superior
+//     esquerdo faz o navegador rolar a página até lá);
+//   • Tab e Shift+Tab CIRCULAM dentro do painel e não escapam para a tabela —
+//     a tabela está atrás de um menu aberto, e tabular para dentro do que está
+//     atrás é o mesmo defeito do painel cortado, só que invisível;
+//   • Esc fecha e devolve o foco ao gatilho, que é o único caminho de volta.
+//
+// **Quem usar portal de novo herda este custo junto com a solução.**
+//
+// Não há `ArrowUp`/`ArrowDown` aqui: o passo 178 pede Tab, e generalizar antes
+// do segundo caso é inventar requisito.
+//
 // ── O comportamento é o dos modais do projeto (passo 31) ─────────────────
 // Abre por clique e por teclado (é um `<button>` de verdade — Enter e Espaço
 // vêm de graça, e é por isso que não há `onKeyDown` inventado aqui), fecha com
@@ -88,6 +116,17 @@ function ActionMenu({ itens = [], rotulo = 'Ações desta linha' }) {
 
   const fechar = useCallback(() => setAberto(false), []);
 
+  // Os itens que podem receber foco, na ordem do DOM. Item DESABILITADO fica
+  // de fora: um `<button disabled>` não é tabulável, e incluí-lo faria o ciclo
+  // parar num elemento que o navegador se recusa a focar — o menu travaria no
+  // "Baixando…" do recibo em curso.
+  const itensFocaveis = useCallback(() => {
+    if (!painelRef.current) return [];
+    return Array.from(
+      painelRef.current.querySelectorAll('[role="menuitem"]:not([disabled])')
+    );
+  }, []);
+
   // A medida e a conta, em `useLayoutEffect`: roda depois do painel montar e
   // ANTES da pintura. Em `useEffect` o painel apareceria por um quadro na
   // posição errada, que é o mesmo defeito visual de antes, só que rápido.
@@ -108,6 +147,19 @@ function ActionMenu({ itens = [], rotulo = 'Ações desta linha' }) {
     );
   }, [aberto]);
 
+  // ── O foco ENTRA no painel (F-1b.3.2) ────────────────────────────────────
+  // Depende de `posicao`, e é isso que garante a ORDEM: `posicao` só deixa de
+  // ser `null` depois do `useLayoutEffect` acima ter medido e calculado. Focar
+  // antes disso focaria um elemento `visibility: hidden` no canto superior
+  // esquerdo, e o navegador rolaria a página inteira até lá.
+  //
+  // Sem `autoFocus` — regra do projeto desde a F-1a. Foco se move por chamada
+  // explícita, em efeito, depois da posição.
+  useEffect(() => {
+    if (!aberto || !posicao) return;
+    itensFocaveis()[0]?.focus();
+  }, [aberto, posicao, itensFocaveis]);
+
   useEffect(() => {
     if (!aberto) {
       if (abriuAlgumaVez.current) gatilhoRef.current?.focus();
@@ -118,10 +170,42 @@ function ActionMenu({ itens = [], rotulo = 'Ações desta linha' }) {
 
     // Esc fecha — mesma tecla e mesmo caminho do `Modal` do projeto. O foco
     // volta ao gatilho pelo ramo `!aberto` acima.
+    //
+    // Tab CIRCULA dentro do painel (F-1b.3.2). `preventDefault` é obrigatório
+    // e é a linha que mais some numa refatoração: sem ele o navegador move o
+    // foco ANTES de o código correr, e a chamada de `.focus()` vira uma
+    // correção tarde demais — o foco pisca na tabela e volta.
     const aoTeclar = (e) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
         fechar();
+        return;
+      }
+
+      if (e.key !== 'Tab') return;
+
+      const focaveis = itensFocaveis();
+      if (focaveis.length === 0) return;
+
+      const primeiro = focaveis[0];
+      const ultimo = focaveis[focaveis.length - 1];
+      const ativo = document.activeElement;
+      // Foco que já escapou do painel (o clique do mouse em outro lugar da
+      // página, por exemplo) é trazido de volta em vez de ignorado: enquanto o
+      // menu está aberto, o Tab pertence a ele.
+      const dentro = painelRef.current?.contains(ativo);
+
+      if (e.shiftKey) {
+        if (!dentro || ativo === primeiro) {
+          e.preventDefault();
+          ultimo.focus();
+        }
+        return;
+      }
+
+      if (!dentro || ativo === ultimo) {
+        e.preventDefault();
+        primeiro.focus();
       }
     };
 
@@ -162,7 +246,7 @@ function ActionMenu({ itens = [], rotulo = 'Ações desta linha' }) {
       window.removeEventListener('scroll', fechar, true);
       window.removeEventListener('resize', fechar);
     };
-  }, [aberto, fechar]);
+  }, [aberto, fechar, itensFocaveis]);
 
   if (itens.length === 0) return null;
 

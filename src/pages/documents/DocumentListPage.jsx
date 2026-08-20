@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Download, FileDown, FolderOpen } from 'lucide-react';
+import { FolderOpen } from 'lucide-react';
 import documentService from '../../api/documentService';
 import PageHeader from '../../components/ui/PageHeader';
+import ActionMenu from '../../components/ui/ActionMenu';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import Loading from '../../components/common/Loading';
@@ -119,7 +120,7 @@ function DocumentListPage() {
               <col />
               <col className="col-sm" />
               <col className="col-md" />
-              <col className="col-acoes-4" />
+              <col className="col-acoes-menu" />
             </colgroup>
             <thead>
               <tr>
@@ -153,40 +154,42 @@ function DocumentListPage() {
                       )}
                     </div>
                   </td>
-                  <td className="actions-cell">
-                    <Link
-                      to={`/dashboard/documentos/${documento._id}/texto`}
-                      className="btn-action btn-edit"
-                    >
-                      Abrir
-                    </Link>
-                    <button
-                      type="button"
-                      className="btn-action btn-view"
-                      onClick={() => baixar(documento, 'pdf')}
-                      disabled={Boolean(baixando)}
-                      title="Baixar em PDF"
-                    >
-                      <Download size={13} aria-hidden="true" />
-                      {baixando === `${documento._id}-pdf` ? '…' : 'PDF'}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-action btn-view"
-                      onClick={() => baixar(documento, 'docx')}
-                      disabled={Boolean(baixando)}
-                      title="Baixar em DOCX"
-                    >
-                      <FileDown size={13} aria-hidden="true" />
-                      {baixando === `${documento._id}-docx` ? '…' : 'DOCX'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteModal({ open: true, documento })}
-                      className="btn-action btn-delete"
-                    >
-                      Excluir
-                    </button>
+                  {/* DEC-047: a coluna de ações é o menu ⋮. Era a listagem com
+                      MAIS botões do projeto — quatro, em 340 px —, e por isso a
+                      que mais ganha com a largura de um botão só.
+
+                      Os ÍCONES saíram: dentro do menu, o item é uma linha de
+                      texto, e "Baixar PDF" por extenso diz mais que um ícone
+                      de 13 px ao lado de "PDF". O `title` que existia para
+                      explicar o ícone deixou de ser necessário pelo mesmo
+                      motivo — o rótulo já é a explicação.
+
+                      O estado "baixando" continua: o item mostra "Baixando…" e
+                      fica DESABILITADO, como o "Baixar recibo" da listagem de
+                      pagamentos. Item desabilitado sai do ciclo do Tab
+                      (F-1b.3.2), então o menu não trava nele. */}
+                  <td className="actions-cell actions-cell--menu">
+                    <ActionMenu
+                      rotulo={`Ações do documento ${documento.titulo || ''}`.trim()}
+                      itens={[
+                        { rotulo: 'Abrir', to: `/dashboard/documentos/${documento._id}/texto` },
+                        {
+                          rotulo: baixando === `${documento._id}-pdf` ? 'Baixando…' : 'Baixar PDF',
+                          onSelecionar: () => baixar(documento, 'pdf'),
+                          desabilitado: Boolean(baixando)
+                        },
+                        {
+                          rotulo: baixando === `${documento._id}-docx` ? 'Baixando…' : 'Baixar DOCX',
+                          onSelecionar: () => baixar(documento, 'docx'),
+                          desabilitado: Boolean(baixando)
+                        },
+                        {
+                          rotulo: 'Excluir',
+                          destrutivo: true,
+                          onSelecionar: () => setDeleteModal({ open: true, documento })
+                        }
+                      ]}
+                    />
                   </td>
                 </tr>
               ))}

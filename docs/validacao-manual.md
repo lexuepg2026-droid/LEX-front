@@ -1332,53 +1332,28 @@ Dados que vários passos usam:
 > aparência vai ser refeito com o desenho novo, e o passo **167** já está
 > marcado para reexecução.
 
-- [ ] **172. ⭐ Paginar não perde o filtro nem a busca**
-  **Reescrito na F-1b.3.1: o passo mudou de Pagamentos para PARCELAS, e o
-  filtro mudou de preset para intervalo personalizado.** Contagens conferidas
-  no banco depois de `npm run seed:fresh` em 20/08/2026: o seed gera **15
-  pagamentos** e **23 parcelas**. Com 15 registros e um paginador de 20 por
-  página, Pagamentos **nunca tem segunda página** — não havia "Próxima ›" para
-  clicar, e o passo era **inverificável como estava escrito**, não reprovado.
-  As 23 parcelas dão duas páginas, a segunda com 3 linhas, que é exatamente o
-  caso que expõe o off-by-one do último item.
-  O **preset também precisou mudar**: "Últimos 6 meses" recorta as parcelas
-  para **17** (conferido no banco), e 17 volta a caber numa página só. O
-  **intervalo personalizado de 01/01/2026 a 31/12/2026** mantém as **23** e
-  ainda assim é um filtro visível — que é o que este passo precisa: um recorte
-  ativo E mais de uma página. **O seed não foi alterado para acomodar o passo**
-  — o passo é que estava mal escolhido.
-  Pré-condição: `npm run seed:fresh`.
-  Passos: em **Parcelas**, 1) escolher **Intervalo personalizado** no seletor de
-  período e digitar **01/01/2026** a **31/12/2026**; 2) conferir o rodapé da
-  lista; 3) clicar em **Próxima ›**; 4) olhar os controles no topo; 5) clicar em
-  **‹ Anterior**.
-  Esperado: no passo 2, o rodapé diz **"1–20 de 23 parcelas"** e **"Página 1 de
-  2"**, com **‹ Anterior desabilitado**. No passo 4, depois de avançar: os
-  **dois campos de data continuam preenchidos** com 01/01/2026 e 31/12/2026, a
-  barra **"Filtros aplicados:"** continua visível, e o rodapé diz **"21–23 de 23
-  parcelas"** — **o mesmo 23** — com **Próxima › desabilitado**.
-  Conferir que o total **não muda** ao virar página: 23 é o tamanho do conjunto
-  filtrado, não o da página. Conferir que a última página mostra **3 linhas**,
-  e não 20 nem 23.
-  Conferir o **singular** (F-1b.3.1): filtrando por um honorário que tenha
-  **uma** parcela só, o rodapé diz **"1 parcela"** — nunca "1 parcelas".
-  Por que só olho humano: a suíte prova que a página é mais um campo do mesmo
-  objeto de consulta e que o total vem do envelope. O que ela não prova é que a
-  pessoa **vê** o filtro continuar ali depois de virar a página — que é a única
-  razão de ele continuar.
-  Fase de origem: F-1b.3, reescrito na F-1b.3.1
-- [ ] **175. ⭐ Mudar filtro volta para a página 1**
-  Pré-condição: `npm run seed:fresh`. **É o defeito mais fácil de introduzir e
-  o mais difícil de perceber**, porque a tela não erra — ela mostra,
-  corretamente, a página 4 de um conjunto de duas.
-  Passos: em **Pagamentos**, 1) avançar até a **última página**; 2) sem voltar,
-  escolher um **honorário** no seletor.
-  Esperado: a lista volta para a **página 1** do conjunto novo, e o rodapé diz
-  "1–N de N". **Não** pode aparecer lista vazia com "Página 4 de 2".
-  Repetir com: o campo de **busca**, o **período** e o botão **Limpar filtros**.
-  Fase de origem: F-1b.3
-
 - [ ] **178. ⭐ O menu de ações abre e fecha pelo teclado**
+  **🔴 REPROVADO em 20/08/2026 (validação da F-1b.3.1) — reaberto pela segunda
+  vez.** Relato do Daniel: *"a janela aberta ao clicar enter nos ⋮ não foi
+  possível de se acessar navegando pelo tab, apenas pelo mouse"*.
+
+  **O que PASSOU na tentativa de 20/08/2026**, e vale registrar porque delimita
+  o defeito: Enter **abre** o menu; o **anel de foco dourado aparece** no ⋮; as
+  ações **funcionam ao clique**; e **o painel ficou dentro da tela** — a
+  DEC-046 fez o que prometeu. O que falhou foi **só** o Tab.
+
+  **A causa real, e ela é filha da própria correção anterior:** o painel em
+  portal é o **último filho do `body`**, e a ordem do Tab é a do **DOM real** —
+  não a da árvore do React, que é por onde o `createPortal` propaga *eventos*.
+  Tab a partir do gatilho ia para a **próxima célula da tabela**, não para
+  dentro do menu. Antes da DEC-046 o painel era irmão imediato do gatilho e o
+  Tab caía nele de graça: **tirar o painel do contêiner que recortava tirou
+  junto a ordem de foco natural.**
+
+  **Corrigido na F-1b.3.2** conduzindo o foco explicitamente — entra no
+  primeiro item ao abrir (depois de a posição estar calculada), circula dentro
+  do painel com Tab e Shift+Tab, e volta ao gatilho no Esc. **Reexecutar este
+  passo por inteiro**, junto com o passo **183**.
   **🔴 REPROVADO em 20/08/2026 (validação da F-1b.3).** O botão **⋮** existe,
   **recebe o anel de foco dourado** por Tab e **abre** o painel ao clique — o
   comportamento estava certo. **O painel saía da tela, cortado, nas TRÊS
@@ -1405,52 +1380,35 @@ Dados que vários passos usam:
   reconhece `Escape`, guarda a referência do gatilho e a chama no fechamento —
   e que nenhuma regra apaga o `outline`. **Não há como provar sem DOM** que o
   foco realmente voltou nem que o anel é visível no tema escuro.
-  Fase de origem: F-1b.3, reaberto na F-1b.3.1
-
-- [ ] **179. ⭐ 🚨 Nenhuma ação ficou fora da tela, em 1024 px e em 360 px**
-  **🔴 REPROVADO em 20/08/2026 (validação da F-1b.3).** O botão **⋮** existe,
-  **recebe o anel de foco dourado** por Tab e **abre** o painel ao clique — o
-  comportamento estava certo. **O painel saía da tela, cortado, nas TRÊS
-  listagens.** A causa foi diagnosticada na F-1b.3.1 e é estrutural: três
-  ancestrais com `overflow` diferente de `visible` recortavam o painel
-  absoluto — a própria célula (`.data-table--fixed td`, `overflow: hidden`), a
-  `.table-wrapper` (`overflow-x: auto`) e a `.main-content`. Corrigido pela
-  **DEC-046**: o painel passou a ser renderizado em **portal** no
-  `document.body`, com `position: fixed` e coordenadas do gatilho. **Reexecutar
-  este passo por inteiro.**
-  Pré-condição: `npm run seed:fresh`. **É o defeito nominal da Parte 6**: a
-  coluna Ações de Pagamentos tinha três botões numa largura para dois, e o
-  terceiro ("Editar") ficava fora da tela — ação escondida atrás de rolagem que
-  ninguém percebe é ação que não existe.
-  Passos: abrir **Pagamentos**, **Parcelas** e **Honorários** com a janela em
-  **1024 px** e depois em **360 px**. Em cada uma, na **última coluna**, abrir o
-  menu **⋮** de uma linha e listar o que ele contém.
-  Esperado, por listagem:
-
-  | Listagem | O menu contém |
-  |---|---|
-  | **Pagamentos** | "Baixar recibo" e "Estornar" (só enquanto sobra líquido) + "Editar" |
-  | **Parcelas** | "Editar" + "Excluir" (em vermelho) |
-  | **Honorários** | "Editar" + "Excluir" (em vermelho) |
-
-  Esperado ainda: **nenhum item do menu fica fora da tela** em 360 px — o painel
-  abre **para a esquerda** do botão. A tabela pode rolar horizontalmente; o
-  **menu, não**.
-  Conferir que as EXPLICAÇÕES continuam fora do menu, na própria célula: a nota
-  **"sem recibo"** do pagamento integralmente estornado (ela é explicação, não
-  ação — escondê-la faria a advogada abrir um menu para descobrir por que falta
-  um botão) e o **"Reparcelada"** da parcela cancelada.
-  Fase de origem: F-1b.3, reaberto na F-1b.3.1
+  Fase de origem: F-1b.3, reaberto na F-1b.3.1 e de novo na F-1b.3.2
 
 - [ ] **180. O extrato pagina em vez de acumular**
-  Pré-condição: `npm run seed:fresh`.
-  **Pré-requisito de dados: o passo 165 PRECISA ter sido executado antes.**
-  O seed não gera, sozinho, honorário nenhum com mais de 20 movimentações — e
-  um extrato de 7 linhas não tem segunda página, o que torna este passo
-  **inverificável**, não reprovado. É o passo 165 que registra os pagamentos e
-  estornos que enchem o extrato. Executá-lo primeiro é parte deste passo.
-  Passos: executar o **passo 165**; depois abrir a página do honorário de
-  **divórcio litigioso** e ir ao **Extrato**.
+  **⚠️ INVERIFICÁVEL com os dados atuais — não reprovado. Número corrigido em
+  20/08/2026.**
+
+  **O que foi afirmado sem conferir, e é falso:** que executar o **passo 165**
+  encheria o extrato o bastante para haver segunda página. **Conferido na tela
+  em 20/08/2026:** depois de executar o 165, o extrato do honorário de
+  **divórcio litigioso** mostra **"10 movimentações"**. O paginador é de **20
+  por página**, então **não há segunda página** e não há o que verificar. A
+  afirmação anterior ficou registrada aqui em vez de apagada, para a próxima
+  pessoa não repetir a tentativa.
+
+  **As duas saídas honestas**, à escolha de quem for executar:
+
+  **(a) Encher o extrato à mão.** Cada **pagamento** gera duas linhas
+  (pagamento + alocação) e cada **estorno** gera duas (estorno + desalocação).
+  De 10 para além de 20 são cerca de **6 operações** — registrar 3 pagamentos e
+  estornar 3, por exemplo. Só então o paginador tem duas páginas.
+
+  **(b) Reavaliar depois da F-1c.** Quando o reparcelamento na UI passar a
+  gerar linhas de extrato sozinho, um honorário reparcelado chega a mais de 20
+  movimentações **sem trabalho manual** — e aí o passo se verifica com o seed
+  puro, que é como ele deveria ter sido escrito.
+
+  Pré-condição: `npm run seed:fresh` **e** o passo **165** executado.
+  Passos: pela saída (a), registrar as ~6 operações acima; depois abrir a
+  página do honorário de **divórcio litigioso** e ir ao **Extrato**.
   Esperado: no lugar do botão **"Carregar mais (N restantes)"**, há o **mesmo
   paginador** das listagens — "1–20 de N movimentações", "Página 1 de X", e os
   dois botões. Avançar e **voltar** funciona: com o acúmulo não havia como
@@ -1458,8 +1416,9 @@ Dados que vários passos usam:
   Conferir: depois de registrar um **estorno** pelo extrato, a lista volta para
   a **página 1** — ficar na página 4 de uma história que acabou de mudar de
   tamanho mostraria uma janela deslocada.
-  Fase de origem: F-1b.3
-
+  Conferir o **singular** (F-1b.3.1): num honorário com uma movimentação só, o
+  rodapé diz **"1 movimentação"**.
+  Fase de origem: F-1b.3, número corrigido na F-1b.3.2
 ## 25. Fase F-1b.3.1 — o menu de ações sai da tela
 
 > Numeração contínua a partir do 180. Dois passos novos: **181 e 182**.
@@ -1489,55 +1448,93 @@ Dados que vários passos usam:
 > painel apareça **inteiro** na tela, nas larguras reais. Nenhuma varredura
 > estática vê um retângulo cortado.
 
-- [ ] **181. ⭐ 🚨 O menu abre inteiro em 360 px, inclusive na última linha**
-  Pré-condição: `npm run seed:fresh`. **É o passo que fecha o defeito da
-  fase** — reexecutar junto com o 178 e o 179.
-  Passos: abrir **Pagamentos**, **Parcelas** e **Honorários** com a janela em
-  **360 px**. Em cada uma: 1) rolar até a **última linha visível** da tabela e
-  abrir o menu **⋮** dela; 2) abrir o menu de uma linha do **meio**; 3) com o
-  menu aberto, **rolar a página**; 4) com o menu aberto, **rolar a tabela de
-  lado**; 5) com o menu aberto, **redimensionar** a janela.
-  Esperado: nos passos 1 e 2, **o painel aparece inteiro** — nenhuma borda
-  cortada, nenhum item fora da tela, nada exigindo rolagem para ser lido. Na
-  última linha, o painel **abre para CIMA** do botão, porque abaixo não cabe.
-  Em 360 px ele **alinha pela esquerda** do botão (alinhado pela direita ele
-  sairia pela borda esquerda). Nos passos 3, 4 e 5, **o menu FECHA** — não
-  acompanha, não fica flutuando descolado da linha. Um menu apontando para a
-  linha errada é pior que menu nenhum.
-  Repetir tudo em **1024 px**: lá o painel alinha pela **direita** do botão e
-  abre para baixo, exceto nas últimas linhas.
-  Conferir que a **tabela ainda rola de lado** e o **menu não** — são coisas
-  separadas desde que ele saiu para o `body`.
-  Por que só olho humano: a suíte prova que a conta nunca devolve coordenada
-  fora do viewport, varrendo a tela inteira. **Não há como provar sem DOM** que
-  o retângulo pintado coube — a conta pode estar certa e um `overflow` novo em
-  qualquer ancestral cortaria o painel de novo, calado.
-  Fase de origem: F-1b.3.1
+## 26. Fase F-1b.3.2 — o teclado no menu em portal, e o ⋮ nas outras listagens
 
-- [ ] **182. As notas "Reparcelada" e "sem recibo" cabem inteiras**
-  Pré-condição: `npm run seed:fresh`. Conferido no banco em 20/08/2026: o seed
-  traz **2 parcelas canceladas** por reparcelamento e **1 pagamento
-  integralmente estornado** (de 2 pagamentos com estorno — o outro é parcial e
-  ainda tem líquido, então continua oferecendo recibo).
-  Passos: 1) em **Parcelas**, achar uma linha com status **cancelado** e ler a
-  última coluna; 2) em **Pagamentos**, achar a linha do pagamento
-  **integralmente estornado** (líquido R$ 0,00, com o badge "Estornado
-  integralmente") e ler a última coluna. Fazer os dois em **1024 px** e em
-  **360 px**.
-  Esperado: lê-se **"Reparcelada"** e **"sem recibo"** — as palavras
-  **inteiras**, nas duas larguras. **Não** pode aparecer "Reparcelad", nem
-  reticências, nem a palavra quebrada em duas linhas. A nota fica **acima** do
-  botão **⋮**, empilhada, e não ao lado dele.
-  Conferir a regressão da F-1b.2 no mesmo par de telas: **nenhuma coluna de
-  dinheiro trunca**. Os 24 px que a coluna de ações ganhou saíram da coluna de
-  **texto livre** (a descrição do honorário), que trunca com reticências por
-  projeto e tem o texto inteiro no `title` e no link da própria linha — nunca
-  da coluna de valores.
-  Por que só olho humano: a suíte trava a largura declarada da coluna e o
-  `nowrap` das notas. O que ela não mede é a largura **pintada** do texto, que
-  depende da fonte instalada — e foi exatamente assim que "Reparcelada" coube
-  na medida e não coube na tela.
-  Fase de origem: F-1b.3.1
+> Numeração contínua a partir do 182. Dois passos novos: **183 e 184**.
+>
+> Fase corretiva, só frontend, nascida da validação manual da F-1b.3.1: os
+> passos **172, 175, 179, 181 e 182 passaram**; o **178 falhou — por causa da
+> própria correção anterior**; o **180** continua inverificável, agora com o
+> número real conhecido (10 movimentações).
+>
+> **O defeito do 178.** O menu abria com Enter, mas o painel **só era acessível
+> pelo mouse**. `createPortal` propaga *eventos* pela árvore do React, mas a
+> ordem de tabulação é a do **DOM real**: o painel é o último filho do `body` e
+> o gatilho está numa célula no meio da tabela. **Tirar o painel do contêiner
+> que recortava tirou junto a ordem de foco natural** — é o custo conhecido do
+> portal, e a partir dele o foco precisa ser conduzido explicitamente.
+>
+> **A DEC-047.** O Daniel também apontou que o ⋮ existia só no Financeiro:
+> Clientes, Processos, Documentos e Seções ainda tinham a fileira de botões. A
+> razão de padronizar não é estética — a advogada aprendia um gesto numa tela e
+> ele não valia nas outras.
+>
+> **O que a suíte já cobre.** Que o foco é conduzido por chamada explícita e
+> **depois** do cálculo de posição; que o `Tab` é interceptado com
+> `preventDefault` nos dois sentidos e circula nas duas pontas; que não há
+> `autoFocus` no projeto inteiro; que as **sete** listagens renderizam
+> `ActionMenu` e **nenhuma** tem botão solto na célula; e que nenhuma ação se
+> perdeu na migração, item a item (`tests/regressions/f1b32.test.js`, 22
+> testes).
+>
+> **O que continua exigindo olho humano** é o de sempre com foco: **não há DOM
+> em `node --test`**. Que o Tab realmente circule, e que ele realmente não
+> escape para a tabela, só se vê tabulando.
+
+- [ ] **183. ⭐ 🚨 O Tab circula dentro do painel e não escapa para a tabela**
+  Pré-condição: `npm run seed:fresh`. **Sem usar o mouse em nenhum momento.**
+  **É o passo que fecha o defeito do 178** — executar os dois juntos.
+  Passos: em **Pagamentos**, 1) navegar por **Tab** até o ⋮ de uma linha do
+  **meio** da tabela; 2) abrir com **Enter**; 3) conferir **onde o foco está**
+  assim que o menu abre; 4) tabular **item por item até passar do último**;
+  5) do primeiro item, dar **Shift+Tab**; 6) fechar com **Esc** e conferir onde
+  o foco parou. Repetir em **Parcelas** e em **Honorários**.
+  Esperado: no passo 3, o foco está **no primeiro item do menu** — não no ⋮ e
+  não na tabela. No passo 4, ao passar do último item o foco **volta para o
+  primeiro**: ele **não vai para a linha de baixo da tabela**, que é
+  exatamente o que acontecia antes. No passo 5, Shift+Tab no primeiro item vai
+  para o **último**. No passo 6, Esc fecha e o foco volta **para o ⋮ que
+  abriu** — com o Tab preso dentro do painel, **Esc é o único caminho de
+  volta**, e se ele falhar a pessoa fica presa.
+  Conferir em **Pagamentos** com um recibo **baixando**: o item "Baixando…"
+  está desabilitado e o Tab **pula por cima dele** — o ciclo não trava.
+  Por que só olho humano: a suíte prova a mecânica (o `preventDefault`, a
+  ordem da chamada de foco, o ciclo nas duas pontas). **Não há DOM em
+  `node --test`**, então que o foco esteja mesmo onde se pensa é coisa de
+  tabular e olhar.
+  Fase de origem: F-1b.3.2
+
+- [ ] **184. ⭐ O ⋮ em Clientes, Processos, Documentos e Seções (DEC-047)**
+  Pré-condição: `npm run seed:fresh`.
+  Passos: abrir as quatro listagens em **1024 px** e em **360 px**. Em cada
+  uma, abrir o menu **⋮** da última coluna e conferir **item a item** contra a
+  tabela abaixo — que é a lista levantada do código **antes** da migração.
+
+  | Listagem | O menu contém, nesta ordem |
+  |---|---|
+  | **Clientes** | "Ver", "Editar", **"Excluir"** (vermelho) |
+  | **Processos** | "Gerenciar", **"Excluir"** (vermelho) |
+  | **Documentos** | "Abrir", "Baixar PDF", "Baixar DOCX", **"Excluir"** (vermelho) |
+  | **Seções** | "Ver", "Editar", **"Desativar"** (vermelho) |
+
+  Esperado: **nenhuma ação se perdeu** e nenhuma mudou de efeito. Em
+  particular: "Ver" de **Seções** abre o **modal de pré-visualização** (não
+  navega); "Gerenciar" de **Processos** leva ao detalhe, com o mesmo nome de
+  antes; "Baixar PDF" e "Baixar DOCX" **baixam o arquivo** — os ícones saíram
+  de propósito, porque dentro do menu o item é uma linha de texto e o rótulo
+  por extenso diz mais que um ícone de 13 px.
+  Conferir o estado de download: clicando "Baixar PDF", o item vira
+  **"Baixando…"** e fica **desabilitado** até terminar.
+  Conferir que **"Desativar"** de Seções continua **desativando** e não
+  apagando — o verbo não mudou junto com a forma.
+  Conferir em **360 px** que o painel **não sai da tela** nas quatro (é a
+  DEC-046 valendo para as listagens novas) e que a coluna de ações encolheu
+  para a largura de **um botão**.
+  Por que só olho humano: a suíte prova que as sete listagens renderizam
+  `ActionMenu`, que nenhuma tem botão solto e que cada rótulo esperado está no
+  arquivo. O que ela **não** prova é que o clique no item ainda faz o que
+  fazia — que a rota é a mesma, que o modal abre, que o arquivo baixa.
+  Fase de origem: F-1b.3.2
 
 ## Validado
 
@@ -2766,6 +2763,42 @@ Dados que vários passos usam:
   que o passo honesto.
   Fase de origem: F-1b.2
 
+- [x] **172. ⭐ Paginar não perde o filtro nem a busca**
+  **Validado em 20/08/2026 pelo Daniel. Passou.**
+  **Reescrito na F-1b.3.1: o passo mudou de Pagamentos para PARCELAS, e o
+  filtro mudou de preset para intervalo personalizado.** Contagens conferidas
+  no banco depois de `npm run seed:fresh` em 20/08/2026: o seed gera **15
+  pagamentos** e **23 parcelas**. Com 15 registros e um paginador de 20 por
+  página, Pagamentos **nunca tem segunda página** — não havia "Próxima ›" para
+  clicar, e o passo era **inverificável como estava escrito**, não reprovado.
+  As 23 parcelas dão duas páginas, a segunda com 3 linhas, que é exatamente o
+  caso que expõe o off-by-one do último item.
+  O **preset também precisou mudar**: "Últimos 6 meses" recorta as parcelas
+  para **17** (conferido no banco), e 17 volta a caber numa página só. O
+  **intervalo personalizado de 01/01/2026 a 31/12/2026** mantém as **23** e
+  ainda assim é um filtro visível — que é o que este passo precisa: um recorte
+  ativo E mais de uma página. **O seed não foi alterado para acomodar o passo**
+  — o passo é que estava mal escolhido.
+  Pré-condição: `npm run seed:fresh`.
+  Passos: em **Parcelas**, 1) escolher **Intervalo personalizado** no seletor de
+  período e digitar **01/01/2026** a **31/12/2026**; 2) conferir o rodapé da
+  lista; 3) clicar em **Próxima ›**; 4) olhar os controles no topo; 5) clicar em
+  **‹ Anterior**.
+  Esperado: no passo 2, o rodapé diz **"1–20 de 23 parcelas"** e **"Página 1 de
+  2"**, com **‹ Anterior desabilitado**. No passo 4, depois de avançar: os
+  **dois campos de data continuam preenchidos** com 01/01/2026 e 31/12/2026, a
+  barra **"Filtros aplicados:"** continua visível, e o rodapé diz **"21–23 de 23
+  parcelas"** — **o mesmo 23** — com **Próxima › desabilitado**.
+  Conferir que o total **não muda** ao virar página: 23 é o tamanho do conjunto
+  filtrado, não o da página. Conferir que a última página mostra **3 linhas**,
+  e não 20 nem 23.
+  Conferir o **singular** (F-1b.3.1): filtrando por um honorário que tenha
+  **uma** parcela só, o rodapé diz **"1 parcela"** — nunca "1 parcelas".
+  Por que só olho humano: a suíte prova que a página é mais um campo do mesmo
+  objeto de consulta e que o total vem do envelope. O que ela não prova é que a
+  pessoa **vê** o filtro continuar ali depois de virar a página — que é a única
+  razão de ele continuar.
+  Fase de origem: F-1b.3, reescrito na F-1b.3.1
 - [x] **173. ⭐ 🚨 A busca não rouba o foco (regressão do passo 155)**
   **Validado em 20/08/2026 pelo Daniel. Passou.**
   Pré-condição: `npm run seed:fresh`.
@@ -2803,6 +2836,18 @@ Dados que vários passos usam:
   **mensagem do servidor** dizendo que o início é posterior ao fim — e **não**
   uma lista vazia. Lista vazia para um período impossível é indistinguível de
   "não há lançamentos", e faria procurar o pagamento em vez de olhar as datas.
+  Fase de origem: F-1b.3
+
+- [x] **175. ⭐ Mudar filtro volta para a página 1**
+  **Validado em 20/08/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run seed:fresh`. **É o defeito mais fácil de introduzir e
+  o mais difícil de perceber**, porque a tela não erra — ela mostra,
+  corretamente, a página 4 de um conjunto de duas.
+  Passos: em **Pagamentos**, 1) avançar até a **última página**; 2) sem voltar,
+  escolher um **honorário** no seletor.
+  Esperado: a lista volta para a **página 1** do conjunto novo, e o rodapé diz
+  "1–N de N". **Não** pode aparecer lista vazia com "Página 4 de 2".
+  Repetir com: o campo de **busca**, o **período** e o botão **Limpar filtros**.
   Fase de origem: F-1b.3
 
 - [x] **176. A lista curta diz se está filtrada**
@@ -2851,6 +2896,103 @@ Dados que vários passos usam:
   pagamento é **valor e forma**, com o id curto só como desempate. No caso
   degenerado o desempate é tudo o que resta — daí a pendência.
   Fase de origem: F-1b.3
+
+- [x] **179. ⭐ 🚨 Nenhuma ação ficou fora da tela, em 1024 px e em 360 px**
+  **Validado em 20/08/2026 pelo Daniel. Passou.**
+  **🔴 REPROVADO em 20/08/2026 (validação da F-1b.3).** O botão **⋮** existe,
+  **recebe o anel de foco dourado** por Tab e **abre** o painel ao clique — o
+  comportamento estava certo. **O painel saía da tela, cortado, nas TRÊS
+  listagens.** A causa foi diagnosticada na F-1b.3.1 e é estrutural: três
+  ancestrais com `overflow` diferente de `visible` recortavam o painel
+  absoluto — a própria célula (`.data-table--fixed td`, `overflow: hidden`), a
+  `.table-wrapper` (`overflow-x: auto`) e a `.main-content`. Corrigido pela
+  **DEC-046**: o painel passou a ser renderizado em **portal** no
+  `document.body`, com `position: fixed` e coordenadas do gatilho. **Reexecutar
+  este passo por inteiro.**
+  Pré-condição: `npm run seed:fresh`. **É o defeito nominal da Parte 6**: a
+  coluna Ações de Pagamentos tinha três botões numa largura para dois, e o
+  terceiro ("Editar") ficava fora da tela — ação escondida atrás de rolagem que
+  ninguém percebe é ação que não existe.
+  Passos: abrir **Pagamentos**, **Parcelas** e **Honorários** com a janela em
+  **1024 px** e depois em **360 px**. Em cada uma, na **última coluna**, abrir o
+  menu **⋮** de uma linha e listar o que ele contém.
+  Esperado, por listagem:
+
+  | Listagem | O menu contém |
+  |---|---|
+  | **Pagamentos** | "Baixar recibo" e "Estornar" (só enquanto sobra líquido) + "Editar" |
+  | **Parcelas** | "Editar" + "Excluir" (em vermelho) |
+  | **Honorários** | "Editar" + "Excluir" (em vermelho) |
+
+  Esperado ainda: **nenhum item do menu fica fora da tela** em 360 px — o painel
+  abre **para a esquerda** do botão. A tabela pode rolar horizontalmente; o
+  **menu, não**.
+  Conferir que as EXPLICAÇÕES continuam fora do menu, na própria célula: a nota
+  **"sem recibo"** do pagamento integralmente estornado (ela é explicação, não
+  ação — escondê-la faria a advogada abrir um menu para descobrir por que falta
+  um botão) e o **"Reparcelada"** da parcela cancelada.
+  Fase de origem: F-1b.3, reaberto na F-1b.3.1
+
+- [x] **181. ⭐ 🚨 O menu abre inteiro em 360 px, inclusive na última linha**
+  **Validado em 20/08/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run seed:fresh`. **É o passo que fecha o defeito da
+  fase** — reexecutar junto com o 178 e o 179.
+  Passos: abrir **Pagamentos**, **Parcelas** e **Honorários** com a janela em
+  **360 px**. Em cada uma: 1) rolar até a **última linha visível** da tabela e
+  abrir o menu **⋮** dela; 2) abrir o menu de uma linha do **meio**; 3) com o
+  menu aberto, **rolar a página**; 4) com o menu aberto, **rolar a tabela de
+  lado**; 5) com o menu aberto, **redimensionar** a janela.
+  Esperado: nos passos 1 e 2, **o painel aparece inteiro** — nenhuma borda
+  cortada, nenhum item fora da tela, nada exigindo rolagem para ser lido. Na
+  última linha, o painel **abre para CIMA** do botão, porque abaixo não cabe.
+  Em 360 px ele **alinha pela esquerda** do botão (alinhado pela direita ele
+  sairia pela borda esquerda). Nos passos 3, 4 e 5, **o menu FECHA** — não
+  acompanha, não fica flutuando descolado da linha. Um menu apontando para a
+  linha errada é pior que menu nenhum.
+  Repetir tudo em **1024 px**: lá o painel alinha pela **direita** do botão e
+  abre para baixo, exceto nas últimas linhas.
+  Conferir que a **tabela ainda rola de lado** e o **menu não** — são coisas
+  separadas desde que ele saiu para o `body`.
+  Por que só olho humano: a suíte prova que a conta nunca devolve coordenada
+  fora do viewport, varrendo a tela inteira. **Não há como provar sem DOM** que
+  o retângulo pintado coube — a conta pode estar certa e um `overflow` novo em
+  qualquer ancestral cortaria o painel de novo, calado.
+  **Duas ressalvas registradas, nenhuma reprova o passo:**
+  1. Em **360 px**, os cartões do **resumo do mês** (agosto/2026) e do
+     **acumulado do escritório** exigem **deslize horizontal** em vez de
+     empilhar como o resumo geral. **Estético, adiado por decisão do Daniel** —
+     está nas pendências, não neste passo.
+  2. A **inconsistência do ⋮ entre módulos** — Clientes, Processos, Documentos
+     e Seções ainda com a fileira de botões enquanto o Financeiro já tinha o
+     menu. Foi o que **originou a DEC-047**, resolvida na F-1b.3.2 e verificada
+     pelo passo **184**.
+  Fase de origem: F-1b.3.1
+
+- [x] **182. As notas "Reparcelada" e "sem recibo" cabem inteiras**
+  **Validado em 20/08/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run seed:fresh`. Conferido no banco em 20/08/2026: o seed
+  traz **2 parcelas canceladas** por reparcelamento e **1 pagamento
+  integralmente estornado** (de 2 pagamentos com estorno — o outro é parcial e
+  ainda tem líquido, então continua oferecendo recibo).
+  Passos: 1) em **Parcelas**, achar uma linha com status **cancelado** e ler a
+  última coluna; 2) em **Pagamentos**, achar a linha do pagamento
+  **integralmente estornado** (líquido R$ 0,00, com o badge "Estornado
+  integralmente") e ler a última coluna. Fazer os dois em **1024 px** e em
+  **360 px**.
+  Esperado: lê-se **"Reparcelada"** e **"sem recibo"** — as palavras
+  **inteiras**, nas duas larguras. **Não** pode aparecer "Reparcelad", nem
+  reticências, nem a palavra quebrada em duas linhas. A nota fica **acima** do
+  botão **⋮**, empilhada, e não ao lado dele.
+  Conferir a regressão da F-1b.2 no mesmo par de telas: **nenhuma coluna de
+  dinheiro trunca**. Os 24 px que a coluna de ações ganhou saíram da coluna de
+  **texto livre** (a descrição do honorário), que trunca com reticências por
+  projeto e tem o texto inteiro no `title` e no link da própria linha — nunca
+  da coluna de valores.
+  Por que só olho humano: a suíte trava a largura declarada da coluna e o
+  `nowrap` das notas. O que ela não mede é a largura **pintada** do texto, que
+  depende da fonte instalada — e foi exatamente assim que "Reparcelada" coube
+  na medida e não coube na tela.
+  Fase de origem: F-1b.3.1
 
 
 ## Automatizado
