@@ -632,23 +632,31 @@ de digitação**. Ela não descobre que errou a senha — descobre que "caiu", e
 leitura natural é "o sistema me desconectou sozinho". Perde o que estava
 fazendo em outra aba, e a única pista do que aconteceu é uma tela de login.
 
-**Causa provável, não confirmada:** o interceptor de `api/axiosConfig.js:19`
-reage a **qualquer** 401 que não seja de `/auth/me`, estando fora de `/login`,
-com `window.location.href = '/login'` e o toast "Sessão expirada". O backend
-responde **401** em `POST /auth/alterar-senha` quando a senha atual não confere
-(`"Senha atual incorreta"`) — que é um 401 de *validação de campo*, não de
-sessão morta. O interceptor não distingue os dois.
+**Causa CONFIRMADA na F-2a**, e era a suspeita: o interceptor de
+`api/axiosConfig.js` reagia a **qualquer** 401 que não fosse de `/auth/me`,
+estando fora de `/login`, com `window.location.href = '/login'` e o toast
+"Sessão expirada". O backend respondia **401** em `POST /auth/alterar-senha`
+quando a senha atual não conferia — um 401 de *validação de campo*, não de
+sessão morta. O interceptor não distinguia os dois.
 
-**Não corrigir de passagem.** A correção mexe no interceptor que governa a
-sessão inteira do app, e o critério de "quais 401 são sessão expirada" precisa
-ser decidido de uma vez — provavelmente por rota isenta, como `/auth/me` já é,
-ou por código de erro estável do backend, no padrão que o portal usa desde a
-3.1 (`portalErrors.js`). Candidato à **F-2**.
+**CORRIGIDO na F-2a (DEC-050).** A correção **não** foi nenhuma das duas saídas
+que este achado propunha, e vale registrar por quê:
 
-**Confirmaria/descartaria:** logar em `/dashboard/perfil`, submeter troca de
-senha com senha atual errada, e observar se a navegação para `/login` parte do
-interceptor (toast "Sessão expirada" antes do redirecionamento) ou do
-`catch` da própria tela.
+| Saída proposta aqui | Por que não |
+|---|---|
+| **rota isenta**, como `/auth/me` já era | lista de exceção **apodrece**: a próxima rota que devolvesse 401 por engano não estaria nela, e o defeito voltaria calado, num lugar diferente |
+| **código de erro estável**, no padrão do portal | resolveria, mas obriga o interceptor a conhecer um vocabulário que cresce a cada rota — e o problema não era falta de vocabulário, era o 401 significar duas coisas |
+
+O que se fez foi **dar um significado só ao 401**: sessão ausente ou inválida, e
+mais nada. Credencial conferida dentro de sessão válida virou **422**. Com isso o
+interceptor ficou trivialmente correto — desloga em 401 e **não conhece rota
+nenhuma**. Os dois testes de URL que ele tinha saíram, e no lugar entrou uma
+pergunta sobre estado: *só se desloga quem estava logado*.
+
+**CONTINUA ABERTO nesta lista**, pela regra do topo desta seção: achado sai
+quando o **passo for revalidado**, não quando o código for alterado. O passo
+**191** do roteiro é o que exercita exatamente este caminho, e o **12** (que
+reprovou) espera por ele.
 
 ### V-1 — campo de e-mail não é destacado no cadastro duplicado · MÉDIA
 
@@ -2375,10 +2383,218 @@ decisão:
 | DEC-048 | **"Parcela 1 de 3"** — numeração do plano vigente, "de N" congelado |
 | DEC-049 | a tela do reparcelamento, em rota dedicada |
 
-**A próxima fase é a F-2 (Processos)**, e não mais financeiro: status com ⋮
-(o componente já está pronto pela DEC-047), cor por status, histórico de→para,
-reativação de cliente e processo, e o **V-2** — o 401 que desloga em qualquer
-erro, inclusive senha atual errada, que é a primeira coisa da fase.
+**A fase seguinte foi a F-2a**, que matou o **V-2** (o 401 que deslogava em
+qualquer erro) e limpou as duas pendências que este ciclo deixou: a coluna do
+rótulo que truncava e as gerações que se intercalavam. Ver "O que fica para
+adiante", no fim deste arquivo.
+
+---
+
+## DEC-050 — o interceptor não conhece rota nenhuma (F-2a)
+
+### O defeito (V-2)
+
+Errar a **senha atual** na tela de troca de senha devolvia **401**. O
+interceptor de `api/axiosConfig.js` tratava **todo** 401 como sessão perdida:
+`toast.error('Sessão expirada')` e `window.location.href = '/login'`. A advogada
+errava a digitação e era **expulsa do sistema**, no meio de uma tarefa.
+
+### A correção NÃO foi feita aqui
+
+A tentação era acrescentar `/auth/alterar-senha` à lista de rotas ignoradas.
+**Lista de exceção apodrece:** a próxima rota que devolvesse 401 por engano não
+estaria nela, e o defeito voltaria calado, num lugar diferente.
+
+A correção foi no **backend** e é semântica: **o 401 é reservado exclusivamente
+para sessão ausente ou inválida; qualquer outra falha de credencial dentro de
+uma sessão válida é 422.** Ver a DEC-050 no CLAUDE.md do backend, com o
+inventário completo dos 401 classificados.
+
+### O que sobrou deste lado, e por que não é uma lista de exceção
+
+Havia **dois testes de URL** no interceptor:
+
+```js
+const isAuthMe  = error.config?.url === '/auth/me';
+const isOnLogin = window.location.pathname === '/login';
+if (status === 401 && !isAuthMe && !isOnLogin && !isRedirecting) { … }
+```
+
+Os dois **saíram**. No lugar entrou uma pergunta sobre **estado**, não sobre
+rota:
+
+> **só se desloga quem estava logado.**
+
+Um 401 só é "sessão perdida" se **havia sessão a perder**. Sem sessão, ele é o
+estado normal de quem ainda não entrou — a sondagem de `/auth/me` na subida do
+app, ou o login recusado —, e reagir a ele mandaria para `/login` quem está
+justamente tentando chegar lá, com um "Sessão expirada" sobre uma sessão que
+nunca existiu. Em `/registrar` isso **interrompia o cadastro**.
+
+**A diferença entre as duas formas:** a lista de rotas precisa ser atualizada a
+cada rota nova, e ninguém lembra. A pergunta sobre estado vale para qualquer
+rota que exista hoje ou venha a existir, **porque não fala de rotas**.
+
+### `api/sessionLoss.js` — módulo próprio, e por quê
+
+A regra saiu de `axiosConfig.js` por duas razões, e a segunda decidiu:
+
+1. `axiosConfig.js` cria a instância e importa `utils/toast` — trabalho de
+   **fiação**. A regra não é fiação, e misturar as duas foi o que fez o 401 e a
+   decisão de deslogar morarem na mesma linha.
+2. **A regra ficou testável.** `axiosConfig.js` importa `'../utils/toast'` sem
+   extensão, que **só o Vite resolve** — a suíte roda em `node --test` e não
+   consegue importar aquele arquivo. Enquanto a decisão morasse lá, ela só podia
+   ser verificada lendo o código como texto, e **teste que lê texto não prova
+   comportamento**. Agora `ehSessaoPerdida(status, haviaSessao)` é chamada de
+   verdade, com 401 e com 422.
+
+É o mesmo motivo de `api/baseURL.js`: infraestrutura compartilhada que não
+pertence a nenhuma das duas instâncias.
+
+**Quem responde a pergunta é o `AuthContext`**, a única coisa no app que sabe se
+há sessão. Toda transição passa por `registrarUsuario`, que faz `setUser` e
+avisa `registrarSessao` no mesmo lugar — há teste travando que só ele chama
+`setUser`, porque um `setUser` solto seria uma transição que o interceptor não
+veria, e a bandeira ficaria mentindo até o próximo 401.
+
+**A instância do portal não mudou.** Ela nunca teve o defeito: reage só a 401
+**com o código `sessaoPortalInvalida`**, e o portal continua com o interceptor
+separado pelo motivo de sempre — um 401 de portal não pode arremessar o cliente
+para a tela de login da advogada.
+
+## DEC-051 — as gerações agrupadas, o plano vigente primeiro (F-2a)
+
+### O defeito
+
+Na página do honorário as parcelas vinham ordenadas por **número**. Depois da
+DEC-048, que faz cada plano numerar a partir de 1, um honorário com três
+gerações mostrava:
+
+```
+Parcela 1 de 2   (morta)
+Parcela 1 de 3   (morta)
+Parcela 1 de 2   (VIVA)
+Parcela 2 de 2   (morta)
+```
+
+Três linhas dizendo "Parcela 1", intercaladas, e a advogada tendo de **caçar
+quais são as que valem**. O rótulo estava certo; a **ordem** é que não respondia
+pergunta nenhuma.
+
+### A regra
+
+Agrupar por plano. **O plano vigente primeiro**, em ordem numérica; os planos
+substituídos depois, também em ordem numérica, cada grupo com um separador que
+diga o que ele é — *"Substituídas pelo reparcelamento de 21/08/2026"*.
+
+**O motivo:** a pergunta que a tela responde é *"quanto ainda se deve, e
+quando"*. O histórico é resposta de **outra** pergunta e não pode disputar
+espaço com a primeira.
+
+**Isso não apaga nada.** As canceladas continuam visíveis, com o rótulo
+congelado e o badge "Reparcelada", como a DEC-048 exige. O que muda é **onde**
+ficam — depois, e sob um título que explica por que estão ali.
+
+### Como se sabe qual plano é o vigente
+
+**Não** é "o que não tem parcela cancelada", e a diferença é sutil o bastante
+para ter merecido nota no código.
+
+`planoId` é a operação que **criou** a parcela (`null` = plano original);
+`reparcelamentoId` é a que a **cancelou**. Um plano foi substituído quando
+**alguma** parcela dele foi cancelada — e nem todas precisam ter sido: **um
+plano de 3 com a parcela 1 já paga cancela só as outras duas**, e a paga
+continua de pé, no plano velho.
+
+Por isso o **grupo** é que é "substituído", não a parcela. O separador diz o que
+aconteceu com o **plano**; o badge de cada linha continua dizendo o que
+aconteceu com **ela** — a paga diz "Pago", as outras dizem "Reparcelada".
+
+### Entre grupos substituídos: ordem cronológica
+
+Do mais antigo para o mais recente. Lido de cima para baixo depois do plano
+vigente, o histórico sai **na ordem em que aconteceu**, que é como se conta uma
+história.
+
+### A nota subiu para o título do grupo
+
+`.honorario-parcela__reparcelada` **saiu**. Ela repetia "Substituída pelo
+reparcelamento de 21/08/2026" em **cada** linha cancelada — a mesma frase três
+vezes seguidas, porque as parcelas de um plano são sempre substituídas pelo
+**mesmo** reparcelamento. A frase é do grupo, e agora mora nele.
+
+### A ordem sai de função pura
+
+`components/financeiro/installmentGrouping.js`, testada com **três gerações** e
+com o caso da parcela paga. A tela só percorre o resultado — há teste travando
+que ela não ordena por conta própria.
+
+## A coluna do rótulo da parcela — `.col-parcela` (F-2a)
+
+A coluna **"Nº Parcela"** da listagem de Parcelas (e do **Financeiro**, que
+embute a mesma tela) exibia **"Parce…"**. Ela era `col-xxs` (**80 px**) — medida
+de quando a célula mostrava o ordinal nu, "1", "2", "3". A **DEC-048** trocou o
+conteúdo por "Parcela 1 de 3" e ninguém mexeu na coluna.
+
+**É a mesma família do passo 182 e da moeda da F-1b.2:** numa tabela
+`table-layout: fixed`, **largura insuficiente já é truncamento**, sem ninguém
+pedir — `text-overflow: ellipsis` vale para toda célula de `.data-table--fixed`.
+
+E este truncamento é dos piores: **"Parce…" não é um rótulo encurtado, é a
+palavra "Parcela" cortada no meio** — some o número, que é a única coisa que a
+coluna existe para dizer.
+
+**160 px**, dimensionada pelo rótulo mais longo possível — "Parcela 10 de 12",
+~114 px em 15 px de fonte, mais o padding e as bordas. Não pelo que está no
+banco hoje: coluna calibrada pelos dados atuais volta a cortar no dia em que
+entrar um plano de dez parcelas, e volta a cortar em silêncio.
+
+**A largura NÃO saiu da coluna de dinheiro** (seria regressão da F-1b.2). Os
+80 px a mais vieram do total da tabela, que cresce e rola dentro de
+`.table-wrapper`; `.col-money` continua em 150 px, com teste travando.
+
+**Classe própria, e não `col-md`**, pelo motivo de sempre nesta folha: a medida
+precisa vir acompanhada do **porquê**, senão a próxima pessoa a alargar o rótulo
+não tem onde ler a conta.
+
+---
+
+## O que fica para adiante (atualizado em 21/08/2026 — depois da F-2a)
+
+**✅ F-2a — FEITA.** O **V-2** morreu (DEC-050), as gerações se agruparam
+(DEC-051), a coluna do rótulo parou de truncar, e o seed passou a gravar o plano
+inteiro — `npm run seed:fresh` sozinho voltou a bastar.
+
+**A próxima fase é a F-2b**, e o que ela tem depende de gente:
+
+- **status do processo — BLOQUEADO pelo vocabulário da Laís.** Não se inventa
+  enum que ela vai trocar: os valores viram dado gravado, tela, filtro e
+  histórico de→para. **As sete perguntas já estão com o Daniel.**
+- **cor por status** e **histórico de→para**, que dependem do mesmo vocabulário.
+- **reativação de cliente e de processo** (achado B2): desativar existe,
+  reativar não. Era a **Parte 4 da F-2a**, e o portão de escopo mandou parar —
+  **mas não por falta de espaço: por um achado no backend.**
+
+  Desativar um processo **cascateia** para os vínculos `processo_clientes`, e a
+  cascata **não registra o que fez**: remover um participante de propósito grava
+  o mesmo `ativo: false`. Depois do fato, nada distingue os dois — então
+  reativar ou **ressuscita participantes removidos de propósito**, ou devolve um
+  processo **sem participante nenhum** (estado que o sistema declara impossível,
+  com a geração de documento falhando em 422). O detalhe completo está no
+  CLAUDE.md do **backend**; é decisão de modelo e precisa ser tomada antes de a
+  F-2b começar.
+
+  Do lado da tela, o que já está decidido e não mudou: a ação **"Reativar"** vai
+  no menu **⋮** (DEC-047), aparecendo **só** em registro desativado — e
+  "Desativar" some, no mesmo lugar. A reativação **não** ressuscita nada em
+  cascata: reativar cliente **não** reativa os processos dele, **e a tela
+  precisa dizer isso** — senão a advogada reativa o cliente e presume que os
+  processos voltaram.
+
+**Suítes na F-2a:** frontend **566** testes (20 novos em
+`tests/regressions/f2a.test.js`), backend **508** (22 novos). Zero skip, zero
+todo nos dois.
 
 ---
 

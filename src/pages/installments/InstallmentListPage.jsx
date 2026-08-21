@@ -196,7 +196,11 @@ function InstallmentListPage({ embedded = false }) {
                 as duas datas em `col-xs` saíam "18/08/20…". */}
             <colgroup>
               <col />
-              <col className="col-xxs" />
+              {/* `col-parcela`, e não `col-xxs`: a coluna mostrava "Parce…"
+                  desde que a DEC-048 trocou o ordinal nu por "Parcela 1 de 3"
+                  e a largura de 80 px continuou sendo a de um número. Ver a
+                  conta em `styles/modules.css`. */}
+              <col className="col-parcela" />
               <col className="col-money" />
               <col className="col-money" />
               <col className="col-money" />

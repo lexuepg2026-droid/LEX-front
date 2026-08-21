@@ -171,6 +171,50 @@
    ainda tem padding próprio, que entra na conta. */
 .col-status { width: 160px; }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   O RÓTULO DA PARCELA — a coluna que ficou com a largura de um número
+   ═══════════════════════════════════════════════════════════════════════════
+
+   ── O defeito ────────────────────────────────────────────────────────────
+   A coluna "Nº Parcela" da listagem de Parcelas (e do Financeiro, que embute a
+   mesma tela) exibia **"Parce…"**. Ela era `col-xxs` (80 px) — medida de quando
+   a célula mostrava o ordinal nu, "1", "2", "3".
+
+   A DEC-048 trocou o conteúdo por "Parcela 1 de 3" e ninguém mexeu na coluna.
+   É a mesma família do passo 182 e da coluna de dinheiro da F-1b.2: numa tabela
+   `table-layout: fixed`, **largura insuficiente já é truncamento**, sem ninguém
+   pedir — `text-overflow: ellipsis` vale para TODA célula de `.data-table--fixed`.
+
+   E este truncamento é dos piores: "Parce…" não é um rótulo de parcela
+   encurtado, é a palavra "Parcela" cortada no meio. Some o número — que é a
+   única coisa que a coluna existe para dizer.
+
+   ── Por que 160 px ───────────────────────────────────────────────────────
+   Dimensionada pelo RÓTULO MAIS LONGO POSSÍVEL, "Parcela 10 de 12", e não pelo
+   que está no banco hoje — a mesma conta da coluna de dinheiro, e pelo mesmo
+   motivo: coluna calibrada pelos dados atuais volta a cortar no dia em que
+   entrar um plano de dez parcelas, e volta a cortar em silêncio.
+
+   "Parcela 10 de 12" em `--font-size-base` (15 px) ocupa ~114 px. Descontados o
+   padding (`--space-3` dos dois lados) e as bordas, 160 px deixam ~134 px de
+   conteúdo: cabe inteiro, com folga para variação de fonte. Os dois dígitos são
+   o caso largo — "Parcela 1 de 3" é bem menor, e nenhum plano de honorário
+   chega a três dígitos.
+
+   As medidas da escala genérica não davam: `col-sm` (130 px) sobra 104 px de
+   conteúdo e corta em "Parcela 10 de 1…"; `col-md` (170 px) caberia, mas é
+   medida sem significado — a próxima pessoa a alargar o rótulo não teria onde
+   ler a conta. Classe própria, como `.col-money` e `.col-status`, para a medida
+   vir acompanhada do PORQUÊ.
+
+   ── A largura NÃO saiu da coluna de dinheiro (regressão da F-1b.2) ───────
+   Os 80 px a mais vieram do total da tabela, que cresce e rola dentro de
+   `.table-wrapper` (`overflow-x: auto`). Nenhum `.col-money` foi tocado: em
+   `table-layout: fixed`, largura declarada é respeitada, e quando a soma passa
+   da largura da tabela quem cede é a coluna AUTO (o texto livre, que tem
+   `title` com o texto inteiro) — nunca a que carrega número. */
+.col-parcela { width: 160px; }
+
 /* A coluna de ações é dimensionada pela FILEIRA DE BOTÕES, não pelo título.
    Estreitá-la para caber mais texto é o que reintroduz a sobreposição — os
    botões não encolhem, eles escapam. (Histórico: até a DEC-047 havia uma

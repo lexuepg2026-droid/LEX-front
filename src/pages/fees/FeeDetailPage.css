@@ -167,10 +167,33 @@
   white-space: nowrap;
 }
 
-.honorario-parcela__reparcelada {
-  margin: var(--space-2) 0 0;
+/* ── As gerações, separadas (DEC-051) ────────────────────────────────────
+   A nota `.honorario-parcela__reparcelada` SAIU daqui. Ela repetia
+   "Substituída pelo reparcelamento de 21/08/2026" em cada linha cancelada — a
+   mesma frase três vezes seguidas, porque as parcelas de um plano são sempre
+   substituídas pelo MESMO reparcelamento. A frase subiu para o título do
+   grupo, que é de quem ela sempre foi. */
+
+.honorario-geracao + .honorario-geracao {
+  margin-top: var(--space-5);
+}
+
+.honorario-geracao__titulo {
+  margin: 0 0 var(--space-2);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
+  /* A linha acima é o que faz o grupo LER como um bloco separado, e não como
+     mais uma parcela com texto diferente. */
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* O plano vigente é a resposta à pergunta da tela ("quanto ainda se deve"), e
+   por isso o título dele tem o peso do texto principal. O histórico fica em
+   cinza: continua legível, e para de disputar a atenção. */
+.honorario-geracao__titulo--vigente {
+  color: var(--color-text-primary);
 }
 
 /* ── Ações ──────────────────────────────────────────────────────────────── */

@@ -13,6 +13,10 @@ import { usePublicarBreadcrumb } from '../../contexts/BreadcrumbContext';
 import '../../styles/modules.css';
 import './FeeDetailPage.css';
 import { rotuloNaLista } from '../../components/financeiro/installmentLabel';
+import {
+  agruparParcelasPorPlano,
+  precisaDeSeparador
+} from '../../components/financeiro/installmentGrouping';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // A PÁGINA DO HONORÁRIO — Fase F-1b
@@ -102,6 +106,15 @@ function FeeDetailPage() {
 
   const { totais, cliente, processoId: processo, parcelas = [] } = honorario;
 
+  // DEC-051: as gerações agrupadas, o plano vigente primeiro. A ordem inteira
+  // sai de uma função pura — a tela só a percorre.
+  //
+  // Sem `useMemo` de propósito: esta linha fica DEPOIS do retorno antecipado de
+  // carregamento, e hook depois de `return` quebra a ordem dos hooks. O custo é
+  // ordenar uma dúzia de parcelas por render, que não se mede.
+  const grupos = agruparParcelasPorPlano(parcelas);
+  const temVariasGeracoes = precisaDeSeparador(grupos);
+
   return (
     <div className="module-container honorario-page">
       {/* ── Cabeçalho ──────────────────────────────────────────────────── */}
@@ -188,52 +201,84 @@ function FeeDetailPage() {
             adiantado até a primeira parcela nascer.
           </p>
         ) : (
-          <ul className="honorario-parcelas">
-            {parcelas.map((p) => {
-              // Parcela SUBSTITUÍDA por reparcelamento: no banco é `cancelado`
-              // com o vínculo preenchido, e a leitura é outra — foi
-              // substituída, não desfeita. Mesma regra da ficha (F-1a.1).
-              const reparcelada = Boolean(p.reparcelamentoId);
-              return (
-                <li
-                  key={p._id}
-                  className={`honorario-parcela${reparcelada ? ' honorario-parcela--reparcelada' : ''}`}
-                >
-                  <div className="honorario-parcela__linha">
-                    <Link
-                      to={`/dashboard/parcelas/editar/${p._id}`}
-                      className="honorario-parcela__numero link-interno"
-                    >
-                      {rotuloNaLista(p, parcelas)}
-                    </Link>
-                    <span className="honorario-parcela__valores">
-                      {formatCurrency(p.valor)}
-                      {' · recebido '}{formatCurrency(p.valorPago)}
-                      {/* O "em aberto" some na reparcelada, e só nela: ela não
-                          é dívida viva, foi substituída por outras. */}
-                      {!reparcelada && (
-                        <>
-                          {' · em aberto '}
-                          <strong>{formatCurrency(p.emAberto)}</strong>
-                        </>
-                      )}
-                    </span>
-                    <span className="honorario-parcela__data">
-                      vence {formatDate(p.dataVencimento)}
-                    </span>
-                    <StatusBadge status={reparcelada ? 'reparcelada' : p.status} />
-                  </div>
+          /* DEC-051: agrupadas por geração, o plano vigente primeiro. Antes
+             vinham ordenadas por número, e com a DEC-048 (cada plano numera a
+             partir de 1) três gerações se intercalavam — três linhas dizendo
+             "Parcela 1", e a advogada caçando quais valem. A ordem sai de uma
+             função pura, em `components/financeiro/installmentGrouping.js`. */
+          <>
+            {grupos.map((grupo) => (
+              <div key={grupo.chave ?? 'original'} className="honorario-geracao">
+                {/* O separador só existe quando há mais de um plano: um título
+                    sobre a lista única de um honorário nunca reparcelado é
+                    ruído. */}
+                {temVariasGeracoes && (
+                  <p
+                    className={`honorario-geracao__titulo${
+                      grupo.vigente ? ' honorario-geracao__titulo--vigente' : ''
+                    }`}
+                  >
+                    {grupo.vigente ? (
+                      'Plano vigente'
+                    ) : (
+                      <>
+                        Substituídas pelo reparcelamento
+                        {grupo.substituidoEm ? ` de ${formatDate(grupo.substituidoEm)}` : ''}
+                      </>
+                    )}
+                  </p>
+                )}
 
-                  {reparcelada && (
-                    <p className="honorario-parcela__reparcelada">
-                      Substituída pelo reparcelamento
-                      {p.reparceladaEm ? ` de ${formatDate(p.reparceladaEm)}` : ''}.
-                    </p>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                <ul className="honorario-parcelas">
+                  {grupo.parcelas.map((p) => {
+                    // Parcela SUBSTITUÍDA por reparcelamento: no banco é
+                    // `cancelado` com o vínculo preenchido, e a leitura é outra
+                    // — foi substituída, não desfeita. Mesma regra da ficha
+                    // (F-1a.1).
+                    //
+                    // Continua sendo POR PARCELA, e não pelo grupo: um plano de
+                    // 3 com a primeira já paga cancela só as outras duas, e a
+                    // paga fica no grupo substituído com o badge dela.
+                    const reparcelada = Boolean(p.reparcelamentoId);
+                    return (
+                      <li
+                        key={p._id}
+                        className={`honorario-parcela${reparcelada ? ' honorario-parcela--reparcelada' : ''}`}
+                      >
+                        <div className="honorario-parcela__linha">
+                          <Link
+                            to={`/dashboard/parcelas/editar/${p._id}`}
+                            className="honorario-parcela__numero link-interno"
+                          >
+                            {/* A lista INTEIRA, e não a do grupo: o "de N" de
+                                quem ainda não congelou sai do tamanho do plano
+                                original (DEC-048). */}
+                            {rotuloNaLista(p, parcelas)}
+                          </Link>
+                          <span className="honorario-parcela__valores">
+                            {formatCurrency(p.valor)}
+                            {' · recebido '}{formatCurrency(p.valorPago)}
+                            {/* O "em aberto" some na reparcelada, e só nela: ela
+                                não é dívida viva, foi substituída por outras. */}
+                            {!reparcelada && (
+                              <>
+                                {' · em aberto '}
+                                <strong>{formatCurrency(p.emAberto)}</strong>
+                              </>
+                            )}
+                          </span>
+                          <span className="honorario-parcela__data">
+                            vence {formatDate(p.dataVencimento)}
+                          </span>
+                          <StatusBadge status={reparcelada ? 'reparcelada' : p.status} />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </>
         )}
       </section>
 
