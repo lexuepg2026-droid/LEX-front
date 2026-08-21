@@ -2573,9 +2573,24 @@ inteiro — `npm run seed:fresh` sozinho voltou a bastar.
   histórico de→para. **As sete perguntas já estão com o Daniel.**
 - **cor por status** e **histórico de→para**, que dependem do mesmo vocabulário.
 - **reativação de cliente e de processo** (achado B2): desativar existe,
-  reativar não. Era a **Parte 4 da F-2a e não coube** — o portão de escopo da
-  fase mandava parar depois das Partes 1 a 3. Sem cascata: reativar cliente
-  **não** reativa os processos dele, e a tela precisa dizer isso.
+  reativar não. Era a **Parte 4 da F-2a**, e o portão de escopo mandou parar —
+  **mas não por falta de espaço: por um achado no backend.**
+
+  Desativar um processo **cascateia** para os vínculos `processo_clientes`, e a
+  cascata **não registra o que fez**: remover um participante de propósito grava
+  o mesmo `ativo: false`. Depois do fato, nada distingue os dois — então
+  reativar ou **ressuscita participantes removidos de propósito**, ou devolve um
+  processo **sem participante nenhum** (estado que o sistema declara impossível,
+  com a geração de documento falhando em 422). O detalhe completo está no
+  CLAUDE.md do **backend**; é decisão de modelo e precisa ser tomada antes de a
+  F-2b começar.
+
+  Do lado da tela, o que já está decidido e não mudou: a ação **"Reativar"** vai
+  no menu **⋮** (DEC-047), aparecendo **só** em registro desativado — e
+  "Desativar" some, no mesmo lugar. A reativação **não** ressuscita nada em
+  cascata: reativar cliente **não** reativa os processos dele, **e a tela
+  precisa dizer isso** — senão a advogada reativa o cliente e presume que os
+  processos voltaram.
 
 **Suítes na F-2a:** frontend **566** testes (20 novos em
 `tests/regressions/f2a.test.js`), backend **508** (22 novos). Zero skip, zero
