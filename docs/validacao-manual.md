@@ -1491,19 +1491,93 @@ Dados que vários passos usam:
 > que agora dizendo "de 2" e "de 3" corretamente. **Para ver a renumeração é
 > preciso reparcelar de novo**, e é isso que os passos abaixo fazem.
 
+> ---
+>
+> ## ▶ ORDEM DE EXECUÇÃO E CONSUMO DE DADOS (185 a 190)
+>
+> **Pré-condição de TODOS os seis, sem exceção:**
+>
+> ```
+> npm run seed:fresh
+> node scripts/migrarTotalParcelas.js
+> ```
+>
+> As duas, nesta ordem. O `seed:fresh` sozinho **não basta**: os planos criados
+> parcela por parcela nascem com `totalParcelas` vazio (é o correto — plano
+> aberto ainda cresce), e a migração é o que os congela para o estado ficar
+> **determinístico** durante a validação. Sem ela os rótulos ainda aparecem —
+> são calculados na leitura —, mas mudam se você acrescentar uma parcela no meio
+> do caminho, e aí o passo seguinte encontra um número diferente do que este
+> roteiro promete.
+>
+> **Cada passo tem alvo PRÓPRIO. Nenhum consome o alvo de outro** — foi assim
+> que os alvos foram escolhidos, justamente para você **não precisar rodar o
+> seed de novo no meio da sequência**.
+>
+> | Passo | Honorário alvo | O que ele faz com o alvo |
+> |---|---|---|
+> | **185** | Honorários advocatícios — **usucapião urbano** | **CONSOME**: reparcela. Depois deste passo, o honorário não tem mais as 2 parcelas originais em aberto |
+> | **186** | **Assessoria tributária** — processo administrativo | Registra **1 pagamento**. Não reparcela — o seed **já** deixou este honorário reparcelado |
+> | **187** | Honorários advocatícios — **fase inicial** | **CONSOME**: reparcela **duas vezes** |
+> | **188 → 190** | Um honorário **criado por você**, no processo *Execução Fiscal – IPTU* | Cria e consome o próprio alvo. Não toca em nada do seed |
+>
+> **A ordem entre eles é livre** — mas se for executar em sequência, siga
+> 185 → 186 → 187 → 188 → 189 → 190, que é a ordem em que os passos se
+> referenciam.
+>
+> **Nenhum reset é necessário no meio.** Se ainda assim você rodar
+> `seed:fresh` de novo por outro motivo, **os passos já executados não precisam
+> ser refeitos** — eles ficam marcados como validados, e o reset só devolve os
+> alvos ao estado inicial.
+>
+> **Nunca navegue por URL com id.** Os ids mudam a cada `seed:fresh`; os nomes
+> e os números de processo, não. Todo caminho abaixo é por **menu e busca**.
+
 - [ ] **185. ⭐ Depois do reparcelamento, a primeira parcela do plano novo diz "1 de 3"**
   Pré-condição: `npm run seed:fresh` **e** `node scripts/migrarTotalParcelas.js`.
+
+  **▶ ONDE IR.** Menu lateral → **Honorários** → buscar **`usucapião`** → abrir
+  **"Honorários advocatícios — usucapião urbano"**
+  (cliente **Beatriz Ramos Pereira**, processo **0007890-70.2025.8.16.0005** —
+  *Usucapião de Imóvel Urbano*).
+
+  **▶ ESTADO ESPERADO AO ABRIR** (conferido no banco em 21/08/2026):
+
+  | | |
+  |---|---|
+  | Contratado | **R$ 8.000,00** |
+  | Recebido | **R$ 2.500,00** |
+  | Em aberto | **R$ 5.500,00** |
+  | Parcelas | **2**, ambas em aberto |
+  | Parcela 1 de 2 | R$ 4.000,00 · recebido R$ 2.500,00 · vence **30/04/2026** · **Parcial** |
+  | Parcela 2 de 2 | R$ 4.000,00 · recebido R$ 0,00 · vence **30/06/2026** · **Vencida** |
+
+  **Se os números não baterem, PARE**: ou o `seed:fresh` não foi rodado, ou a
+  migração não foi aplicada, ou este honorário já foi consumido por uma
+  execução anterior deste passo. Rode as duas pré-condições e comece de novo.
+
+  **Por que este honorário:** é o único do seed com **exatamente 2 parcelas em
+  aberto** e uma delas **parcial com dinheiro alocado** — a parcial é o caso
+  que prova que o valor já recebido continua onde está depois do
+  reparcelamento, e é ela que aparece na lista "o que sai" com o "já recebido".
+
+  **▶ O QUE DIGITAR.** Clicar em **Reparcelar**. No gerador, deixar
+  **3 parcelas**, **mensal**, e o primeiro vencimento sugerido. A tela deve
+  propor **R$ 1.833,34 · R$ 1.833,33 · R$ 1.833,33** — a primeira maior, com a
+  marca *"inclui a sobra da divisão"*, porque R$ 5.500,00 não divide exato por
+  3 (DEC-049). A soma corrente deve dizer **"A soma fecha com o saldo."**
+  Confirmar.
+
   **Reescrito na F-1c.2: o disparo é pela TELA.** Até aqui este passo mandava
   usar a API direto, porque o reparcelamento não tinha interface — e a
   validação por curl **foi dispensada por decisão do Daniel**, já que
-  conferência de contrato a suíte faz sozinha. Agora há tela, e é por ela que
-  o passo se executa.
-  Passos do disparo: abrir a **página de um honorário com 2 parcelas em
-  aberto**, clicar em **Reparcelar**, deixar o gerador em **3 parcelas**,
-  **mensal**, e confirmar.
+  conferência de contrato a suíte faz sozinha.
   Passos: depois do reparcelamento, abrir 1) a **página do honorário**; 2) a
   listagem de **Parcelas** filtrada por ele; 3) o **extrato** do honorário;
-  4) o **recibo** de um pagamento que tenha quitado parcela.
+  4) o **recibo** do pagamento de **R$ 2.500,00** que este honorário já tem —
+  pelo ⋮ da linha, em **Recebimentos**. Ele **não quitou** a parcela (era
+  R$ 4.000,00), então o recibo enumera o destino: deve dizer **"R$ 2.500,00 na
+  parcela 1 de 2"**.
   Esperado: as **três parcelas novas** aparecem como **"Parcela 1 de 3"**,
   **"Parcela 2 de 3"** e **"Parcela 3 de 3"** — nas quatro telas, com o mesmo
   texto. As **duas canceladas** aparecem como **"Parcela 1 de 2"** e **"Parcela
@@ -1519,38 +1593,123 @@ Dados que vários passos usam:
   Fase de origem: F-1c.1
 
 - [ ] **186. ⭐ 🚨 Duas parcelas nº 1: dá para dizer qual é qual sem olhar id nenhum**
-  Pré-condição: o passo **185** executado (pela tela, desde a F-1c.2).
+  Pré-condição: `npm run seed:fresh` **e** `node scripts/migrarTotalParcelas.js`.
+  **NÃO depende do passo 185** — mudou na F-1c.2.1. O seed **já entrega** um
+  honorário reparcelado, com alocação na parcela cancelada; usá-lo tira a
+  dependência de ordem e faz o passo valer por si.
+
+  **▶ ONDE IR.** Menu lateral → **Honorários** → buscar **`assessoria`** →
+  abrir **"Assessoria tributária — processo administrativo"**
+  (cliente **Agro Campos Gerais Ltda**, processo **0008901-80.2025.8.16.0006** —
+  *Ação de Cobrança de Dívida*).
+
+  **▶ ESTADO ESPERADO AO ABRIR** (conferido no banco em 21/08/2026):
+
+  | | |
+  |---|---|
+  | Contratado | **R$ 7.500,00** |
+  | Recebido | **R$ 1.500,00** |
+  | Em aberto | **R$ 6.000,00** |
+  | Parcelas | **5** — duas reparceladas, três vivas |
+  | **Parcela 1 de 2** | R$ 3.750,00 · recebido **R$ 1.500,00** · vence **10/05/2026** · **Reparcelada** |
+  | **Parcela 2 de 2** | R$ 3.750,00 · vence 15/08/2026 · **Reparcelada** |
+  | **Parcela 1 de 3** | R$ 2.000,00 · vence **15/07/2026** · Vencida |
+  | Parcela 2 de 3 | R$ 2.000,00 · vence 15/08/2026 · Vencida |
+  | Parcela 3 de 3 | R$ 2.000,00 · vence 15/09/2026 · Pendente |
+
+  **Se os números não baterem, PARE** e rode as duas pré-condições.
+  (Detalhe conferido em 21/08/2026: as **canceladas já dizem "de 2" sem a
+  migração** — quem congelou o "de N" delas foi o próprio reparcelamento do
+  seed, que passa pelo serviço. A migração continua na pré-condição porque
+  congela os **outros** planos e deixa o estado determinístico, não porque estes
+  rótulos dependam dela.)
+
+  **Por que este honorário:** é o único do seed que **já nasce reparcelado**, e
+  a parcela **cancelada nº 1 tem R$ 1.500,00 alocados**. Sem alocação na
+  cancelada não existem as duas frases para comparar, que é o ponto do passo.
+  Repare que ele já exibe **duas parcelas nº 1** — uma "de 2" reparcelada e uma
+  "de 3" viva — antes de você fazer qualquer coisa.
+
+  **▶ O QUE DIGITAR.** Falta a segunda frase: uma alocação na parcela **nova**.
+  Na página do honorário, **Registrar pagamento** de **R$ 2.000,00**, forma
+  **PIX**, data de hoje. Ele deve se alocar sozinho na **parcela 1 de 3**, que
+  é a primeira em aberto por vencimento.
+
   **É a revisão da DEC-045 aplicada a parcelas**, e o teste real da DEC-048: a
   renumeração criou de propósito duas parcelas nº 1 no mesmo honorário.
-  Passos: no **extrato** do honorário reparcelado, achar 1) uma **alocação na
-  parcela cancelada** (dinheiro que entrou antes do reparcelamento) e 2) uma
-  **alocação na parcela nova** (o saldo que foi auto-alocado). Ler as duas
+  Passos: no **extrato**, achar 1) a **alocação na parcela cancelada** (os
+  R$ 1.500,00 que entraram antes do reparcelamento) e 2) a **alocação na
+  parcela nova** (os R$ 2.000,00 que você acabou de registrar). Ler as duas
   frases **cobrindo qualquer id com o dedo**.
   Esperado: as duas frases dizem **"parcela 1 de …"** e mesmo assim **não se
   confundem** — o **"de N"** difere (de 2 × de 3), o **vencimento** difere, e a
-  cancelada leva **"(reparcelada)"** no fim. Exemplo do que se espera ler:
-  **"R$ 300,00 alocados na parcela 1 de 2, vencendo 10/05/2026 (reparcelada)"**
-  e **"R$ 2.000,00 de saldo adiantado alocados na parcela 1 de 3, vencendo
-  15/09/2026"**.
+  cancelada leva **"(reparcelada)"** no fim. As duas frases exatas que devem
+  aparecer, com os dados deste honorário:
+  **"R$ 1.500,00 alocados na parcela 1 de 2, vencendo 10/05/2026
+  (reparcelada)"** e **"R$ 2.000,00 alocados na parcela 1 de 3, vencendo
+  15/07/2026"**.
   **Se for preciso comparar id para casar a frase com a linha, a DEC-048
   falhou** — mesmo com a suíte verde. É o mesmo critério do passo 177.
   Fase de origem: F-1c.1
 
 - [ ] **187. Dois reparcelamentos seguidos: a terceira geração também numera de 1**
-  Pré-condição: o passo **185** executado.
+  Pré-condição: `npm run seed:fresh` **e** `node scripts/migrarTotalParcelas.js`.
+  **NÃO depende do passo 185** — mudou na F-1c.2.1: este passo tem **alvo
+  próprio**, para poder ser executado sozinho e para não disputar o honorário
+  do 185.
+
+  **▶ ONDE IR.** Menu lateral → **Honorários** → buscar **`fase inicial`** →
+  abrir **"Honorários advocatícios — fase inicial"**
+  (cliente **Ana Lima Santos**, processo **0001234-10.2025.8.16.0001** —
+  *Indenização por Danos Morais*).
+
+  **▶ ESTADO ESPERADO AO ABRIR** (conferido no banco em 21/08/2026):
+
+  | | |
+  |---|---|
+  | Contratado | **R$ 5.000,00** |
+  | Recebido | **R$ 0,00** |
+  | Em aberto | **R$ 5.000,00** |
+  | Parcelas | **2**, ambas em aberto |
+  | Parcela 1 de 2 | R$ 2.500,00 · vence **30/04/2026** · **Vencida** |
+  | Parcela 2 de 2 | R$ 2.500,00 · vence **31/07/2026** · **Vencida** |
+
+  O "Recebido R$ 0,00" está certo: este honorário tem um pagamento **estornado
+  por inteiro** no histórico, e é por isso que o em aberto é o contratado
+  cheio. Se não bater, **PARE** e rode as pré-condições.
+
+  **Por que este honorário:** saldo de R$ 5.000,00 **sem nenhuma alocação
+  viva**, o que o deixa reparcelável **duas vezes seguidas** sem esbarrar em
+  parcela paga. E R$ 5.000,00 divide **exato por 2** no segundo
+  reparcelamento, o que torna a conferência dos rótulos direta.
+
   **É o caso que expõe qualquer recálculo escondido**: se algum ponto do código
   contar as parcelas do honorário em vez de ler o campo congelado, é aqui que
   o número muda sozinho.
-  Passos: reparcelar **de novo** o mesmo honorário **pela tela**, agora para
-  **2 parcelas**. Depois, abrir a página do honorário e ler a lista inteira.
-  (Reescrito na F-1c.2: era disparo por API.)
+
+  **▶ O QUE DIGITAR — são DOIS reparcelamentos seguidos, pela tela.**
+
+  **Primeiro:** Reparcelar → **3 parcelas**, mensal. A tela deve propor
+  **R$ 1.666,68 · R$ 1.666,66 · R$ 1.666,66** (a sobra na primeira). Confirmar.
+  **Anote os rótulos das duas gerações agora** — é a anotação que torna a
+  última conferência possível.
+
+  **Segundo:** Reparcelar de novo → **2 parcelas**, mensal. A tela deve propor
+  **R$ 2.500,00 · R$ 2.500,00**, exato. Confirmar.
+
+  Depois, abrir a página do honorário e ler a lista inteira.
+  (Reescrito na F-1c.2: era disparo por API. Alvo nomeado na F-1c.2.1.)
   Esperado: a **terceira geração** aparece como **"Parcela 1 de 2"** e
   **"Parcela 2 de 2"**. As duas gerações anteriores **continuam exatamente como
   estavam**: a primeira dizendo "Parcela 1 de 2" / "Parcela 2 de 2"
   (reparceladas) e a segunda, "Parcela 1 de 3" / "2 de 3" / "3 de 3" (também
   reparceladas agora).
-  Conferir: agora existem **três** parcelas nº 1 no mesmo honorário. As três
-  continuam distinguíveis pelo vencimento no extrato.
+  Conferir: agora existem **três** parcelas nº 1 no mesmo honorário — e **duas
+  delas dizem "de 2"** (a primeira geração e a terceira). **Isso é esperado, não
+  é defeito**: é justamente o caso mais difícil, e o que as separa é o
+  **vencimento** — a primeira geração vencia em 30/04/2026, a terceira vence nas
+  datas que você acabou de gerar. As três continuam distinguíveis pelo
+  vencimento no extrato, que é o critério da DEC-048.
   Conferir também que **nenhum "de N" mudou** nas gerações antigas ao longo do
   segundo reparcelamento — anote os rótulos antes e compare depois.
   Fase de origem: F-1c.1
@@ -1577,13 +1736,62 @@ Dados que vários passos usam:
 > **Ordem da travessia:** criar honorário → criar parcelas → registrar
 > pagamento → conferir alocação → estornar → anular o estorno → reparcelar →
 > emitir recibo → ler o extrato inteiro.
+>
+> ---
+>
+> **▶ O ALVO DESTES TRÊS PASSOS É CRIADO POR VOCÊ**, e de propósito: assim a
+> travessia não disputa honorário com os passos 185 a 187 e não depende de
+> nenhum estado do seed além de um processo vazio.
+>
+> **Pré-condição:** `npm run seed:fresh` **e**
+> `node scripts/migrarTotalParcelas.js`.
+>
+> **Onde criar:** o processo **0006789-60.2024.8.16.0004** — *Execução Fiscal –
+> IPTU*, cliente **João Paulo Oliveira**. Ele é um dos **dois processos do seed
+> sem honorário nenhum** (o outro é a *Ação Trabalhista*), então nada do que
+> você fizer aqui se mistura com dado existente.
+>
+> **Os números da travessia foram escolhidos para fechar exatos** — nenhuma
+> conferência sua vai esbarrar em centavo de arredondamento:
+>
+> | Momento | Contratado | Recebido | Em aberto |
+> |---|---|---|---|
+> | depois de criar as 2 parcelas | R$ 6.000,00 | R$ 0,00 | R$ 6.000,00 |
+> | depois do pagamento de R$ 3.000,00 | R$ 6.000,00 | R$ 3.000,00 | R$ 3.000,00 |
+> | depois do estorno parcial de R$ 1.000,00 | R$ 6.000,00 | R$ 2.000,00 | R$ 4.000,00 |
+> | depois de anular o estorno | R$ 6.000,00 | R$ 3.000,00 | R$ 3.000,00 |
+> | depois do reparcelamento em 3 | R$ 6.000,00 | R$ 3.000,00 | R$ 3.000,00 |
+>
+> No reparcelamento, o saldo de **R$ 3.000,00 divide exato por 3**:
+> **R$ 1.000,00** em cada, **sem sobra** — a primeira parcela **não** deve
+> exibir a marca "inclui a sobra da divisão".
 
 - [ ] **188. ⭐ 🚨 A travessia: do honorário vazio ao extrato completo, sem sair da interface**
-  Pré-condição: `npm run seed:fresh`. **Reserve uma sentada só** — o valor deste
-  passo está em não interromper a cadeia. **Sem usar a API direto em nenhum
-  momento.**
+  Pré-condição: `npm run seed:fresh` **e**
+  `node scripts/migrarTotalParcelas.js`. **Reserve uma sentada só** — o valor
+  deste passo está em não interromper a cadeia. **Sem usar a API direto em
+  nenhum momento.**
   **Anote os números conforme avança**: é a anotação que torna o passo 189
   executável.
+
+  **▶ ONDE CRIAR.** Menu lateral → **Honorários** → **+ Novo Honorário** → no
+  seletor de processo, escolher **0006789-60.2024.8.16.0004 — Execução Fiscal
+  – IPTU** (cliente **João Paulo Oliveira**). É um processo **sem honorário
+  nenhum** no seed, então a travessia começa de uma folha limpa.
+
+  **▶ OS VALORES EXATOS, elo a elo:**
+
+  | Elo | O que digitar |
+  |---|---|
+  | 1 | Honorário **fixo**, descrição **"Travessia F-1c.2"**, valor **R$ 6.000,00**, vencimento **31/12/2026** |
+  | 2 | Parcela **1** de **R$ 3.000,00** vencendo **30/09/2026**; parcela **2** de **R$ 3.000,00** vencendo **31/10/2026** |
+  | 3 | Pagamento de **R$ 3.000,00**, forma **PIX**, data de hoje |
+  | 5 | Estorno **parcial** de **R$ 1.000,00** |
+  | 7 | Reparcelar → **3 parcelas**, **mensal**. A tela deve propor **R$ 1.000,00** em cada, **sem sobra** |
+
+  **Se o total do honorário não for R$ 6.000,00 ao fim do elo 2, PARE** — os
+  números da tabela do cabeçalho não vão fechar, e o passo 189 fica
+  inexecutável.
 
   | # | Operação | Como | Passo que detalha |
   |---|---|---|---|
@@ -1610,6 +1818,8 @@ Dados que vários passos usam:
 
 - [ ] **189. ⭐ 🚨 Os números fecham entre si no fim da travessia**
   Pré-condição: o passo **188** completo, com os números anotados.
+  **▶ ONDE IR.** Menu lateral → **Honorários** → buscar **`travessia`** → abrir
+  **"Travessia F-1c.2"**, o honorário que você criou no passo 188.
   **É o passo que a seção existe para ter.** Cada tela isolada já foi
   verificada; o que nunca foi é se elas **concordam entre si** depois da cadeia.
   Conferir as **três igualdades**, com a calculadora na mão:
@@ -1637,6 +1847,8 @@ Dados que vários passos usam:
 
 - [ ] **190. Nenhuma linha do extrato que deixou de valer aparece sem dizer que deixou (DEC-044)**
   Pré-condição: o passo **188** completo.
+  **▶ ONDE IR.** Menu lateral → **Honorários** → buscar **`travessia`** → abrir
+  **"Travessia F-1c.2"** → rolar até o **Extrato**.
   **É o fecho do ciclo Financeiro 2.0**, e a regra que ele confere é a que mais
   se perde numa tela que cresceu: uma linha que já não vale, exibida como se
   valesse, é pior que uma linha ausente.
