@@ -6,10 +6,13 @@ import { BASE_URL } from './baseURL';
 // INSTÂNCIA DE HTTP DO PORTAL DO CLIENTE — separada da da advogada
 //
 // ── Por que não reaproveitar `axiosConfig.js` ──────────────────────────────
-// Aquela instância tem um interceptor de resposta (`axiosConfig.js:14-26`) que,
-// diante de QUALQUER 401 que não seja de `/auth/me` e estando fora de
-// `/login`, dispara `window.location.href = '/login'` — a tela de login da
-// ADVOGADA — e mostra "Sessão expirada".
+// Aquela instância tem um interceptor de resposta que, diante de um 401 recebido
+// com sessão de advogada em pé, dispara `window.location.href = '/login'` — a
+// tela de login da ADVOGADA — e mostra "Sessão expirada".
+//
+// (Até a DEC-050 a condição de lá era por ROTA: "qualquer 401 que não seja de
+// `/auth/me` e fora de `/login`". Virou uma pergunta sobre estado — só desloga
+// quem estava logado —, mas o motivo desta separação não mudou nem um pouco.)
 //
 // O portal responde 401 em dois casos normais e esperados: `credenciaisInvalidas`
 // (o cliente errou o código ou a senha) e `sessaoPortalInvalida`. Com a
