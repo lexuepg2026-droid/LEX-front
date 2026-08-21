@@ -52,6 +52,9 @@ Sessão da advogada por cookie httpOnly `lex-token`; portal do cliente por
 - **Rótulo de parcela sai de `installmentLabel.js`** (DEC-048). Nunca
   `Parcela {n}` no JSX: o "de N" congelado é o que impede um recibo de mudar de
   significado depois de entregue.
+- **Flutuante com N linhas e soma corrente vai em ROTA, não em modal**
+  (DEC-049). Modal serve para decisão curta; montagem de plano precisa da soma
+  visível o tempo todo.
 - **Toda listagem usa o menu ⋮ na coluna de ações** (DEC-047). Ação dentro do
   menu, explicação fora dele, Excluir em vermelho e por último. Não há mais
   fileira de botões, e `col-acoes-menu` é a única medida de coluna de ação.
@@ -2252,6 +2255,130 @@ parcelas, e a solução é a mesma: **referência por atributo**.
 E não por esquecimento: a **DEC-029 ponto 8** mantém o portal **sem nada
 financeiro**, com teste travando no backend. Não há rótulo a aplicar lá — e se
 aparecer número de parcela no portal, **isso é o defeito**, não a melhoria.
+
+---
+
+## DEC-049 — a tela do reparcelamento tem ROTA, não modal (F-1c.2)
+
+### O que ela liga
+
+O backend reparcela desde a **DEC-037** (F-1a). A página do honorário carregava
+um botão **"Reparcelar" desabilitado** desde a F-1b, com a frase *"o fluxo
+completo chega na fase F-1c"*. **Botão morto numa demonstração é promessa
+quebrada** — esta fase o ligou.
+
+### A divergência é a decisão
+
+Estorno e anulação usam **modal**. O reparcelamento usa **rota dedicada**
+(`/dashboard/honorarios/:id/reparcelar`), e isso **diverge do padrão de
+propósito**.
+
+**Por quê:** o plano novo tem **N linhas editáveis** e uma **soma corrente** que
+precisa ficar visível o tempo todo — é ela, e só ela, que decide se o botão pode
+ser apertado. Num modal, N cresce, o corpo rola, e a soma sai da tela
+**justamente quando há mais linhas para conferir**.
+
+**Modal serve para decisão curta; isto é montagem de plano.** Quem for
+"corrigir" a inconsistência depois precisa ler isto antes.
+
+### A ordem da tela não é arbitrária
+
+| # | Bloco | Por que aí |
+|---|---|---|
+| 1 | **Saldo em aberto** | é a âncora — tudo na tela existe em função dele |
+| 2 | **O que sai** | as em aberto, que serão canceladas |
+| 3 | **O que FICA** | as pagas, intactas |
+| 4 | **O plano novo** | com a soma corrente |
+| 5 | **Motivo** | opcional (DEC-037) |
+| 6 | **Confirmação** | resumo em português, não "tem certeza?" |
+
+**O bloco 3 é o que faz a função ser usada.** Sem a lista do que fica, a
+advogada não tem como saber se reparcelar apaga o que o cliente já pagou — e,
+na dúvida, ela não aperta o botão. **A ausência dessa lista é o que faz uma
+função existir e não ser usada.**
+
+### A sobra da divisão vai para a PRIMEIRA parcela
+
+R$ 1.000,00 em 3 não dá três parcelas iguais. Alguém fica com o centavo, e ele
+vai para a **primeira**: `[333,34 · 333,33 · 333,33]`.
+
+**É decisão de negócio, não de arredondamento.** O cliente paga o valor quebrado
+**agora** e o resto é redondo — "R$ 333,34 e mais duas de R$ 333,33" se combina
+no telefone melhor que o contrário, e as parcelas que ainda vão vencer são as
+fáceis de conferir. A alternativa (sobra na última) deixa a quebra para o fim,
+quando ninguém mais lembra por que aquele valor é diferente — e é justamente a
+última que costuma ser renegociada de novo.
+
+A linha continua **editável**: a função propõe, a advogada decide. Na tela ela
+se identifica ("inclui a sobra da divisão") — sem a marca, um valor que não bate
+com os demais parece erro de digitação.
+
+**É combinação com cliente, não decisão técnica** — está na lista de ratificação
+da Laís.
+
+### O vencimento cai no ÚLTIMO DIA DO MÊS, nunca no mês seguinte
+
+Somar mês a mês com `setMonth` faz **31/01 + 1 mês virar 03/03**: o navegador
+transborda o dia que não existe em fevereiro para março. Uma parcela que deveria
+vencer em fevereiro passaria a vencer em março, e a advogada só descobriria pela
+**cobrança que não saiu**.
+
+O dia é **preso** ao último do mês de destino: 31/01 → 28/02 (ou 29 em bissexto),
+31/03 → 30/04. E o dia original é **reaplicado a partir do primeiro
+vencimento**, não do anterior — senão 31/01 viraria 28/02 e depois 28/03,
+arrastando o erro para sempre.
+
+### A tela valida, o backend DECIDE
+
+A conferência da soma na tela é **conveniência**: evita uma viagem e mostra
+**quanto** falta. A autoridade continua sendo o **422** do
+`renegotiationService`, e a mensagem vem de `getFinancialErrorMessage` — nunca
+um texto inventado na tela. As duas validações **coexistem**; a da tela não
+substitui a do servidor.
+
+**A diferença é nomeada em reais**: "faltam R$ 250,00" / "sobram R$ 100,00",
+nunca só um sinal vermelho. A advogada precisa saber **quanto** ajustar, não que
+errou — um aviso que diz apenas "valor inválido" a obriga a refazer a conta à
+mão, que é o trabalho que esta tela existe para tirar dela.
+
+### O saldo vem de `totais.emAberto`
+
+**Não é conta desta tela.** É a mesma fórmula que o backend usa para validar
+(`max(0, contratado − alocado)`, DEC-040). Recalcular aqui abriria a segunda
+fonte de verdade que a F-1b fechou, e a divergência apareceria como um **422 num
+plano que a tela dizia estar certo**.
+
+### Tudo em centavos, por dentro
+
+`renegotiationPlan.js` converte para centavos inteiros e volta. Somar float
+acumula resíduo, e resíduo aqui é a advogada montando um plano que soma
+"R$ 6.000,00" na tela e é recusado por um centavo que ela não vê. A comparação
+`fecha` é de **inteiros**: `0.1 + 0.2 !== 0.3`, e um plano de três parcelas
+cairia nesse buraco.
+
+---
+
+## O Financeiro 2.0 ENCERRA aqui (F-1c.2)
+
+O ciclo que começou na F-1a fecha com esta fase. O que ele entregou, por
+decisão:
+
+| DEC | O quê |
+|---|---|
+| DEC-032 a DEC-039 | o Financeiro 2.0 (alocação, estorno, reparcelamento, tipos de honorário) |
+| DEC-040 | `emAberto = max(0, contratado − alocado)`; crédito nomeado à parte |
+| DEC-041 / DEC-042 | os estados de quitação no recibo |
+| DEC-044 | a linha do extrato que deixou de valer **diz** que deixou |
+| DEC-045 | a referência do **pagamento** é valor e forma, não o sufixo do id |
+| DEC-046 | o menu de ações em **portal**, posicionado pelo viewport |
+| DEC-047 | a coluna de ações de **toda** listagem é o menu ⋮ |
+| DEC-048 | **"Parcela 1 de 3"** — numeração do plano vigente, "de N" congelado |
+| DEC-049 | a tela do reparcelamento, em rota dedicada |
+
+**A próxima fase é a F-2 (Processos)**, e não mais financeiro: status com ⋮
+(o componente já está pronto pela DEC-047), cor por status, histórico de→para,
+reativação de cliente e processo, e o **V-2** — o 401 que desloga em qualquer
+erro, inclusive senha atual errada, que é a primeira coisa da fase.
 
 ---
 

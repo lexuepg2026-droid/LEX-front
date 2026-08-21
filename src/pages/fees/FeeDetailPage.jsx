@@ -268,21 +268,21 @@ function FeeDetailPage() {
             Registrar pagamento
           </button>
 
-          {/* Desabilitado COM EXPLICAÇÃO. Um botão morto sem texto faz a
-              advogada clicar de novo achando que travou; a data diz que a
-              função existe e está a caminho. */}
+          {/* F-1c.2: o botão LIGOU. Ele ficou desabilitado desde a F-1b com a
+              promessa de que a tela chegaria — botão morto numa demonstração é
+              promessa quebrada.
+
+              Rota dedicada, e não modal (DEC-049): o plano novo tem N linhas
+              editáveis e uma soma corrente que precisa ficar visível o tempo
+              todo, e num modal ela sai da tela justamente quando há mais
+              linhas para conferir. */}
           <button
             type="button"
             className="ui-btn ui-btn--secondary ui-btn--md"
-            disabled
-            title="O reparcelamento ponta a ponta chega na F-1c."
+            onClick={() => navigate(`/dashboard/honorarios/${id}/reparcelar`)}
           >
             Reparcelar
           </button>
-          <span className="honorario-acoes__nota">
-            O reparcelamento ainda não tem tela: o backend já reparcela
-            (DEC-037) e o fluxo completo chega na fase F-1c.
-          </span>
         </div>
       </section>
 

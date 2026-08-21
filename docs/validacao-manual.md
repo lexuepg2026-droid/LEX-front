@@ -1351,18 +1351,35 @@ Dados que vários passos usam:
   De 10 para além de 20 são cerca de **6 operações** — registrar 3 pagamentos e
   estornar 3, por exemplo. Só então o paginador tem duas páginas.
 
-  **(b) Reavaliar depois da F-1c.2.** Quando o reparcelamento na UI passar a
-  gerar linhas de extrato sozinho, um honorário reparcelado chega a mais de 20
-  movimentações **sem trabalho manual** — e aí o passo se verifica com o seed
-  puro, que é como ele deveria ter sido escrito.
-  **Confirmado na F-1c.1 (21/08/2026): segue inverificável.** Esta fase é
-  backend e exibição, e não acrescenta movimentação nenhuma ao extrato — o
-  reparcelamento continua sem tela. A saída (b) permanece a aposta, agora com
-  o número da fase certo: **F-1c.2**.
+  **(b) Reavaliar depois da F-1c.2.** A aposta era que o reparcelamento pela
+  tela geraria linhas de extrato suficientes sozinho.
 
-  Pré-condição: `npm run seed:fresh` **e** o passo **165** executado.
-  Passos: pela saída (a), registrar as ~6 operações acima; depois abrir a
-  página do honorário de **divórcio litigioso** e ir ao **Extrato**.
+  **🔴 MEDIDO na F-1c.2 (21/08/2026): a aposta (b) NÃO se confirma. O passo
+  segue inverificável, e agora se sabe por quê.**
+
+  Contagem real no banco, para o honorário do divórcio litigioso logo depois do
+  `seed:fresh`: **1 pagamento, 0 estornos, 2 alocações, 0 desalocações, 0
+  reparcelamentos = 3 movimentações**. Depois do passo 165, sobe para as **10**
+  observadas em 20/08/2026.
+
+  Um reparcelamento acrescenta **pouco**: 1 linha de reparcelamento, mais as
+  alocações automáticas do saldo adiantado (só se houver crédito) e as mudanças
+  de status. Na prática, **1 a 3 linhas** — de 10 para 11 ou 13, e o paginador é
+  de **20 por página**. **Não há segunda página**, e não haverá por este
+  caminho.
+
+  **A única saída que resta é a (a): encher o extrato à mão.** Cada pagamento
+  gera duas linhas (pagamento + alocação) e cada estorno gera duas (estorno +
+  desalocação) — de 10 para além de 20 são cerca de **6 operações**: registrar
+  3 pagamentos e estornar 3.
+
+  **Não altere o seed para acomodar o passo** — pela mesma razão do passo 172:
+  o passo é que foi escrito contra dados que não existem.
+
+  Pré-condição: `npm run seed:fresh`, o passo **165** executado, **e** as ~6
+  operações da saída (a) registradas à mão.
+  Passos: registrar as ~6 operações; depois abrir a página do honorário de
+  **divórcio litigioso** e ir ao **Extrato**.
   Esperado: no lugar do botão **"Carregar mais (N restantes)"**, há o **mesmo
   paginador** das listagens — "1–20 de N movimentações", "Página 1 de X", e os
   dois botões. Avançar e **voltar** funciona: com o acúmulo não havia como
@@ -1476,11 +1493,14 @@ Dados que vários passos usam:
 
 - [ ] **185. ⭐ Depois do reparcelamento, a primeira parcela do plano novo diz "1 de 3"**
   Pré-condição: `npm run seed:fresh` **e** `node scripts/migrarTotalParcelas.js`.
-  **O reparcelamento ainda não tem tela** (é a F-1c.2), então dispare-o pela
-  API, com a sessão autenticada do navegador:
-  `POST /api/fees/:id/renegotiations` com
-  `{ "parcelas": [ {"valor": 2000, "dataVencimento": "2026-09-15"}, {"valor": 2000, "dataVencimento": "2026-10-15"}, {"valor": 2000, "dataVencimento": "2026-11-15"} ] }`
-  num honorário que tenha **2 parcelas em aberto**.
+  **Reescrito na F-1c.2: o disparo é pela TELA.** Até aqui este passo mandava
+  usar a API direto, porque o reparcelamento não tinha interface — e a
+  validação por curl **foi dispensada por decisão do Daniel**, já que
+  conferência de contrato a suíte faz sozinha. Agora há tela, e é por ela que
+  o passo se executa.
+  Passos do disparo: abrir a **página de um honorário com 2 parcelas em
+  aberto**, clicar em **Reparcelar**, deixar o gerador em **3 parcelas**,
+  **mensal**, e confirmar.
   Passos: depois do reparcelamento, abrir 1) a **página do honorário**; 2) a
   listagem de **Parcelas** filtrada por ele; 3) o **extrato** do honorário;
   4) o **recibo** de um pagamento que tenha quitado parcela.
@@ -1499,7 +1519,7 @@ Dados que vários passos usam:
   Fase de origem: F-1c.1
 
 - [ ] **186. ⭐ 🚨 Duas parcelas nº 1: dá para dizer qual é qual sem olhar id nenhum**
-  Pré-condição: o passo **185** executado.
+  Pré-condição: o passo **185** executado (pela tela, desde a F-1c.2).
   **É a revisão da DEC-045 aplicada a parcelas**, e o teste real da DEC-048: a
   renumeração criou de propósito duas parcelas nº 1 no mesmo honorário.
   Passos: no **extrato** do honorário reparcelado, achar 1) uma **alocação na
@@ -1521,9 +1541,9 @@ Dados que vários passos usam:
   **É o caso que expõe qualquer recálculo escondido**: se algum ponto do código
   contar as parcelas do honorário em vez de ler o campo congelado, é aqui que
   o número muda sozinho.
-  Passos: reparcelar **de novo** o mesmo honorário, agora para **2 parcelas**
-  (`POST /api/fees/:id/renegotiations` com duas entradas). Depois, abrir a
-  página do honorário e ler a lista inteira.
+  Passos: reparcelar **de novo** o mesmo honorário **pela tela**, agora para
+  **2 parcelas**. Depois, abrir a página do honorário e ler a lista inteira.
+  (Reescrito na F-1c.2: era disparo por API.)
   Esperado: a **terceira geração** aparece como **"Parcela 1 de 2"** e
   **"Parcela 2 de 2"**. As duas gerações anteriores **continuam exatamente como
   estavam**: a primeira dizendo "Parcela 1 de 2" / "Parcela 2 de 2"
@@ -1534,6 +1554,108 @@ Dados que vários passos usam:
   Conferir também que **nenhum "de N" mudou** nas gerações antigas ao longo do
   segundo reparcelamento — anote os rótulos antes e compare depois.
   Fase de origem: F-1c.1
+
+## 28. Encerramento do Financeiro 2.0 — a travessia do módulo inteiro
+
+> Numeração contínua a partir do 187. Três passos novos: **188, 189 e 190**.
+>
+> **Nota sobre o número da seção.** O prompt da F-1c.2 pediu "a seção 21". O
+> `## 21` deste roteiro já é a **F-1a.1** desde julho, e renumerar seções
+> mudaria a referência de tudo que veio depois. A seção de encerramento é esta,
+> a **28** — o número mudou, o conteúdo é o pedido.
+>
+> **O que esta seção é, e o que ela não é.** É um roteiro de **travessia**: o
+> fluxo financeiro inteiro percorrido numa sentada só, do honorário vazio ao
+> extrato lido de cima a baixo. **Não é uma cópia do roteiro** — os passos
+> isolados continuam onde estão e são referenciados **pelo número**.
+>
+> **O que ela prova, e nenhum passo isolado prova:** que **os números fecham
+> entre si no fim da travessia**. Cada passo anterior verifica uma tela; este
+> verifica que as telas concordam depois de nove operações encadeadas, que é
+> quando a divergência aparece.
+>
+> **Ordem da travessia:** criar honorário → criar parcelas → registrar
+> pagamento → conferir alocação → estornar → anular o estorno → reparcelar →
+> emitir recibo → ler o extrato inteiro.
+
+- [ ] **188. ⭐ 🚨 A travessia: do honorário vazio ao extrato completo, sem sair da interface**
+  Pré-condição: `npm run seed:fresh`. **Reserve uma sentada só** — o valor deste
+  passo está em não interromper a cadeia. **Sem usar a API direto em nenhum
+  momento.**
+  **Anote os números conforme avança**: é a anotação que torna o passo 189
+  executável.
+
+  | # | Operação | Como | Passo que detalha |
+  |---|---|---|---|
+  | 1 | Criar honorário | `+ Novo Honorário`, tipo **fixo**, **R$ 6.000,00** | — |
+  | 2 | Criar 2 parcelas | R$ 3.000,00 cada, vencendo em dois meses seguidos | — |
+  | 3 | Registrar pagamento | R$ 3.000,00, PIX, na data de hoje | **159** (preview bate com o realizado) |
+  | 4 | Conferir a alocação | abrir o **Extrato** e ler o vínculo | **160** (vínculos se leem sem explicação) |
+  | 5 | Estornar | pelo ⋮ da linha do pagamento, **R$ 1.000,00** parcial | **161** (o modal diz o efeito antes) |
+  | 6 | Anular o estorno | pelo extrato | **162** (a anulação e a confirmação do efeito) |
+  | 7 | Reparcelar | botão **Reparcelar**, 3 parcelas mensais | **185** (o rótulo "1 de 3") |
+  | 8 | Emitir recibo | ⋮ da linha do pagamento → **Baixar recibo** | **156** (o texto descreve o que foi quitado) |
+  | 9 | Ler o extrato inteiro | de cima a baixo | **165** (nenhum total que o sistema não confirma) |
+
+  Esperado, em cada elo: **a operação seguinte encontra a tela no estado que a
+  anterior deixou.** Nenhum F5 deve ser necessário para os números baterem;
+  nenhuma tela deve exigir que se navegue para fora e volte.
+  Esperado ainda: no passo 7, a parcela **paga** aparece na lista **"O que
+  fica"** da tela de reparcelamento, e a advogada consegue confirmar **antes de
+  apertar o botão** que o pagamento não será apagado.
+  Por que só olho humano: cada elo tem teste. **A cadeia não tem** — e é na
+  cadeia que a divergência aparece, porque cada tela é recarregada com o
+  resultado da anterior.
+  Fase de origem: F-1c.2
+
+- [ ] **189. ⭐ 🚨 Os números fecham entre si no fim da travessia**
+  Pré-condição: o passo **188** completo, com os números anotados.
+  **É o passo que a seção existe para ter.** Cada tela isolada já foi
+  verificada; o que nunca foi é se elas **concordam entre si** depois da cadeia.
+  Conferir as **três igualdades**, com a calculadora na mão:
+
+  | # | O que precisa fechar | Onde ler |
+  |---|---|---|
+  | 1 | **contratado − recebido = em aberto** (e o **saldo adiantado** aparece **nomeado à parte**, nunca dentro de "recebido" nem abatendo o "em aberto") | cabeçalho da página do honorário |
+  | 2 | a **soma das movimentações do extrato** explica o "recebido" do cabeçalho | Extrato × cabeçalho |
+  | 3 | o **recibo** diz da parcela o mesmo que a **lista de parcelas** diz | PDF × página do honorário |
+
+  Esperado: as três fecham. Especificamente na (1), é a **DEC-040**: o crédito
+  **não** entra em `recebido` e **não** abate o `em aberto` — foi exatamente
+  esse desconto silencioso que o smoke test de 17/08/2026 pegou mentindo a favor
+  do cliente.
+  Na (3): depois do reparcelamento, o recibo emitido no elo 8 nomeia a parcela
+  com o **"de N" congelado** (DEC-048) — se ele passar a dizer outro total, o
+  congelamento quebrou. Cruzar com o passo **185**.
+  Conferir também a ficha do **processo** (passo **157**): o honorário aparece
+  lá com os mesmos números da página dele. Duas telas, uma fonte
+  (`feeTotals.js`) — se divergirem, a fonte única deixou de ser única.
+  Por que só olho humano: a suíte prova cada fórmula isoladamente. **Que os
+  quatro lugares onde o mesmo número aparece digam a mesma coisa depois de nove
+  operações** é conferência de leitura, não de unidade.
+  Fase de origem: F-1c.2
+
+- [ ] **190. Nenhuma linha do extrato que deixou de valer aparece sem dizer que deixou (DEC-044)**
+  Pré-condição: o passo **188** completo.
+  **É o fecho do ciclo Financeiro 2.0**, e a regra que ele confere é a que mais
+  se perde numa tela que cresceu: uma linha que já não vale, exibida como se
+  valesse, é pior que uma linha ausente.
+  Passos: no extrato do honorário da travessia, percorrer **linha por linha** e
+  achar as três que **deixaram de valer** ao longo dela: a **alocação
+  desfeita** pelo estorno do elo 5, o **estorno anulado** no elo 6, e as
+  **parcelas canceladas** pelo reparcelamento do elo 7.
+  Esperado: **cada uma diz, na própria linha, que deixou de valer** — a
+  alocação desfeita aparece **riscada ou marcada como desfeita**, o estorno
+  anulado diz que foi anulado, e as parcelas canceladas aparecem como
+  **"Reparcelada"**. Nenhuma delas pode aparecer com a mesma aparência de uma
+  linha viva.
+  Conferir o contrário também: **nenhuma linha viva** aparece marcada como
+  desfeita. Cruzar com os passos **164** (o estornado por inteiro não deixa
+  buraco mudo) e **169** (o badge cabe e explica).
+  Por que só olho humano: a DEC-044 é sobre **aparência de validade**. A suíte
+  prova que o campo existe e que a classe é aplicada; que a linha morta **se
+  pareça** morta ao lado de uma viva só se vê olhando as duas juntas.
+  Fase de origem: F-1c.2
 
 ## Validado
 

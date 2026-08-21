@@ -466,11 +466,32 @@ describe("F-1b — o nome do honorário leva à página dele", () => {
     assert.match(form, /searchParams\.get\('honorarioId'\)/, "e o formulário o lê");
   });
 
-  test("\"Reparcelar\" está desabilitado COM explicação de que chega na F-1c", () => {
+  // ── REESCRITO na F-1c.2 ──────────────────────────────────────────────────
+  // Este teste travava o botão "Reparcelar" DESABILITADO, com a promessa de
+  // que a tela chegaria na F-1c. A tela chegou. O que ele fixava era o
+  // ANDAIME — botão morto com explicação —, e a regra que ele protegia de
+  // verdade continua: o botão não pode ficar mudo.
+  //
+  // Agora ele exige o contrário, e é isso que impede a promessa de sobreviver
+  // à entrega: se alguém devolver o `disabled` ou a frase "ainda não tem
+  // tela", este teste cai.
+  test("\"Reparcelar\" LEVA à tela do reparcelamento (F-1c.2)", () => {
     const pagina = ler("src/pages/fees/FeeDetailPage.jsx");
     assert.match(pagina, /Reparcelar/);
-    assert.match(pagina, /disabled/);
-    assert.match(pagina, /F-1c/, "a explicação diz quando chega");
+    assert.match(
+      pagina, /honorarios\/\$\{id\}\/reparcelar/,
+      "o botão precisa navegar para a rota dedicada (DEC-049)"
+    );
+
+    const semComentario = semComentarios(pagina);
+    assert.ok(
+      !/ainda não tem tela/.test(semComentario),
+      "a promessa de que a tela chegaria não pode sobreviver à chegada dela"
+    );
+    assert.ok(
+      !/disabled\s*\n?\s*title="O reparcelamento/.test(semComentario),
+      "o botão morto continua na tela"
+    );
   });
 
   test("não há item de menu novo: a página se alcança pelos links", () => {

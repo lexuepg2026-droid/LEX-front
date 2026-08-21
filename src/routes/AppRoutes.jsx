@@ -14,6 +14,7 @@ import ProcessoDetalhePage from '../pages/processes/ProcessDetailPage';
 import FeeListPage from '../pages/fees/FeeListPage';
 import FeeFormPage from '../pages/fees/FeeFormPage';
 import FeeDetailPage from '../pages/fees/FeeDetailPage';
+import FeeRenegotiationPage from '../pages/fees/FeeRenegotiationPage';
 import InstallmentListPage from '../pages/installments/InstallmentListPage';
 import InstallmentFormPage from '../pages/installments/InstallmentFormPage';
 import DocumentListPage from '../pages/documents/DocumentListPage';
@@ -113,6 +114,9 @@ function AppRoutes() {
               estático, mas a ordem do arquivo é o que se lê. Não há item de
               menu para ela: chega-se pelos links do nome do honorário. */}
           <Route path="honorarios/:id" element={<FeeDetailPage />} />
+          {/* DEC-049: o reparcelamento tem ROTA própria, e não modal — o plano
+              tem N linhas e uma soma corrente que precisa ficar visível. */}
+          <Route path="honorarios/:id/reparcelar" element={<FeeRenegotiationPage />} />
 
           <Route path="parcelas" element={<InstallmentListPage />} />
           <Route path="parcelas/novo" element={<InstallmentFormPage />} />
