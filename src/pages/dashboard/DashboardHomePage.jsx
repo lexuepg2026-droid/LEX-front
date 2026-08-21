@@ -17,6 +17,7 @@ import { getApiErrorMessage } from '../../utils/apiError';
 // classes compartilhadas das telas de módulo.
 import '../../styles/modules.css';
 import './DashboardPage.css';
+import { rotuloDaParcela } from '../../components/financeiro/installmentLabel';
 
 const DashboardCharts = lazy(() => import('./DashboardCharts'));
 
@@ -308,7 +309,7 @@ function DashboardHomePage() {
                         to={`/dashboard/parcelas/editar/${parcela._id}`}
                         className="upcoming-link"
                       >
-                        Parcela {parcela.numeroParcela}
+                        {rotuloDaParcela({ numeroParcela: parcela.numeroParcela, totalParcelas: parcela.totalParcelas ?? null })}
                       </Link>
                     </span>
                     <span className="upcoming-due">
@@ -361,7 +362,7 @@ function DashboardHomePage() {
                       to={`/dashboard/parcelas/editar/${inst._id}`}
                       className="upcoming-link"
                     >
-                      Parcela {inst.numeroParcela}
+                      {rotuloDaParcela({ numeroParcela: inst.numeroParcela, totalParcelas: inst.totalParcelas ?? null })}
                     </Link>
                   </span>
                   <span className="upcoming-due">{daysUntilLabel(inst.dataVencimento)}</span>

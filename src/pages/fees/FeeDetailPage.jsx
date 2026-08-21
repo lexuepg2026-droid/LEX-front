@@ -12,6 +12,7 @@ import { toast } from '../../utils/toast';
 import { usePublicarBreadcrumb } from '../../contexts/BreadcrumbContext';
 import '../../styles/modules.css';
 import './FeeDetailPage.css';
+import { rotuloNaLista } from '../../components/financeiro/installmentLabel';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // A PÁGINA DO HONORÁRIO — Fase F-1b
@@ -203,7 +204,7 @@ function FeeDetailPage() {
                       to={`/dashboard/parcelas/editar/${p._id}`}
                       className="honorario-parcela__numero link-interno"
                     >
-                      Parcela {p.numeroParcela}
+                      {rotuloNaLista(p, parcelas)}
                     </Link>
                     <span className="honorario-parcela__valores">
                       {formatCurrency(p.valor)}

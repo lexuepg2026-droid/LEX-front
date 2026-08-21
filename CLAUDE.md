@@ -49,6 +49,9 @@ Sessão da advogada por cookie httpOnly `lex-token`; portal do cliente por
   `overflow` recorta, e `z-index` não resolve recorte.
 - **Rótulo de contagem chega no SINGULAR**; quem conjuga é
   `components/ui/plural.js`. "1 parcelas" foi defeito de verdade.
+- **Rótulo de parcela sai de `installmentLabel.js`** (DEC-048). Nunca
+  `Parcela {n}` no JSX: o "de N" congelado é o que impede um recibo de mudar de
+  significado depois de entregue.
 - **Toda listagem usa o menu ⋮ na coluna de ações** (DEC-047). Ação dentro do
   menu, explicação fora dele, Excluir em vermelho e por último. Não há mais
   fileira de botões, e `col-acoes-menu` é a única medida de coluna de ação.
@@ -2180,6 +2183,75 @@ Não foram deixadas "por precaução": **medida de coluna sem chamador é a pró
 listagem escolhendo entre seis larguras que não deveriam existir** — e foi
 exatamente assim que a listagem de pagamentos acabou com três botões numa
 coluna dimensionada para dois, que é o defeito que abriu a F-1b.3.
+
+---
+
+## DEC-048 — "Parcela 1 de 3" (F-1c.1)
+
+### O defeito
+
+O reparcelamento continuava a numeração: um honorário de 2 parcelas que virava
+3 ficava com **1, 2** (canceladas) e **3, 4, 5** (vivas). Para quem lê,
+**"parcela 3" de um plano de três é a PRIMEIRA** — e a advogada, ao telefone
+com o cliente, precisa dizer "são três parcelas, esta é a primeira".
+
+### A regra
+
+O plano vigente numera de **1**. As canceladas guardam o número que tinham,
+com **"Reparcelada"** ao lado, e o **"de N" delas é congelado** no tamanho do
+plano a que pertenciam — uma cancelada de um plano de 2 continua dizendo
+**"de 2"**, mesmo que o plano de hoje tenha 5.
+
+### O rótulo sai de UMA função
+
+`components/financeiro/installmentLabel.js`:
+
+| Função | Para quê |
+|---|---|
+| `rotuloDaParcela({ numeroParcela, totalParcelas, totalNoPlanoVigente })` | "Parcela 1 de 3" |
+| `tamanhoDoPlanoVigente(parcelas)` | conta o plano ORIGINAL vivo, sem somar gerações |
+| `rotuloNaLista(parcela, parcelas)` | resolve o vigente sozinho, para o chamador não saber da regra |
+
+**`totalParcelas` (congelado) tem precedência SEMPRE** sobre
+`totalNoPlanoVigente`. É o ponto inteiro da decisão.
+
+**N = 1 não ganha "de 1"**: a única parcela do plano já se identifica por ser a
+única, e "Parcela 1 de 1" é o mesmo ruído que o recibo evita desde a 4.1.
+
+**Cuidado com `Number(null)`**, que é `0` e é finito: sem guarda, uma parcela
+ausente vira **"Parcela 0"**, que parece um número de parcela e é lido como um.
+
+Seis telas mostram número de parcela (honorário, listagem, extrato, recibo,
+ficha do processo, dashboard). **Rótulo montado em seis lugares é rótulo que
+vai divergir** — e aqui divergir significa a lista dizer "Parcela 1 de 3" e o
+recibo dizer "parcela 3", sobre a mesma parcela. A suíte proíbe `Parcela {` no
+JSX das telas.
+
+### A listagem de Parcelas não consegue contar o plano sozinha
+
+Ela **atravessa honorários**: vinte linhas podem ser de oito honorários
+diferentes. Contar o plano a partir do array da página daria o tamanho da
+**página**, e o número mudaria a cada filtro. Por isso o backend manda
+**`totalNoPlano`** já resolvido, e a tela só o exibe.
+
+A página do honorário tem a lista inteira e conta sozinha, via `rotuloNaLista`.
+
+### O extrato usa a frase que o backend manda
+
+`statementEntry.parcelaDoEvento` prefere `evento.referencia` — *"parcela 1 de
+3, vencendo 15/09/2026"*. Ela vem de lá porque **só o backend sabe o "de N"
+congelado de cada geração**. O ordinal nu continua como retorno para resposta
+de API antiga, que a tela não pode quebrar.
+
+Depois da renumeração existem **duas parcelas nº 1** no mesmo honorário, e o
+ordinal deixou de identificar qualquer coisa — é o defeito da DEC-045, agora em
+parcelas, e a solução é a mesma: **referência por atributo**.
+
+### O portal do cliente não mostra parcela
+
+E não por esquecimento: a **DEC-029 ponto 8** mantém o portal **sem nada
+financeiro**, com teste travando no backend. Não há rótulo a aplicar lá — e se
+aparecer número de parcela no portal, **isso é o defeito**, não a melhoria.
 
 ---
 

@@ -21,6 +21,7 @@ import { toast } from '../../utils/toast';
 // de classe CSS existe para pegar.
 import '../../styles/modules.css';
 import './ProcessFinancialSheet.css';
+import { rotuloNaLista } from './installmentLabel';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FICHA FINANCEIRA DO PROCESSO — GET /api/financeiro/processos/:processoId
@@ -220,7 +221,7 @@ function ProcessFinancialSheet({ processoId }) {
                         className={`ficha-parcela${reparcelada ? ' ficha-parcela--reparcelada' : ''}`}
                       >
                         <div className="ficha-parcela__linha">
-                          <span className="ficha-parcela__numero">Parcela {p.numeroParcela}</span>
+                          <span className="ficha-parcela__numero">{rotuloNaLista(p, h.parcelas)}</span>
                           <span className="ficha-parcela__valores">
                             {formatCurrency(p.valor)}
                             {' · recebido '}{formatCurrency(p.valorPago)}

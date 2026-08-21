@@ -1332,56 +1332,6 @@ Dados que vários passos usam:
 > aparência vai ser refeito com o desenho novo, e o passo **167** já está
 > marcado para reexecução.
 
-- [ ] **178. ⭐ O menu de ações abre e fecha pelo teclado**
-  **🔴 REPROVADO em 20/08/2026 (validação da F-1b.3.1) — reaberto pela segunda
-  vez.** Relato do Daniel: *"a janela aberta ao clicar enter nos ⋮ não foi
-  possível de se acessar navegando pelo tab, apenas pelo mouse"*.
-
-  **O que PASSOU na tentativa de 20/08/2026**, e vale registrar porque delimita
-  o defeito: Enter **abre** o menu; o **anel de foco dourado aparece** no ⋮; as
-  ações **funcionam ao clique**; e **o painel ficou dentro da tela** — a
-  DEC-046 fez o que prometeu. O que falhou foi **só** o Tab.
-
-  **A causa real, e ela é filha da própria correção anterior:** o painel em
-  portal é o **último filho do `body`**, e a ordem do Tab é a do **DOM real** —
-  não a da árvore do React, que é por onde o `createPortal` propaga *eventos*.
-  Tab a partir do gatilho ia para a **próxima célula da tabela**, não para
-  dentro do menu. Antes da DEC-046 o painel era irmão imediato do gatilho e o
-  Tab caía nele de graça: **tirar o painel do contêiner que recortava tirou
-  junto a ordem de foco natural.**
-
-  **Corrigido na F-1b.3.2** conduzindo o foco explicitamente — entra no
-  primeiro item ao abrir (depois de a posição estar calculada), circula dentro
-  do painel com Tab e Shift+Tab, e volta ao gatilho no Esc. **Reexecutar este
-  passo por inteiro**, junto com o passo **183**.
-  **🔴 REPROVADO em 20/08/2026 (validação da F-1b.3).** O botão **⋮** existe,
-  **recebe o anel de foco dourado** por Tab e **abre** o painel ao clique — o
-  comportamento estava certo. **O painel saía da tela, cortado, nas TRÊS
-  listagens.** A causa foi diagnosticada na F-1b.3.1 e é estrutural: três
-  ancestrais com `overflow` diferente de `visible` recortavam o painel
-  absoluto — a própria célula (`.data-table--fixed td`, `overflow: hidden`), a
-  `.table-wrapper` (`overflow-x: auto`) e a `.main-content`. Corrigido pela
-  **DEC-046**: o painel passou a ser renderizado em **portal** no
-  `document.body`, com `position: fixed` e coordenadas do gatilho. **Reexecutar
-  este passo por inteiro.**
-  Pré-condição: `npm run seed:fresh`. **Sem usar o mouse em nenhum momento.**
-  Passos: em **Pagamentos**, 1) navegar por **Tab** até o botão **⋮** de uma
-  linha; 2) abrir com **Enter**; 3) percorrer os itens com **Tab**; 4) fechar
-  com **Esc**; 5) conferir onde o foco está; 6) reabrir e escolher **Editar**
-  com **Enter**. Repetir em **Parcelas** e **Honorários**.
-  Esperado: o botão **⋮** recebe o **anel de foco dourado** ao ser alcançado
-  (não pode ser invisível). Enter abre o menu. Esc fecha — e o foco **volta
-  para o botão ⋮ que o abriu**, não para o início da página. Enter em "Editar"
-  navega para o formulário.
-  Conferir também com o mouse: clicando **fora** do menu, ele fecha.
-  Conferir a distinção: **Excluir** aparece em **vermelho**, visivelmente
-  diferente das demais.
-  Por que só olho humano: a suíte prova que o componente registra `keydown`,
-  reconhece `Escape`, guarda a referência do gatilho e a chama no fechamento —
-  e que nenhuma regra apaga o `outline`. **Não há como provar sem DOM** que o
-  foco realmente voltou nem que o anel é visível no tema escuro.
-  Fase de origem: F-1b.3, reaberto na F-1b.3.1 e de novo na F-1b.3.2
-
 - [ ] **180. O extrato pagina em vez de acumular**
   **⚠️ INVERIFICÁVEL com os dados atuais — não reprovado. Número corrigido em
   20/08/2026.**
@@ -1401,10 +1351,14 @@ Dados que vários passos usam:
   De 10 para além de 20 são cerca de **6 operações** — registrar 3 pagamentos e
   estornar 3, por exemplo. Só então o paginador tem duas páginas.
 
-  **(b) Reavaliar depois da F-1c.** Quando o reparcelamento na UI passar a
+  **(b) Reavaliar depois da F-1c.2.** Quando o reparcelamento na UI passar a
   gerar linhas de extrato sozinho, um honorário reparcelado chega a mais de 20
   movimentações **sem trabalho manual** — e aí o passo se verifica com o seed
   puro, que é como ele deveria ter sido escrito.
+  **Confirmado na F-1c.1 (21/08/2026): segue inverificável.** Esta fase é
+  backend e exibição, e não acrescenta movimentação nenhuma ao extrato — o
+  reparcelamento continua sem tela. A saída (b) permanece a aposta, agora com
+  o número da fase certo: **F-1c.2**.
 
   Pré-condição: `npm run seed:fresh` **e** o passo **165** executado.
   Passos: pela saída (a), registrar as ~6 operações acima; depois abrir a
@@ -1481,60 +1435,105 @@ Dados que vários passos usam:
 > em `node --test`**. Que o Tab realmente circule, e que ele realmente não
 > escape para a tabela, só se vê tabulando.
 
-- [ ] **183. ⭐ 🚨 O Tab circula dentro do painel e não escapa para a tabela**
-  Pré-condição: `npm run seed:fresh`. **Sem usar o mouse em nenhum momento.**
-  **É o passo que fecha o defeito do 178** — executar os dois juntos.
-  Passos: em **Pagamentos**, 1) navegar por **Tab** até o ⋮ de uma linha do
-  **meio** da tabela; 2) abrir com **Enter**; 3) conferir **onde o foco está**
-  assim que o menu abre; 4) tabular **item por item até passar do último**;
-  5) do primeiro item, dar **Shift+Tab**; 6) fechar com **Esc** e conferir onde
-  o foco parou. Repetir em **Parcelas** e em **Honorários**.
-  Esperado: no passo 3, o foco está **no primeiro item do menu** — não no ⋮ e
-  não na tabela. No passo 4, ao passar do último item o foco **volta para o
-  primeiro**: ele **não vai para a linha de baixo da tabela**, que é
-  exatamente o que acontecia antes. No passo 5, Shift+Tab no primeiro item vai
-  para o **último**. No passo 6, Esc fecha e o foco volta **para o ⋮ que
-  abriu** — com o Tab preso dentro do painel, **Esc é o único caminho de
-  volta**, e se ele falhar a pessoa fica presa.
-  Conferir em **Pagamentos** com um recibo **baixando**: o item "Baixando…"
-  está desabilitado e o Tab **pula por cima dele** — o ciclo não trava.
-  Por que só olho humano: a suíte prova a mecânica (o `preventDefault`, a
-  ordem da chamada de foco, o ciclo nas duas pontas). **Não há DOM em
-  `node --test`**, então que o foco esteja mesmo onde se pensa é coisa de
-  tabular e olhar.
-  Fase de origem: F-1b.3.2
+## 27. Fase F-1c.1 — "Parcela 1 de 3": o número depois do reparcelamento
 
-- [ ] **184. ⭐ O ⋮ em Clientes, Processos, Documentos e Seções (DEC-047)**
-  Pré-condição: `npm run seed:fresh`.
-  Passos: abrir as quatro listagens em **1024 px** e em **360 px**. Em cada
-  uma, abrir o menu **⋮** da última coluna e conferir **item a item** contra a
-  tabela abaixo — que é a lista levantada do código **antes** da migração.
+> Numeração contínua a partir do 184. Três passos novos: **185, 186 e 187**.
+>
+> Primeira metade da F-1c: **backend e exibição**. A tela do reparcelamento é a
+> **F-1c.2** e não entra aqui.
+>
+> **O defeito (DEC-048).** O reparcelamento CONTINUAVA a numeração: um
+> honorário de 2 parcelas que virava 3 ficava com 1, 2 (canceladas) e **3, 4,
+> 5** (vivas). Para quem lê, "parcela 3" de um plano de três é a **primeira** —
+> e a advogada, ao telefone com o cliente, precisa dizer "são três parcelas,
+> esta é a primeira".
+>
+> **A decisão.** O plano vigente numera de 1. As canceladas guardam o número
+> que tinham, com "Reparcelada" ao lado. O **"de N" é congelado** no momento em
+> que o plano deixa de ser editável, e nunca mais é recalculado — recibo que
+> muda de significado depois de entregue ao cliente é o defeito mais grave que
+> este projeto já corrigiu.
+>
+> **O problema que a decisão cria.** Renumerar faz existirem **duas parcelas nº
+> 1** no mesmo honorário. É o defeito que a DEC-045 resolveu para pagamentos, e
+> a solução é a mesma: **referência por atributo**, não por ordinal — "parcela
+> 1 de 3, vencendo 15/09/2026" e "parcela 1 de 2, vencendo 10/05/2026
+> (reparcelada)".
+>
+> **O que a suíte já cobre.** Que o reparcelamento numera de 1 e congela o
+> "de N" das duas gerações; que `planoId` (quem me criou) e `reparcelamentoId`
+> (quem me cancelou) são campos distintos; que duas parcelas nº 1 produzem
+> frases diferentes; que nenhuma tela monta o rótulo por conta própria
+> (`tests/financial/dec048.test.js` no backend, `tests/regressions/dec048.test.js`
+> no frontend).
+>
+> **⚠️ A NUMERAÇÃO ANTIGA NÃO FOI REESCRITA.** A migração preencheu o "de N" das
+> parcelas já gravadas, mas **não renumerou nada** — renumerar dado gravado
+> quebraria a referência de recibos já emitidos. Um honorário reparcelado
+> **antes** de 21/08/2026 continua com 1, 2 (canceladas) e 3, 4, 5 (vivas), só
+> que agora dizendo "de 2" e "de 3" corretamente. **Para ver a renumeração é
+> preciso reparcelar de novo**, e é isso que os passos abaixo fazem.
 
-  | Listagem | O menu contém, nesta ordem |
-  |---|---|
-  | **Clientes** | "Ver", "Editar", **"Excluir"** (vermelho) |
-  | **Processos** | "Gerenciar", **"Excluir"** (vermelho) |
-  | **Documentos** | "Abrir", "Baixar PDF", "Baixar DOCX", **"Excluir"** (vermelho) |
-  | **Seções** | "Ver", "Editar", **"Desativar"** (vermelho) |
+- [ ] **185. ⭐ Depois do reparcelamento, a primeira parcela do plano novo diz "1 de 3"**
+  Pré-condição: `npm run seed:fresh` **e** `node scripts/migrarTotalParcelas.js`.
+  **O reparcelamento ainda não tem tela** (é a F-1c.2), então dispare-o pela
+  API, com a sessão autenticada do navegador:
+  `POST /api/fees/:id/renegotiations` com
+  `{ "parcelas": [ {"valor": 2000, "dataVencimento": "2026-09-15"}, {"valor": 2000, "dataVencimento": "2026-10-15"}, {"valor": 2000, "dataVencimento": "2026-11-15"} ] }`
+  num honorário que tenha **2 parcelas em aberto**.
+  Passos: depois do reparcelamento, abrir 1) a **página do honorário**; 2) a
+  listagem de **Parcelas** filtrada por ele; 3) o **extrato** do honorário;
+  4) o **recibo** de um pagamento que tenha quitado parcela.
+  Esperado: as **três parcelas novas** aparecem como **"Parcela 1 de 3"**,
+  **"Parcela 2 de 3"** e **"Parcela 3 de 3"** — nas quatro telas, com o mesmo
+  texto. As **duas canceladas** aparecem como **"Parcela 1 de 2"** e **"Parcela
+  2 de 2"** — o rótulo **congelado**, dizendo "de 2" e não "de 3" — com o badge
+  **"Reparcelada"** ao lado, **fora do menu de ações** (DEC-047: é explicação,
+  não ação).
+  Conferir que o **recibo emitido ANTES** do reparcelamento continua dizendo o
+  que dizia. É o ponto inteiro do congelamento.
+  **Sobre o portal do cliente:** ele **não mostra parcela nenhuma** — DEC-029
+  ponto 8 mantém o portal sem nada financeiro, e há teste travando isso
+  (`tests/portal/isolamento.test.js`). Não há rótulo a conferir lá, e se
+  aparecer número de parcela no portal **isso é o defeito**, não a validação.
+  Fase de origem: F-1c.1
 
-  Esperado: **nenhuma ação se perdeu** e nenhuma mudou de efeito. Em
-  particular: "Ver" de **Seções** abre o **modal de pré-visualização** (não
-  navega); "Gerenciar" de **Processos** leva ao detalhe, com o mesmo nome de
-  antes; "Baixar PDF" e "Baixar DOCX" **baixam o arquivo** — os ícones saíram
-  de propósito, porque dentro do menu o item é uma linha de texto e o rótulo
-  por extenso diz mais que um ícone de 13 px.
-  Conferir o estado de download: clicando "Baixar PDF", o item vira
-  **"Baixando…"** e fica **desabilitado** até terminar.
-  Conferir que **"Desativar"** de Seções continua **desativando** e não
-  apagando — o verbo não mudou junto com a forma.
-  Conferir em **360 px** que o painel **não sai da tela** nas quatro (é a
-  DEC-046 valendo para as listagens novas) e que a coluna de ações encolheu
-  para a largura de **um botão**.
-  Por que só olho humano: a suíte prova que as sete listagens renderizam
-  `ActionMenu`, que nenhuma tem botão solto e que cada rótulo esperado está no
-  arquivo. O que ela **não** prova é que o clique no item ainda faz o que
-  fazia — que a rota é a mesma, que o modal abre, que o arquivo baixa.
-  Fase de origem: F-1b.3.2
+- [ ] **186. ⭐ 🚨 Duas parcelas nº 1: dá para dizer qual é qual sem olhar id nenhum**
+  Pré-condição: o passo **185** executado.
+  **É a revisão da DEC-045 aplicada a parcelas**, e o teste real da DEC-048: a
+  renumeração criou de propósito duas parcelas nº 1 no mesmo honorário.
+  Passos: no **extrato** do honorário reparcelado, achar 1) uma **alocação na
+  parcela cancelada** (dinheiro que entrou antes do reparcelamento) e 2) uma
+  **alocação na parcela nova** (o saldo que foi auto-alocado). Ler as duas
+  frases **cobrindo qualquer id com o dedo**.
+  Esperado: as duas frases dizem **"parcela 1 de …"** e mesmo assim **não se
+  confundem** — o **"de N"** difere (de 2 × de 3), o **vencimento** difere, e a
+  cancelada leva **"(reparcelada)"** no fim. Exemplo do que se espera ler:
+  **"R$ 300,00 alocados na parcela 1 de 2, vencendo 10/05/2026 (reparcelada)"**
+  e **"R$ 2.000,00 de saldo adiantado alocados na parcela 1 de 3, vencendo
+  15/09/2026"**.
+  **Se for preciso comparar id para casar a frase com a linha, a DEC-048
+  falhou** — mesmo com a suíte verde. É o mesmo critério do passo 177.
+  Fase de origem: F-1c.1
+
+- [ ] **187. Dois reparcelamentos seguidos: a terceira geração também numera de 1**
+  Pré-condição: o passo **185** executado.
+  **É o caso que expõe qualquer recálculo escondido**: se algum ponto do código
+  contar as parcelas do honorário em vez de ler o campo congelado, é aqui que
+  o número muda sozinho.
+  Passos: reparcelar **de novo** o mesmo honorário, agora para **2 parcelas**
+  (`POST /api/fees/:id/renegotiations` com duas entradas). Depois, abrir a
+  página do honorário e ler a lista inteira.
+  Esperado: a **terceira geração** aparece como **"Parcela 1 de 2"** e
+  **"Parcela 2 de 2"**. As duas gerações anteriores **continuam exatamente como
+  estavam**: a primeira dizendo "Parcela 1 de 2" / "Parcela 2 de 2"
+  (reparceladas) e a segunda, "Parcela 1 de 3" / "2 de 3" / "3 de 3" (também
+  reparceladas agora).
+  Conferir: agora existem **três** parcelas nº 1 no mesmo honorário. As três
+  continuam distinguíveis pelo vencimento no extrato.
+  Conferir também que **nenhum "de N" mudou** nas gerações antigas ao longo do
+  segundo reparcelamento — anote os rótulos antes e compare depois.
+  Fase de origem: F-1c.1
 
 ## Validado
 
@@ -2897,6 +2896,57 @@ Dados que vários passos usam:
   degenerado o desempate é tudo o que resta — daí a pendência.
   Fase de origem: F-1b.3
 
+- [x] **178. ⭐ O menu de ações abre e fecha pelo teclado**
+  **Validado em 21/08/2026 pelo Daniel. Passou.**
+  **🔴 REPROVADO em 20/08/2026 (validação da F-1b.3.1) — reaberto pela segunda
+  vez.** Relato do Daniel: *"a janela aberta ao clicar enter nos ⋮ não foi
+  possível de se acessar navegando pelo tab, apenas pelo mouse"*.
+
+  **O que PASSOU na tentativa de 20/08/2026**, e vale registrar porque delimita
+  o defeito: Enter **abre** o menu; o **anel de foco dourado aparece** no ⋮; as
+  ações **funcionam ao clique**; e **o painel ficou dentro da tela** — a
+  DEC-046 fez o que prometeu. O que falhou foi **só** o Tab.
+
+  **A causa real, e ela é filha da própria correção anterior:** o painel em
+  portal é o **último filho do `body`**, e a ordem do Tab é a do **DOM real** —
+  não a da árvore do React, que é por onde o `createPortal` propaga *eventos*.
+  Tab a partir do gatilho ia para a **próxima célula da tabela**, não para
+  dentro do menu. Antes da DEC-046 o painel era irmão imediato do gatilho e o
+  Tab caía nele de graça: **tirar o painel do contêiner que recortava tirou
+  junto a ordem de foco natural.**
+
+  **Corrigido na F-1b.3.2** conduzindo o foco explicitamente — entra no
+  primeiro item ao abrir (depois de a posição estar calculada), circula dentro
+  do painel com Tab e Shift+Tab, e volta ao gatilho no Esc. **Reexecutar este
+  passo por inteiro**, junto com o passo **183**.
+  **🔴 REPROVADO em 20/08/2026 (validação da F-1b.3).** O botão **⋮** existe,
+  **recebe o anel de foco dourado** por Tab e **abre** o painel ao clique — o
+  comportamento estava certo. **O painel saía da tela, cortado, nas TRÊS
+  listagens.** A causa foi diagnosticada na F-1b.3.1 e é estrutural: três
+  ancestrais com `overflow` diferente de `visible` recortavam o painel
+  absoluto — a própria célula (`.data-table--fixed td`, `overflow: hidden`), a
+  `.table-wrapper` (`overflow-x: auto`) e a `.main-content`. Corrigido pela
+  **DEC-046**: o painel passou a ser renderizado em **portal** no
+  `document.body`, com `position: fixed` e coordenadas do gatilho. **Reexecutar
+  este passo por inteiro.**
+  Pré-condição: `npm run seed:fresh`. **Sem usar o mouse em nenhum momento.**
+  Passos: em **Pagamentos**, 1) navegar por **Tab** até o botão **⋮** de uma
+  linha; 2) abrir com **Enter**; 3) percorrer os itens com **Tab**; 4) fechar
+  com **Esc**; 5) conferir onde o foco está; 6) reabrir e escolher **Editar**
+  com **Enter**. Repetir em **Parcelas** e **Honorários**.
+  Esperado: o botão **⋮** recebe o **anel de foco dourado** ao ser alcançado
+  (não pode ser invisível). Enter abre o menu. Esc fecha — e o foco **volta
+  para o botão ⋮ que o abriu**, não para o início da página. Enter em "Editar"
+  navega para o formulário.
+  Conferir também com o mouse: clicando **fora** do menu, ele fecha.
+  Conferir a distinção: **Excluir** aparece em **vermelho**, visivelmente
+  diferente das demais.
+  Por que só olho humano: a suíte prova que o componente registra `keydown`,
+  reconhece `Escape`, guarda a referência do gatilho e a chama no fechamento —
+  e que nenhuma regra apaga o `outline`. **Não há como provar sem DOM** que o
+  foco realmente voltou nem que o anel é visível no tema escuro.
+  Fase de origem: F-1b.3, reaberto na F-1b.3.1 e de novo na F-1b.3.2
+
 - [x] **179. ⭐ 🚨 Nenhuma ação ficou fora da tela, em 1024 px e em 360 px**
   **Validado em 20/08/2026 pelo Daniel. Passou.**
   **🔴 REPROVADO em 20/08/2026 (validação da F-1b.3).** O botão **⋮** existe,
@@ -2993,6 +3043,63 @@ Dados que vários passos usam:
   depende da fonte instalada — e foi exatamente assim que "Reparcelada" coube
   na medida e não coube na tela.
   Fase de origem: F-1b.3.1
+
+- [x] **183. ⭐ 🚨 O Tab circula dentro do painel e não escapa para a tabela**
+  **Validado em 21/08/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run seed:fresh`. **Sem usar o mouse em nenhum momento.**
+  **É o passo que fecha o defeito do 178** — executar os dois juntos.
+  Passos: em **Pagamentos**, 1) navegar por **Tab** até o ⋮ de uma linha do
+  **meio** da tabela; 2) abrir com **Enter**; 3) conferir **onde o foco está**
+  assim que o menu abre; 4) tabular **item por item até passar do último**;
+  5) do primeiro item, dar **Shift+Tab**; 6) fechar com **Esc** e conferir onde
+  o foco parou. Repetir em **Parcelas** e em **Honorários**.
+  Esperado: no passo 3, o foco está **no primeiro item do menu** — não no ⋮ e
+  não na tabela. No passo 4, ao passar do último item o foco **volta para o
+  primeiro**: ele **não vai para a linha de baixo da tabela**, que é
+  exatamente o que acontecia antes. No passo 5, Shift+Tab no primeiro item vai
+  para o **último**. No passo 6, Esc fecha e o foco volta **para o ⋮ que
+  abriu** — com o Tab preso dentro do painel, **Esc é o único caminho de
+  volta**, e se ele falhar a pessoa fica presa.
+  Conferir em **Pagamentos** com um recibo **baixando**: o item "Baixando…"
+  está desabilitado e o Tab **pula por cima dele** — o ciclo não trava.
+  Por que só olho humano: a suíte prova a mecânica (o `preventDefault`, a
+  ordem da chamada de foco, o ciclo nas duas pontas). **Não há DOM em
+  `node --test`**, então que o foco esteja mesmo onde se pensa é coisa de
+  tabular e olhar.
+  Fase de origem: F-1b.3.2
+
+- [x] **184. ⭐ O ⋮ em Clientes, Processos, Documentos e Seções (DEC-047)**
+  **Validado em 21/08/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run seed:fresh`.
+  Passos: abrir as quatro listagens em **1024 px** e em **360 px**. Em cada
+  uma, abrir o menu **⋮** da última coluna e conferir **item a item** contra a
+  tabela abaixo — que é a lista levantada do código **antes** da migração.
+
+  | Listagem | O menu contém, nesta ordem |
+  |---|---|
+  | **Clientes** | "Ver", "Editar", **"Excluir"** (vermelho) |
+  | **Processos** | "Gerenciar", **"Excluir"** (vermelho) |
+  | **Documentos** | "Abrir", "Baixar PDF", "Baixar DOCX", **"Excluir"** (vermelho) |
+  | **Seções** | "Ver", "Editar", **"Desativar"** (vermelho) |
+
+  Esperado: **nenhuma ação se perdeu** e nenhuma mudou de efeito. Em
+  particular: "Ver" de **Seções** abre o **modal de pré-visualização** (não
+  navega); "Gerenciar" de **Processos** leva ao detalhe, com o mesmo nome de
+  antes; "Baixar PDF" e "Baixar DOCX" **baixam o arquivo** — os ícones saíram
+  de propósito, porque dentro do menu o item é uma linha de texto e o rótulo
+  por extenso diz mais que um ícone de 13 px.
+  Conferir o estado de download: clicando "Baixar PDF", o item vira
+  **"Baixando…"** e fica **desabilitado** até terminar.
+  Conferir que **"Desativar"** de Seções continua **desativando** e não
+  apagando — o verbo não mudou junto com a forma.
+  Conferir em **360 px** que o painel **não sai da tela** nas quatro (é a
+  DEC-046 valendo para as listagens novas) e que a coluna de ações encolheu
+  para a largura de **um botão**.
+  Por que só olho humano: a suíte prova que as sete listagens renderizam
+  `ActionMenu`, que nenhuma tem botão solto e que cada rótulo esperado está no
+  arquivo. O que ela **não** prova é que o clique no item ainda faz o que
+  fazia — que a rota é a mesma, que o modal abre, que o arquivo baixa.
+  Fase de origem: F-1b.3.2
 
 
 ## Automatizado
