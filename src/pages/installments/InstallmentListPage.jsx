@@ -18,6 +18,7 @@ import Loading from '../../components/common/Loading';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { STATUS_PARCELA_OPTIONS, labelDe } from '../../utils/enums';
 import '../../styles/modules.css';
+import { rotuloDaParcela } from '../../components/financeiro/installmentLabel';
 
 const POR_PAGINA = 20;
 
@@ -237,7 +238,18 @@ function InstallmentListPage({ embedded = false }) {
                       </Link>
                     ) : '—'}
                   </td>
-                  <td className="cell-num">{inst.numeroParcela}</td>
+                  {/* DEC-048: a coluna deixou de ser o ordinal nu. "Parcela 3"
+                      de um plano de três é a primeira, e era o que esta coluna
+                      dizia depois de um reparcelamento. O `totalNoPlano` vem
+                      do backend porque esta listagem atravessa honorários —
+                      contar o plano aqui daria o tamanho da PÁGINA. */}
+                  <td className="cell-num">
+                    {rotuloDaParcela({
+                      numeroParcela: inst.numeroParcela,
+                      totalParcelas: inst.totalParcelas ?? null,
+                      totalNoPlanoVigente: inst.totalNoPlano ?? null
+                    })}
+                  </td>
                   <td className="cell-num">{formatCurrency(inst.valor)}</td>
                   {/* `valorPago` continua sendo o campo, e continua somente
                       leitura — o que mudou na F-1a é a FONTE: soma das
@@ -262,7 +274,7 @@ function InstallmentListPage({ embedded = false }) {
                       <span className="acao-indisponivel">Reparcelada</span>
                     ) : (
                       <ActionMenu
-                        rotulo={`Ações da parcela ${inst.numeroParcela}`}
+                        rotulo={`Ações da ${rotuloDaParcela({ numeroParcela: inst.numeroParcela, totalParcelas: inst.totalParcelas ?? null, totalNoPlanoVigente: inst.totalNoPlano ?? null }).toLowerCase()}`}
                         itens={[
                           { rotulo: 'Editar', to: `/dashboard/parcelas/editar/${inst._id}` },
                           {

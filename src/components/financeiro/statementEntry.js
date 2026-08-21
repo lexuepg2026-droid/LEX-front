@@ -95,10 +95,22 @@ export const tomDoEvento = (tipo) => TOM[tipo] ?? 'neutro';
 export const temValor = (evento) =>
   evento?.valor !== null && evento?.valor !== undefined;
 
-const parcelaEscrita = (evento) =>
-  evento?.numeroParcela !== null && evento?.numeroParcela !== undefined
+// A parcela, escrita para caber no meio de frase.
+//
+// ── DEC-048: o backend passou a mandar a referência pronta ───────────────
+// "parcela 1 de 3, vencendo 15/09/2026" — e ela vem de lá porque só o backend
+// sabe o "de N" congelado de cada geração. Depois da renumeração existem duas
+// parcelas nº 1 no mesmo honorário, e o ordinal nu deixou de identificar
+// qualquer coisa.
+//
+// O `numeroParcela` continua sendo o retorno quando `referencia` não veio —
+// resposta de uma versão anterior da API, que a tela não pode quebrar.
+export const parcelaDoEvento = (evento) => {
+  if (evento?.referencia) return evento.referencia;
+  return evento?.numeroParcela !== null && evento?.numeroParcela !== undefined
     ? `parcela ${evento.numeroParcela}`
     : 'uma parcela que não está mais na lista';
+};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // A REFERÊNCIA CURTA DO PAGAMENTO — DEC-044, item 3, revisto pela DEC-045
@@ -232,8 +244,8 @@ export const vinculoDoEvento = (evento) => {
       // por que um dinheiro de meses atrás encostou numa parcela de hoje.
       const origem =
         evento.origem === 'saldoAdiantado'
-          ? `De saldo adiantado, aplicado na ${parcelaEscrita(evento)}.`
-          : `Do pagamento de ${pagamentoEscrito(evento)}, aplicado na ${parcelaEscrita(evento)}.`;
+          ? `De saldo adiantado, aplicado na ${parcelaDoEvento(evento)}.`
+          : `Do pagamento de ${pagamentoEscrito(evento)}, aplicado na ${parcelaDoEvento(evento)}.`;
 
       // ── DEC-044 ────────────────────────────────────────────────────────
       // A frase da linha desfeita vem PRIMEIRO na ordem de checagem porque é a
@@ -273,7 +285,7 @@ export const vinculoDoEvento = (evento) => {
       // DEC-044: quando esse estorno foi ANULADO depois, o dinheiro que esta
       // linha tirou já voltou. Sem a ressalva, quem lê subtrai duas vezes.
       return (
-        `Saiu da ${parcelaEscrita(evento)} por estorno` +
+        `Saiu da ${parcelaDoEvento(evento)} por estorno` +
         (evento.motivo ? `: ${evento.motivo}` : '') +
         (evento.estornoAnulado
           ? ' (este estorno foi anulado depois: o valor voltou e foi realocado).'
