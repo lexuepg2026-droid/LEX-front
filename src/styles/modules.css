@@ -215,6 +215,45 @@
    `title` com o texto inteiro) — nunca a que carrega número. */
 .col-parcela { width: 160px; }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   REGISTRO DESATIVADO — a linha que continua na tabela (DEC-052)
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Até a F-2b um registro desativado sumia das listagens e não havia como
+   reativá-lo pela interface — um cliente desativado por engano ficava
+   desativado para sempre. Com o filtro de situação, ativos e desativados podem
+   dividir a mesma tabela, e aí a diferença precisa ser VISÍVEL.
+
+   Duas marcas, e as duas são necessárias:
+
+   - a **tag** diz o estado em palavra. Cor sozinha não serve: é a única pista
+     para quem não distingue matizes, e some numa impressão em preto e branco;
+   - o **esmaecimento** dá a leitura periférica, para a advogada varrer a
+     tabela sem ler cada tag.
+
+   O esmaecimento é discreto de propósito. Um cinza forte demais faria a linha
+   parecer desabilitada — e ela não é: o menu ⋮ dela continua funcionando, e é
+   justamente lá que mora o "Reativar". */
+.linha-desativada {
+  opacity: 0.62;
+}
+
+.tag-desativado {
+  display: inline-block;
+  margin-right: var(--space-2);
+  padding: 1px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-secondary);
+  /* A tag não encolhe nem quebra: ela é curta e precisa continuar legível numa
+     célula que já trunca o título ao lado. */
+  white-space: nowrap;
+}
+
 /* A coluna de ações é dimensionada pela FILEIRA DE BOTÕES, não pelo título.
    Estreitá-la para caber mais texto é o que reintroduz a sobreposição — os
    botões não encolhem, eles escapam. (Histórico: até a DEC-047 havia uma

@@ -621,7 +621,7 @@ relativos (`'./enums.js'`): o Vite resolve sem ela, `node --test` não.
 > lista pendente enquanto o achado estiver aberto; os dois se referem um ao
 > outro de propósito.
 
-### V-2 — 401 de senha atual incorreta DERRUBA a sessão · **ALTA**
+### V-2 — 401 de senha atual incorreta DERRUBA a sessão · ✅ **FECHADO (F-2a/F-2b)**
 
 **Sessão de 17/08/2026, passo 12.** Trocar a senha no Perfil informando a senha
 atual **errada** leva a usuária para a tela de login, em vez de mostrar o erro
@@ -653,10 +653,16 @@ interceptor ficou trivialmente correto — desloga em 401 e **não conhece rota
 nenhuma**. Os dois testes de URL que ele tinha saíram, e no lugar entrou uma
 pergunta sobre estado: *só se desloga quem estava logado*.
 
-**CONTINUA ABERTO nesta lista**, pela regra do topo desta seção: achado sai
-quando o **passo for revalidado**, não quando o código for alterado. O passo
-**191** do roteiro é o que exercita exatamente este caminho, e o **12** (que
-reprovou) espera por ele.
+**✅ FECHADO em 21/08/2026.** O passo **191** — que exercita exatamente este
+caminho, senha atual errada com a advogada continuando logada — foi executado
+pelo Daniel e **passou**. Reportado **sem capturas**, e isso fica registrado no
+próprio passo: um achado fechado por relato verbal tem peso menor que um fechado
+com evidência anexa, e quem reabrir a discussão precisa saber disso.
+
+**O passo 12 continua pendente**, e não é contradição: ele cobre mais que o V-2
+— a troca de senha ponta a ponta, com logout e login pela senha nova —, e essa
+parte ainda não foi olhada. O achado era sobre o 401 que deslogava; essa parte
+está resolvida e conferida.
 
 ### V-1 — campo de e-mail não é destacado no cadastro duplicado · MÉDIA
 
@@ -2560,41 +2566,135 @@ não tem onde ler a conta.
 
 ---
 
-## O que fica para adiante (atualizado em 21/08/2026 — depois da F-2a)
+## DEC-052 (frontend) — reativar sem adivinhar (F-2b)
+
+### As duas ações são mutuamente exclusivas
+
+"Desativar" e "Reativar" vivem no mesmo lugar do menu **⋮** (DEC-047), e
+**aparece só a que o estado do registro permite** — `ativo === false` decide.
+Mostrar as duas ofereceria, em metade dos casos, uma ação que o backend
+responde **404**.
+
+**"Excluir" saiu** das listagens de Cliente e de Processo. A ação sempre foi
+soft delete; enquanto não havia volta, o nome era uma imprecisão tolerável. Com
+a reativação existindo ele **mente** — e o modal ainda prometia que a ação *"não
+pode ser desfeita"*, o que virou falso. Prometer irreversibilidade numa ação
+reversível faz a advogada **evitar uma operação segura**.
+
+As outras quatro listagens continuam "Excluir": elas não ganharam reativação
+nesta fase, e renomear uma ação cuja volta não existe seria trocar uma
+imprecisão por outra.
+
+**"Reativar" NÃO é destrutivo.** Pintá-lo de vermelho ensinaria a advogada a
+hesitar diante da ação que conserta o engano.
+
+### A contagem vem ANTES da confirmação
+
+O modal do processo só abre **depois** que o servidor diz quantos vínculos estão
+em jogo (`GET /processes/:id/activation-preview`). Abrir primeiro e preencher o
+número depois faria a frase mudar debaixo dos olhos de quem já está lendo.
+
+É a mesma regra do **modal de estorno** (passo 161): a advogada precisa saber o
+tamanho do efeito **antes** de causá-lo. Uma confirmação que não diz o que vai
+acontecer não é confirmação — é um "tem certeza?" que ninguém lê.
+
+O cliente **não** consulta preview: ele não cascateia (`deleteClient` só aceita
+desativar quem não participa de processo ativo), então não há número a buscar.
+
+### As frases são função pura
+
+`utils/activationMessages.js`. Texto escrito duas vezes diverge na primeira
+revisão de redação — e aqui divergir significa **uma tela prometer que os
+processos voltam e a outra dizer que não**.
+
+Três coisas que as frases carregam, e cada uma resolve um mal-entendido:
+
+| A frase diz | Sem ela |
+|---|---|
+| **quantos** vínculos caem / voltam | a advogada confirma sem saber o tamanho do efeito |
+| que os **removidos à mão não voltam** | "voltam 2" parece errado para quem lembra que havia 3 |
+| que reativar cliente **não** reativa os processos | ela reativa o cliente, presume que voltou tudo, e só descobre o contrário quando for procurar um processo |
+
+Singular e plural são tratados: nada de `1 participante(s)`, que denuncia que
+ninguém olhou a frase. E com zero participantes a frase **não promete gente que
+não existe** — a promessa de que "eles voltam" ficaria sem sujeito.
+
+### O filtro de situação, sem o qual nada disso teria tela
+
+As listagens de Cliente e Processo filtravam `ativo: true` **sem alternativa**:
+um registro desativado não aparecia em lugar nenhum, e **um menu com "Reativar"
+não teria linha onde existir**. Um cliente desativado por engano ficava
+desativado para sempre.
+
+Cada uma ganhou um seletor: **Somente ativos** (o padrão, inalterado), Somente
+desativados, Ativos e desativados. **Quem não mexer no seletor vê a listagem de
+sempre.**
+
+**Não confundir com o filtro de `status` do processo**, que fica ao lado:
+`status` é o andamento jurídico ("encerrado" continua sendo um processo vivo no
+cadastro); `situacao` é se o **registro** existe para o sistema.
+
+### A linha desativada leva DUAS marcas
+
+`.tag-desativado` (texto) e `.linha-desativada` (esmaecimento), e as duas são
+necessárias:
+
+- a **tag** diz o estado em palavra. **Cor sozinha não serve**: é a única pista
+  para quem não distingue matizes, e some numa impressão em preto e branco;
+- o **esmaecimento** dá a leitura periférica, para varrer a tabela sem ler cada
+  tag.
+
+O esmaecimento é discreto de propósito. Um cinza forte demais faria a linha
+parecer **desabilitada** — e ela não é: o menu ⋮ dela continua funcionando, e é
+justamente lá que mora o "Reativar".
+
+### Recarregar em vez de mexer na lista em memória
+
+Depois de desativar ou reativar, a tela **refaz a consulta** em vez de filtrar o
+array local. O registro pode ou não continuar visível conforme o filtro de
+situação em vigor, e adivinhar isso na tela **duplicaria a regra do filtro** —
+que já mora no backend.
+
+---
+
+## O que fica para adiante (atualizado em 22/08/2026 — depois da F-2b)
 
 **✅ F-2a — FEITA.** O **V-2** morreu (DEC-050), as gerações se agruparam
 (DEC-051), a coluna do rótulo parou de truncar, e o seed passou a gravar o plano
 inteiro — `npm run seed:fresh` sozinho voltou a bastar.
 
-**A próxima fase é a F-2b**, e o que ela tem depende de gente:
+**✅ F-2b — FEITA.** A **DEC-052** desbloqueou a reativação: a cascata passou a
+**registrar** o que derrubou, e a reativação restaura só isso. Junto vieram o
+filtro de situação nas duas listagens (sem ele os desativados não apareciam em
+lugar nenhum), a troca de "Excluir" por "Desativar" nas duas, e os modais que
+dizem a contagem antes de confirmar.
+
+Do lado do backend, a mesma fase fechou as duas pendências de operação: os tetos
+de rate limit por ambiente saíram de uma cópia só, e os comandos destrutivos
+passaram a **interromper** pedindo confirmação contra banco não-local.
+
+**A próxima fase é a F-2c**, e ela continua dependendo de gente:
 
 - **status do processo — BLOQUEADO pelo vocabulário da Laís.** Não se inventa
   enum que ela vai trocar: os valores viram dado gravado, tela, filtro e
   histórico de→para. **As sete perguntas já estão com o Daniel.**
-- **cor por status** e **histórico de→para**, que dependem do mesmo vocabulário.
-- **reativação de cliente e de processo** (achado B2): desativar existe,
-  reativar não. Era a **Parte 4 da F-2a**, e o portão de escopo mandou parar —
-  **mas não por falta de espaço: por um achado no backend.**
-
-  Desativar um processo **cascateia** para os vínculos `processo_clientes`, e a
-  cascata **não registra o que fez**: remover um participante de propósito grava
-  o mesmo `ativo: false`. Depois do fato, nada distingue os dois — então
-  reativar ou **ressuscita participantes removidos de propósito**, ou devolve um
-  processo **sem participante nenhum** (estado que o sistema declara impossível,
-  com a geração de documento falhando em 422). O detalhe completo está no
-  CLAUDE.md do **backend**; é decisão de modelo e precisa ser tomada antes de a
-  F-2b começar.
-
-  Do lado da tela, o que já está decidido e não mudou: a ação **"Reativar"** vai
-  no menu **⋮** (DEC-047), aparecendo **só** em registro desativado — e
-  "Desativar" some, no mesmo lugar. A reativação **não** ressuscita nada em
-  cascata: reativar cliente **não** reativa os processos dele, **e a tela
-  precisa dizer isso** — senão a advogada reativa o cliente e presume que os
-  processos voltaram.
+- **cor por status** e **histórico `de → para`**, que dependem do mesmo
+  vocabulário. O histórico de status é **separado** do `historicoAtivacao` da
+  DEC-052, de propósito: status é o andamento jurídico (um processo
+  "arquivado" continua **ativo**), ativação é se o registro existe para o
+  sistema.
 
 **Suítes na F-2a:** frontend **566** testes (20 novos em
-`tests/regressions/f2a.test.js`), backend **508** (22 novos). Zero skip, zero
-todo nos dois.
+`tests/regressions/f2a.test.js`), backend **508** (22 novos).
+
+**Suítes na F-2b:** frontend **583** testes (+17 em
+`tests/regressions/dec052.test.js`), backend **549** (+41). Zero skip, zero todo
+nos dois.
+
+**Sobre o "zero skip" do frontend:** ele depende de `dist/` existir. O teste
+"o build separa o chunk do portal" é condicional ao build, e num clone limpo a
+suíte reporta **1 skip** sem que nada esteja errado. Rode `npm run build` antes
+se quiser o 0/0.
 
 ---
 

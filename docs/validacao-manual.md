@@ -1636,117 +1636,182 @@ Dados que vários passos usam:
 > **Pré-condição de todos:** `npm run seed:fresh`. **Uma linha só** — ver a nota
 > da seção 27.
 
-- [ ] **191. ⭐ 🚨 A senha atual errada NÃO desloga (V-2, DEC-050)**
-  Pré-condição: logada, em qualquer tela interna.
-  **É o passo que a fase existe para ter.** O defeito expulsava a advogada do
-  sistema por um erro de digitação.
-  **▶ ONDE IR.** Menu do usuário → **Meu Perfil** (`/dashboard/perfil`) → rolar
-  até o bloco **Segurança**.
-  Passos: 1) preencher **senha atual** com algo **errado** de propósito (ex.:
-  `SenhaQueNaoEhAMinha1`); 2) preencher a nova senha e a confirmação com algo
-  válido (ex.: `Lex654321`); 3) enviar.
-  Esperado: a mensagem **"Senha atual incorreta"** aparece **ao lado dos
-  campos**, no próprio bloco. E, o que importa:
-  **a advogada CONTINUA na tela do perfil, logada.**
-  **Não pode** haver toast "Sessão expirada", **não pode** ir para `/login`, e
-  o cabeçalho **não pode** perder o nome.
-  Conferir que a sessão está mesmo viva: sem recarregar, navegar para
-  **Clientes** pelo menu lateral. A lista precisa carregar normalmente — se ela
-  vier vazia ou jogar para o login, a sessão caiu e o defeito voltou.
-  Conferir depois que **nada foi trocado**: voltar ao perfil e trocar a senha
-  **com a senha atual certa** (`Lex123456` → `Lex654321`), sair, entrar com a
-  nova, e voltar a senha para `Lex123456`.
-  Por que só olho humano: a suíte prova que a rota responde **422** e que uma
-  requisição autenticada logo depois funciona. O que ela não prova é que a
-  **tela** não se redesenha — o redirecionamento era `window.location.href`,
-  uma navegação de página inteira, e isso não existe em `node --test`.
-  Cruzar com o passo **12**, que REPROVOU em 17/08/2026 por este defeito.
-  Fase de origem: F-2a
+> **Executada em 21/08/2026 pelo Daniel. Os cinco passos PASSARAM** e estão em
+> `## Validado`.
+>
+> **Reportado SEM CAPTURAS.** Fica registrado no corpo de cada passo, e não só
+> aqui: um passo arquivado sem evidência precisa dizer que foi assim, para quem
+> reabrir a discussão daqui a três meses saber o peso desta validação. Os cinco
+> foram conferidos por olho e relatados verbalmente — é o mesmo peso das
+> sessões anteriores, e menos que o de um passo com imagem anexada.
+>
+> **O achado V-2 fecha aqui.** O passo **191** exercitou exatamente o caminho
+> que o derrubava — senha atual errada, e a advogada continua logada — e
+> passou. O passo **12**, que foi quem reprovou em 17/08/2026, **continua
+> pendente**: ele cobre mais que o V-2 (a troca de senha ponta a ponta, com
+> logout e login pela senha nova), e essa parte ainda não foi olhada.
 
-- [ ] **192. O login com senha errada continua mostrando o erro, sem laço**
-  Pré-condição: **deslogada**.
-  O contrapeso do 191: o 401 do login **continua sendo 401**, porque ali não há
-  sessão — é o pedido para criar uma. O que não pode acontecer é o interceptor
-  reagir a ele.
-  **▶ ONDE IR.** `/login`.
-  Passos: entrar com `demo@lex.dev` e uma senha errada.
-  Esperado: mensagem **"Credenciais inválidas"** no formulário. A tela **não
-  pisca**, **não recarrega** e **não** mostra o toast "Sessão expirada".
-  Conferir também em `/registrar`: abrir a tela **deslogada** e conferir que ela
-  **fica** — o cadastro não pode ser interrompido por um redirecionamento.
-  (Era o risco de tirar a exceção de rota do interceptor: a sondagem de
-  `/auth/me` na subida do app devolve 401 para quem não entrou.)
-  Por que só olho humano: a suíte prova a função de decisão com `(401, false)`.
-  Que a **tela** não se mexa é outra coisa.
-  Fase de origem: F-2a
+---
 
-- [ ] **193. O rótulo inteiro da parcela na listagem, em 1024 px e em 360 px**
+## 30. Fase F-2b — reativar sem adivinhar, e o pré-voo da demonstração
+
+> Numeração contínua a partir do 195. Cinco passos novos: **196 a 200**.
+>
+> **O achado que esta fase resolve.** Desativar um processo derruba os vínculos
+> dele junto — e até a F-2b essa cascata gravava **o mesmo `ativo: false`** que
+> uma remoção manual grava. Depois do fato, os dois estados eram
+> **indistinguíveis**, e reativar não tinha saída correta: ressuscitar todos
+> devolve gente que a advogada tirou de propósito; não ressuscitar nenhum
+> devolve um processo vazio.
+>
+> Era isso que bloqueava a Parte 4 da F-2a. A **DEC-052** resolve registrando:
+> a cascata marca o que derrubou, e a reativação restaura só isso.
+>
+> **A regra que a fase repete pela terceira vez:** *estado passado não se
+> infere, se registra.* O estorno guarda que desfez, a linha do extrato que
+> deixou de valer DIZ que deixou (DEC-044), e agora a cascata marca o que
+> derrubou.
+>
+> **Onde as ações estão.** Menu **⋮** das listagens de **Clientes** e de
+> **Processos** (DEC-047). "Desativar" e "Reativar" são **mutuamente
+> exclusivas**: aparece a que o estado do registro permite. **"Excluir" não
+> existe mais nessas duas listagens** — a ação sempre foi soft delete, e com a
+> volta existindo o nome antigo mentia.
+>
+> **Como chegar a um registro desativado.** As duas listagens ganharam um
+> seletor de **situação** (Somente ativos / Somente desativados / Ativos e
+> desativados), ao lado da busca. Sem ele os desativados não apareciam em lugar
+> nenhum — e um menu com "Reativar" não teria linha onde existir. **O padrão
+> continua sendo "Somente ativos"**: quem não mexer no seletor vê a listagem de
+> sempre.
+>
+> **Pré-condição de 196 a 199:** `npm run seed:fresh`.
+
+- [ ] **196. ⭐ Desativar um processo diz QUANTOS participantes caem junto**
   Pré-condição: `npm run seed:fresh`.
-  **▶ ONDE IR.** Menu lateral → **Financeiro** → aba **Cobranças previstas**
-  (é a listagem de Parcelas embutida; a tela é a mesma).
-  **O defeito:** a coluna **"Nº Parcela"** exibia **"Parce…"**. A DEC-048
-  alargou o texto de "1" para "Parcela 1 de 3" e a coluna continuou com a
-  largura de um número (80 px).
-  Passos: abrir em **1024 px** e depois em **360 px**.
-  Esperado: o rótulo aparece **inteiro** — "Parcela 1 de 3", "Parcela 2 de 3" —
-  sem reticências, **em uma linha só**, nas duas larguras. Em 360 px a tabela
-  **rola de lado** dentro do próprio quadro; isso é o esperado, e é como as
-  demais colunas já se comportam.
-  **Conferir que a largura NÃO saiu da coluna de dinheiro** (regressão da
-  F-1b.2): "Valor", "Recebido" e "Em aberto" continuam mostrando o valor
-  inteiro, sem "R$ 3.50…". É o ponto mais importante do passo — o defeito que a
-  F-1b.2 corrigiu era exatamente esse, e a correção de agora alarga uma coluna
-  vizinha.
-  Conferir a mesma coisa em **Parcelas** pelo menu direto, se houver caminho.
-  Por que só olho humano: a suíte prova que `.col-parcela` tem 160 px e que a
-  tela a usa. **Largura em pixel não é o mesmo que texto que coube** — a fonte
-  real do navegador é que decide, e é isso que se olha.
-  Fase de origem: F-2a
+  **▶ ONDE IR.** Menu lateral → **Processos** → escolher um processo **com mais
+  de um participante**. No seed, *Inventário e Partilha de Bens* (cliente
+  **Maria Aparecida Costa**) tem litisconsórcio; confira na coluna **Cliente**,
+  que mostra "Nome +N" quando há mais de um.
+  Passos: 1) abrir o menu **⋮** da linha; 2) escolher **Desativar**; 3) **ler o
+  modal antes de confirmar**; 4) cancelar; 5) repetir e confirmar.
+  Esperado no modal: ele diz **quantos participantes saem junto**, com o número
+  certo — conferir contra a coluna "Cliente" (o "+N" mais um). Diz também que
+  **nada é apagado** e que dá para reativar depois.
+  **O que NÃO pode aparecer:** a frase *"esta ação não pode ser desfeita"*. Ela
+  existia até a F-2a e virou mentira quando a reativação passou a existir —
+  prometer irreversibilidade numa ação reversível faz a advogada evitar uma
+  operação segura.
+  Conferir que o menu ⋮ oferece **"Desativar"** e **não "Excluir"**.
+  Depois de confirmar: o processo **some da listagem** (o filtro está em
+  "Somente ativos") e o toast diz que dá para reativar.
+  Por que só olho humano: a suíte prova a contagem e prova a frase. O que ela
+  não prova é se a advogada **lê o número a tempo** — o modal é a última tela
+  antes de uma operação que derruba vários registros.
+  Fase de origem: F-2b
 
-- [ ] **194. ⭐ As gerações agrupadas, o plano vigente primeiro (DEC-051)**
-  Pré-condição: o passo **187** já executado, ou qualquer honorário com **três
-  gerações** de parcelas. Se não houver, o alvo do passo 187 (*Honorários
-  advocatícios — fase inicial*) é reparcelado **duas vezes** e serve.
-  **▶ ONDE IR.** Menu lateral → **Honorários** → abrir o honorário reparcelado
-  duas vezes → bloco **Parcelas**.
-  **O defeito:** as parcelas vinham ordenadas por **número**, e com a DEC-048
-  (cada plano numera a partir de 1) as gerações se **intercalavam** — três
-  linhas dizendo "Parcela 1", e a advogada caçando quais valem.
-  Esperado: as parcelas aparecem em **grupos**, com um título em cima de cada:
-  **"Plano vigente"** primeiro, e depois **"Substituídas pelo reparcelamento de
-  DD/MM/AAAA"**, um grupo por geração, **da mais antiga para a mais recente**.
-  Dentro de cada grupo, ordem numérica.
-  **Conferir que nada sumiu:** as parcelas canceladas **continuam visíveis**,
-  com o rótulo congelado ("de 2" no plano de 2) e o badge **"Reparcelada"**, como
-  a DEC-048 exige. Contar: o número de linhas precisa bater com a contagem que
-  o título do bloco **Parcelas** exibe.
-  Conferir que a nota "Substituída pelo reparcelamento…" **não se repete** em
-  cada linha — ela subiu para o título do grupo, que é de quem ela sempre foi.
-  Conferir num honorário **nunca reparcelado** (ex.: *Assessoria tributária*
-  antes de qualquer operação) que **não aparece título nenhum**: um título sobre
-  uma lista única é ruído.
-  Por que só olho humano: a suíte prova a ordem com três gerações, em função
-  pura. O que ela não prova é se a advogada **acha** o plano vigente ao abrir a
-  página — que é a pergunta que a DEC-051 existe para responder.
-  Fase de origem: F-2a
+- [ ] **197. ⭐ 🚨 Reativar devolve SÓ quem a cascata derrubou**
+  Pré-condição: `npm run seed:fresh`. **É o passo que a fase existe para ter.**
+  **▶ ONDE IR.** Menu lateral → **Processos** → o mesmo processo com
+  litisconsórcio do passo 196 (se já o desativou, reative-o primeiro, ou use
+  outro com mais de um participante).
+  **A ordem importa e é o ponto do passo.** Sem remover um participante à mão
+  **antes**, "restaurar tudo" e "restaurar só a cascata" dão o mesmo resultado —
+  e o passo passaria em cima do defeito.
+  Passos:
+  1) abrir **Gerenciar** → aba/bloco de **participantes**;
+  2) **remover à mão** um participante que **não** seja o principal — anote o
+     nome dele;
+  3) voltar à listagem e **desativar** o processo (passo 196);
+  4) trocar o seletor de situação para **Somente desativados**;
+  5) no ⋮ da linha, escolher **Reativar**;
+  6) **ler o modal**: ele diz quantos voltam, e que os removidos à mão **não**
+     voltam;
+  7) confirmar;
+  8) abrir **Gerenciar** → participantes.
+  Esperado: os participantes que caíram pela desativação **voltaram**. O que
+  você removeu à mão no passo 2 **NÃO voltou** — e é essa ausência que prova a
+  DEC-052.
+  **Se ele voltar, PARE** — a reativação está restaurando tudo, e a advogada
+  perdeu a decisão que tomou de propósito.
+  Conferir também o número do modal do passo 6: ele conta **só** os da cascata,
+  então é **menor** que o total de participantes desativados.
+  Por que só olho humano: a suíte cobre exatamente este cenário. O que ela não
+  cobre é o **caminho da interface** — que a remoção manual e a desativação
+  sejam alcançáveis nesta ordem, e que a advogada consiga conferir o resultado
+  sem ir ao banco.
+  Fase de origem: F-2b
 
-- [ ] **195. O seed sozinho basta — o rótulo nasce completo, sem migração**
-  Pré-condição: nenhuma. **Este passo É a pré-condição sendo testada.**
-  Passos: 1) rodar **`npm run seed:fresh`** e **mais nada** (em particular,
-  **não** rodar `node scripts/migrarTotalParcelas.js`); 2) abrir **Financeiro →
-  Cobranças previstas**; 3) abrir também um honorário qualquer com mais de uma
-  parcela.
-  Esperado: os rótulos já saem **"Parcela 1 de 3"**, "Parcela 2 de 3" etc. —
-  completos, sem passo extra.
-  **Conferir o determinismo**, que é o motivo de o campo ser gravado: abrir um
-  honorário de 3 parcelas, **acrescentar uma quarta parcela**, e conferir que as
-  **três primeiras continuam dizendo "de 3"**. Antes da F-2a elas passariam a
-  dizer "de 4", porque o número era calculado na leitura — e o passo seguinte do
-  roteiro encontraria um estado diferente do prometido.
-  Por que só olho humano: a suíte prova `criarPlanoDeParcelas` e prova que o
-  seed o usa. Rodar o seed **de verdade** ela não faz — ele escreve no banco de
-  **desenvolvimento**, que é remoto e compartilhado.
-  Fase de origem: F-2a
+- [ ] **198. O ciclo: desativar → reativar → desativar → reativar**
+  Pré-condição: o passo **197** executado, com o participante removido à mão
+  ainda fora.
+  **É o caso que expõe marca de cascata não limpa.** Se a reativação não
+  apagasse a marca, o vínculo restaurado a carregaria para sempre — e uma
+  remoção manual posterior dele o traria de volta sozinho na reativação
+  seguinte.
+  Passos: com o mesmo processo, repetir **desativar** e **reativar** mais uma
+  vez inteira, e conferir os participantes ao fim.
+  Esperado: o resultado do **segundo** ciclo é idêntico ao do primeiro — os
+  mesmos voltam, e o removido à mão **continua fora**. Nenhum participante
+  aparece a mais.
+  Conferir também que a contagem do modal é a **mesma** nas duas voltas.
+  Por que só olho humano: a suíte trava o ciclo. O que ela não trava é o
+  acúmulo de estado na TELA — a listagem recarregada, o seletor de situação
+  mantendo o valor, o menu ⋮ oferecendo a ação certa depois de cada volta.
+  Fase de origem: F-2b
+
+- [ ] **199. ⭐ Reativar um cliente NÃO reativa os processos dele**
+  Pré-condição: `npm run seed:fresh`.
+  **A regra que a tela precisa dizer em voz alta**, senão a advogada reativa o
+  cliente e presume que voltou tudo.
+  **▶ ONDE IR.** Menu lateral → **Processos** e depois **Clientes**.
+  Passos:
+  1) escolher um cliente que tenha **exatamente um** processo — no seed, *João
+     Paulo Oliveira* (*Execução Fiscal – IPTU*) serve;
+  2) **desativar o processo** dele (a desativação do cliente é recusada
+     enquanto houver processo ativo — conferir que essa recusa acontece e que a
+     mensagem explica o motivo);
+  3) ir em **Clientes** e **desativar o cliente**;
+  4) trocar o seletor para **Somente desativados** e **reativar o cliente**;
+  5) **ler o modal antes de confirmar**;
+  6) ir em **Processos**, seletor em **Ativos e desativados**.
+  Esperado no modal do passo 5: ele diz, com todas as letras, que **os
+  processos NÃO voltam** e que cada processo se reativa por si.
+  Esperado no passo 6: o cliente está **ativo**; o processo dele continua
+  **desativado**, com a tag **"Desativado"** e a linha esmaecida.
+  Conferir que a linha desativada é distinguível **sem depender de cor**: a tag
+  tem texto, e é ela que sustenta a leitura numa impressão em preto e branco ou
+  para quem não distingue matizes.
+  Por que só olho humano: a suíte prova que a API não cascateia e que a frase
+  existe. O que ela não prova é se a advogada **sai da tela sabendo** que
+  precisa reativar o processo à parte — que é a pergunta inteira deste passo.
+  Fase de origem: F-2b
+
+- [ ] **200. ⭐ 🚨 O comando destrutivo PARA e pergunta, dizendo o nome do banco**
+  Pré-condição: nenhuma. **Fazer isto antes de confiar em qualquer `seed:fresh`
+  daqui em diante.**
+  **O defeito:** `npm run seed:fresh` derruba treze coleções e
+  `node scripts/migrarTotalParcelas.js` troca um índice único — os dois contra o
+  banco de desenvolvimento, que é **Atlas remoto e compartilhado**. Só o banco
+  de teste tinha guarda, e **já aconteceu de um `seed:fresh` apagar dados no
+  meio de uma validação**.
+  Passos: 1) no terminal do backend, rodar **`npm run seed:fresh`**; 2) **ler o
+  aviso**; 3) responder **qualquer coisa errada** (por exemplo `s`, ou `sim`);
+  4) rodar de novo e responder **o nome do banco** exatamente como exibido.
+  Esperado no passo 2: o comando **PARA** e mostra um aviso que diz o **nome do
+  banco alvo**, que ele **não é local**, e que a operação é destrutiva.
+  **A URI não pode aparecer** — nem inteira, nem mascarada: ela carrega usuário
+  e senha do cluster.
+  Esperado no passo 3: o comando **CANCELA**, dizendo que nada foi alterado. Ir
+  ao sistema e conferir que **os dados continuam lá**.
+  Esperado no passo 4: aí sim ele roda.
+  Conferir também `node scripts/migrarTotalParcelas.js --dry-run`: ele **não**
+  pergunta, porque não escreve nada — é o modo que existe para olhar antes de
+  agir.
+  Por que só olho humano: a suíte prova a classificação local/remoto e prova que
+  os scripts chamam a guarda. **Ela não pode rodar o comando de verdade** — ele
+  escreve no banco de desenvolvimento, que é o que se está protegendo.
+  Fase de origem: F-2b
 
 ## Validado
 
@@ -3626,6 +3691,123 @@ Dados que vários passos usam:
   prova que o campo existe e que a classe é aplicada; que a linha morta **se
   pareça** morta ao lado de uma viva só se vê olhando as duas juntas.
   Fase de origem: F-1c.2
+
+- [x] **191. ⭐ 🚨 A senha atual errada NÃO desloga (V-2, DEC-050)**
+  **Validado em 21/08/2026 pelo Daniel. Passou. Reportado sem capturas.**
+  Pré-condição: logada, em qualquer tela interna.
+  **É o passo que a fase existe para ter.** O defeito expulsava a advogada do
+  sistema por um erro de digitação.
+  **▶ ONDE IR.** Menu do usuário → **Meu Perfil** (`/dashboard/perfil`) → rolar
+  até o bloco **Segurança**.
+  Passos: 1) preencher **senha atual** com algo **errado** de propósito (ex.:
+  `SenhaQueNaoEhAMinha1`); 2) preencher a nova senha e a confirmação com algo
+  válido (ex.: `Lex654321`); 3) enviar.
+  Esperado: a mensagem **"Senha atual incorreta"** aparece **ao lado dos
+  campos**, no próprio bloco. E, o que importa:
+  **a advogada CONTINUA na tela do perfil, logada.**
+  **Não pode** haver toast "Sessão expirada", **não pode** ir para `/login`, e
+  o cabeçalho **não pode** perder o nome.
+  Conferir que a sessão está mesmo viva: sem recarregar, navegar para
+  **Clientes** pelo menu lateral. A lista precisa carregar normalmente — se ela
+  vier vazia ou jogar para o login, a sessão caiu e o defeito voltou.
+  Conferir depois que **nada foi trocado**: voltar ao perfil e trocar a senha
+  **com a senha atual certa** (`Lex123456` → `Lex654321`), sair, entrar com a
+  nova, e voltar a senha para `Lex123456`.
+  Por que só olho humano: a suíte prova que a rota responde **422** e que uma
+  requisição autenticada logo depois funciona. O que ela não prova é que a
+  **tela** não se redesenha — o redirecionamento era `window.location.href`,
+  uma navegação de página inteira, e isso não existe em `node --test`.
+  Cruzar com o passo **12**, que REPROVOU em 17/08/2026 por este defeito.
+  Fase de origem: F-2a
+
+- [x] **192. O login com senha errada continua mostrando o erro, sem laço**
+  **Validado em 21/08/2026 pelo Daniel. Passou. Reportado sem capturas.**
+  Pré-condição: **deslogada**.
+  O contrapeso do 191: o 401 do login **continua sendo 401**, porque ali não há
+  sessão — é o pedido para criar uma. O que não pode acontecer é o interceptor
+  reagir a ele.
+  **▶ ONDE IR.** `/login`.
+  Passos: entrar com `demo@lex.dev` e uma senha errada.
+  Esperado: mensagem **"Credenciais inválidas"** no formulário. A tela **não
+  pisca**, **não recarrega** e **não** mostra o toast "Sessão expirada".
+  Conferir também em `/registrar`: abrir a tela **deslogada** e conferir que ela
+  **fica** — o cadastro não pode ser interrompido por um redirecionamento.
+  (Era o risco de tirar a exceção de rota do interceptor: a sondagem de
+  `/auth/me` na subida do app devolve 401 para quem não entrou.)
+  Por que só olho humano: a suíte prova a função de decisão com `(401, false)`.
+  Que a **tela** não se mexa é outra coisa.
+  Fase de origem: F-2a
+
+- [x] **193. O rótulo inteiro da parcela na listagem, em 1024 px e em 360 px**
+  **Validado em 21/08/2026 pelo Daniel. Passou. Reportado sem capturas.**
+  Pré-condição: `npm run seed:fresh`.
+  **▶ ONDE IR.** Menu lateral → **Financeiro** → aba **Cobranças previstas**
+  (é a listagem de Parcelas embutida; a tela é a mesma).
+  **O defeito:** a coluna **"Nº Parcela"** exibia **"Parce…"**. A DEC-048
+  alargou o texto de "1" para "Parcela 1 de 3" e a coluna continuou com a
+  largura de um número (80 px).
+  Passos: abrir em **1024 px** e depois em **360 px**.
+  Esperado: o rótulo aparece **inteiro** — "Parcela 1 de 3", "Parcela 2 de 3" —
+  sem reticências, **em uma linha só**, nas duas larguras. Em 360 px a tabela
+  **rola de lado** dentro do próprio quadro; isso é o esperado, e é como as
+  demais colunas já se comportam.
+  **Conferir que a largura NÃO saiu da coluna de dinheiro** (regressão da
+  F-1b.2): "Valor", "Recebido" e "Em aberto" continuam mostrando o valor
+  inteiro, sem "R$ 3.50…". É o ponto mais importante do passo — o defeito que a
+  F-1b.2 corrigiu era exatamente esse, e a correção de agora alarga uma coluna
+  vizinha.
+  Conferir a mesma coisa em **Parcelas** pelo menu direto, se houver caminho.
+  Por que só olho humano: a suíte prova que `.col-parcela` tem 160 px e que a
+  tela a usa. **Largura em pixel não é o mesmo que texto que coube** — a fonte
+  real do navegador é que decide, e é isso que se olha.
+  Fase de origem: F-2a
+
+- [x] **194. ⭐ As gerações agrupadas, o plano vigente primeiro (DEC-051)**
+  **Validado em 21/08/2026 pelo Daniel. Passou. Reportado sem capturas.**
+  Pré-condição: o passo **187** já executado, ou qualquer honorário com **três
+  gerações** de parcelas. Se não houver, o alvo do passo 187 (*Honorários
+  advocatícios — fase inicial*) é reparcelado **duas vezes** e serve.
+  **▶ ONDE IR.** Menu lateral → **Honorários** → abrir o honorário reparcelado
+  duas vezes → bloco **Parcelas**.
+  **O defeito:** as parcelas vinham ordenadas por **número**, e com a DEC-048
+  (cada plano numera a partir de 1) as gerações se **intercalavam** — três
+  linhas dizendo "Parcela 1", e a advogada caçando quais valem.
+  Esperado: as parcelas aparecem em **grupos**, com um título em cima de cada:
+  **"Plano vigente"** primeiro, e depois **"Substituídas pelo reparcelamento de
+  DD/MM/AAAA"**, um grupo por geração, **da mais antiga para a mais recente**.
+  Dentro de cada grupo, ordem numérica.
+  **Conferir que nada sumiu:** as parcelas canceladas **continuam visíveis**,
+  com o rótulo congelado ("de 2" no plano de 2) e o badge **"Reparcelada"**, como
+  a DEC-048 exige. Contar: o número de linhas precisa bater com a contagem que
+  o título do bloco **Parcelas** exibe.
+  Conferir que a nota "Substituída pelo reparcelamento…" **não se repete** em
+  cada linha — ela subiu para o título do grupo, que é de quem ela sempre foi.
+  Conferir num honorário **nunca reparcelado** (ex.: *Assessoria tributária*
+  antes de qualquer operação) que **não aparece título nenhum**: um título sobre
+  uma lista única é ruído.
+  Por que só olho humano: a suíte prova a ordem com três gerações, em função
+  pura. O que ela não prova é se a advogada **acha** o plano vigente ao abrir a
+  página — que é a pergunta que a DEC-051 existe para responder.
+  Fase de origem: F-2a
+
+- [x] **195. O seed sozinho basta — o rótulo nasce completo, sem migração**
+  **Validado em 21/08/2026 pelo Daniel. Passou. Reportado sem capturas.**
+  Pré-condição: nenhuma. **Este passo É a pré-condição sendo testada.**
+  Passos: 1) rodar **`npm run seed:fresh`** e **mais nada** (em particular,
+  **não** rodar `node scripts/migrarTotalParcelas.js`); 2) abrir **Financeiro →
+  Cobranças previstas**; 3) abrir também um honorário qualquer com mais de uma
+  parcela.
+  Esperado: os rótulos já saem **"Parcela 1 de 3"**, "Parcela 2 de 3" etc. —
+  completos, sem passo extra.
+  **Conferir o determinismo**, que é o motivo de o campo ser gravado: abrir um
+  honorário de 3 parcelas, **acrescentar uma quarta parcela**, e conferir que as
+  **três primeiras continuam dizendo "de 3"**. Antes da F-2a elas passariam a
+  dizer "de 4", porque o número era calculado na leitura — e o passo seguinte do
+  roteiro encontraria um estado diferente do prometido.
+  Por que só olho humano: a suíte prova `criarPlanoDeParcelas` e prova que o
+  seed o usa. Rodar o seed **de verdade** ela não faz — ele escreve no banco de
+  **desenvolvimento**, que é remoto e compartilhado.
+  Fase de origem: F-2a
 
 
 ## Automatizado
