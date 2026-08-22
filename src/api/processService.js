@@ -1,9 +1,12 @@
 import api from './axiosConfig';
 
-const listProcesses = ({ page = 1, limit = 20, busca, status } = {}) => {
+const listProcesses = ({ page = 1, limit = 20, busca, status, situacao } = {}) => {
   const params = { page, limit };
   if (busca) params.busca = busca;
   if (status) params.status = status;
+  // DEC-052: sem `situacao` o backend mantém o padrão de sempre (só ativos).
+  // Não confundir com `status`, que é o andamento jurídico do processo.
+  if (situacao) params.situacao = situacao;
   return api.get('/processes', { params });
 };
 const getProcessById = (id) => api.get(`/processes/${id}`);
@@ -12,6 +15,15 @@ const createProcess = (data) => api.post('/processes', data);
 // alias depreciado, mas não se chama mais daqui.
 const updateProcess = (id, data) => api.patch(`/processes/${id}`, data);
 const deleteProcess = (id) => api.delete(`/processes/${id}`);
+
+// DEC-052 — a volta. Restaura o processo e só os vínculos que a cascata dele
+// derrubou. `PATCH` em sub-rota própria: `ativo` está fora da allowlist de
+// update do backend desde a Fase 4.5.
+const reactivateProcess = (id) => api.patch(`/processes/${id}/reactivate`);
+
+// A contagem que o modal mostra ANTES de confirmar — quantos vínculos caem (se
+// o processo está ativo) ou quantos voltam (se está desativado).
+const getActivationPreview = (id) => api.get(`/processes/${id}/activation-preview`);
 
 // ── Participantes do processo (junção processo × cliente) ───────────────────
 // O processo passou a ter vários clientes, cada um com o seu papel. A criação
@@ -59,6 +71,8 @@ export default {
   createProcess,
   updateProcess,
   deleteProcess,
+  reactivateProcess,
+  getActivationPreview,
   listProcessClientes,
   addProcessCliente,
   updateProcessClientePapel,

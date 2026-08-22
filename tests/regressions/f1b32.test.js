@@ -256,10 +256,19 @@ describe("F-1b.3.2 — DEC-047: o ⋮ em toda listagem", () => {
     }
   });
 
+  // ── Atualizado na F-2b (DEC-052) ──────────────────────────────────────
+  // Cliente e processo trocaram "Excluir" por **"Desativar"**. A ação sempre
+  // foi soft delete; enquanto não havia volta, "Excluir" era uma imprecisão
+  // tolerável. Com a reativação existindo, o nome antigo passou a MENTIR — e o
+  // modal ainda prometia que a ação "não pode ser desfeita", o que virou falso.
+  //
+  // As outras quatro listagens continuam "Excluir"/"Desativar" como estavam:
+  // elas não ganharam reativação nesta fase, e renomear uma ação cuja volta não
+  // existe seria trocar uma imprecisão por outra.
   test("Excluir/Desativar é destrutivo e vem por último", () => {
     const DESTRUTIVO = [
-      ["src/pages/clients/ClientListPage.jsx", "Excluir"],
-      ["src/pages/processes/ProcessListPage.jsx", "Excluir"],
+      ["src/pages/clients/ClientListPage.jsx", "Desativar"],
+      ["src/pages/processes/ProcessListPage.jsx", "Desativar"],
       ["src/pages/documents/DocumentListPage.jsx", "Excluir"],
       ["src/pages/secoes/SecaoListPage.jsx", "Desativar"],
       ["src/pages/installments/InstallmentListPage.jsx", "Excluir"],
@@ -287,8 +296,10 @@ describe("F-1b.3.2 — DEC-047: o ⋮ em toda listagem", () => {
   test("nenhuma ação foi PERDIDA na migração", () => {
     // Item a item, contra a lista levantada do código antes de editar.
     const ESPERADO = {
-      "src/pages/clients/ClientListPage.jsx": ["Ver", "Editar", "Excluir"],
-      "src/pages/processes/ProcessListPage.jsx": ["Gerenciar", "Excluir"],
+      // DEC-052: "Excluir" virou "Desativar", e "Reativar" nasceu ao lado —
+      // as duas são mutuamente exclusivas, e a que aparece depende de `ativo`.
+      "src/pages/clients/ClientListPage.jsx": ["Ver", "Editar", "Desativar", "Reativar"],
+      "src/pages/processes/ProcessListPage.jsx": ["Gerenciar", "Desativar", "Reativar"],
       "src/pages/documents/DocumentListPage.jsx": ["Abrir", "Baixar PDF", "Baixar DOCX", "Excluir"],
       "src/pages/secoes/SecaoListPage.jsx": ["Ver", "Editar", "Desativar"]
     };

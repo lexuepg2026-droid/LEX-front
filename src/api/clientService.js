@@ -1,7 +1,9 @@
 import api from './axiosConfig';
 
-const getAllClients = ({ page = 1, limit = 20, busca } = {}) => {
+const getAllClients = ({ page = 1, limit = 20, busca, situacao } = {}) => {
   const params = { page, limit };
+  // DEC-052: sem `situacao`, o padrão do backend é só ativos — nada muda.
+  if (situacao) params.situacao = situacao;
   if (busca) params.busca = busca;
   return api.get('/clients', { params });
 };
@@ -15,6 +17,10 @@ const createClient = (data) => api.post('/clients', data);
 const updateClient = (id, data) => api.patch(`/clients/${id}`, data);
 
 const deleteClient = (id) => api.delete(`/clients/${id}`);
+
+// DEC-052 — a volta. NÃO reativa os processos do cliente: cada registro se
+// reativa por si, e a resposta traz o aviso que a tela repete.
+const reactivateClient = (id) => api.patch(`/clients/${id}/reactivate`);
 
 // ── Acesso ao portal do cliente ────────────────────────────────────────────
 //
@@ -39,5 +45,6 @@ export default {
   createClient,
   updateClient,
   deleteClient,
+  reactivateClient,
   revogarSenhaPortal,
 };
