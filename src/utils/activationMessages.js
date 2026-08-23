@@ -60,6 +60,35 @@ export const mensagemReativarProcesso = (vinculos = 0) => {
   );
 };
 
+// ── DEC-053: por que NÃO dá para reativar ─────────────────────────────────
+//
+// A recusa NOMEIA o pai. Uma mensagem genérica ("não é possível reativar")
+// manda a advogada procurar, num cadastro de trezentos clientes, qual deles
+// está desativado — e recusar em silêncio é pior que ter permitido.
+//
+// A frase é montada aqui, e não copiada da resposta do servidor, por uma razão
+// de tempo: a tela precisa do texto ANTES de chamar a rota, para desabilitar o
+// item do menu. Quem chega ao 409 mesmo assim (dois navegadores abertos, o
+// cliente desativado no outro) lê a mensagem do servidor, que diz a mesma
+// coisa — as duas redações vivem lado a lado de propósito, e a de cá é a que
+// aparece primeiro.
+//
+// `impedimentos` é o vetor que a listagem e o preview devolvem:
+// `[{ tipo, id, nome }]`.
+export const motivoDeNaoReativar = (impedimentos = []) => {
+  if (!impedimentos || impedimentos.length === 0) return null;
+
+  const nomes = impedimentos.map((i) => i.nome).filter(Boolean);
+  if (nomes.length === 0) return null;
+
+  if (nomes.length === 1) {
+    return `O cliente ${nomes[0]} está desativado. Reative o cliente primeiro.`;
+  }
+
+  const lista = `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}`;
+  return `Os clientes ${lista} estão desativados. Reative-os primeiro.`;
+};
+
 // ── Cliente ───────────────────────────────────────────────────────────────
 
 export const mensagemDesativarCliente = () =>
@@ -75,6 +104,7 @@ export const mensagemReativarCliente = () =>
 export default {
   mensagemDesativarProcesso,
   mensagemReativarProcesso,
+  motivoDeNaoReativar,
   mensagemDesativarCliente,
   mensagemReativarCliente
 };

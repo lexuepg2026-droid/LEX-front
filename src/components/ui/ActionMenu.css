@@ -88,7 +88,7 @@
   width: 100%;
 }
 
-.action-menu__item:hover:not(:disabled) {
+.action-menu__item:hover:not(:disabled):not([aria-disabled='true']) {
   background-color: var(--color-surface);
 }
 
@@ -108,4 +108,31 @@
 .action-menu__item--destrutivo:hover:not(:disabled) {
   background-color: var(--color-danger-bg);
   color: var(--color-danger);
+}
+
+/* ── DEC-053: o item que explica por que não dá ──────────────────────────
+   O item bloqueado é o único do menu com DUAS linhas, e por isso é o único
+   que solta o `nowrap`: o motivo nomeia um cliente, e nome de pessoa não cabe
+   numa linha de menu. Sem o `max-width` o painel esticaria até a largura do
+   nome mais comprido e sairia da tela — o mesmo defeito que a DEC-046 acabou
+   de corrigir, por outro caminho. */
+.action-menu__item--bloqueado {
+  cursor: not-allowed;
+  white-space: normal;
+  max-width: 30ch;
+}
+
+.action-menu__item--bloqueado .action-menu__rotulo {
+  opacity: 0.5;
+}
+
+/* O MOTIVO não é atenuado junto com o rótulo. Ele é a única coisa útil do
+   item: esmaecê-lo por coerência visual esconderia justamente o texto que
+   existe para ser lido. */
+.action-menu__motivo {
+  color: var(--color-text-secondary);
+  display: block;
+  font-size: var(--font-size-xs);
+  line-height: 1.35;
+  margin-top: var(--space-1);
 }
