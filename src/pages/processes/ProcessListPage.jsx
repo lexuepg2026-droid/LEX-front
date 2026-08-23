@@ -12,7 +12,8 @@ import Loading from '../../components/common/Loading';
 import { getApiErrorMessage } from '../../utils/apiError';
 import {
   mensagemDesativarProcesso,
-  mensagemReativarProcesso
+  mensagemReativarProcesso,
+  motivoDeNaoReativar
 } from '../../utils/activationMessages';
 import '../../styles/modules.css';
 
@@ -64,6 +65,28 @@ function ProcessoListPage() {
     setAtivacaoModal({ open: true, id, acao, mensagem: '', carregando: true });
     try {
       const { data } = await processService.getActivationPreview(id);
+
+      // ── DEC-053: a última barreira antes do 409 ──────────────────────────
+      //
+      // O item do menu já vem desabilitado pela listagem, mas a listagem pode
+      // estar velha — a advogada deixou a aba aberta e desativou o cliente por
+      // outro caminho. O preview é lido no INSTANTE do clique, e é ele que
+      // impede o modal de abrir com um botão "Reativar" que levaria a uma
+      // recusa. Sem isto, "nenhuma tela dispara o que o backend recusaria"
+      // valeria só enquanto ninguém tivesse duas abas.
+      const impedimento = acao === 'reativar'
+        ? motivoDeNaoReativar(data.impedimentosDeReativacao)
+        : null;
+
+      if (impedimento) {
+        setAtivacaoModal({ open: false, id: null, acao: null, mensagem: '', carregando: false });
+        toast.error(`Não é possível reativar. ${impedimento}`);
+        // A listagem é refeita para o menu passar a mostrar o motivo — a tela
+        // estava desatualizada, e deixá-la assim faria a advogada clicar de novo.
+        setVersao(v => v + 1);
+        return;
+      }
+
       const mensagem = acao === 'desativar'
         ? mensagemDesativarProcesso(data.vinculosAfetados)
         : mensagemReativarProcesso(data.vinculosAfetados);
@@ -211,6 +234,15 @@ function ProcessoListPage() {
                         p.ativo === false
                           ? {
                               rotulo: 'Reativar',
+                              /* DEC-053: com o cliente desativado, "Reativar"
+                                 aparece DESABILITADO e com o motivo ao lado,
+                                 em vez de sumir. Botão ausente faz procurar;
+                                 botão desabilitado com explicação ensina.
+
+                                 `motivo` é `null` quando nada impede, e é isso
+                                 que devolve o item ao comportamento normal —
+                                 sem `if` duplicando a linha inteira. */
+                              motivo: motivoDeNaoReativar(p.impedimentosDeReativacao),
                               onSelecionar: () => abrirAtivacao(p._id, 'reativar')
                             }
                           : {

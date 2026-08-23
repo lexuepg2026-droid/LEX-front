@@ -98,6 +98,24 @@ import './ActionMenu.css';
 // (ação), com `destrutivo` e `desabilitado` opcionais. `to` e `onSelecionar`
 // são exclusivos: um item que navegasse E executasse faria a linha mudar
 // debaixo de uma tela que já está saindo.
+//
+// ── `motivo` — o item desabilitado que EXPLICA (DEC-053, F-2c) ────────────
+//
+// Item com `motivo` aparece desabilitado E com a razão ao lado, em vez de
+// sumir do menu. A escolha entre as duas foi feita e está registrada no
+// CLAUDE.md: **botão ausente faz procurar; botão desabilitado com explicação
+// ensina.** Quem não acha "Reativar" no menu conclui que o sistema perdeu a
+// função, e o próximo passo é abrir um chamado.
+//
+// **`aria-disabled`, e não `disabled`.** Um `<button disabled>` não recebe
+// foco — o leitor de tela nunca chega nele, e o motivo, que é o ponto inteiro
+// do item, ficaria invisível justamente para quem mais depende de texto. Com
+// `aria-disabled` o item continua tabulável (e continua no ciclo de Tab do
+// painel), é anunciado como desabilitado, e o clique é barrado no handler.
+//
+// `desabilitado` sem `motivo` continua sendo `disabled` de verdade: é o caso
+// do "Baixando…" em curso, onde não há o que explicar e o item não deve
+// segurar o foco.
 function ActionMenu({ itens = [], rotulo = 'Ações desta linha' }) {
   const [aberto, setAberto] = useState(false);
   // `null` enquanto a conta não foi feita. O painel é montado invisível para
@@ -116,10 +134,13 @@ function ActionMenu({ itens = [], rotulo = 'Ações desta linha' }) {
 
   const fechar = useCallback(() => setAberto(false), []);
 
-  // Os itens que podem receber foco, na ordem do DOM. Item DESABILITADO fica
-  // de fora: um `<button disabled>` não é tabulável, e incluí-lo faria o ciclo
-  // parar num elemento que o navegador se recusa a focar — o menu travaria no
-  // "Baixando…" do recibo em curso.
+  // Os itens que podem receber foco, na ordem do DOM. Item com `disabled` de
+  // verdade fica de fora: o navegador se recusa a focá-lo, e incluí-lo faria o
+  // ciclo de Tab parar no "Baixando…" do recibo em curso.
+  //
+  // Item `aria-disabled` CONTINUA aqui, de propósito (DEC-053): ele carrega o
+  // motivo da recusa, e um motivo que o teclado não alcança não foi escrito
+  // para ninguém.
   const itensFocaveis = useCallback(() => {
     if (!painelRef.current) return [];
     return Array.from(
@@ -251,6 +272,9 @@ function ActionMenu({ itens = [], rotulo = 'Ações desta linha' }) {
   if (itens.length === 0) return null;
 
   const selecionar = (item) => {
+    // `aria-disabled` não impede o clique — só ANUNCIA. A recusa tem de ser
+    // feita aqui, senão o item "desabilitado" continuaria disparando a ação.
+    if (item.motivo || item.desabilitado) return;
     fechar();
     if (item.onSelecionar) item.onSelecionar();
   };
@@ -285,16 +309,23 @@ function ActionMenu({ itens = [], rotulo = 'Ações desta linha' }) {
           );
         }
 
+        const bloqueado = Boolean(item.motivo);
+
         return (
           <button
             key={item.rotulo}
             type="button"
             role="menuitem"
-            className={classe}
-            disabled={item.desabilitado}
+            className={classe + (bloqueado ? ' action-menu__item--bloqueado' : '')}
+            disabled={item.desabilitado && !bloqueado}
+            aria-disabled={bloqueado || undefined}
             onClick={() => selecionar(item)}
           >
-            {item.rotulo}
+            <span className="action-menu__rotulo">{item.rotulo}</span>
+            {/* O motivo é TEXTO no próprio item, não `title`: tooltip de
+                `title` não abre no toque e não é lida de forma confiável por
+                leitor de tela — e esta explicação é o item inteiro. */}
+            {bloqueado && <span className="action-menu__motivo">{item.motivo}</span>}
           </button>
         );
       })}
