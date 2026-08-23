@@ -2568,6 +2568,10 @@ não tem onde ler a conta.
 
 ## DEC-052 (frontend) — reativar sem adivinhar (F-2b)
 
+> ⚠️ **Leia a DEC-053 (frontend) junto com esta seção.** Desde a F-2c,
+> "Reativar" pode aparecer **desabilitado com o motivo ao lado** — um terceiro
+> estado do item que esta seção não previa.
+
 ### As duas ações são mutuamente exclusivas
 
 "Desativar" e "Reativar" vivem no mesmo lugar do menu **⋮** (DEC-047), e
@@ -2654,6 +2658,132 @@ Depois de desativar ou reativar, a tela **refaz a consulta** em vez de filtrar o
 array local. O registro pode ou não continuar visível conforme o filtro de
 situação em vigor, e adivinhar isso na tela **duplicaria a regra do filtro** —
 que já mora no backend.
+
+---
+
+## DEC-053 (frontend) — o motivo aparece, e nomeia o cliente (F-2c)
+
+> A regra inteira, e por que ela é geral, está no **CLAUDE.md do backend**. Aqui
+> fica só o que a tela faz — e **a tela não é a autoridade**: o serviço recusa de
+> qualquer forma.
+
+### Botão desabilitado com motivo, e não botão ausente
+
+Quando o cliente de um processo está desativado, o item **"Reativar"** do menu
+**⋮** aparece **desabilitado, com o motivo ao lado** — e **não some**.
+
+A escolha foi feita, entre as duas possíveis:
+
+| Opção | O que ela ensina |
+|---|---|
+| item **ausente** | *"o sistema perdeu a função"* — e o passo seguinte é abrir um chamado |
+| item **desabilitado com o motivo** | *"dá para fazer, mas nesta ordem"* — que é a verdade |
+
+> **Botão ausente faz procurar; botão desabilitado com explicação ensina.**
+
+O motivo **nomeia o cliente**: *"O cliente João Paulo Oliveira está desativado.
+Reative o cliente primeiro."* Uma frase genérica mandaria a advogada procurar,
+num cadastro inteiro, qual deles está fora.
+
+### `aria-disabled`, e NÃO `disabled`
+
+Um `<button disabled>` **não recebe foco**. O leitor de tela nunca chegaria nele
+— e o motivo, que é o item inteiro, ficaria invisível **justamente para quem
+mais depende de texto**.
+
+Com `aria-disabled` o item continua **tabulável**, continua no ciclo de Tab do
+painel (emenda à DEC-046, F-1b.3.2) e é anunciado como desabilitado. **O clique
+é barrado no handler** — `aria-disabled` só anuncia, não impede.
+
+`desabilitado` sem `motivo` continua sendo `disabled` de verdade: é o caso do
+"Baixando…" em curso, onde não há o que explicar e o item não deve segurar o
+foco. **São dois estados diferentes, e o contrato do `ActionMenu` os separa.**
+
+O motivo é **texto no próprio item**, nunca `title`: tooltip de `title` não abre
+no toque e não é lida de forma confiável por leitor de tela.
+
+### Duas barreiras, e as duas são necessárias
+
+| Barreira | Quando | Contra o quê |
+|---|---|---|
+| item nasce bloqueado | ao **renderizar a listagem**, por `impedimentosDeReativacao` da linha | o clique inútil |
+| `activation-preview` relido | no **instante do clique** | a **aba velha** — a advogada deixou a tela aberta e desativou o cliente por outro caminho |
+
+Sem a segunda, *"nenhuma tela dispara o que o backend recusaria"* valeria só
+enquanto ninguém tivesse duas abas abertas. Quando ela dispara, a listagem é
+**refeita** — deixá-la desatualizada faria a advogada clicar de novo.
+
+### A frase é montada no frontend, e isso é deliberado
+
+`motivoDeNaoReativar` (`utils/activationMessages.js`) monta o texto a partir do
+vetor `impedimentosDeReativacao`. Ela **não copia** a mensagem do servidor, por
+uma razão de **tempo**: a tela precisa do texto **antes** de chamar a rota, para
+desabilitar o item.
+
+Quem chega ao 409 mesmo assim lê a mensagem do servidor, que diz a mesma coisa.
+**As duas redações vivem lado a lado de propósito** — a de cá é a que aparece
+primeiro. Ambas concordam no plural, pela mesma razão do `plural()` da DEC-052:
+concordância errada numa frase lida todo dia faz o sistema parecer improvisado.
+
+---
+
+## Passos 90–98 (portal) — o levantamento da F-2c
+
+**Conclusão, antes do detalhe: eles NÃO são "controles de acesso do portal por
+implementar". São passos de VALIDAÇÃO MANUAL de funcionalidade que já existe,
+entregue na Fase 3.2 — e nunca executados.**
+
+A pendência vinha sendo carregada fase após fase com a marca *"antes de qualquer
+cliente real usar o portal"*, e a redação foi endurecendo até parecer trabalho
+de código não feito. O levantamento da F-2c leu os nove passos e confrontou cada
+um com o código. **Nenhum deles descreve controle de acesso ausente.**
+
+### O que cada um exige, e onde ele está
+
+| # | O que o passo exige | Marca | Veredito | Onde |
+|---|---|---|---|---|
+| **90** | PDF e DOCX baixam com nome do servidor, abrem no aparelho | `[só olho humano]` | **atendida** (código) | `portalController.js:76` (`Content-Disposition`), `documentRenderService.js:75` (`montarNomeArquivo`) |
+| **91** | Confirmação **depois** do conteúdo, sem modal; declaração inteira; recibo em fuso de Brasília | `[só olho humano]` | **atendida** (código) | `PortalProcessPage.jsx:176` (bloco por último), `portalLabels.js:91` (`America/Sao_Paulo`) |
+| **92** | Confirmar de novo **não apaga** a anterior; as duas aparecem | `[automatizável]` | **atendida + automatizada** | `PortalConfirmation.jsx:99,159`; `tests/portal/confirmacao.test.js:238` |
+| **93** | Botão "Sair" visível na barra; *voltar* não devolve a sessão | `[só olho humano]` | **atendida** (código) | `PortalLayout.jsx:34` |
+| **94** | Definir/entregar/redefinir/revogar senha; senha **nunca** exibida; mensagem pronta **sem** a senha; CPF recusado com mensagem própria | `[automatizável]` | **atendida + automatizada** | `AccessDelivery.jsx:109`; `clientValidation.js:63–71` (CPF/CNPJ); `tests/portal/auth.test.js:338` |
+| **95** | O código cabe numa ligação — legibilidade ao ditar | `[só olho humano]` | **inverificável por código** | `utils/accessCode.js` |
+| **96** | Selos "Confirmou a leitura" × "Acessou, não confirmou" | `[automatizável]` | **atendida**; automatizada **só no backend** | `portalEstados.js:23`; `statusVisual.js:98–99`. **Sem teste de frontend para os selos** |
+| **97** | Contador do dashboard zera ao **olhar a lista**, não ao abrir o processo | `[automatizável]` | **atendida + automatizada** | `ProcessDetailPage.jsx:103,254`; `tests/portal/confirmacao.test.js:352` |
+| **98** | Aviso de visibilidade nas **duas** regerações, com textos **diferentes** | `[só olho humano]` | **atendida + automatizada** | `GenerationPanel.jsx:291,324`; `tests/documents/regeracao.test.js:126–163` |
+
+### O controle de acesso propriamente dito — já existe, e é testado
+
+A dimensão que a redação da pendência sugeria (*"um cliente ver dado de
+outro"*) **não está nesses nove passos**, e está implementada e coberta:
+
+- `portalAuthMiddleware.js:58–90` — **o vínculo é revalidado a cada
+  requisição**, nunca confiado ao token: cliente, processo e vínculo precisam
+  estar **ativos**, o token precisa **coerir** com o vínculo no banco, e o
+  carimbo da senha invalida sessões anteriores. Revogar acesso tem efeito
+  **imediato**, sem esperar as 2 h da sessão;
+- `tests/portal/isolamento.test.js` — token de portal não vale em rota da
+  advogada e vice-versa; a sessão de um vínculo não alcança outro; o código do
+  cliente A nunca devolve o processo do cliente B; a senha de um cliente não
+  abre o código de outro; varredura de `senhaPortalHash`, `codigoAcesso`,
+  `usuarioId`; e um **placar explícito de "zero vazamentos"**.
+
+### O que a F-2c NÃO fez, e por quê
+
+**Nenhuma linha de código.** Não havia exigência desatendida para implementar:
+cinco dos nove são `[só olho humano]` por definição — *"nenhum script abre um
+DOCX no Word do Android para ver se corrompeu"* —, e os quatro `[automatizável]`
+já têm código **e** cobertura.
+
+**A única lacuna real encontrada:** o passo **96** (selos de litisconsórcio) tem
+o vocabulário travado no backend e os rótulos em `statusVisual.js`, mas **não
+tem teste de frontend** provando que a tela do processo os exibe. É pequeno, é
+verificável, e fica registrado aqui em vez de virar código numa fase cujo portão
+de escopo já tinha sido gasto na Parte 1.
+
+> **A pendência continua aberta — como VALIDAÇÃO, que é o que ela sempre foi.**
+> Os nove passos precisam do Daniel, num celular de verdade, antes de qualquer
+> cliente real usar o portal. Nenhuma fase de código os fecha.
 
 ---
 

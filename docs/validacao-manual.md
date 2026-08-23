@@ -95,6 +95,7 @@ Dados que vários passos usam:
   no Node — nunca pôde ser executado por script.
   Fase de origem: 2C
 
+
 ---
 
 ## 4. Clientes (`/dashboard/clientes`)
@@ -1687,30 +1688,69 @@ Dados que vários passos usam:
 >
 > **Pré-condição de 196 a 199:** `npm run seed:fresh`.
 
-- [ ] **196. ⭐ Desativar um processo diz QUANTOS participantes caem junto**
+- [ ] **184. ⭐ O ⋮ em Clientes, Processos, Documentos e Seções (DEC-047)**
+  > **REABERTO na F-2c.** Passou em 21/08/2026, e a validação continua
+  > valendo para o que ela olhou. O que mudou foi a **expectativa escrita
+  > no próprio passo**: a F-2b renomeou **"Excluir" → "Desativar"** em
+  > **Clientes** e **Processos**, porque a ação sempre foi soft delete e,
+  > com a reativação existindo, o nome antigo passou a mentir. A tabela
+  > abaixo ainda pede a palavra velha em duas linhas — e um passo que
+  > confere contra a expectativa errada reprova o código certo.
+  >
+  > A F-2c acrescenta um segundo motivo para reexecutar: em **Processos**,
+  > o item **"Reativar"** agora pode aparecer **desabilitado com o motivo
+  > ao lado** (DEC-053). É um estado de item que este passo nunca viu.
   Pré-condição: `npm run seed:fresh`.
-  **▶ ONDE IR.** Menu lateral → **Processos** → escolher um processo **com mais
-  de um participante**. No seed, *Inventário e Partilha de Bens* (cliente
-  **Maria Aparecida Costa**) tem litisconsórcio; confira na coluna **Cliente**,
-  que mostra "Nome +N" quando há mais de um.
-  Passos: 1) abrir o menu **⋮** da linha; 2) escolher **Desativar**; 3) **ler o
-  modal antes de confirmar**; 4) cancelar; 5) repetir e confirmar.
-  Esperado no modal: ele diz **quantos participantes saem junto**, com o número
-  certo — conferir contra a coluna "Cliente" (o "+N" mais um). Diz também que
-  **nada é apagado** e que dá para reativar depois.
-  **O que NÃO pode aparecer:** a frase *"esta ação não pode ser desfeita"*. Ela
-  existia até a F-2a e virou mentira quando a reativação passou a existir —
-  prometer irreversibilidade numa ação reversível faz a advogada evitar uma
-  operação segura.
-  Conferir que o menu ⋮ oferece **"Desativar"** e **não "Excluir"**.
-  Depois de confirmar: o processo **some da listagem** (o filtro está em
-  "Somente ativos") e o toast diz que dá para reativar.
-  Por que só olho humano: a suíte prova a contagem e prova a frase. O que ela
-  não prova é se a advogada **lê o número a tempo** — o modal é a última tela
-  antes de uma operação que derruba vários registros.
-  Fase de origem: F-2b
+  Passos: abrir as quatro listagens em **1024 px** e em **360 px**. Em cada
+  uma, abrir o menu **⋮** da última coluna e conferir **item a item** contra a
+  tabela abaixo — que é a lista levantada do código **antes** da migração.
+
+  | Listagem | O menu contém, nesta ordem |
+  |---|---|
+  | **Clientes** | "Ver", "Editar", **"Desativar"** (vermelho) — ou **"Reativar"**, se a linha estiver desativada |
+  | **Processos** | "Gerenciar", **"Desativar"** (vermelho) — ou **"Reativar"**, se a linha estiver desativada |
+  | **Documentos** | "Abrir", "Baixar PDF", "Baixar DOCX", **"Excluir"** (vermelho) |
+  | **Seções** | "Ver", "Editar", **"Desativar"** (vermelho) |
+
+  Esperado: **nenhuma ação se perdeu** e nenhuma mudou de efeito. Em
+  particular: "Ver" de **Seções** abre o **modal de pré-visualização** (não
+  navega); "Gerenciar" de **Processos** leva ao detalhe, com o mesmo nome de
+  antes; "Baixar PDF" e "Baixar DOCX" **baixam o arquivo** — os ícones saíram
+  de propósito, porque dentro do menu o item é uma linha de texto e o rótulo
+  por extenso diz mais que um ícone de 13 px.
+  Conferir o estado de download: clicando "Baixar PDF", o item vira
+  **"Baixando…"** e fica **desabilitado** até terminar.
+  Conferir que **"Desativar"** de Seções continua **desativando** e não
+  apagando — o verbo não mudou junto com a forma.
+  Conferir em **360 px** que o painel **não sai da tela** nas quatro (é a
+  DEC-046 valendo para as listagens novas) e que a coluna de ações encolheu
+  para a largura de **um botão**.
+  Por que só olho humano: a suíte prova que as sete listagens renderizam
+  `ActionMenu`, que nenhuma tem botão solto e que cada rótulo esperado está no
+  arquivo. O que ela **não** prova é que o clique no item ainda faz o que
+  fazia — que a rota é a mesma, que o modal abre, que o arquivo baixa.
+  **Acrescentado na F-2c:** conferir que o item **"Reativar"** de um
+  processo cujo **cliente está desativado** aparece **desabilitado, com o
+  motivo ao lado nomeando o cliente** — e não some do menu. Botão ausente
+  faz procurar; botão desabilitado com explicação ensina.
+  Fase de origem: F-1b.3.2 — **reaberto na F-2c**
 
 - [ ] **197. ⭐ 🚨 Reativar devolve SÓ quem a cascata derrubou**
+  > **Executado em 22/08/2026 pelo Daniel. CONTINUA ABERTO — achado o
+  > órfão da DEC-053.** O que este passo pede funcionou: a cascata
+  > devolveu só quem ela derrubou, e o removido à mão continuou fora.
+  > **Mas foi possível reativar um processo cujo CLIENTE estava
+  > desativado**, e o resultado é um órfão visível — o processo volta às
+  > listagens, o cliente não, e clicar no nome do cliente cai num registro
+  > que o sistema trata como arquivado.
+  >
+  > A DEC-052 governava só a DESCIDA (reativar o pai não reativa os
+  > filhos). Nada dizia sobre a SUBIDA. A **DEC-053** (F-2c) fechou as duas
+  > bocas — reativar e criar sob pai inativo — e a recusa NOMEIA o pai.
+  >
+  > **Continua aberto até a revalidação**, que inclui os passos novos
+  > **201 a 204**. Reexecutar este passo INTEIRO, e não só a parte nova: a
+  > guarda da DEC-053 entra no mesmo caminho que este passo percorre.
   Pré-condição: `npm run seed:fresh`. **É o passo que a fase existe para ter.**
   **▶ ONDE IR.** Menu lateral → **Processos** → o mesmo processo com
   litisconsórcio do passo 196 (se já o desativou, reative-o primeiro, ou use
@@ -1742,76 +1782,133 @@ Dados que vários passos usam:
   sem ir ao banco.
   Fase de origem: F-2b
 
-- [ ] **198. O ciclo: desativar → reativar → desativar → reativar**
-  Pré-condição: o passo **197** executado, com o participante removido à mão
-  ainda fora.
-  **É o caso que expõe marca de cascata não limpa.** Se a reativação não
-  apagasse a marca, o vínculo restaurado a carregaria para sempre — e uma
-  remoção manual posterior dele o traria de volta sozinho na reativação
-  seguinte.
-  Passos: com o mesmo processo, repetir **desativar** e **reativar** mais uma
-  vez inteira, e conferir os participantes ao fim.
-  Esperado: o resultado do **segundo** ciclo é idêntico ao do primeiro — os
-  mesmos voltam, e o removido à mão **continua fora**. Nenhum participante
-  aparece a mais.
-  Conferir também que a contagem do modal é a **mesma** nas duas voltas.
-  Por que só olho humano: a suíte trava o ciclo. O que ela não trava é o
-  acúmulo de estado na TELA — a listagem recarregada, o seletor de situação
-  mantendo o valor, o menu ⋮ oferecendo a ação certa depois de cada volta.
-  Fase de origem: F-2b
 
-- [ ] **199. ⭐ Reativar um cliente NÃO reativa os processos dele**
-  Pré-condição: `npm run seed:fresh`.
-  **A regra que a tela precisa dizer em voz alta**, senão a advogada reativa o
-  cliente e presume que voltou tudo.
-  **▶ ONDE IR.** Menu lateral → **Processos** e depois **Clientes**.
+---
+
+## 32. Fase F-2c — nada fica ativo debaixo de coisa inativa
+
+> **A F-2b devolveu a reativação; a F-2c descobriu que ela subia sozinha.** O
+> passo 197 achou o defeito: era possível reativar um processo cujo cliente
+> estava desativado, e o resultado é um **órfão visível** — o processo volta às
+> listagens, o cliente não, e clicar no nome do cliente cai num registro que o
+> sistema trata como arquivado.
+>
+> A **DEC-052** governa a DESCIDA (reativar o pai não reativa os filhos). A
+> **DEC-053** governa a SUBIDA (o filho não sobe sem o pai). São a mesma regra
+> vista dos dois lados, e quem mexer numa precisa ler a outra.
+>
+> A regra é **geral**, e não "Processo→Cliente": o caso achado era instância de
+> um princípio, e escrever só o caso teria deixado as outras portas abertas.
+> Ela tem duas bocas — **reativar** e **criar** sob pai inativo — e os passos
+> abaixo percorrem as duas.
+
+- [ ] **201. ⭐ 🚨 Reativar um processo cujo cliente está desativado é RECUSADO, e a recusa diz o nome**
+  Pré-condição: `npm run seed:fresh`. **É o passo que a fase existe para ter.**
+  **▶ ONDE IR.** Menu lateral → **Processos**, depois **Clientes**, depois
+  **Processos** de novo.
+  **A ordem importa**: o cliente só pode ser desativado quando não participa de
+  processo ativo nenhum, então o processo sai primeiro. É exatamente esse
+  caminho que produz o órfão.
   Passos:
-  1) escolher um cliente que tenha **exatamente um** processo — no seed, *João
-     Paulo Oliveira* (*Execução Fiscal – IPTU*) serve;
-  2) **desativar o processo** dele (a desativação do cliente é recusada
-     enquanto houver processo ativo — conferir que essa recusa acontece e que a
-     mensagem explica o motivo);
-  3) ir em **Clientes** e **desativar o cliente**;
-  4) trocar o seletor para **Somente desativados** e **reativar o cliente**;
-  5) **ler o modal antes de confirmar**;
-  6) ir em **Processos**, seletor em **Ativos e desativados**.
-  Esperado no modal do passo 5: ele diz, com todas as letras, que **os
-  processos NÃO voltam** e que cada processo se reativa por si.
-  Esperado no passo 6: o cliente está **ativo**; o processo dele continua
-  **desativado**, com a tag **"Desativado"** e a linha esmaecida.
-  Conferir que a linha desativada é distinguível **sem depender de cor**: a tag
-  tem texto, e é ela que sustenta a leitura numa impressão em preto e branco ou
-  para quem não distingue matizes.
-  Por que só olho humano: a suíte prova que a API não cascateia e que a frase
-  existe. O que ela não prova é se a advogada **sai da tela sabendo** que
-  precisa reativar o processo à parte — que é a pergunta inteira deste passo.
-  Fase de origem: F-2b
+  1) escolher um cliente com **um só** processo — no seed, *João Paulo
+     Oliveira* (*Execução Fiscal – IPTU*) serve;
+  2) em **Processos**, **desativar** o processo dele;
+  3) em **Clientes**, **desativar** o cliente;
+  4) voltar a **Processos** e pôr o seletor de situação em **Somente
+     desativados**;
+  5) abrir o menu **⋮** da linha do processo e **olhar o item "Reativar" sem
+     clicar**.
+  Esperado no passo 5: o item **"Reativar" aparece DESABILITADO, com o motivo
+  ao lado**, e o motivo **nomeia o cliente**: *"O cliente João Paulo Oliveira
+  está desativado. Reative o cliente primeiro."*
+  **O item NÃO pode sumir do menu.** Botão ausente faz procurar — quem não acha
+  "Reativar" conclui que o sistema perdeu a função. Botão desabilitado com
+  explicação ensina.
+  **Conferir pelo TECLADO:** chegar ao item com **Tab** a partir do gatilho ⋮.
+  Ele precisa **receber foco** e ser anunciado como desabilitado — um motivo
+  que só o mouse alcança não foi escrito para quem mais depende de texto.
+  Conferir também que **Enter** e **Espaço** sobre ele **não fazem nada**.
+  Por que só olho humano: a suíte prova que a frase nomeia o cliente e que o
+  item nasce bloqueado. O que ela não prova é se a advogada **sai da tela
+  sabendo o que fazer** — que é a pergunta inteira do passo.
+  Fase de origem: F-2c
 
-- [ ] **200. ⭐ 🚨 O comando destrutivo PARA e pergunta, dizendo o nome do banco**
-  Pré-condição: nenhuma. **Fazer isto antes de confiar em qualquer `seed:fresh`
-  daqui em diante.**
-  **O defeito:** `npm run seed:fresh` derruba treze coleções e
-  `node scripts/migrarTotalParcelas.js` troca um índice único — os dois contra o
-  banco de desenvolvimento, que é **Atlas remoto e compartilhado**. Só o banco
-  de teste tinha guarda, e **já aconteceu de um `seed:fresh` apagar dados no
-  meio de uma validação**.
-  Passos: 1) no terminal do backend, rodar **`npm run seed:fresh`**; 2) **ler o
-  aviso**; 3) responder **qualquer coisa errada** (por exemplo `s`, ou `sim`);
-  4) rodar de novo e responder **o nome do banco** exatamente como exibido.
-  Esperado no passo 2: o comando **PARA** e mostra um aviso que diz o **nome do
-  banco alvo**, que ele **não é local**, e que a operação é destrutiva.
-  **A URI não pode aparecer** — nem inteira, nem mascarada: ela carrega usuário
-  e senha do cluster.
-  Esperado no passo 3: o comando **CANCELA**, dizendo que nada foi alterado. Ir
-  ao sistema e conferir que **os dados continuam lá**.
-  Esperado no passo 4: aí sim ele roda.
-  Conferir também `node scripts/migrarTotalParcelas.js --dry-run`: ele **não**
-  pergunta, porque não escreve nada — é o modo que existe para olhar antes de
-  agir.
-  Por que só olho humano: a suíte prova a classificação local/remoto e prova que
-  os scripts chamam a guarda. **Ela não pode rodar o comando de verdade** — ele
-  escreve no banco de desenvolvimento, que é o que se está protegendo.
-  Fase de origem: F-2b
+- [ ] **202. ⭐ Reativar o cliente e ENTÃO o processo — o caminho correto continua aberto**
+  Pré-condição: o passo **201** executado, com os dois desativados.
+  **Tão importante quanto a recusa.** Uma guarda que fechasse a reativação
+  legítima transformaria um órfão em dois registros mortos.
+  Passos:
+  1) em **Clientes**, seletor em **Somente desativados**, **reativar o
+     cliente**;
+  2) voltar a **Processos**, seletor em **Somente desativados**;
+  3) abrir o **⋮** da linha do processo.
+  Esperado no passo 3: **"Reativar" agora está habilitado**, sem motivo ao
+  lado. Ao clicar, o modal abre normalmente, diz quantos participantes voltam,
+  e a reativação **funciona**.
+  Conferir ao fim: com o seletor em **Ativos e desativados**, o processo está
+  **ativo** e sem a tag "Desativado".
+  **Se "Reativar" continuar desabilitado depois de o cliente voltar, PARE** — a
+  tela está lendo um estado velho, e a advogada não tem como sair dele.
+  Por que só olho humano: a suíte prova a sequência pela API. O que ela não
+  prova é que a **listagem se atualiza** entre as duas telas, que é onde um
+  estado velho apareceria.
+  Fase de origem: F-2c
+
+- [ ] **203. Criar um honorário num processo desativado é recusado, nomeando o processo**
+  Pré-condição: `npm run seed:fresh`. **A segunda boca da DEC-053** — pela qual
+  o órfão **nasce** em vez de ressuscitar.
+  **▶ ONDE IR.** Menu lateral → **Processos**, depois **Financeiro** → **Nova
+  Cobrança** / cadastro de honorário.
+  Passos: 1) **desativar** um processo qualquer; 2) tentar **criar um
+  honorário** apontando para ele.
+  Esperado: a criação é **recusada**, e a mensagem **nomeia o processo** —
+  *"Não é possível criar: o processo &lt;título&gt; está desativado. Reative o
+  processo primeiro."*
+  **O que NÃO pode aparecer:** *"Processo não encontrado"*. Ele existe, e a
+  advogada acabou de vê-lo na listagem com a tag "Desativado" — mandar procurar
+  o que não está perdido é o defeito que esta fase corrigiu.
+  Conferir também, se a tela oferecer um seletor de processo: que o processo
+  desativado **não apareça** entre os selecionáveis. Se aparecer, a recusa do
+  servidor continua correta, mas a tela ofereceu o que seria recusado — anotar.
+  Por que só olho humano: a suíte prova a recusa e a mensagem pela API. O que
+  ela não prova é **por onde a advogada chega** à tentativa, nem se a tela a
+  deixa chegar.
+  Fase de origem: F-2c
+
+- [ ] **204. 🚨 O script de auditoria LISTA os órfãos e não altera nada**
+  Pré-condição: uma base com pelo menos um órfão. Se não houver, o passo **201**
+  cria um — pare-o no passo 3 (processo e cliente desativados) e **não** siga
+  para o 202.
+  **O script não conserta, e isso é decisão.** Corrigir automaticamente
+  significaria escolher, sem saber, entre **desativar o filho** e **reativar o
+  pai** — e as duas podem ser a errada. Essa escolha é da advogada.
+  Passos:
+  1) no terminal do backend, rodar **`npm run auditar:orfaos`**;
+  2) **ler o cabeçalho**;
+  3) **ler a lista**;
+  4) **conferir no sistema** que nada mudou: abrir Processos e Clientes e ver
+     que os mesmos registros continuam ativos e desativados como estavam.
+  Esperado no passo 2: o cabeçalho diz o **nome do banco** e a frase *"Este
+  script SOMENTE LÊ"*. **A URI não pode aparecer** — nem inteira, nem mascarada:
+  ela carrega usuário e senha do cluster.
+  Esperado no passo 3: cada órfão sai com a **relação** (`Processo → Cliente`),
+  o **filho ATIVO nomeado** e o **pai INATIVO nomeado**. Um relatório de
+  identificadores obrigaria a advogada a procurar cada um no banco, e aí não
+  seria entregável.
+  Esperado no passo 4: **nada mudou.** O script não pergunta nada, não pede
+  confirmação e **não tem a guarda de banco** dos comandos destrutivos — porque
+  não é destrutivo. Se ele PERGUNTAR o nome do banco, alguém pôs guarda onde
+  não precisa; se ele ALTERAR alguma coisa, alguém tirou a guarda de onde
+  precisa. **Os dois são defeito.**
+  Conferir também que o mesmo processo desativado sob cliente desativado
+  aparece **duas vezes** na lista: uma como `Processo → Cliente (principal)` e
+  outra como `Vínculo processo-cliente → Cliente`. São dois registros ativos
+  sob o mesmo pai inativo, e é a segunda — a que não vem à cabeça — que a
+  auditoria existe para achar.
+  Por que só olho humano: a suíte roda o script e compara o banco antes e
+  depois. O que ela não prova é se o **relatório é legível** para quem vai
+  decidir o que fazer com cada linha.
+  Fase de origem: F-2c
 
 ## Validado
 
@@ -1869,6 +1966,20 @@ Dados que vários passos usam:
 > O passo **167** (responsividade em 360/768/desktop) passou, mas **precisa ser
 > reexecutado quando o novo desenho das páginas chegar** — ver a restrição de
 > projeto registrada no `CLAUDE.md` do frontend.
+
+> **Sessão de 22/08/2026 — passos 196 a 200 (Fase F-2b).** O Daniel percorreu
+> a desativação e a reativação de processo e de cliente, o ciclo completo, e a
+> guarda dos comandos destrutivos. **Quatro passaram** e estão abaixo.
+>
+> **O 197 NÃO passou, e continua na lista pendente.** Ele achou o que a F-2b
+> não tinha fechado: era possível **reativar um processo cujo cliente estava
+> desativado**, criando um órfão visível. A **DEC-053** (F-2c) fechou a regra
+> nas duas bocas — reativar e criar sob pai inativo —, e o passo continua
+> aberto até a revalidação, junto com os passos novos **201 a 204**.
+>
+> O motivo de o 198 estar aqui mesmo dependendo do 197: os dois foram
+> executados, e o ciclo do 198 se comportou como previsto. O que falhou no 197
+> é uma porta que o 198 não abre.
 
 - [x] **1. Cadastro — assistente de duas etapas**
   **Validado em 17/08/2026 pelo Daniel. Passou.**
@@ -3346,39 +3457,6 @@ Dados que vários passos usam:
   tabular e olhar.
   Fase de origem: F-1b.3.2
 
-- [x] **184. ⭐ O ⋮ em Clientes, Processos, Documentos e Seções (DEC-047)**
-  **Validado em 21/08/2026 pelo Daniel. Passou.**
-  Pré-condição: `npm run seed:fresh`.
-  Passos: abrir as quatro listagens em **1024 px** e em **360 px**. Em cada
-  uma, abrir o menu **⋮** da última coluna e conferir **item a item** contra a
-  tabela abaixo — que é a lista levantada do código **antes** da migração.
-
-  | Listagem | O menu contém, nesta ordem |
-  |---|---|
-  | **Clientes** | "Ver", "Editar", **"Excluir"** (vermelho) |
-  | **Processos** | "Gerenciar", **"Excluir"** (vermelho) |
-  | **Documentos** | "Abrir", "Baixar PDF", "Baixar DOCX", **"Excluir"** (vermelho) |
-  | **Seções** | "Ver", "Editar", **"Desativar"** (vermelho) |
-
-  Esperado: **nenhuma ação se perdeu** e nenhuma mudou de efeito. Em
-  particular: "Ver" de **Seções** abre o **modal de pré-visualização** (não
-  navega); "Gerenciar" de **Processos** leva ao detalhe, com o mesmo nome de
-  antes; "Baixar PDF" e "Baixar DOCX" **baixam o arquivo** — os ícones saíram
-  de propósito, porque dentro do menu o item é uma linha de texto e o rótulo
-  por extenso diz mais que um ícone de 13 px.
-  Conferir o estado de download: clicando "Baixar PDF", o item vira
-  **"Baixando…"** e fica **desabilitado** até terminar.
-  Conferir que **"Desativar"** de Seções continua **desativando** e não
-  apagando — o verbo não mudou junto com a forma.
-  Conferir em **360 px** que o painel **não sai da tela** nas quatro (é a
-  DEC-046 valendo para as listagens novas) e que a coluna de ações encolheu
-  para a largura de **um botão**.
-  Por que só olho humano: a suíte prova que as sete listagens renderizam
-  `ActionMenu`, que nenhuma tem botão solto e que cada rótulo esperado está no
-  arquivo. O que ela **não** prova é que o clique no item ainda faz o que
-  fazia — que a rota é a mesma, que o modal abre, que o arquivo baixa.
-  Fase de origem: F-1b.3.2
-
 - [x] **185. ⭐ Depois do reparcelamento, a primeira parcela do plano novo diz "1 de 3"**
   **Validado em 21/08/2026 pelo Daniel. Passou.**
   Pré-condição: `npm run seed:fresh`.
@@ -3810,6 +3888,104 @@ Dados que vários passos usam:
   Fase de origem: F-2a
 
 
+
+- [x] **196. ⭐ Desativar um processo diz QUANTOS participantes caem junto**
+  **Validado em 22/08/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run seed:fresh`.
+  **▶ ONDE IR.** Menu lateral → **Processos** → escolher um processo **com mais
+  de um participante**. No seed, *Inventário e Partilha de Bens* (cliente
+  **Maria Aparecida Costa**) tem litisconsórcio; confira na coluna **Cliente**,
+  que mostra "Nome +N" quando há mais de um.
+  Passos: 1) abrir o menu **⋮** da linha; 2) escolher **Desativar**; 3) **ler o
+  modal antes de confirmar**; 4) cancelar; 5) repetir e confirmar.
+  Esperado no modal: ele diz **quantos participantes saem junto**, com o número
+  certo — conferir contra a coluna "Cliente" (o "+N" mais um). Diz também que
+  **nada é apagado** e que dá para reativar depois.
+  **O que NÃO pode aparecer:** a frase *"esta ação não pode ser desfeita"*. Ela
+  existia até a F-2a e virou mentira quando a reativação passou a existir —
+  prometer irreversibilidade numa ação reversível faz a advogada evitar uma
+  operação segura.
+  Conferir que o menu ⋮ oferece **"Desativar"** e **não "Excluir"**.
+  Depois de confirmar: o processo **some da listagem** (o filtro está em
+  "Somente ativos") e o toast diz que dá para reativar.
+  Por que só olho humano: a suíte prova a contagem e prova a frase. O que ela
+  não prova é se a advogada **lê o número a tempo** — o modal é a última tela
+  antes de uma operação que derruba vários registros.
+  Fase de origem: F-2b
+
+- [x] **198. O ciclo: desativar → reativar → desativar → reativar**
+  **Validado em 22/08/2026 pelo Daniel. Passou.**
+  Pré-condição: o passo **197** executado, com o participante removido à mão
+  ainda fora.
+  **É o caso que expõe marca de cascata não limpa.** Se a reativação não
+  apagasse a marca, o vínculo restaurado a carregaria para sempre — e uma
+  remoção manual posterior dele o traria de volta sozinho na reativação
+  seguinte.
+  Passos: com o mesmo processo, repetir **desativar** e **reativar** mais uma
+  vez inteira, e conferir os participantes ao fim.
+  Esperado: o resultado do **segundo** ciclo é idêntico ao do primeiro — os
+  mesmos voltam, e o removido à mão **continua fora**. Nenhum participante
+  aparece a mais.
+  Conferir também que a contagem do modal é a **mesma** nas duas voltas.
+  Por que só olho humano: a suíte trava o ciclo. O que ela não trava é o
+  acúmulo de estado na TELA — a listagem recarregada, o seletor de situação
+  mantendo o valor, o menu ⋮ oferecendo a ação certa depois de cada volta.
+  Fase de origem: F-2b
+
+- [x] **199. ⭐ Reativar um cliente NÃO reativa os processos dele**
+  **Validado em 22/08/2026 pelo Daniel. Passou.**
+  Pré-condição: `npm run seed:fresh`.
+  **A regra que a tela precisa dizer em voz alta**, senão a advogada reativa o
+  cliente e presume que voltou tudo.
+  **▶ ONDE IR.** Menu lateral → **Processos** e depois **Clientes**.
+  Passos:
+  1) escolher um cliente que tenha **exatamente um** processo — no seed, *João
+     Paulo Oliveira* (*Execução Fiscal – IPTU*) serve;
+  2) **desativar o processo** dele (a desativação do cliente é recusada
+     enquanto houver processo ativo — conferir que essa recusa acontece e que a
+     mensagem explica o motivo);
+  3) ir em **Clientes** e **desativar o cliente**;
+  4) trocar o seletor para **Somente desativados** e **reativar o cliente**;
+  5) **ler o modal antes de confirmar**;
+  6) ir em **Processos**, seletor em **Ativos e desativados**.
+  Esperado no modal do passo 5: ele diz, com todas as letras, que **os
+  processos NÃO voltam** e que cada processo se reativa por si.
+  Esperado no passo 6: o cliente está **ativo**; o processo dele continua
+  **desativado**, com a tag **"Desativado"** e a linha esmaecida.
+  Conferir que a linha desativada é distinguível **sem depender de cor**: a tag
+  tem texto, e é ela que sustenta a leitura numa impressão em preto e branco ou
+  para quem não distingue matizes.
+  Por que só olho humano: a suíte prova que a API não cascateia e que a frase
+  existe. O que ela não prova é se a advogada **sai da tela sabendo** que
+  precisa reativar o processo à parte — que é a pergunta inteira deste passo.
+  Fase de origem: F-2b
+
+- [x] **200. ⭐ 🚨 O comando destrutivo PARA e pergunta, dizendo o nome do banco**
+  **Validado em 22/08/2026 pelo Daniel. Passou.**
+  Pré-condição: nenhuma. **Fazer isto antes de confiar em qualquer `seed:fresh`
+  daqui em diante.**
+  **O defeito:** `npm run seed:fresh` derruba treze coleções e
+  `node scripts/migrarTotalParcelas.js` troca um índice único — os dois contra o
+  banco de desenvolvimento, que é **Atlas remoto e compartilhado**. Só o banco
+  de teste tinha guarda, e **já aconteceu de um `seed:fresh` apagar dados no
+  meio de uma validação**.
+  Passos: 1) no terminal do backend, rodar **`npm run seed:fresh`**; 2) **ler o
+  aviso**; 3) responder **qualquer coisa errada** (por exemplo `s`, ou `sim`);
+  4) rodar de novo e responder **o nome do banco** exatamente como exibido.
+  Esperado no passo 2: o comando **PARA** e mostra um aviso que diz o **nome do
+  banco alvo**, que ele **não é local**, e que a operação é destrutiva.
+  **A URI não pode aparecer** — nem inteira, nem mascarada: ela carrega usuário
+  e senha do cluster.
+  Esperado no passo 3: o comando **CANCELA**, dizendo que nada foi alterado. Ir
+  ao sistema e conferir que **os dados continuam lá**.
+  Esperado no passo 4: aí sim ele roda.
+  Conferir também `node scripts/migrarTotalParcelas.js --dry-run`: ele **não**
+  pergunta, porque não escreve nada — é o modo que existe para olhar antes de
+  agir.
+  Por que só olho humano: a suíte prova a classificação local/remoto e prova que
+  os scripts chamam a guarda. **Ela não pode rodar o comando de verdade** — ele
+  escreve no banco de desenvolvimento, que é o que se está protegendo.
+  Fase de origem: F-2b
 ## Automatizado
 
 > Passo que **virou teste na suíte** e por isso saiu da lista pendente. Cada
