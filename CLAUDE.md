@@ -2727,6 +2727,173 @@ concordância errada numa frase lida todo dia faz o sistema parecer improvisado.
 
 ---
 
+## DEC-054 (frontend) — dois eixos na tela, e o selo que não reordena (F-2d)
+
+**O vocabulário é da Laís, de 23/08/2026.** O contrato inteiro e o porquê de
+cada decisão estão no `CLAUDE.md` do **backend**; aqui fica o que a tela faz
+com ele.
+
+### As quatro fases moram em `utils/enums.js`
+
+`FASE_PROCESSO_OPTIONS` — espelho de `FASES_PROCESSO` do backend, **sem
+endpoint e de propósito**: é constante, não dado. Mesma escolha do tipo de
+honorário (DEC-039), pela mesma razão — uma rota `/fases` custaria uma viagem
+de rede em toda carga de formulário para entregar quatro strings que não mudam
+entre deploys. O preço é a duplicação, e há teste **nos dois repos** travando
+que as listas não divergiram.
+
+⚠️ **O rótulo da primeira está PENDENTE DE RATIFICAÇÃO.** Ela deu duas
+palavras — *"fase inicial"* e *"fase de conhecimento"*. Adotada a segunda; a
+razão está no backend. **Trocar é mudar uma string aqui**, sem migração: o valor
+gravado é `conhecimento`.
+
+### Nenhuma tela monta o rótulo da fase por conta própria
+
+`rotuloDaFase()` é o caminho único. Listagem, detalhe e formulário passam por
+ele.
+
+**Não é zelo abstrato — é a repetição de um defeito já pago.** O `<select>` de
+status desta mesma tela montava o rótulo com
+`s.charAt(0).toUpperCase() + s.slice(1)`, e foi assim que `parcialmente_pago`
+chegou a aparecer na interface **com sublinhado, em cinza**. A 4.3 criou
+`statusVisual.js` para eliminar o segundo mapa de rótulos; a F-2d não abre o
+terceiro.
+
+Há teste travando três coisas: que as telas usam a fonte única, que **nenhuma**
+capitaliza a fase à mão, e que **nenhum** `<option value="execucao">Execução…`
+aparece escrito no JSX.
+
+### O seletor oferece as QUATRO, e nenhuma desabilitada
+
+*"Sim, pode voltar."*
+
+> **Se alguma opção de fase aparecer cinza, riscada ou bloqueada, alguém
+> inventou uma máquina de estados que a Laís não pediu.** Há teste varrendo o
+> JSX do formulário e do detalhe atrás de `disabled` dentro do bloco do
+> seletor, e outro atrás de `indexOf`/`findIndex` contra a lista de fases — que
+> é como uma máquina de estados entra sem ninguém decidir por ela: primeiro
+> para "ordenar", depois para "avisar", e aí já está travando.
+
+### O motivo é opcional — e a tela precisa PARECER opcional
+
+A etiqueta diz **"Motivo (opcional)"**, o campo não tem `required`, e o botão
+"Mudar fase" **não** está condicionado ao campo estar preenchido.
+
+**As três coisas são necessárias.** Um campo sem `required` mas sem aviso ainda
+parece obrigatório para quem está preenchendo — e um campo que parece
+obrigatório é obedecido como se fosse. Há teste para as três.
+
+### A fase muda no DETALHE, não no formulário
+
+Painel **"Andamento do processo"**, em `ProcessDetailPage`. Duas razões, e as
+duas são de contrato:
+
+1. **a fase tem rota própria** (`PATCH /processes/:id/fase`), porque toda
+   mudança grava histórico. O formulário salva por `PATCH /processes/:id`, que
+   **recusa** o campo — misturar os dois faria um "Salvar" só disparar duas
+   requisições com semânticas diferentes;
+2. **o motivo é da TRANSIÇÃO, não do processo.** Num formulário de quinze
+   campos ele pareceria mais um dado cadastral — e ela dispensou o "porquê"
+   justamente por não querer preencher campo obrigatório.
+
+No **formulário** a fase aparece só na **criação**: um processo pode ser
+cadastrado quando já está em execução, e obrigá-lo a nascer em conhecimento
+para depois ser movido registraria uma transição que nunca aconteceu. Na edição
+vira leitura, **com o caminho dito por extenso** — um campo em modo leitura sem
+explicação parece campo quebrado, e a advogada procura um botão de editar que
+não existe naquela tela.
+
+### O histórico já aparece, mesmo antes da F-2e
+
+Bloco **"Histórico de fases"**, lista simples, mais recente no topo. A tela da
+linha do tempo é da F-2e; o que existe aqui é a lista bruta do que já foi
+gravado — **e ela existe agora porque, sem exibir o histórico, a validação
+manual não teria como conferir que o `de → para` está sendo escrito**.
+
+A primeira entrada diz **"Cadastrado em ‹fase›"**, e não `— → Fase de
+conhecimento`: o processo nasceu naquela fase, não veio de nenhuma, e um
+travessão ali inventaria uma origem.
+
+### O selo da liminar — `.tag-liminar`
+
+*"Liminar é um plus dentro das fases (…) não é uma fase nova."*
+
+Selo ao lado do título, **na listagem e no detalhe, com a mesma classe**. Dois
+desenhos para o mesmo fato fariam a advogada duvidar se são o mesmo fato.
+
+**Cor de atenção (`--color-warning`), não de perigo.** Vermelho é o tom de
+`cancelado` e `vencido` — coisas que deram errado. Liminar não deu errado: é
+pedido de urgência, e pintá-la de vermelho ensinaria a advogada a ler perigo
+onde há prioridade.
+
+**A palavra, não só a cor.** Herda a forma da `.tag-desativado` pela mesma
+razão escrita lá: cor sozinha é a única pista para quem não distingue matizes, e
+some numa impressão em preto e branco.
+
+### 🚨 A LISTA NÃO SE REORDENA POR LIMINAR
+
+**Ela pediu DESTAQUE, não PRIORIDADE**, e são coisas diferentes.
+
+Reordenar muda o que a advogada espera encontrar onde ela deixou — transforma
+um selo visual numa mudança de mapa mental, e ninguém pediu isso. Quem quiser
+ver só as liminares usa o **filtro** (`com` / `sem` / todos), e **decide
+QUANDO**.
+
+A ordenação continua sendo `createdAt` decrescente, decidida no backend. Há
+teste nos dois repos: aqui, varrendo a listagem atrás de `.sort(`; lá, montando
+um cenário em que o processo com liminar é **o mais antigo dos três** e
+exigindo que ele **não** apareça no topo.
+
+> **Se ao ver a tela o selo não bastar**, a saída é **propor** — não reordenar
+> por conta própria.
+
+### A fase NÃO substituiu o `status`: a listagem tem as duas colunas
+
+"Suspenso" não é uma fase, e "execução" não é um status. A coluna que sumisse
+levaria junto o filtro que a advogada usa desde a Fase 2, e há teste exigindo
+`<th>Fase</th>` **e** `<th>Status</th>`.
+
+Os dois filtros combinam de propósito: *"em execução E suspenso"* é pergunta
+legítima.
+
+### O encerramento não pede fase nenhuma
+
+O campo "Trânsito em julgado" fica no formulário, e **não** aparece desabilitado
+em fase alguma. Se algum dia esta tela exigir "Recursos" para liberá-lo, alguém
+inventou um caminho único onde ela descreveu vários — *"acordo cumprido → trânsito
+em julgado"*, e acordo se cumpre em qualquer lugar. Há teste.
+
+**`null`, e não `undefined`**, nos campos apagáveis do payload. Com `undefined`
+o campo sairia do JSON e uma data de trânsito em julgado registrada por engano
+ficaria lá para sempre — não haveria como desfazê-la pela tela.
+
+---
+
+## O verbo acompanha a ação que a tela oferece (F-2d, achado do passo 184)
+
+A F-2b renomeou **"Excluir" → "Desativar"** em Clientes e Processos. Uma
+mensagem ficou com a palavra velha.
+
+`utils/financialErrors.js` montava a frase fixa: *"A exclusão foi recusada. (…)
+remova antes de excluir."* Agora **o verbo mora na tabela de dependências**,
+uma entrada por dependente:
+
+| `dependencia` | bloqueia | verbo |
+|---|---|---|
+| `processos` | a **desativação** de um CLIENTE | **desativar** |
+| `parcelas` | a exclusão de um HONORÁRIO | excluir |
+| `pagamentos` | a exclusão de uma PARCELA | excluir |
+| `documentos` | a exclusão de uma SEÇÃO | excluir |
+
+**Corrigido só onde a ação MUDOU.** Um verbo único para as quatro faria a
+mensagem discordar do botão em três telas para concordar em uma.
+
+Há teste dos dois lados: das frases, e dos **rótulos dos menus** — se um menu
+mudar de verbo, o teste cai e a tabela acima precisa mudar junto. É o que
+obriga a conversa a acontecer em vez de as duas listas divergirem em silêncio.
+
+---
+
 ## Passos 90–98 (portal) — o levantamento da F-2c
 
 **Conclusão, antes do detalhe: eles NÃO são "controles de acesso do portal por
@@ -2787,7 +2954,7 @@ de escopo já tinha sido gasto na Parte 1.
 
 ---
 
-## O que fica para adiante (atualizado em 22/08/2026 — depois da F-2b)
+## O que fica para adiante (atualizado em 24/08/2026 — depois da F-2d)
 
 **✅ F-2a — FEITA.** O **V-2** morreu (DEC-050), as gerações se agruparam
 (DEC-051), a coluna do rótulo parou de truncar, e o seed passou a gravar o plano
@@ -2803,16 +2970,25 @@ Do lado do backend, a mesma fase fechou as duas pendências de operação: os te
 de rate limit por ambiente saíram de uma cópia só, e os comandos destrutivos
 passaram a **interromper** pedindo confirmação contra banco não-local.
 
-**A próxima fase é a F-2c**, e ela continua dependendo de gente:
+**✅ F-2c — FEITA.** A **DEC-053** fechou a subida: o item "Reativar" nasce
+desabilitado com o motivo ao lado, nomeando o cliente, e o preview é relido no
+clique para o caso da aba velha.
 
-- **status do processo — BLOQUEADO pelo vocabulário da Laís.** Não se inventa
-  enum que ela vai trocar: os valores viram dado gravado, tela, filtro e
-  histórico de→para. **As sete perguntas já estão com o Daniel.**
-- **cor por status** e **histórico `de → para`**, que dependem do mesmo
-  vocabulário. O histórico de status é **separado** do `historicoAtivacao` da
-  DEC-052, de propósito: status é o andamento jurídico (um processo
-  "arquivado" continua **ativo**), ativação é se o registro existe para o
-  sistema.
+**✅ F-2d — FEITA, e o BLOQUEIO acabou.** O vocabulário da Laís chegou em
+23/08/2026, e a resposta dela mudou a pergunta: **não era um status, eram dois
+eixos** (DEC-054).
+
+A previsão que esta seção fazia estava metade certa:
+
+- o **histórico `de → para` separado do `historicoAtivacao`** era o ponto já
+  decidido, e continua valendo — é o `historicoFase`;
+- a **"cor por status"** virou outra coisa: um **selo de liminar**, porque
+  liminar é sinalizador e não estado;
+- e o que não se previa: **"trânsito em julgado" não cabia na mesma lista** das
+  fases. É o outro eixo.
+
+Junto vieram a coluna de fase e o filtro de liminar na listagem, o painel de
+andamento no detalhe, e o verbo velho que sobrou nas mensagens (passo 184).
 
 **Suítes na F-2a:** frontend **566** testes (20 novos em
 `tests/regressions/f2a.test.js`), backend **508** (22 novos).
@@ -2821,10 +2997,39 @@ passaram a **interromper** pedindo confirmação contra banco não-local.
 `tests/regressions/dec052.test.js`), backend **549** (+41). Zero skip, zero todo
 nos dois.
 
+**Suítes na F-2d:** frontend **626** testes (+26 entre
+`tests/regressions/dec054.test.js` e `tests/regressions/f2d.test.js`), backend **634** (+61). Zero skip, zero todo
+nos dois.
+
 **Sobre o "zero skip" do frontend:** ele depende de `dist/` existir. O teste
 "o build separa o chunk do portal" é condicional ao build, e num clone limpo a
 suíte reporta **1 skip** sem que nada esteja errado. Rode `npm run build` antes
 se quiser o 0/0.
+
+---
+
+## A próxima fase é a F-2e — a LINHA DO TEMPO
+
+Ela pediu: *"finalizado por etapa — fazer linha do tempo"*.
+
+**O substrato já existe.** A F-2d passou a gravar `historicoFase` com
+`de → para`, data, autor e o motivo opcional — e começou a gravar **antes** de a
+tela existir, de propósito: gravar só a partir da tela faria a linha do tempo
+nascer sem passado.
+
+O que a F-2e tem de construir é a **leitura**: hoje o detalhe do processo mostra
+a lista bruta, no bloco "Histórico de fases", e ela existe para a validação
+manual conferir que o `de → para` está sendo escrito — não como desenho final.
+
+**Duas coisas ficam para ela decidir com a Laís antes:**
+
+- a linha do tempo mostra **só as fases**, ou também o `historicoAtivacao`
+  (desativado/reativado) e o encerramento? Os três são append-only e carimbados,
+  e uni-los na LEITURA é fácil; uni-los no DADO seria o erro que a nota de
+  `historicoAtivacaoSchema.js` já recusou;
+- **"pagamento no êxito" e "cliente inadimplente"** — diagnosticados na F-2d,
+  **não implementados**. Ver o `CLAUDE.md` do backend. O primeiro mexe na
+  DEC-039, congelada; o segundo é consulta derivada e não deve virar campo.
 
 ---
 
