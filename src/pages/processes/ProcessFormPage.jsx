@@ -5,16 +5,28 @@ import processService from '../../api/processService';
 import clientService from '../../api/clientService';
 import { toast } from '../../utils/toast';
 import {
+  FASE_PROCESSO_OPTIONS,
   PAPEL_PROCESSO_OPTIONS,
   documentoDoCliente,
   nomeDoCliente,
+  rotuloDaFase,
 } from '../../utils/enums';
 import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import './ProcessPage.css';
 
 const STATUS_OPTIONS = ['ativo', 'encerrado', 'suspenso'];
 
+// DEC-054: a fase padrão do backend, repetida aqui só para o formulário de
+// CRIAÇÃO nascer com o seletor preenchido. O valor gravado quando o campo não
+// vai no payload continua sendo decidido pelo model.
+const FASE_PADRAO = 'conhecimento';
+
 const PAPEL_PADRAO = 'autor';
+
+// ISO → `yyyy-mm-dd`, que é o que `<input type="date">` aceita. Existia inline
+// para `dataDistribuicao` e agora serve a três campos — repetir o mesmo
+// `.toISOString().split('T')[0]` três vezes é como um deles acaba divergindo.
+const soData = (valor) => (valor ? new Date(valor).toISOString().split('T')[0] : '');
 
 function ProcessoFormPage() {
   const [formData, setFormData] = useState({
@@ -29,6 +41,18 @@ function ProcessoFormPage() {
     descricao: '',
     observacoes: '',
     dataDistribuicao: '',
+    // ── DEC-054 ────────────────────────────────────────────────────────────
+    // `fase` só é ENVIADA na criação: no processo já existente ela muda por
+    // rota própria, porque toda mudança grava histórico. Ver o painel de
+    // andamento em `ProcessDetailPage`.
+    fase: FASE_PADRAO,
+    // Liminar e encerramento vão pelo PATCH comum — são sinalizador e carimbo,
+    // não "por onde o processo andou", e por isso não geram histórico.
+    liminar: false,
+    liminarObservacao: '',
+    liminarEm: '',
+    transitoEmJulgadoEm: '',
+    motivoEncerramento: '',
   });
   const [clientes, setClientes] = useState([]);
   // Participantes do processo: [{ clienteId, papel, principal }]. Substitui o
@@ -95,9 +119,13 @@ function ProcessoFormPage() {
           status: d.status || 'ativo',
           descricao: d.descricao || '',
           observacoes: d.observacoes || '',
-          dataDistribuicao: d.dataDistribuicao
-            ? new Date(d.dataDistribuicao).toISOString().split('T')[0]
-            : '',
+          dataDistribuicao: soData(d.dataDistribuicao),
+          fase: d.fase || FASE_PADRAO,
+          liminar: d.liminar === true,
+          liminarObservacao: d.liminarObservacao || '',
+          liminarEm: soData(d.liminarEm),
+          transitoEmJulgadoEm: soData(d.transitoEmJulgadoEm),
+          motivoEncerramento: d.motivoEncerramento || '',
         });
       } catch {
         setError('Falha ao carregar dados do processo.');
@@ -109,8 +137,11 @@ function ProcessoFormPage() {
   }, [id, isEditing]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    // A liminar é a única caixa de marcar do formulário. Sem este ramo ela
+    // gravaria a string "on" do DOM em vez do booleano, e o backend recusaria
+    // com "liminar deve ser booleano".
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   // ── Participantes ────────────────────────────────────────────────────────
@@ -229,7 +260,27 @@ function ProcessoFormPage() {
       descricao: formData.descricao || undefined,
       observacoes: formData.observacoes || undefined,
       dataDistribuicao: formData.dataDistribuicao || undefined,
+
+      // ── DEC-054 — sinalizador e carimbo ────────────────────────────────
+      //
+      // `null` e não `undefined` nos campos apagáveis: a convenção do projeto é
+      // que campo apagado envia `null`. Com `undefined` o campo sairia do JSON
+      // e a data do trânsito em julgado registrada por engano ficaria lá para
+      // sempre — não haveria como desfazê-la pela tela.
+      liminar: formData.liminar === true,
+      liminarObservacao: formData.liminarObservacao || null,
+      liminarEm: formData.liminarEm || null,
+      transitoEmJulgadoEm: formData.transitoEmJulgadoEm || null,
+      motivoEncerramento: formData.motivoEncerramento || null,
     };
+
+    // ── `fase` só na CRIAÇÃO ─────────────────────────────────────────────
+    //
+    // No processo já existente ela muda por `PATCH /processes/:id/fase`, que é
+    // a única escrita que grava histórico. Mandá-la daqui numa edição voltaria
+    // 400 — o backend recusa o campo nesta rota de propósito, e a mensagem dele
+    // aponta para a rota certa.
+    if (!isEditing) payload.fase = formData.fase || FASE_PADRAO;
 
     try {
       if (isEditing) {
@@ -388,6 +439,115 @@ function ProcessoFormPage() {
           <div className="form-group span-1">
             <label htmlFor="comarca">Comarca</label>
             <input type="text" id="comarca" name="comarca" value={formData.comarca} onChange={handleChange} />
+          </div>
+
+          {/* ── DEC-054 — a fase, no cadastro ────────────────────────────
+              Aparece só na CRIAÇÃO: um processo pode ser cadastrado quando já
+              está em execução, e obrigá-lo a nascer em conhecimento para
+              depois ser movido registraria uma transição que não aconteceu.
+
+              Na EDIÇÃO ela vira leitura, com o caminho dito por extenso — a
+              mudança tem rota própria porque grava histórico, e um segundo
+              lugar para mudá-la gravaria a metade das transições. */}
+          <div className="form-group span-1">
+            <label htmlFor="fase">Fase do processo</label>
+            {isEditing ? (
+              <p className="campo-somente-leitura">
+                {rotuloDaFase(formData.fase)}
+                <span className="campo-ajuda">
+                  A fase muda no detalhe do processo, em “Andamento” — toda
+                  mudança fica registrada no histórico.
+                </span>
+              </p>
+            ) : (
+              <select id="fase" name="fase" value={formData.fase} onChange={handleChange}>
+                {/* As quatro, sempre. Nenhuma desabilitada, nenhuma ordem
+                    imposta — *"sim, pode voltar"*. */}
+                {FASE_PROCESSO_OPTIONS.map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* ── DEC-054 — liminar: sinalizador, não fase ──────────────────
+              *"Liminar é um plus dentro das fases (…) não é uma fase nova."*
+              Por isso é uma caixa de marcar ao lado da fase, e não um valor
+              dentro dela: o processo continua na fase em que está.
+
+              A observação e a data são OPCIONAIS — a marca vale sozinha. */}
+          <div className="form-group span-1">
+            <label htmlFor="liminar" className="campo-marcar">
+              <input
+                type="checkbox"
+                id="liminar"
+                name="liminar"
+                checked={formData.liminar}
+                onChange={handleChange}
+              />
+              Processo com liminar
+            </label>
+          </div>
+
+          <div className="form-group span-1">
+            <label htmlFor="liminarEm">Data da liminar</label>
+            <input
+              type="date"
+              id="liminarEm"
+              name="liminarEm"
+              value={formData.liminarEm}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="form-group span-3">
+            <label htmlFor="liminarObservacao">Observação da liminar (opcional)</label>
+            <input
+              type="text"
+              id="liminarObservacao"
+              name="liminarObservacao"
+              value={formData.liminarObservacao}
+              maxLength={2000}
+              onChange={handleChange}
+            />
+          </div>
+
+          {/* ── DEC-054 — encerramento: o OUTRO eixo ──────────────────────
+              *"Trânsito em julgado — processo encerrou completamente, acabou
+              todos os processos de recurso."*
+
+              **Não depende da fase.** A data pode ser preenchida com o
+              processo em qualquer uma das quatro — a Laís descreveu "acordo
+              cumprido → trânsito em julgado", e acordo se cumpre em
+              conhecimento, em execução, em qualquer lugar. Se algum dia esta
+              tela exigir "recursos" para liberar o campo, alguém inventou um
+              caminho único onde ela descreveu vários. */}
+          <div className="form-group span-1">
+            <label htmlFor="transitoEmJulgadoEm">Trânsito em julgado</label>
+            <input
+              type="date"
+              id="transitoEmJulgadoEm"
+              name="transitoEmJulgadoEm"
+              value={formData.transitoEmJulgadoEm}
+              onChange={handleChange}
+            />
+          </div>
+
+          {/* Texto livre, e não uma lista: ela citou UM caminho ("acordo
+              cumprido") e a prática dela certamente tem outros. Congelar a
+              lista com um exemplo dentro obrigaria a advogada a escolher entre
+              mentir e não registrar. */}
+          <div className="form-group span-2">
+            <label htmlFor="motivoEncerramento">Motivo do encerramento (opcional)</label>
+            <input
+              type="text"
+              id="motivoEncerramento"
+              name="motivoEncerramento"
+              placeholder="Ex.: acordo cumprido"
+              value={formData.motivoEncerramento}
+              maxLength={2000}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="form-group span-3">

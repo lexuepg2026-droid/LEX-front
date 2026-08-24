@@ -3,7 +3,7 @@
 //
 // O backend já manda uma mensagem em prosa, e ela continua sendo o texto base.
 // O que estas funções acrescentam é o que só as CHAVES ESTRUTURADAS sabem: o
-// saldo que ainda cabe na parcela, quantos dependentes bloqueiam a exclusão,
+// saldo que ainda cabe na parcela, quantos dependentes bloqueiam a ação,
 // quais variáveis faltam.
 //
 // Por que não basta repassar `message`: a prosa do servidor diz "o pagamento
@@ -25,15 +25,45 @@ import {
 } from './apiError.js';
 import { formatCurrency } from './formatters.js';
 
-// Rótulo do dependente que bloqueia a exclusão. As chaves são o vocabulário
-// FECHADO de `config/integrityConflicts.js` — nome da coleção, em português, no
-// plural. Não inventar valor fora desta lista: ela existe justamente para o
-// frontend parar de chutar entre "parcelas", "parcela" e "installments".
+// Rótulo do dependente que bloqueia a recusa, e O VERBO da ação recusada. As
+// chaves são o vocabulário FECHADO de `config/integrityConflicts.js` — nome da
+// coleção, em português, no plural. Não inventar valor fora desta lista: ela
+// existe justamente para o frontend parar de chutar entre "parcelas",
+// "parcela" e "installments".
+//
+// ── Por que o VERBO mora aqui (F-2d, achado do passo 184) ─────────────────
+// A frase era fixa: *"A exclusão foi recusada. (…) remova antes de excluir."*
+// A F-2b renomeou a ação para **"Desativar"** em Clientes e Processos — sempre
+// foi soft delete, e com a reativação existindo o nome antigo mente. A
+// mensagem ficou com a palavra velha, prometendo uma destruição que não
+// acontece.
+//
+// Corrigir só onde a ação MUDOU, e não em toda parte: Honorários, Parcelas,
+// Documentos e Seções continuam com o verbo que têm nos menus delas. Um verbo
+// único para as seis faria a mensagem discordar do botão em quatro telas para
+// concordar em duas.
+//
+//   `processos`  → bloqueia a desativação de um CLIENTE   → "desativar"
+//   `parcelas`   → bloqueia a exclusão de um HONORÁRIO    → "excluir"
+//   `pagamentos` → bloqueia a exclusão de uma PARCELA     → "excluir"
+//   `documentos` → bloqueia a exclusão de uma SEÇÃO       → "excluir"
 const ROTULO_DEPENDENCIA = {
-  parcelas: { singular: 'parcela ativa', plural: 'parcelas ativas' },
-  pagamentos: { singular: 'pagamento ativo', plural: 'pagamentos ativos' },
-  processos: { singular: 'processo ativo', plural: 'processos ativos' },
-  documentos: { singular: 'documento ativo', plural: 'documentos ativos' },
+  parcelas: {
+    singular: 'parcela ativa', plural: 'parcelas ativas',
+    acao: 'A exclusão foi recusada.', verbo: 'excluir',
+  },
+  pagamentos: {
+    singular: 'pagamento ativo', plural: 'pagamentos ativos',
+    acao: 'A exclusão foi recusada.', verbo: 'excluir',
+  },
+  processos: {
+    singular: 'processo ativo', plural: 'processos ativos',
+    acao: 'A desativação foi recusada.', verbo: 'desativar',
+  },
+  documentos: {
+    singular: 'documento ativo', plural: 'documentos ativos',
+    acao: 'A exclusão foi recusada.', verbo: 'excluir',
+  },
 };
 
 // ── 409 de excedente de pagamento ──────────────────────────────────────────
@@ -65,7 +95,8 @@ export const mensagemDeExcedente = (err) => {
 //
 // Sem `campo`, e a mensagem NÃO destaca input nenhum: o conflito é entre
 // registros já gravados. O que a tela acrescenta é quantos e de que tipo, para
-// a advogada saber o que precisa remover antes.
+// a advogada saber o que precisa remover antes — e, desde a F-2d, o VERBO
+// certo da ação que foi recusada.
 export const mensagemDeIntegridade = (err) => {
   const { dependencia, quantidade } = getApiErrorConflict(err);
   if (!dependencia || quantidade === null) return null;
@@ -73,10 +104,10 @@ export const mensagemDeIntegridade = (err) => {
   const rotulo = ROTULO_DEPENDENCIA[dependencia];
   if (!rotulo) return null;
 
-  const base = getApiErrorMessage(err, 'A exclusão foi recusada.');
+  const base = getApiErrorMessage(err, rotulo.acao);
   const contagem = quantidade === 1 ? `1 ${rotulo.singular}` : `${quantidade} ${rotulo.plural}`;
 
-  return `${base} Há ${contagem} vinculada(s) — remova antes de excluir.`;
+  return `${base} Há ${contagem} vinculada(s) — remova antes de ${rotulo.verbo}.`;
 };
 
 // ── 422 de pendências de cadastro ──────────────────────────────────────────

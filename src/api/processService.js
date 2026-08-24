@@ -1,12 +1,16 @@
 import api from './axiosConfig';
 
-const listProcesses = ({ page = 1, limit = 20, busca, status, situacao } = {}) => {
+const listProcesses = ({ page = 1, limit = 20, busca, status, situacao, fase, liminar } = {}) => {
   const params = { page, limit };
   if (busca) params.busca = busca;
   if (status) params.status = status;
   // DEC-052: sem `situacao` o backend mantém o padrão de sempre (só ativos).
   // Não confundir com `status`, que é o andamento jurídico do processo.
   if (situacao) params.situacao = situacao;
+  // DEC-054 — os dois eixos novos. `fase` é onde o processo está; `liminar`
+  // recorta por `com`/`sem`, e vazio não filtra nada.
+  if (fase) params.fase = fase;
+  if (liminar) params.liminar = liminar;
   return api.get('/processes', { params });
 };
 const getProcessById = (id) => api.get(`/processes/${id}`);
@@ -15,6 +19,21 @@ const createProcess = (data) => api.post('/processes', data);
 // alias depreciado, mas não se chama mais daqui.
 const updateProcess = (id, data) => api.patch(`/processes/${id}`, data);
 const deleteProcess = (id) => api.delete(`/processes/${id}`);
+
+// ── DEC-054 — a fase tem rota própria ───────────────────────────────────────
+//
+// Não é `updateProcess` com mais um campo, e a diferença é de contrato: toda
+// mudança de fase grava uma entrada de `historicoFase` no servidor, e o PATCH
+// comum não teria onde pendurar isso. `fase` está fora da allowlist dele de
+// propósito, e mandá-la por lá volta 400 apontando para cá.
+//
+// `motivo` é OPCIONAL — *"não precisa anotar o porquê, só se ela quiser
+// mesmo"*. Vazio não é enviado; a transição acontece igual.
+const mudarFase = (id, { fase, motivo } = {}) => {
+  const corpo = { fase };
+  if (motivo && motivo.trim()) corpo.motivo = motivo.trim();
+  return api.patch(`/processes/${id}/fase`, corpo);
+};
 
 // DEC-052 — a volta. Restaura o processo e só os vínculos que a cascata dele
 // derrubou. `PATCH` em sub-rota própria: `ativo` está fora da allowlist de
@@ -70,6 +89,7 @@ export default {
   getProcessById,
   createProcess,
   updateProcess,
+  mudarFase,
   deleteProcess,
   reactivateProcess,
   getActivationPreview,

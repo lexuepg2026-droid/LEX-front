@@ -68,6 +68,48 @@ export const TIPO_DOCUMENTO_OPTIONS = [
   { value: 'outro', label: 'Outro' },
 ];
 
+// ── Processo: fase e encerramento (DEC-054, F-2d) ──────────────────────────
+
+// Fase processual. Mesmos 4 valores de `FASES_PROCESSO` do backend
+// (`config/fasesProcesso.js`) — se divergirem, o PATCH volta 400. Espelho sem
+// endpoint, de propósito e pela mesma razão do tipo de honorário: é constante,
+// não dado. Há teste nos dois repos travando que as listas não divergiram.
+//
+// **O vocabulário é da Laís**, dito em 23/08/2026: *"fase inicial (fase de
+// conhecimento) / sentença / execução / recursos"*.
+//
+// ⚠️ O rótulo da primeira está **PENDENTE DE RATIFICAÇÃO**: ela deu duas
+// palavras para a mesma fase. Adotado "Fase de conhecimento" porque "inicial" é
+// posicional e deixa de valer quando o processo VOLTA — e ela disse que pode
+// voltar. Trocar o rótulo aqui não migra nada: o valor gravado é
+// `conhecimento`.
+//
+// ── A ordem é de EXIBIÇÃO, não de obrigação ───────────────────────────────
+// É a ordem em que ela as disse. **Não existe transição proibida**: qualquer
+// fase vai para qualquer fase, inclusive para trás. Nenhuma tela deste repo
+// compara posições nesta lista — procure por um `indexOf` contra ela e não vai
+// achar nenhum.
+export const FASE_PROCESSO_OPTIONS = [
+  { value: 'conhecimento', label: 'Fase de conhecimento' },
+  { value: 'sentenca', label: 'Sentença' },
+  { value: 'execucao', label: 'Execução' },
+  { value: 'recursos', label: 'Recursos' },
+];
+
+// Rótulo da fase, pelo caminho único. Existe para que nenhuma tela monte o
+// texto por conta própria — foi o que a tela de processos fazia com o `status`,
+// capitalizando a string crua do enum, e é como "parcialmente_pago" chegou a
+// aparecer com sublinhado na interface.
+export const rotuloDaFase = (fase) => labelDe(FASE_PROCESSO_OPTIONS, fase);
+
+// Filtro de liminar da listagem. Três estados, e o padrão é não filtrar — o
+// backend ignora qualquer valor fora de `com`/`sem`.
+export const FILTRO_LIMINAR_OPTIONS = [
+  { value: '', label: 'Com e sem liminar' },
+  { value: 'com', label: 'Somente com liminar' },
+  { value: 'sem', label: 'Somente sem liminar' },
+];
+
 // ── Financeiro (Fase 4.2) ──────────────────────────────────────────────────
 
 // Tipo do honorário. Mesmos 3 valores de `TIPOS_HONORARIO` do backend
