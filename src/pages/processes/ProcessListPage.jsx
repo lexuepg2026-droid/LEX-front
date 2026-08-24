@@ -6,7 +6,12 @@ import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { formatDate } from '../../utils/formatters';
-import { nomeDoCliente } from '../../utils/enums';
+import {
+  FASE_PROCESSO_OPTIONS,
+  FILTRO_LIMINAR_OPTIONS,
+  nomeDoCliente,
+  rotuloDaFase,
+} from '../../utils/enums';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
 import { getApiErrorMessage } from '../../utils/apiError';
@@ -30,6 +35,9 @@ function ProcessoListPage() {
   const [busca, setBusca] = useState('');
   const [buscaDebounced, setBuscaDebounced] = useState('');
   const [status, setStatus] = useState('');
+  // DEC-054 — dois recortes novos, independentes entre si e do `status`.
+  const [fase, setFase] = useState('');
+  const [liminar, setLiminar] = useState('');
   // Sem isto a reativação não teria onde acontecer: a listagem escondia os
   // desativados e um menu com "Reativar" não teria linha onde existir.
   const [situacao, setSituacao] = useState('ativos');
@@ -48,12 +56,14 @@ function ProcessoListPage() {
     processService.listProcesses({
       busca: buscaDebounced || undefined,
       status: status || undefined,
+      fase: fase || undefined,
+      liminar: liminar || undefined,
       situacao
     })
       .then(res => setProcessos(res.data.data ?? res.data))
       .catch(() => setError('Falha ao buscar processos.'))
       .finally(() => setLoading(false));
-  }, [buscaDebounced, status, situacao, versao]);
+  }, [buscaDebounced, status, fase, liminar, situacao, versao]);
 
   // ── DEC-052: a contagem vem ANTES da confirmação ────────────────────────
   //
@@ -157,6 +167,34 @@ function ProcessoListPage() {
           <option value="encerrado">Encerrado</option>
           <option value="suspenso">Suspenso</option>
         </select>
+        {/* DEC-054 — a fase é o eixo NOVO, e não substitui o `status` ao lado:
+            "suspenso" não é uma fase, e "execução" não é um status. Os dois
+            filtram juntos de propósito — "em execução E suspenso" é pergunta
+            legítima. */}
+        <select
+          value={fase}
+          onChange={e => setFase(e.target.value)}
+          aria-label="Fase do processo"
+        >
+          <option value="">Todas as fases</option>
+          {FASE_PROCESSO_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+        {/* DEC-054 — o filtro da liminar. É ELE que recorta, e não a ordenação:
+            ela pediu destaque ("liminar é um plus"), não prioridade. A lista
+            NUNCA se reordena por liminar — reordenar muda o que a advogada
+            espera encontrar onde deixou. Quem quiser ver só as liminares usa
+            este seletor, e decide QUANDO. */}
+        <select
+          value={liminar}
+          onChange={e => setLiminar(e.target.value)}
+          aria-label="Liminar"
+        >
+          {FILTRO_LIMINAR_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
         {/* DEC-052 — não confundir com o filtro ao lado: `status` é o andamento
             jurídico ("encerrado" continua sendo um processo vivo no cadastro);
             `situacao` é se o REGISTRO existe para o sistema. É por este seletor
@@ -185,6 +223,7 @@ function ProcessoListPage() {
               <col />
               <col className="col-lg" />
               <col />
+              <col className="col-sm" />
               <col className="col-xs" />
               <col className="col-sm" />
               <col className="col-acoes-menu" />
@@ -194,6 +233,10 @@ function ProcessoListPage() {
                 <th>Título</th>
                 <th>Nº Processo</th>
                 <th>Cliente</th>
+                {/* DEC-054: a fase entra ao lado do status, não no lugar dele.
+                    São eixos diferentes, e a coluna que sumisse levaria junto o
+                    filtro que a advogada usa desde a Fase 2. */}
+                <th>Fase</th>
                 <th>Status</th>
                 <th>Distribuição</th>
                 <th>Ações</th>
@@ -208,10 +251,30 @@ function ProcessoListPage() {
                         distingue uma da outra. A tag vem ANTES do título porque
                         é ela que muda como o resto da linha deve ser lido. */}
                     {p.ativo === false && <span className="tag-desativado">Desativado</span>}
+                    {/* DEC-054 — o selo da liminar. *"Liminar é um plus dentro
+                        das fases (…) não é uma fase nova."* Por isso é um selo
+                        ao lado do título, e não um valor na coluna Fase: o
+                        processo continua tendo a fase que tem.
+
+                        Em cor de atenção, e com `title` para quem passar o
+                        mouse ler a observação — quando houver. A observação é
+                        opcional, e o selo aparece com ou sem ela. */}
+                    {p.liminar === true && (
+                      <span
+                        className="tag-liminar"
+                        title={p.liminarObservacao || 'Processo com liminar'}
+                      >
+                        Liminar
+                      </span>
+                    )}
                     {p.titulo}
                   </td>
                   <td className="cell-truncate">{p.numeroProcesso || '—'}</td>
                   <td className="cell-truncate" title={nomeCliente(p)}>{nomeCliente(p)}</td>
+                  {/* O rótulo vem de `rotuloDaFase`, nunca montado aqui: foi
+                      assim que a coluna de status já exibiu string crua de enum
+                      com sublinhado. */}
+                  <td className="cell-truncate">{rotuloDaFase(p.fase)}</td>
                   <td><StatusBadge status={p.status} /></td>
                   <td>{formatDate(p.dataDistribuicao)}</td>
                   {/* DEC-047: a coluna de ações é o menu ⋮. "Gerenciar" é o

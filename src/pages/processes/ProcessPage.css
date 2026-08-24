@@ -320,3 +320,123 @@
   padding: var(--space-3);
   margin-top: var(--space-2);
 }
+
+/* ── DEC-054 — o painel de andamento (F-2d) ────────────────────────────────
+   Os dois eixos e a linha do tempo, na tela de detalhe. */
+
+.andamento-atual {
+  margin-bottom: var(--space-4);
+}
+
+/* O selo da liminar (`.tag-liminar`, em `styles/modules.css`) aparece aqui do
+   mesmo jeito que na listagem. O que muda é só o afastamento: na tabela ele
+   vem ANTES do título e empurra à direita; aqui vem DEPOIS do rótulo da fase e
+   precisa do espaço do outro lado. */
+.andamento-selo {
+  margin-right: 0;
+  margin-left: var(--space-2);
+}
+
+.andamento-detalhe {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Uma coluna, e não uma linha de campos lado a lado: em 360 px a linha viraria
+   três controles espremidos, e o motivo — que é texto livre — seria o mais
+   estreito dos três, justamente o que mais precisa de largura. */
+.andamento-mudar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 480px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-raised);
+}
+
+.andamento-mudar label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+/* O botão não estica: numa caixa de 480 px um botão de largura total pareceria
+   a ação principal da tela, e a ação principal aqui continua sendo ler o
+   processo. */
+.andamento-mudar button {
+  align-self: flex-start;
+}
+
+.andamento-historico-titulo {
+  margin-top: var(--space-4);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.andamento-historico {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-2) 0 0;
+}
+
+.andamento-historico li {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.andamento-historico li:last-child {
+  border-bottom: none;
+}
+
+/* O motivo em bloco próprio, abaixo do `de → para`: ele é texto livre e pode
+   ter duas linhas. Na mesma linha da transição ele empurraria a data para fora
+   da vista, que é o dado que a advogada procura primeiro. */
+.andamento-motivo {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--font-size-sm);
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+/* ── DEC-054 — os campos novos do formulário (F-2d) ────────────────────────*/
+
+/* A fase, na EDIÇÃO, é leitura. Herda a altura e o alinhamento dos `<input>`
+   vizinhos para a grade não ganhar um degrau na linha em que ela aparece — um
+   texto solto entre dois campos de formulário parece erro de renderização. */
+.campo-somente-leitura {
+  margin: 0;
+  padding: var(--space-2) 0;
+  color: var(--color-text-primary);
+}
+
+/* A frase que diz ONDE a fase muda. Não é decoração: sem ela o campo em modo
+   leitura parece um campo quebrado, e a advogada procura o botão de editar que
+   não existe nesta tela. */
+.campo-ajuda {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+/* A única caixa de marcar do formulário. `<label>` envolvendo o `<input>` é o
+   que dá a área de clique inteira ao texto — e é o que faz o rótulo ser
+   anunciado junto do estado por leitor de tela, sem depender de `aria-label`
+   escrito à mão. */
+.campo-marcar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  cursor: pointer;
+}
+
+.campo-marcar input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}

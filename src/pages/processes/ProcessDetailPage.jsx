@@ -3,10 +3,12 @@ import { useParams, Link } from 'react-router-dom';
 import processService from '../../api/processService';
 import { toast } from '../../utils/toast';
 import {
+  FASE_PROCESSO_OPTIONS,
   PAPEL_PROCESSO_OPTIONS,
   documentoDoCliente,
   labelDe,
   nomeDoCliente,
+  rotuloDaFase,
 } from '../../utils/enums';
 import { getApiErrorMessage } from '../../utils/apiError';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -52,6 +54,22 @@ function ProcessoDetalhePage() {
 
   const [confirmacoes, setConfirmacoes] = useState(null);
   const [carregandoConfirmacoes, setCarregandoConfirmacoes] = useState(false);
+
+  // ── DEC-054 — a mudança de fase mora AQUI, e não no formulário ──────────
+  //
+  // Duas razões, e as duas são de contrato:
+  //
+  //   1. a fase tem rota própria (`PATCH /processes/:id/fase`) porque toda
+  //      mudança grava histórico. O formulário salva por `PATCH /processes/:id`,
+  //      que recusa o campo — misturar os dois faria um "Salvar" só disparar
+  //      duas requisições com semânticas diferentes;
+  //   2. o MOTIVO é da transição, não do processo. Num formulário de quinze
+  //      campos ele pareceria mais um dado cadastral, e ela dispensou o
+  //      "porquê" justamente por não querer preencher campo obrigatório.
+  const [faseEscolhida, setFaseEscolhida] = useState('');
+  const [motivoFase, setMotivoFase] = useState('');
+  const [salvandoFase, setSalvandoFase] = useState(false);
+
   const { id } = useParams();
 
   useEffect(() => {
@@ -60,6 +78,7 @@ function ProcessoDetalhePage() {
         setLoading(true);
         const response = await processService.getProcessById(id);
         setProcesso(response.data);
+        setFaseEscolhida(response.data.fase ?? '');
       } catch (err) {
         // A mensagem fixa dizia "Falha ao carregar dados do processo" também em
         // 500 e em queda de rede, e custava tempo de diagnóstico. O genérico
@@ -105,6 +124,36 @@ function ProcessoDetalhePage() {
       toast.error(getApiErrorMessage(err, 'Não foi possível carregar as confirmações.'));
     } finally {
       setCarregandoConfirmacoes(false);
+    }
+  };
+
+  // ── DEC-054: mudar a fase ────────────────────────────────────────────────
+  //
+  // Não há verificação de ordem aqui, e a ausência é a regra: *"sim, pode
+  // voltar"*. Recursos vai para conhecimento sem encontrar um `if` no caminho,
+  // e o botão fica habilitado para qualquer uma das quatro.
+  //
+  // A única coisa que o desabilita é `salvandoFase` — evitar o clique duplo,
+  // que gravaria duas entradas iguais no histórico.
+  const salvarFase = async () => {
+    setSalvandoFase(true);
+    try {
+      const { data } = await processService.mudarFase(id, {
+        fase: faseEscolhida,
+        // Opcional. Vazio não é enviado, e a transição acontece igual —
+        // *"não precisa anotar o porquê, só se ela quiser mesmo"*.
+        motivo: motivoFase,
+      });
+      setProcesso(data);
+      setFaseEscolhida(data.fase ?? '');
+      // O motivo é da TRANSIÇÃO, e a transição acabou: deixá-lo no campo faria
+      // a próxima mudança herdar a justificativa da anterior.
+      setMotivoFase('');
+      toast.success(`Fase alterada para ${rotuloDaFase(data.fase)}.`);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Não foi possível mudar a fase do processo.'));
+    } finally {
+      setSalvandoFase(false);
     }
   };
 
@@ -224,8 +273,131 @@ function ProcessoDetalhePage() {
         )}
       </div>
 
+      {/* ── DEC-054 — ANDAMENTO: os dois eixos, lado a lado e separados ─────
+          A Laís descreveu DUAS coisas, e a tela mostra as duas como duas:
+
+            • a FASE — onde o processo está. Anda nos dois sentidos.
+            • o ENCERRAMENTO — se acabou. Não é a quinta fase.
+
+          Um processo em recursos e um processo transitado em julgado não estão
+          em pontos diferentes da mesma régua, e uma tela que os pusesse no
+          mesmo seletor obrigaria a advogada a escolher entre dizer onde o
+          processo está e dizer que ele acabou. */}
+      <div className="processo-detalhe-secao">
+        <h3>Andamento do processo</h3>
+
+        <div className="andamento-atual">
+          <p>
+            <strong>Fase atual:</strong> {rotuloDaFase(processo.fase)}
+            {/* O selo da liminar aparece no detalhe como aparece na listagem —
+                mesma classe, mesma palavra, mesma cor. Dois desenhos para o
+                mesmo fato fariam a advogada duvidar se são o mesmo fato. */}
+            {processo.liminar === true && (
+              <span
+                className="tag-liminar andamento-selo"
+                title={processo.liminarObservacao || 'Processo com liminar'}
+              >
+                Liminar
+              </span>
+            )}
+          </p>
+
+          {/* A liminar é SINALIZADOR, não estado: ela não muda a fase e não é
+              exigida por nada. A marcação, a observação e a data são editadas
+              no formulário do processo, junto do resto do cadastro — aqui elas
+              só são LIDAS, porque não geram histórico. */}
+          {processo.liminar === true && (
+            <p className="andamento-detalhe">
+              <strong>Liminar:</strong>{' '}
+              {processo.liminarEm ? formatarData(processo.liminarEm) : 'sem data registrada'}
+              {processo.liminarObservacao ? ` — ${processo.liminarObservacao}` : ''}
+            </p>
+          )}
+
+          <p className="andamento-detalhe">
+            <strong>Trânsito em julgado:</strong>{' '}
+            {processo.transitoEmJulgadoEm ? (
+              <>
+                {formatarData(processo.transitoEmJulgadoEm)}
+                {processo.motivoEncerramento ? ` — ${processo.motivoEncerramento}` : ''}
+              </>
+            ) : (
+              'ainda não'
+            )}
+          </p>
+        </div>
+
+        {/* ── Mudar de fase ──────────────────────────────────────────────
+            O seletor oferece AS QUATRO, sempre, sem ordem imposta e sem
+            nenhuma desabilitada. *"Sim, pode voltar."* Se alguma opção
+            aparecer bloqueada aqui, alguém inventou uma máquina de estados
+            que a Laís não pediu. */}
+        <div className="andamento-mudar">
+          <label htmlFor="fase">Mudar a fase</label>
+          <select
+            id="fase"
+            value={faseEscolhida}
+            onChange={(e) => setFaseEscolhida(e.target.value)}
+          >
+            {FASE_PROCESSO_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+
+          {/* OPCIONAL, e a etiqueta diz isso. *"Não precisa anotar o porquê,
+              só se ela quiser mesmo."* Sem `required`, sem asterisco, e o
+              botão salva com o campo vazio. */}
+          <label htmlFor="motivoFase">Motivo (opcional)</label>
+          <input
+            type="text"
+            id="motivoFase"
+            value={motivoFase}
+            placeholder="Só se quiser registrar por quê"
+            maxLength={2000}
+            onChange={(e) => setMotivoFase(e.target.value)}
+          />
+
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={salvarFase}
+            disabled={salvandoFase || !faseEscolhida}
+          >
+            {salvandoFase ? 'Salvando…' : 'Mudar fase'}
+          </button>
+        </div>
+
+        {/* ── A linha do tempo, em forma bruta (F-2d) ────────────────────
+            A tela da linha do tempo é da F-2e. O que existe aqui é a LISTA do
+            que já foi gravado — e ela existe agora porque, sem exibir o
+            histórico, não há como a validação manual conferir que o `de → para`
+            está sendo escrito. */}
+        <h4 className="andamento-historico-titulo">Histórico de fases</h4>
+        {(processo.historicoFase ?? []).length === 0 ? (
+          <p className="andamento-detalhe">Nenhuma mudança de fase registrada.</p>
+        ) : (
+          <ul className="andamento-historico">
+            {[...(processo.historicoFase ?? [])].reverse().map((h, i) => (
+              <li key={`${h.data}-${i}`}>
+                {/* `de: null` na primeira entrada — o processo nasceu nesta
+                    fase, e não veio de nenhuma. Escrever "de —" ali seria
+                    inventar uma origem. */}
+                <strong>
+                  {h.de ? `${rotuloDaFase(h.de)} → ${rotuloDaFase(h.para)}` : `Cadastrado em ${rotuloDaFase(h.para)}`}
+                </strong>
+                <span className="andamento-detalhe"> — {dataHoraBR(h.data)}</span>
+                {h.motivo && <span className="andamento-motivo">{h.motivo}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       <div className="processo-detalhe-secao">
         <h3>Dados do Processo</h3>
+        {/* DEC-054: `status` continua aqui, e continua sendo outra coisa. Não
+            foi substituído pela fase — "suspenso" não é uma fase, e a listagem
+            filtra por ele desde a Fase 2. */}
         <p><strong>Status:</strong> {processo.status}</p>
         {processo.tipoAcao && <p><strong>Tipo de Ação:</strong> {processo.tipoAcao}</p>}
         {processo.area && <p><strong>Área:</strong> {processo.area}</p>}
