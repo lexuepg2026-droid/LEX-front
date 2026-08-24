@@ -171,7 +171,8 @@ function ClienteListPage() {
                   {/* DEC-047: a coluna de ações é o menu ⋮, aqui como em toda
                       listagem. As três ações são as mesmas de antes — nenhuma
                       foi perdida na migração —, agora com largura de UM botão.
-                      Excluir por último e em vermelho. */}
+                      A destrutiva por último e em vermelho — hoje é
+                      "Desativar", não mais "Excluir" (ver a nota abaixo). */}
                   <td className="actions-cell actions-cell--menu">
                     <ActionMenu
                       rotulo={`Ações de ${cliente.nome}`}
