@@ -25,6 +25,12 @@ const BREADCRUMB_MAP = {
   '/dashboard/secoes':       'Biblioteca de Seções',
   '/dashboard/secoes/nova':  'Nova Seção',
   '/dashboard/financeiro':   'Financeiro',
+  // F-3 — a agenda e o formulário do compromisso. As duas entradas estavam
+  // faltando nas telas de Seções e Financeiro até a varredura B.5 da 4.3, e o
+  // sintoma era cabeçalho sem trilha nenhuma justamente onde a advogada mais
+  // navega para dentro. Uma tela nova entra nos dois mapas no mesmo commit.
+  '/dashboard/agenda':       'Agenda',
+  '/dashboard/agenda/novo':  'Novo compromisso',
 };
 
 const SECTION_LABELS = {
@@ -35,6 +41,7 @@ const SECTION_LABELS = {
   documentos:  'Documentos',
   pagamentos:  'Pagamentos',
   secoes:      'Biblioteca de Seções',
+  agenda:      'Agenda',
 };
 
 // `rotuloDaPagina` é o nome do registro aberto, publicado pela própria página

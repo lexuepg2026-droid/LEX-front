@@ -1,0 +1,493 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   O CALENDÁRIO — GRADE CONSTRUÍDA À MÃO, SEM BIBLIOTECA NENHUMA
+
+   Sete colunas de `grid`, e mais nada. A conta dos dias vive em
+   `monthGrid.js`, que é função pura e testada; este arquivo só desenha.
+
+   ── A distinção entre as duas naturezas é por COR **e** por MARCA ────────
+   A DEC-055 pede que evento próprio e data derivada se distingam no relance.
+   A cor sozinha não serve: quem não distingue verde de âmbar não recebe
+   distinção nenhuma, e é a mesma pessoa que não recebe a informação de que
+   uma das linhas não se edita.
+
+   Por isso são três sinais somados — a barra lateral colorida, a forma dela
+   (cheia no evento, listrada na derivada) e o texto da legenda. Um leitor de
+   tela recebe o nome da natureza pelo `.sr-only` de `ItemDoCalendario`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.cal-page {
+  padding: var(--space-4);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Texto só para leitor de tela. Existia em `FeeRenegotiationPage.css` e é
+   repetido aqui de propósito: um CSS que só funciona se OUTRA página tiver
+   sido importada é exatamente o defeito que a varredura de classes existe
+   para achar (o caso do `.input-error`). */
+.cal-page .sr-only,
+.cal-item .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cal-erro {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+/* ── Barra de navegação e vistas ──────────────────────────────────────── */
+
+.cal-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.cal-nav__btn,
+.cal-nav__hoje {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.cal-nav__btn {
+  width: 36px;
+  height: 36px;
+}
+
+.cal-nav__hoje {
+  height: 36px;
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.cal-nav__btn:hover,
+.cal-nav__hoje:hover {
+  background: var(--color-surface-raised);
+}
+
+.cal-nav__mes {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+  min-width: 10ch;
+  text-align: center;
+  /* O mês por extenso é a única coisa que muda de largura nesta barra.
+     Sem o mínimo, os botões "<" e ">" andam de lugar entre "maio" e
+     "setembro" — e um alvo de clique que se move é um alvo que se erra. */
+}
+
+.cal-vistas {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.cal-vista {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.cal-vista:hover { background: var(--color-surface-raised); }
+
+.cal-vista--ativa {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* ── Legenda ──────────────────────────────────────────────────────────── */
+
+.cal-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  list-style: none;
+  padding: var(--space-3);
+  margin: 0 0 var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.cal-legenda__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.cal-legenda__marca {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.cal-legenda__texto { color: var(--color-text-muted); }
+
+/* ── A GRADE ──────────────────────────────────────────────────────────── */
+
+.cal-grade {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.cal-grade__cabecalho,
+.cal-grade__semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.cal-grade__dia-semana {
+  padding: var(--space-2);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-raised);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cal-celula {
+  /* A célula NÃO estica: altura mínima fixa, e o excesso vira "+N". Um dia com
+     sete itens empurraria as outras semanas para fora da tela, e a advogada
+     perderia a visão do mês por causa do dia mais ocupado dele. */
+  min-height: 104px;
+  max-height: 104px;
+  overflow: hidden;
+  padding: var(--space-1);
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cal-grade__semana > .cal-celula:last-child { border-right: none; }
+
+/* Dia de outro mês: esmaecido, mas PRESENTE. Uma casa vazia seria lida como
+   "não há nada nesse dia", quando o certo é "esse dia é de outro mês". */
+.cal-celula--fora { background: var(--color-bg); opacity: 0.55; }
+
+/* HOJE é visualmente distinto, SEMPRE — e não só quando tem compromisso. É a
+   única pergunta que um calendário responde sem que ninguém a faça.
+   O anel usa o dourado da marca, que é a mesma cor do foco: aqui não há
+   conflito, porque o foco desenha um anel EXTERNO com offset. */
+.cal-celula--hoje {
+  background: var(--color-accent-muted);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+.cal-celula__topo {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cal-celula__numero {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  line-height: 1;
+}
+
+.cal-celula__numero:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.cal-celula--hoje .cal-celula__numero {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-bold);
+}
+
+.cal-celula__itens {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.cal-celula__mais {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-align: left;
+  cursor: pointer;
+  padding: 1px var(--space-1);
+}
+
+.cal-celula__mais:hover { color: var(--color-accent); text-decoration: underline; }
+
+/* ── O ITEM, nas duas vistas ──────────────────────────────────────────── */
+
+.cal-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  text-align: left;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.cal-item:hover { border-color: var(--color-border-strong); }
+
+.cal-item--compacto {
+  font-size: var(--font-size-xs);
+  padding: 1px var(--space-1);
+  gap: var(--space-1);
+}
+
+.cal-item__marca {
+  width: 4px;
+  align-self: stretch;
+  min-height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.cal-item__hora {
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.cal-item__titulo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-item__subtitulo,
+.cal-item__valor {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* Concluído: riscado e esmaecido. Continua visível — a advogada precisa poder
+   ver o que já resolveu no dia, e esconder faria a agenda de uma segunda-feira
+   cheia parecer vazia às cinco da tarde. */
+.cal-item--concluido { opacity: 0.55; }
+.cal-item--concluido .cal-item__titulo { text-decoration: line-through; }
+
+/* ── AS DUAS NATUREZAS ────────────────────────────────────────────────── */
+
+/* Evento próprio: verde primário, barra CHEIA. É o fato que a advogada
+   registrou, e é o que ela edita aqui. */
+.cal-item--evento .cal-item__marca,
+.cal-legenda__marca.cal-item--evento {
+  background: var(--color-primary-light);
+}
+
+/* Data derivada: azul de informação, barra LISTRADA. O listrado é o segundo
+   sinal, para a distinção não depender de enxergar cor — e o azul é o tom de
+   `info`, não o de `danger`: um vencimento não deu errado, ele só vem de outro
+   lugar. */
+.cal-item--derivada .cal-item__marca,
+.cal-legenda__marca.cal-item--derivada {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--color-info),
+    var(--color-info) 3px,
+    transparent 3px,
+    transparent 6px
+  );
+  background-color: var(--color-info-bg);
+}
+
+.cal-item--derivada { border-style: dashed; }
+
+/* ── O dia aberto pelo "+N" ───────────────────────────────────────────── */
+
+.cal-dia-aberto {
+  margin-top: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.cal-dia-aberto__cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.cal-dia-aberto__cabecalho h3 {
+  margin: 0;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+}
+
+.cal-dia-aberto__fechar {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.cal-dia-aberto__itens {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ── A AGENDA ─────────────────────────────────────────────────────────── */
+
+.cal-agenda {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cal-agenda__dia {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.cal-agenda__dia--hoje { border-color: var(--color-accent); }
+
+.cal-agenda__cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.cal-agenda__data {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.cal-agenda__hoje {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-full);
+  padding: 1px var(--space-2);
+}
+
+.cal-agenda__novo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.cal-agenda__novo:hover { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+
+.cal-agenda__itens {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ── 360 px: a agenda é o padrão, e a grade continua ALCANÇÁVEL ───────── */
+
+@media (max-width: 767px) {
+  .cal-page { padding: var(--space-3) var(--space-2); }
+
+  .cal-toolbar { flex-direction: column; align-items: stretch; }
+  .cal-nav { justify-content: space-between; }
+  .cal-vistas { align-self: stretch; }
+  .cal-vista { flex: 1; justify-content: center; }
+
+  .cal-legenda { flex-direction: column; gap: var(--space-2); }
+  /* A explicação de cada natureza sai em 360 px: em duas linhas por item ela
+     empurraria a grade para baixo da dobra. O nome (`Compromisso` /
+     `Vencimento`) FICA, que é o que distingue as duas — e o texto inteiro
+     continua na tela larga, onde há espaço para explicar. */
+  .cal-legenda__texto { display: none; }
+
+  /* A grade cabe, mas apertada — e é por isso que ela não é o que ABRE.
+     Sete colunas em 360 px dão 51 px por dia; o "+1" aparece cedo, e é ele
+     que leva ao dia inteiro. */
+  .cal-celula {
+    min-height: 68px;
+    max-height: 68px;
+    padding: 2px;
+  }
+
+  .cal-celula__numero { font-size: var(--font-size-xs); padding: 1px 3px; }
+  .cal-item--compacto { padding: 0 2px; gap: 2px; }
+  /* A hora sai da célula compacta em 360 px: com 45 px úteis, "14:30" come o
+     título inteiro e o item vira um horário sem assunto. Ela continua na
+     agenda e no dia aberto, que é onde a linha tem largura. */
+  .cal-celula .cal-item__hora { display: none; }
+}

@@ -25,6 +25,8 @@ import SecaoFormPage from '../pages/secoes/SecaoFormPage';
 import PaymentListPage from '../pages/payments/PaymentListPage';
 import PaymentFormPage from '../pages/payments/PaymentFormPage';
 import FinanceiroPage from '../pages/financeiro/FinanceiroPage';
+import CalendarPage from '../pages/calendar/CalendarPage';
+import EventFormPage from '../pages/calendar/EventFormPage';
 import ProfilePage from '../pages/profile/ProfilePage';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -144,6 +146,20 @@ function AppRoutes() {
           <Route path="pagamentos/editar/:id" element={<PaymentFormPage />} />
 
           <Route path="financeiro" element={<FinanceiroPage />} />
+
+          {/* ── A agenda (F-3) ────────────────────────────────────────────
+              `/agenda`, e não `/calendario`: é a palavra que a advogada usa
+              para a coisa, e é o rótulo do menu. A rota é o nome do lugar, e
+              esta é a exceção que a convenção já prevê — sub-recursos que
+              nomeiam conceito do domínio em português (`/secoes`, `/clientes`,
+              `/reordenar`).
+
+              A VISTA e o MÊS vivem na query string (`?vista=`, `?mes=`), e não
+              no caminho: navegar entre meses não pode perder a vista, e o botão
+              "voltar" do navegador precisa desfazer a navegação de mês. */}
+          <Route path="agenda" element={<CalendarPage />} />
+          <Route path="agenda/novo" element={<EventFormPage />} />
+          <Route path="agenda/editar/:id" element={<EventFormPage />} />
 
           <Route path="perfil" element={<ProfilePage />} />
         </Route>
