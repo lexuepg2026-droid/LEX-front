@@ -2954,7 +2954,212 @@ de escopo já tinha sido gasto na Parte 1.
 
 ---
 
-## O que fica para adiante (atualizado em 24/08/2026 — depois da F-2d)
+## DEC-055 (frontend) — o que é FATO se edita; o que é DERIVADO leva à origem (F-3)
+
+A tela da agenda mostra **duas naturezas** no mesmo lugar, e a metade visível da
+decisão é a que a advogada vive:
+
+| | O quê | Na tela |
+|---|---|---|
+| **Compromisso** | audiência, prazo, reunião | barra **cheia**, verde. **Edita aqui.** |
+| **Vencimento** | parcela, honorário | barra **listrada**, borda **tracejada**, azul de `info`. **Leva à parcela.** |
+
+**A derivada não é editável no calendário.** Clicar nela navega para
+`/dashboard/parcelas/editar/:id` (ou `/honorarios/editar/:id`), com uma frase
+explicando por quê — *"este vencimento vem do financeiro e não se edita na
+agenda"*. Uma linha que se comporta diferente **sem explicação** é lida como
+tela quebrada.
+
+O ponto único é **`src/utils/calendarLabels.js`** (`destinoDoItem`), e o sino usa
+a **mesma função**: duplicar as rotas faria a parcela vencida do sino levar a um
+lugar diferente da mesma parcela no calendário.
+
+**Há teste travando que nenhum destino de derivada aponta para `/agenda`** — no
+dia em que alguém "unificar" os destinos, a derivada passaria a abrir um
+formulário de evento, e editar a data ali criaria a segunda fonte.
+
+### A distinção NÃO é só por cor
+
+**Três sinais somados:** cor, forma da barra (cheia × listrada) e borda (sólida ×
+tracejada), mais a **legenda escrita** e o nome da natureza em `.sr-only`.
+
+Quem não distingue verde de azul não recebe distinção nenhuma — e é **a mesma
+pessoa** que não receberia a informação de que uma das linhas não se edita.
+
+Em 360 px a **explicação** da legenda sai (duas linhas por item empurrariam a
+grade para baixo da dobra); o **nome** fica, porque é ele que distingue.
+
+---
+
+## A GRADE DO MÊS é função pura, construída à mão (F-3)
+
+`src/pages/calendar/monthGrid.js`. **Zero dependência nova — e isso inclui não
+instalar biblioteca de calendário.** Nem `date-fns`, nem `dayjs`, nem
+`react-calendar`. Há teste varrendo o `package.json` por doze nomes.
+
+A grade são sete colunas e no máximo seis linhas, e a conta cabe em vinte
+linhas. O último dia do mês é **o dia 0 do mês seguinte** — a forma que não
+precisa saber quantos dias tem cada mês nem se o ano é bissexto, e é por isso
+que fevereiro de **2024**, **2026** e **2100** saem certos sem uma linha sobre
+bissexto.
+
+**Tudo em `Date.UTC`.** Há teste varrendo o módulo por `.getDate(`, `.getMonth(`,
+`.getFullYear(`, `.getDay(` e `.setDate(` — nenhum método de hora local — e
+outro que constrói a grade em três fusos para provar que sai igual. Uma grade que
+monta o dia com hora local monta **o mês errado** a oeste de Greenwich.
+
+**As casas de fora do mês ENTRAM**, marcadas com `noMes: false`. Deixá-las vazias
+faria buraco na primeira e na última linha, e **buraco se lê como "não há nada
+nesse dia"** — não como "esse dia é de outro mês".
+
+O intervalo pedido ao backend é o **da grade**, e não o do mês: pedir só o mês
+deixaria em branco os dias vizinhos que a grade mostra.
+
+A virada de **ano** sai de graça: `Date.UTC(2026, 12, 1)` é janeiro de 2027.
+Escrever `mes === 12 ? ...` à mão é onde a virada de ano costuma errar.
+
+---
+
+## Em 360 px a AGENDA é o padrão — e a grade continua alcançável (F-3)
+
+Sete colunas em 360 px dão **51 px por dia**. Descontando borda e respiro sobram
+uns 45 px úteis: um dia com dois compromissos vira **dois retângulos ilegíveis**,
+e "Audiência de instrução" não cabe nem truncado de forma útil.
+
+`vistaPadrao(largura)` é função pura e testada: abaixo de **768 px** devolve
+`'agenda'`. O corte é o mesmo em que `AppLayout` troca a Sidebar pela BottomNav —
+é onde este projeto já decidiu que a tela virou celular, e um segundo limiar faria
+as duas coisas trocarem em larguras diferentes.
+
+**A grade não some no celular.** A advogada escolhe; o sistema só decide o que
+**abre**. Há teste travando que o seletor de vistas não recebe `display: none` em
+tela estreita.
+
+**A vista e o mês vivem na query string** (`?vista=`, `?mes=`), e não em `useState`:
+
+- navegar entre meses **não perde a vista** — ela está no endereço;
+- o **"voltar" do navegador** desfaz a navegação de mês, que é o que alguém
+  espera depois de clicar cinco vezes em ›;
+- existe **link** para "setembro na agenda", que é o que o sino usa.
+
+A vista é **reescrita a cada navegação de mês**: sem isso, quem chegasse por um
+link sem `?vista=` e clicasse em › perderia a vista implícita da largura e
+voltaria à grade em 360 px.
+
+### As outras regras da tela
+
+- **HOJE é visualmente distinto, sempre** — mesmo sem compromisso. É a única
+  pergunta que um calendário responde sem que ninguém a faça. E o `hoje` vem do
+  **backend**: um relógio de máquina atrasado destacaria o dia errado justamente
+  no componente cuja função é dizer que dia é hoje.
+- **A célula NÃO estica.** Altura máxima fixa, e o excesso vira **"+N"**, que
+  abre o dia. Um dia com sete itens empurraria as outras semanas para fora da
+  tela — a advogada perderia a visão do mês por causa do dia mais ocupado dele.
+  **O N é quantos ficaram de fora**, não o total: um "+8" com 3 à vista mandaria
+  procurar oito itens dos quais três já aparecem.
+- **Estado vazio com frase própria** — *"Nenhum compromisso em setembro/2026"*,
+  com o nome do mês. E **carregando ≠ vazio** (regra do passo 116): grade vazia e
+  grade carregando são indistinguíveis, e a segunda faz esperar por algo que não
+  vem.
+- **Criar clicando num dia**, com a data já preenchida (`?data=AAAA-MM-DD`,
+  validada — query string é digitável, e `?data=amanhã` não pode virar `value` de
+  um `<input type="date">`).
+- A agenda lista **só os dias que têm alguma coisa**: imprimir os trinta dias do
+  mês para mostrar três compromissos esconderia os três.
+
+---
+
+## A data NÃO vira `Date` em lugar nenhum da tela (F-3)
+
+A decisão de fuso está inteira no `CLAUDE.md` do **backend**. O que o frontend
+tem de garantir é o encaixe:
+
+- a `data` chega como **`"AAAA-MM-DD"`** e vai **direto** para o
+  `<input type="date">`, que fala esse formato nativamente;
+- as casas da grade são **strings**, e a comparação com o item é `===`;
+- **nenhuma linha constrói `Date` a partir da data do item.** Há teste varrendo
+  `CalendarPage.jsx`, `EventFormPage.jsx`, `api/calendarService.js` e
+  `api/eventService.js`.
+
+`formatDate` (com `timeZone: 'UTC'`) continua sendo quem **exibe** — e continua
+correto. O que mudou é que agora ele recebe uma string que já não tem fuso para
+errar, em vez de um instante que precisa ser desfeito.
+
+---
+
+## O SINO — no cabeçalho, e sem estado de lido (F-3)
+
+`NotificationBell` fica no **Header**, e não na Sidebar: precisa estar visível
+nas duas larguras, e em 360 px a Sidebar não existe.
+
+**Não existe "marcar como lido".** Há teste varrendo o componente por `.post(`,
+`.patch(`, `.delete(` e por `marcarComoLido`, `setLido`, `naoLidos`, `unread`.
+Um contador que só zera com clique treina a pessoa a zerar sem olhar.
+
+**Zero não aparece, nem como "0"** — o badge é renderizado sob `{total > 0 && ...}`.
+
+**O total vem calculado do backend**, e a tela não soma os três: se somasse, o dia
+em que um quarto caso entrasse ela continuaria mostrando três, e ninguém notaria
+porque o número continuaria plausível.
+
+O `aria-label` carrega o **número**: badge é informação visual pura, e sem isso
+quem lê por áudio ouve só "avisos".
+
+**Não é Web Push.** Há teste varrendo o componente por
+`Notification.requestPermission` e `pushManager`, e `public/sw.js` por `push`,
+`notificationclick` e `showNotification`. Decisão do Daniel em **24/08/2026**:
+aviso é sino com contador **dentro** do sistema.
+
+---
+
+## DEC-056 (frontend) — a linha do tempo, e a régua que diz onde é hoje (F-3)
+
+`ProcessTimeline`, na página do processo, **abaixo** da ficha financeira e
+**irmã** dela — não dentro.
+
+**O financeiro não entra**, e há teste varrendo o componente por `feeService`,
+`installmentService`, `paymentService`, `FeeStatement`, `formatCurrency` e `R$`.
+O extrato do honorário responde outra pergunta e já a responde bem.
+
+**A marca do "hoje" é uma LINHA na régua**, e não um estilo por item: o que a
+advogada procura ao abrir isto é **onde o presente está**, e um contorno
+diferente em cada item obriga a percorrer a lista para descobrir. Quando não há
+futuro nenhum, a linha vai no fim — a régua sempre diz onde o presente está.
+
+O **futuro** tem dois sinais (opacidade **e** marca tracejada), e o corte vem do
+backend.
+
+**Todos os rótulos vêm prontos** (`paraRotulo`, `deRotulo`, `tipoEventoRotulo`).
+Há teste conferindo que a tela **não escreve** "Fase de conhecimento", "Sentença",
+"Execução" nem "Recursos": o rótulo da primeira fase está **pendente de
+ratificação**, e escrevê-lo aqui faria a mudança acontecer em dois lugares.
+
+---
+
+## Tipos de evento — espelho SEM endpoint, e PENDENTE DE RATIFICAÇÃO (F-3)
+
+`TIPO_EVENTO_OPTIONS` em `src/utils/calendarLabels.js` repete
+`config/tiposEvento.js` do backend, de propósito e sem rota: é **constante, não
+dado**. Uma rota `/tipos-evento` custaria uma viagem de rede em toda carga de
+formulário para entregar quatro strings que não mudam entre deploys.
+
+O preço é a duplicação, e **há teste nos dois repos** comparando as listas — o
+que a torna aceitável. É a mesma escolha do tipo de honorário e da fase
+processual.
+
+⚠️ **Os quatro valores saíram do enunciado da fase, não da Laís.** Perícia,
+diligência e despacho são candidatos óbvios, e nenhum entrou. Trocar um rótulo
+não migra nada; o valor gravado é o que vai ao banco.
+
+**Nenhuma tela monta rótulo de tipo por conta própria** — o backend manda
+`tipoRotulo` pronto em todo item, e `calendarLabels` cobre o formulário, que
+precisa do rótulo antes de o evento existir. Há teste varrendo as telas por
+`.charAt(0).toUpperCase()` e por `replace('_'`: foi o que a tela de processos
+fazia com o `status`, e é como "parcialmente_pago" chegou a aparecer com
+sublinhado na interface.
+
+
+## O que fica para adiante (atualizado em 25/08/2026 — depois da F-3)
 
 **✅ F-2a — FEITA.** O **V-2** morreu (DEC-050), as gerações se agruparam
 (DEC-051), a coluna do rótulo parou de truncar, e o seed passou a gravar o plano
@@ -3001,6 +3206,11 @@ nos dois.
 `tests/regressions/dec054.test.js` e `tests/regressions/f2d.test.js`), backend **634** (+61). Zero skip, zero todo
 nos dois.
 
+**Suítes na F-3:** frontend **770** testes (+144, os novos em `tests/calendar/`
+— `grade`, `tela`, `sino`, `dec055` e `dec056`), backend **730** (+96, em
+`tests/calendar/` — `evento`, `fuso`, `dec055`, `dec056`, `hierarquia` e
+`sino`). Zero skip, zero todo nos dois.
+
 **Sobre o "zero skip" do frontend:** ele depende de `dist/` existir. O teste
 "o build separa o chunk do portal" é condicional ao build, e num clone limpo a
 suíte reporta **1 skip** sem que nada esteja errado. Rode `npm run build` antes
@@ -3008,28 +3218,30 @@ se quiser o 0/0.
 
 ---
 
-## A próxima fase é a F-2e — a LINHA DO TEMPO
+## A F-2e foi ENTREGUE dentro da F-3 (Parte 5) — o que ficou decidido
 
-Ela pediu: *"finalizado por etapa — fazer linha do tempo"*.
+A fase que esta seção anunciava não aconteceu como fase própria: a **linha do
+tempo** entrou como a **Parte 5 da F-3**, e a decisão é a **DEC-056**, acima.
 
-**O substrato já existe.** A F-2d passou a gravar `historicoFase` com
-`de → para`, data, autor e o motivo opcional — e começou a gravar **antes** de a
-tela existir, de propósito: gravar só a partir da tela faria a linha do tempo
-nascer sem passado.
+As duas perguntas que ficaram aqui para "decidir com a Laís antes" foram
+respondidas — **uma por decisão nossa, registrada; a outra continua aberta**:
 
-O que a F-2e tem de construir é a **leitura**: hoje o detalhe do processo mostra
-a lista bruta, no bloco "Histórico de fases", e ela existe para a validação
-manual conferir que o `de → para` está sendo escrito — não como desenho final.
+- **"só as fases, ou também o `historicoAtivacao`?"** — **DECIDIDO, e o
+  `historicoAtivacao` NÃO entrou.** A linha do tempo responde *"por onde este
+  processo andou"*; `historicoAtivacao` responde *"este registro esteve fora do
+  sistema"*. A segunda é pergunta administrativa sobre o **cadastro**, não sobre
+  o **processo** — e uma desativação seguida de reativação apareceria no meio da
+  história jurídica sem ter nada a ver com ela.
+  O **encerramento** e a **liminar**, esses entraram: são fatos do processo.
+- **"pagamento no êxito" e "cliente inadimplente"** — **continuam pendentes.**
+  Não foram tocados pela F-3. Ver o `CLAUDE.md` do backend; o primeiro mexe na
+  DEC-039, congelada, e a decisão é da Laís.
 
-**Duas coisas ficam para ela decidir com a Laís antes:**
-
-- a linha do tempo mostra **só as fases**, ou também o `historicoAtivacao`
-  (desativado/reativado) e o encerramento? Os três são append-only e carimbados,
-  e uni-los na LEITURA é fácil; uni-los no DADO seria o erro que a nota de
-  `historicoAtivacaoSchema.js` já recusou;
-- **"pagamento no êxito" e "cliente inadimplente"** — diagnosticados na F-2d,
-  **não implementados**. Ver o `CLAUDE.md` do backend. O primeiro mexe na
-  DEC-039, congelada; o segundo é consulta derivada e não deve virar campo.
+**A próxima fase é a F-4** — dashboard com ações e autocomplete com as tabelas de
+domínio do Davi. Depois a **F-5 (offline)**, que vem por último de propósito: com
+os dados em IndexedDB e numa fila de saída, **toda entidade nova custa dobrado**
+— e a F-3 acabou de criar uma (`Event`), com uma tela que consulta por intervalo
+e um sino que consulta o tempo todo.
 
 ---
 
