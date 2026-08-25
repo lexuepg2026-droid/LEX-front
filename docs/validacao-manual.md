@@ -2011,6 +2011,349 @@ Dados que vários passos usam:
   que fazer com os "encerrado".
   Fase de origem: F-2d
 
+## 34. Fase F-3 — O calendário: o que vem, e o que já aconteceu
+
+> **A fase criou uma ENTIDADE NOVA** — a primeira desde o Financeiro 2.0 — e
+> uma tela que junta, no mesmo lugar, duas naturezas de coisa:
+>
+> | | O quê | Vem de |
+> |---|---|---|
+> | **Evento próprio** | audiência, prazo, reunião | a coleção nova (`events`) |
+> | **Data derivada** | vencimento de parcela, vencimento de honorário | o financeiro, **lido na consulta** |
+>
+> **DEC-055, e é o coração da fase: data derivada NUNCA é gravada como evento.**
+> Gravá-la criaria duas fontes para o mesmo vencimento, e as duas divergem no
+> primeiro reparcelamento — o calendário continuaria mostrando as cinco parcelas
+> antigas, com o mesmo peso visual de uma audiência.
+>
+> **O risco número um da fase é o FUSO.** Este projeto já teve defeito de fuso
+> (o recibo do portal, passo 91). Um evento gravado como instante UTC e lido no
+> navegador **muda de dia**: a audiência de terça aparece na segunda, e ninguém
+> desconfia do calendário — desconfia da própria memória. **O passo 221 é o mais
+> importante desta fase.**
+>
+> **Pré-condição de 213 a 225:** `npm run seed:fresh`. O seed cria nove eventos
+> — um de cada tipo, um atrasado, dois de hoje, um concluído e um solto —, com
+> as datas calculadas **no momento da semeadura**, para o seed não envelhecer.
+>
+> ⚠️ **Os tipos de evento estão PENDENTES DE RATIFICAÇÃO DA LAÍS.** Audiência,
+> prazo, reunião e outro saíram do enunciado da fase, **não dela**. Perícia,
+> diligência e despacho são candidatos óbvios, e nenhum entrou — adivinhar o
+> vocabulário dela e depois migrar dado gravado sob um valor que ela nunca usou
+> é o que não se faz. Mesma marca da DEC-039 e da DEC-054.
+>
+> ⚠️ **O que esta fase NÃO faz, e não é para procurar:** recorrência (evento que
+> se repete), contagem de prazo processual (dias úteis, feriados, suspensão
+> forense), Web Push (notificação com o app fechado) e convite/integração com
+> Google ou Outlook. Os quatro são subsistemas inteiros e nenhum foi pedido.
+> **O "prazo" desta fase é uma data que a advogada digita, não uma data que o
+> sistema calcula.**
+
+- [ ] **213. ⭐ As duas vistas em 1024 px — a grade abre, e a agenda está a um clique**
+  Pré-condição: `npm run seed:fresh`. Janela em **1024 px de largura**.
+  **▶ ONDE IR.** Menu lateral → **Agenda**.
+  Passos:
+  1) conferir o que **abre** sem tocar em nada;
+  2) clicar em **Agenda** no seletor de vistas, e depois em **Mês**;
+  3) reparar no cabeçalho da grade e no mês escrito no topo.
+  Esperado no passo 1: abre na **grade do mês**, com sete colunas e o mês
+  corrente.
+  Esperado no passo 2: as duas vistas trocam, e o botão da vista ativa fica
+  visivelmente marcado.
+  Esperado no passo 3: os dias da semana começam em **dom** e terminam em
+  **sáb**; o mês aparece **por extenso** ("agosto/2026"), e não como "08/2026".
+  Por que só olho humano: a suíte prova que `vistaPadrao(1024)` é `'mes'` e que
+  a grade tem as semanas certas. O que ela não prova é se a grade **se lê** —
+  se o olho acha o dia que procura sem contar colunas.
+  Fase de origem: F-3
+
+- [ ] **214. ⭐ 🚨 Em 360 px a AGENDA é o padrão — e a grade continua alcançável**
+  Pré-condição: janela (ou DevTools) em **360 px de largura**, e recarregar a
+  página com `/dashboard/agenda` **sem query string** (é a query que guarda a
+  vista; com ela, o teste não vale).
+  **▶ ONDE IR.** **Agenda**, em 360 px.
+  Passos:
+  1) conferir o que **abre**;
+  2) trocar para **Mês** e olhar a grade em 360 px;
+  3) voltar para **Agenda**.
+  Esperado no passo 1: abre na **vista de agenda** — lista por dia, em ordem de
+  data.
+  Esperado no passo 2: a grade **existe e é alcançável**. Ela fica apertada, e
+  é por isso que não é o que abre: sete colunas em 360 px dão **51 px por dia**.
+  **🚨 O QUE NÃO PODE ACONTECER:** o seletor de vistas **sumir** em 360 px.
+  A advogada escolhe; o sistema só decide o que **abre**. Esconder a grade
+  tiraria dela uma vista que ela pode querer, mesmo apertada. **Se sumir, é
+  reprovação.**
+  Também não pode: a agenda listar os **trinta dias do mês** para mostrar três
+  compromissos. Só os dias que **têm** alguma coisa viram linha.
+  Por que só olho humano: a suíte prova `vistaPadrao(360) === 'agenda'` e que o
+  CSS não esconde o seletor. O que ela não prova é se a agenda **cabe e se lê**
+  num telefone de verdade — que é a tela em que esta fase foi desenhada para
+  ser usada.
+  Fase de origem: F-3
+
+- [ ] **215. ⭐ Criar um compromisso CLICANDO NUM DIA**
+  Pré-condição: `npm run seed:fresh`.
+  **▶ ONDE IR.** **Agenda**, vista **Mês**.
+  Passos:
+  1) clicar no **número** de um dia qualquer que esteja vazio;
+  2) conferir o formulário que abre, **sem digitar nada**;
+  3) preencher **Título**, escolher o **Tipo**, salvar;
+  4) voltar à agenda e achar o compromisso;
+  5) repetir na vista **Agenda**, pelo botão **+** do cabeçalho de um dia.
+  Esperado no passo 2: o campo **Data já vem preenchido** com o dia clicado.
+  Sem isso, criar a partir da grade custaria redigitar a data que ela acabou de
+  clicar.
+  Esperado no passo 4: o compromisso está **no dia certo** — o mesmo em que ela
+  clicou.
+  Esperado no passo 5: o mesmo comportamento.
+  Conferir também: o campo **Processo** oferece **"Sem processo"** e é
+  **opcional**. Nem toda reunião é de um processo — exigir vínculo obrigaria a
+  advogada a inventar um para registrar o que ela de fato tem na agenda.
+  Fase de origem: F-3
+
+- [ ] **216. ⭐ 🚨 A DERIVADA não é editável, e clicar nela LEVA À PARCELA**
+  Pré-condição: `npm run seed:fresh`. **É o passo que a DEC-055 existe para
+  ter.**
+  **▶ ONDE IR.** **Agenda**, no mês em que houver **vencimento de parcela** (o
+  seed põe parcelas nos meses próximos — navegue até achar uma linha marcada
+  como **Vencimento**).
+  Passos:
+  1) achar uma linha de **vencimento de parcela** na agenda;
+  2) **clicar nela**;
+  3) conferir para onde foi;
+  4) voltar à agenda e clicar num **compromisso** (audiência, prazo, reunião).
+  Esperado no passo 3: vai para o **formulário da parcela**, e uma mensagem
+  explica que *o vencimento vem do financeiro e não se edita na agenda*.
+  **Mudar vencimento se faz onde o vencimento mora.**
+  Esperado no passo 4: vai para o **formulário do compromisso**, onde a data
+  **é** editável.
+  **🚨 O QUE NÃO PODE ACONTECER, e é o ponto do passo:** a linha de vencimento
+  abrir um **formulário de compromisso** com a data editável. Isso seria a
+  segunda fonte voltando pela porta da interface — e no primeiro reparcelamento
+  o calendário e o financeiro passariam a discordar sobre a mesma dívida. **Se
+  abrir, é reprovação.**
+  Também não pode: a linha de vencimento **sumir** da agenda. Ela precisa
+  aparecer — o que não pode é ser editada ali.
+  Por que só olho humano: a suíte prova que `destinoDoItem` de uma derivada
+  aponta para `/parcelas/editar/:id` e nunca para a agenda. O que ela não prova
+  é se a advogada **entende** por que uma linha a leva embora e a outra abre um
+  formulário — que é o que a mensagem e a legenda existem para responder.
+  Fase de origem: F-3
+
+- [ ] **217. ⭐ As duas naturezas se distinguem NUM RELANCE, e a legenda diz qual é qual**
+  Pré-condição: um mês que tenha **as duas coisas** — pelo menos um compromisso
+  e pelo menos um vencimento.
+  **▶ ONDE IR.** **Agenda**, nas duas vistas.
+  Passos:
+  1) olhar a tela por **três segundos** e tentar dizer quais linhas são
+     compromisso e quais são vencimento, **sem ler a legenda**;
+  2) depois, ler a legenda;
+  3) repetir no **tema claro** e no **tema escuro**.
+  Esperado no passo 1: dá para distinguir. O compromisso tem barra **cheia**;
+  o vencimento tem barra **listrada** e borda **tracejada**.
+  Esperado no passo 2: a legenda tem as **duas**, com **nome** ("Compromisso",
+  "Vencimento") e **explicação** — inclusive que o vencimento vem do financeiro
+  e que para mudar a data é preciso abrir a parcela.
+  Esperado no passo 3: a distinção sobrevive aos dois temas.
+  **A cor sozinha não basta**, e é por isso que há três sinais somados: cor,
+  forma da barra e borda. Quem não distingue as duas cores é a mesma pessoa que
+  não receberia a informação de que uma das linhas não se edita.
+  Por que só olho humano: a suíte prova que as classes são diferentes e que há
+  `repeating-linear-gradient` e borda tracejada. **Se a distinção se vê num
+  relance** é exatamente o que nenhum teste mede.
+  Fase de origem: F-3
+
+- [ ] **218. O "+N" de um dia cheio, e a célula que NÃO estica**
+  Pré-condição: um dia com **mais de três** itens. Se o seed não produzir um,
+  crie quatro compromissos no mesmo dia pelo passo 215.
+  **▶ ONDE IR.** **Agenda**, vista **Mês**.
+  Passos:
+  1) olhar a linha da semana que contém o dia cheio;
+  2) conferir o número que aparece no **"+N"**;
+  3) clicar no **"+N"**.
+  Esperado no passo 1: a célula do dia cheio tem **a mesma altura** das outras.
+  As demais semanas **não** foram empurradas para fora da tela.
+  Esperado no passo 2: o **N é quantos ficaram de fora**, e não o total. Com 8
+  itens e 3 visíveis, o botão diz **"+5"** — um "+8" mandaria procurar oito
+  itens dos quais três já estão à vista.
+  Esperado no passo 3: abre um painel com o **dia inteiro**, todos os itens.
+  Fase de origem: F-3
+
+- [ ] **219. O estado vazio tem FRASE PRÓPRIA — e não é uma grade muda**
+  Pré-condição: navegar até um mês **sem nada** (dois ou três anos à frente).
+  **▶ ONDE IR.** **Agenda**.
+  Passos:
+  1) navegar até um mês vazio, nas **duas** vistas;
+  2) reparar no que aparece **enquanto carrega**, num mês qualquer (recarregue
+     a página para ver).
+  Esperado no passo 1: **"Nenhum compromisso em março/2029"** — com o **nome do
+  mês**, e um botão para criar. Não uma grade em branco.
+  Esperado no passo 2: enquanto carrega aparece o **indicador de carregamento**,
+  e não a grade vazia. **Grade vazia e grade carregando são indistinguíveis, e
+  a segunda faz esperar por algo que não vem** (regra do passo 116).
+  Sem o nome do mês, a advogada não sabe se está vendo o mês que pediu.
+  Fase de origem: F-3
+
+- [ ] **220. ⭐ A virada de MÊS e de ANO, sem perder a vista escolhida**
+  Pré-condição: nenhuma.
+  **▶ ONDE IR.** **Agenda**.
+  Passos:
+  1) escolher a vista **Agenda**;
+  2) clicar em **›** cinco vezes seguidas;
+  3) navegar de **dezembro** para **janeiro** (e de janeiro para dezembro, com
+     **‹**);
+  4) usar o **"voltar" do navegador**;
+  5) clicar em **Hoje**.
+  Esperado no passo 2: a vista **continua sendo Agenda**. Ela não volta para a
+  grade a cada mês.
+  Esperado no passo 3: o **ano** vira junto — dezembro/2026 → janeiro/**2027**,
+  e janeiro/2027 → dezembro/**2026**. A grade de dezembro mostra os primeiros
+  dias de janeiro esmaecidos, e vice-versa.
+  Esperado no passo 4: o "voltar" **desfaz a navegação de mês**, uma de cada
+  vez. É o que alguém espera depois de clicar cinco vezes em ›.
+  Esperado no passo 5: volta para o mês corrente, e o **dia de hoje está
+  visualmente distinto** — com contorno próprio, mesmo que não tenha
+  compromisso nenhum.
+  Fase de origem: F-3
+
+- [ ] **221. ⭐ 🚨 A DATA QUE NÃO MUDA DE DIA — o passo mais importante da fase**
+  Pré-condição: `npm run seed:fresh`. **É o passo que a fase inteira existe
+  para ter.**
+  **▶ ONDE IR.** **Agenda** → criar compromisso.
+  Passos:
+  1) criar um compromisso com **Título** livre e **Data = 01/09/2026**, sem
+     hora;
+  2) salvar e voltar à agenda, em **setembro de 2026**;
+  3) conferir **em que casa da grade** ele caiu;
+  4) abrir o compromisso de novo e olhar o campo **Data**;
+  5) **mudar o fuso do sistema operacional** para um fuso a **leste** (por
+     exemplo, `Europe/Lisbon` ou `Asia/Tokyo`), **recarregar a página**, e
+     repetir os passos 3 e 4;
+  6) voltar o fuso para o de origem.
+  **A DATA NOMEADA E O DIA DA SEMANA ESPERADO:**
+  > **01/09/2026 é uma TERÇA-FEIRA.**
+  Esperado no passo 3: o compromisso está na casa do **dia 1**, na coluna
+  **ter**. Não no dia 31 de agosto (segunda), não no dia 2 (quarta).
+  Esperado no passo 4: o campo mostra **01/09/2026**.
+  Esperado no passo 5: **exatamente o mesmo**, no outro fuso. Nada se move.
+  **🚨 O QUE NÃO PODE ACONTECER:** o compromisso aparecer em **31/08/2026,
+  segunda-feira** (o modo de falha a oeste de Greenwich) ou em **02/09/2026,
+  quarta-feira** (a leste). **Se mudar de dia, é reprovação, e a fase volta.**
+  A razão: **data sem hora não é um instante, é uma casa do calendário.** Um
+  instante precisa de um fuso para virar dia, e é o fuso inventado que produz o
+  deslocamento. Por isso a data cruza a rede como texto `AAAA-MM-DD` e é
+  gravada em meia-noite UTC, como `dataVencimento` já é desde a Fase 4.
+  Repetir com uma parcela: conferir que o **vencimento** de uma parcela aparece
+  na agenda **no mesmo dia** que aparece na tela de Parcelas. Se as duas telas
+  discordarem sobre o mesmo vencimento, é o mesmo defeito visto de outro lado.
+  Por que só olho humano: a suíte grava e lê 01/09/2026 em dois fusos e confere
+  o instante no banco. O que ela não pode fazer é trocar o fuso do **sistema
+  operacional e do navegador** — que é onde a advogada de fato está.
+  Fase de origem: F-3
+
+- [ ] **222. ⭐ O compromisso COM HORA, e o compromisso do dia inteiro**
+  Pré-condição: nenhuma.
+  **▶ ONDE IR.** **Agenda**.
+  Passos:
+  1) criar dois compromissos no **mesmo dia**: um **com hora** (14:30) e um
+     **sem hora**;
+  2) olhar a ordem deles na vista **Agenda**;
+  3) conferir a hora exibida.
+  Esperado no passo 2: o **sem hora vem primeiro**. "Sem hora" é o compromisso
+  do dia inteiro, e pô-lo depois do das 14h30 sugeriria que ele acontece à
+  noite.
+  Esperado no passo 3: **14:30**, exatamente o que foi digitado — a hora é
+  **hora de parede do escritório** e não se converte.
+  Conferir também: o **vencimento de parcela nunca tem hora**, e cai no grupo
+  do dia inteiro. Um vencimento é o dia todo.
+  Fase de origem: F-3
+
+- [ ] **223. ⭐ 🚨 O sino conta certo, e SOME no zero**
+  Pré-condição: `npm run seed:fresh`. O seed deixa **dois compromissos de
+  hoje**, **um atrasado**, **um concluído no passado** e as parcelas do
+  financeiro.
+  **▶ ONDE IR.** O **sino** no canto superior direito do cabeçalho, em
+  qualquer tela.
+  Passos:
+  1) conferir o **número** no badge;
+  2) clicar no sino e conferir as **três seções**: *Hoje*, *Atrasados*,
+     *Parcelas vencidas*;
+  3) somar as três à mão e comparar com o badge;
+  4) procurar o compromisso **concluído** nas listas;
+  5) **concluir** um dos compromissos de hoje (Agenda → abrir → *Marcar como
+     concluído*) e voltar ao sino;
+  6) **fechar e reabrir** o sino, várias vezes.
+  Esperado no passo 3: o badge é **exatamente a soma das três**.
+  Esperado no passo 4: **o concluído NÃO está lá.** É a linha que faz o número
+  significar alguma coisa.
+  Esperado no passo 5: o número **baixou em um**. Resolver o item é o que baixa
+  a contagem.
+  Esperado no passo 6: o número **não muda** por abrir. Não há "marcar como
+  lido" — um contador que só zera com clique treina a pessoa a zerar sem olhar,
+  e aí ele deixa de significar qualquer coisa.
+  **🚨 O QUE NÃO PODE ACONTECER:** o badge aparecer com **"0"** quando não há
+  nada pendente. Um badge com zero ocupa o mesmo espaço e a mesma cor de um
+  badge que significa alguma coisa, e a pessoa aprende a ignorar os dois.
+  Para conferir o zero: concluir **todos** os compromissos de hoje e os
+  atrasados, e quitar (ou não ter) parcela vencida. **O badge tem de sumir por
+  inteiro** — não ficar cinza, não ficar com zero. **Se aparecer "0", é
+  reprovação.**
+  Conferir também em **360 px**: o painel do sino cabe na tela, sem sair pela
+  esquerda.
+  Fase de origem: F-3
+
+- [ ] **224. O sino leva ao lugar certo, e NÃO pede permissão de notificação**
+  Pré-condição: o sino com pelo menos um item de cada tipo.
+  **▶ ONDE IR.** O **sino**.
+  Passos:
+  1) clicar num item da seção **Hoje**;
+  2) voltar, clicar numa **parcela vencida**;
+  3) reparar se o navegador pediu **permissão para notificações** em algum
+     momento desde o login.
+  Esperado no passo 1: abre o **compromisso**.
+  Esperado no passo 2: abre a **parcela** — o mesmo destino do calendário.
+  Esperado no passo 3: **nenhum pedido de permissão.** Web Push está **fora**
+  desta fase (decisão do Daniel, 24/08/2026): aviso é sino com contador
+  **dentro** do sistema. Notificação no celular com o app fechado exigiria
+  service worker novo, permissão e chaves VAPID.
+  **Se o navegador pedir permissão de notificação, é reprovação** — significa
+  que entrou código que a fase excluiu por escrito.
+  Fase de origem: F-3
+
+- [ ] **225. ⭐ A linha do tempo do processo — e o financeiro que NÃO está nela**
+  Pré-condição: `npm run seed:fresh`, e um processo que já tenha **mudado de
+  fase** pelo menos uma vez (use o passo 205, ou mude a fase agora).
+  **▶ ONDE IR.** **Processos** → **⋮ → Gerenciar** num processo com honorário
+  → rolar até **"Linha do tempo"**, **abaixo** da ficha financeira.
+  Passos:
+  1) conferir as entradas, de cima para baixo;
+  2) achar a marca de **"hoje"**;
+  3) procurar, na linha do tempo, qualquer coisa de **dinheiro**;
+  4) clicar num compromisso listado.
+  Esperado no passo 1: em **ordem de data**, com quatro tipos distinguíveis:
+  **Fase** (de → para, com o motivo quando houver), **Encerramento**,
+  **Liminar** e **Compromisso**. A primeira entrada diz *"Processo cadastrado
+  em Fase de conhecimento"* — é o **nascimento**, e sem ele um processo criado
+  direto em "execução" pareceria sempre ter estado lá.
+  Esperado no passo 2: uma **linha tracejada** atravessando a régua, escrita
+  **"hoje"**. Os compromissos **futuros** ficam **abaixo** dela, esmaecidos e
+  com marca tracejada.
+  Esperado no passo 3: **nada.** Nenhum honorário, nenhuma parcela, nenhum
+  pagamento, nenhum valor em reais.
+  Esperado no passo 4: abre o compromisso.
+  **Por que o financeiro não entra, e é decisão:** o extrato do honorário
+  responde outra pergunta — "quanto foi cobrado, quanto entrou, o que voltou" —
+  e já a responde bem. Cinco entradas de fase somem debaixo de quarenta linhas
+  de um plano parcelado em doze. **A ficha financeira continua na mesma página,
+  em seção própria, logo acima.**
+  Por que só olho humano: a suíte prova que o serviço não importa nenhum model
+  financeiro e que nenhum valor vaza na resposta. O que ela não prova é se a
+  régua **se lê como tempo** — se o olho encontra o "hoje" sem percorrer a
+  lista.
+  Fase de origem: F-3
+
+
 ## Validado
 
 

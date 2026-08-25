@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Scale,
-  Banknote, Receipt, CalendarDays, CreditCard,
+  Banknote, Receipt, CalendarDays, CalendarClock, CreditCard,
   FolderOpen, LibraryBig, FileStack, FileText, UserCog, Sun, Moon, LogOut
 } from 'lucide-react';
 import logo from '../../assets/logo-lex.jpeg';
@@ -18,6 +18,11 @@ const NAV_ITEMS = [
   null,
   { to: '/dashboard/clientes',   label: 'Clientes',    icon: Users      },
   { to: '/dashboard/processos',  label: 'Processos',   icon: Scale      },
+  // A agenda fica junto de Clientes e Processos, e NÃO no bloco do dinheiro:
+  // ela responde "o que vem, e o que já aconteceu", que é a pergunta do
+  // trabalho — e não a do caixa. Que ela mostre vencimentos junto é
+  // consequência da DEC-055, não motivo para arquivá-la no financeiro.
+  { to: '/dashboard/agenda',     label: 'Agenda',      icon: CalendarClock },
   null,
   { to: '/dashboard/financeiro', label: 'Financeiro',  icon: Banknote   },
   { to: '/dashboard/honorarios', label: 'Honorários',  icon: Receipt    },

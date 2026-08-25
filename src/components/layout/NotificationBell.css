@@ -1,0 +1,144 @@
+.sino { position: relative; }
+
+.sino__botao {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.sino__botao:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+}
+
+/* O badge usa o tom de ATENÇÃO, e não o de perigo: um prazo de hoje e uma
+   parcela vencida pedem ação, não anunciam que algo deu errado. É o mesmo tom
+   do selo de liminar da DEC-054, e pela mesma razão. */
+.sino__badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-warning);
+  color: #1A1A18;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  line-height: 18px;
+  text-align: center;
+}
+
+.sino__painel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  width: 340px;
+  max-width: calc(100vw - var(--space-4));
+  max-height: 70vh;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-3);
+  z-index: 60;
+}
+
+.sino__cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+  color: var(--color-text-primary);
+}
+
+.sino__link {
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.sino__link:hover { text-decoration: underline; }
+
+.sino__vazio {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.sino__secao { margin-bottom: var(--space-3); }
+.sino__secao:last-child { margin-bottom: 0; }
+
+.sino__secao-titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+}
+
+.sino__secao-contagem {
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-full);
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+}
+
+.sino__lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sino__item a,
+.sino__item div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: inherit;
+}
+
+.sino__item a:hover { background: var(--color-surface-raised); }
+
+.sino__item-titulo {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.sino__item-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* Em 360 px o painel encosta nas duas bordas do cabeçalho: um painel de 340 px
+   ancorado à direita sairia da tela pela esquerda. */
+@media (max-width: 767px) {
+  .sino__painel {
+    position: fixed;
+    left: var(--space-2);
+    right: var(--space-2);
+    width: auto;
+    top: calc(var(--header-height) + var(--space-1));
+  }
+}

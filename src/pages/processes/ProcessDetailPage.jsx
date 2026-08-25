@@ -14,6 +14,7 @@ import { getApiErrorMessage } from '../../utils/apiError';
 import StatusBadge from '../../components/ui/StatusBadge';
 import AccessDelivery from '../../components/processes/AccessDelivery';
 import ProcessFinancialSheet from '../../components/financeiro/ProcessFinancialSheet';
+import ProcessTimeline from '../../components/processes/ProcessTimeline';
 import Loading from '../../components/common/Loading';
 import './ProcessPage.css';
 import './ProcessTabs.css';
@@ -481,6 +482,12 @@ function ProcessoDetalhePage() {
           </ul>
         )}
       </div>
+
+      {/* DEC-056 — a linha do tempo. Fica DEPOIS da ficha financeira e em
+          seção própria, e não dentro dela: as duas respondem perguntas
+          diferentes, e é justamente por isso que o financeiro não entra na
+          linha. Juntá-las faria uma tela que não responde nenhuma. */}
+      <ProcessTimeline processoId={id} />
 
       <ProcessoTabs processoId={id} />
     </div>

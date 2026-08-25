@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBreadcrumbLabel } from '../../contexts/BreadcrumbContext';
+import NotificationBell from './NotificationBell';
 import './Header.css';
 
 const BREADCRUMB_MAP = {
@@ -25,6 +26,12 @@ const BREADCRUMB_MAP = {
   '/dashboard/secoes':       'Biblioteca de Seções',
   '/dashboard/secoes/nova':  'Nova Seção',
   '/dashboard/financeiro':   'Financeiro',
+  // F-3 — a agenda e o formulário do compromisso. As duas entradas estavam
+  // faltando nas telas de Seções e Financeiro até a varredura B.5 da 4.3, e o
+  // sintoma era cabeçalho sem trilha nenhuma justamente onde a advogada mais
+  // navega para dentro. Uma tela nova entra nos dois mapas no mesmo commit.
+  '/dashboard/agenda':       'Agenda',
+  '/dashboard/agenda/novo':  'Novo compromisso',
 };
 
 const SECTION_LABELS = {
@@ -35,6 +42,7 @@ const SECTION_LABELS = {
   documentos:  'Documentos',
   pagamentos:  'Pagamentos',
   secoes:      'Biblioteca de Seções',
+  agenda:      'Agenda',
 };
 
 // `rotuloDaPagina` é o nome do registro aberto, publicado pela própria página
@@ -88,14 +96,19 @@ function Header() {
         ))}
       </nav>
 
-      {nomeCompleto && (
-        <div className="header-user">
-          <span className="header-greeting">Olá, {firstName}</span>
-          <div className="avatar" title={nomeCompleto}>
-            {getInitials(nomeCompleto)}
-          </div>
-        </div>
-      )}
+      <div className="header-user">
+        {/* O sino fica no cabeçalho, e não na Sidebar: ele precisa estar
+            visível nas duas larguras, e em 360 px a Sidebar não existe. */}
+        <NotificationBell />
+        {nomeCompleto && (
+          <>
+            <span className="header-greeting">Olá, {firstName}</span>
+            <div className="avatar" title={nomeCompleto}>
+              {getInitials(nomeCompleto)}
+            </div>
+          </>
+        )}
+      </div>
     </header>
   );
 }
