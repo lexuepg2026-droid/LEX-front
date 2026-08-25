@@ -1,0 +1,149 @@
+.linha-tempo {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.linha-tempo__titulo {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-md);
+  color: var(--color-accent);
+}
+
+.linha-tempo__vazio {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* A régua: uma linha vertical contínua atrás das marcas. É o que faz a
+   sequência ser lida como tempo, e não como lista. */
+.linha-tempo__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 var(--space-6);
+  position: relative;
+}
+
+.linha-tempo__lista::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--color-border);
+}
+
+.linha__item {
+  position: relative;
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.linha__marca {
+  position: absolute;
+  left: calc(var(--space-6) * -1);
+  top: var(--space-2);
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-raised);
+  border: 2px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.linha__item--fase .linha__marca { border-color: var(--color-primary-light); color: var(--color-primary-light); }
+/* O encerramento usa o dourado da marca, e não o verde nem o vermelho: é o fim
+   do processo, não um sucesso nem uma falha. */
+.linha__item--encerramento .linha__marca { border-color: var(--color-accent); color: var(--color-accent); }
+/* Liminar no tom de ATENÇÃO — o mesmo do selo da DEC-054, e pela mesma razão:
+   liminar não deu errado, é pedido de urgência. */
+.linha__item--liminar .linha__marca { border-color: var(--color-warning); color: var(--color-warning); }
+.linha__item--evento .linha__marca { border-color: var(--color-info); color: var(--color-info); }
+
+.linha__corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.linha__data {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.linha__categoria {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 0 var(--space-2);
+}
+
+.linha__texto {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.linha__texto a { color: var(--color-text-primary); }
+
+.linha__hora {
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.linha__tipo-evento {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.linha__motivo {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* O que ainda não aconteceu é esmaecido e tracejado: dois sinais, para a
+   distinção não depender de enxergar a diferença de opacidade. */
+.linha__item--futuro { opacity: 0.75; }
+.linha__item--futuro .linha__marca { border-style: dashed; }
+
+.linha__item--concluido .linha__texto { text-decoration: line-through; opacity: 0.7; }
+
+/* A marca do HOJE é uma LINHA na régua, e não um estilo por item: o que a
+   advogada procura ao abrir isto é ONDE O PRESENTE ESTÁ, e um contorno
+   diferente em cada item obriga a percorrer a lista para descobrir. */
+.linha__hoje {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: var(--space-2) 0;
+  border-top: 2px dashed var(--color-accent);
+}
+
+.linha__hoje span {
+  position: absolute;
+  left: 0;
+  transform: translateY(-50%);
+  background: var(--color-surface);
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+}

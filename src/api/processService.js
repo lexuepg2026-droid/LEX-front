@@ -84,7 +84,15 @@ const listProcessConfirmacoes = (id) => api.get(`/processes/${id}/confirmacoes`)
 const marcarConfirmacoesVistas = (id) =>
   api.patch(`/processes/${id}/confirmacoes/vistas`);
 
+// ── DEC-056 (F-3) — a linha do tempo do processo ────────────────────────
+//
+// Só leitura. É apresentação do `historicoFase` que a DEC-054 já grava desde a
+// F-2d, mais o encerramento, a liminar e os eventos do processo. O financeiro
+// NÃO entra: o extrato do honorário responde outra pergunta.
+const getTimeline = (id) => api.get(`/processes/${id}/timeline`);
+
 export default {
+  getTimeline,
   listProcesses,
   getProcessById,
   createProcess,
