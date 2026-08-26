@@ -1,0 +1,988 @@
+{
+  "tabela": "nacionalidades",
+  "versao": "2026-08-22",
+  "fonte": "ONU / IBGE (compilação de países e gentílicos)",
+  "url": "https://www.ibge.gov.br/geociencias/cartas-e-mapas/mapas-mandi.html",
+  "itens": [
+    {
+      "pais": "Afeganistão",
+      "masculino": "afegão",
+      "feminino": "afegã"
+    },
+    {
+      "pais": "África do Sul",
+      "masculino": "sul-africano",
+      "feminino": "sul-africana"
+    },
+    {
+      "pais": "Albânia",
+      "masculino": "albanês",
+      "feminino": "albanesa"
+    },
+    {
+      "pais": "Alemanha",
+      "masculino": "alemão",
+      "feminino": "alemã"
+    },
+    {
+      "pais": "Andorra",
+      "masculino": "andorrano",
+      "feminino": "andorrana"
+    },
+    {
+      "pais": "Angola",
+      "masculino": "angolano",
+      "feminino": "angolana"
+    },
+    {
+      "pais": "Antígua e Barbuda",
+      "masculino": "antiguano",
+      "feminino": "antiguana"
+    },
+    {
+      "pais": "Arábia Saudita",
+      "masculino": "saudita",
+      "feminino": "saudita"
+    },
+    {
+      "pais": "Argélia",
+      "masculino": "argelino",
+      "feminino": "argelina"
+    },
+    {
+      "pais": "Argentina",
+      "masculino": "argentino",
+      "feminino": "argentina"
+    },
+    {
+      "pais": "Armênia",
+      "masculino": "armênio",
+      "feminino": "armênia"
+    },
+    {
+      "pais": "Austrália",
+      "masculino": "australiano",
+      "feminino": "australiana"
+    },
+    {
+      "pais": "Áustria",
+      "masculino": "austríaco",
+      "feminino": "austríaca"
+    },
+    {
+      "pais": "Azerbaijão",
+      "masculino": "azerbaijano",
+      "feminino": "azerbaijana"
+    },
+    {
+      "pais": "Bahamas",
+      "masculino": "bahamense",
+      "feminino": "bahamense"
+    },
+    {
+      "pais": "Bahrein",
+      "masculino": "bareinita",
+      "feminino": "bareinita"
+    },
+    {
+      "pais": "Bangladesh",
+      "masculino": "bengalês",
+      "feminino": "bengalesa"
+    },
+    {
+      "pais": "Barbados",
+      "masculino": "barbadense",
+      "feminino": "barbadense"
+    },
+    {
+      "pais": "Bélgica",
+      "masculino": "belga",
+      "feminino": "belga"
+    },
+    {
+      "pais": "Belize",
+      "masculino": "belizenho",
+      "feminino": "belizenha"
+    },
+    {
+      "pais": "Benin",
+      "masculino": "beninense",
+      "feminino": "beninense"
+    },
+    {
+      "pais": "Bielorrússia",
+      "masculino": "bielorrusso",
+      "feminino": "bielorrussa"
+    },
+    {
+      "pais": "Bolívia",
+      "masculino": "boliviano",
+      "feminino": "boliviana"
+    },
+    {
+      "pais": "Bósnia e Herzegovina",
+      "masculino": "bósnio",
+      "feminino": "bósnia"
+    },
+    {
+      "pais": "Botsuana",
+      "masculino": "botsuanês",
+      "feminino": "botsuanesa"
+    },
+    {
+      "pais": "Brasil",
+      "masculino": "brasileiro",
+      "feminino": "brasileira"
+    },
+    {
+      "pais": "Brunei",
+      "masculino": "bruneano",
+      "feminino": "bruneana"
+    },
+    {
+      "pais": "Bulgária",
+      "masculino": "búlgaro",
+      "feminino": "búlgara"
+    },
+    {
+      "pais": "Burkina Faso",
+      "masculino": "burquinense",
+      "feminino": "burquinense"
+    },
+    {
+      "pais": "Burundi",
+      "masculino": "burundinês",
+      "feminino": "burundinesa"
+    },
+    {
+      "pais": "Butão",
+      "masculino": "butanês",
+      "feminino": "butanesa"
+    },
+    {
+      "pais": "Cabo Verde",
+      "masculino": "cabo-verdiano",
+      "feminino": "cabo-verdiana"
+    },
+    {
+      "pais": "Camarões",
+      "masculino": "camaronês",
+      "feminino": "camaronesa"
+    },
+    {
+      "pais": "Camboja",
+      "masculino": "cambojano",
+      "feminino": "cambojana"
+    },
+    {
+      "pais": "Canadá",
+      "masculino": "canadense",
+      "feminino": "canadense"
+    },
+    {
+      "pais": "Catar",
+      "masculino": "catariano",
+      "feminino": "catariana"
+    },
+    {
+      "pais": "Cazaquistão",
+      "masculino": "cazaque",
+      "feminino": "cazaque"
+    },
+    {
+      "pais": "Chade",
+      "masculino": "chadiano",
+      "feminino": "chadiana"
+    },
+    {
+      "pais": "Chile",
+      "masculino": "chileno",
+      "feminino": "chilena"
+    },
+    {
+      "pais": "China",
+      "masculino": "chinês",
+      "feminino": "chinesa"
+    },
+    {
+      "pais": "Chipre",
+      "masculino": "cipriota",
+      "feminino": "cipriota"
+    },
+    {
+      "pais": "Colômbia",
+      "masculino": "colombiano",
+      "feminino": "colombiana"
+    },
+    {
+      "pais": "Comores",
+      "masculino": "comorense",
+      "feminino": "comorense"
+    },
+    {
+      "pais": "Congo",
+      "masculino": "congolês",
+      "feminino": "congolesa"
+    },
+    {
+      "pais": "Coreia do Norte",
+      "masculino": "norte-coreano",
+      "feminino": "norte-coreana"
+    },
+    {
+      "pais": "Coreia do Sul",
+      "masculino": "sul-coreano",
+      "feminino": "sul-coreana"
+    },
+    {
+      "pais": "Costa do Marfim",
+      "masculino": "marfinense",
+      "feminino": "marfinense"
+    },
+    {
+      "pais": "Costa Rica",
+      "masculino": "costarriquenho",
+      "feminino": "costarriquenha"
+    },
+    {
+      "pais": "Croácia",
+      "masculino": "croata",
+      "feminino": "croata"
+    },
+    {
+      "pais": "Cuba",
+      "masculino": "cubano",
+      "feminino": "cubana"
+    },
+    {
+      "pais": "Dinamarca",
+      "masculino": "dinamarquês",
+      "feminino": "dinamarquesa"
+    },
+    {
+      "pais": "Djibuti",
+      "masculino": "djibutiano",
+      "feminino": "djibutiana"
+    },
+    {
+      "pais": "Dominica",
+      "masculino": "dominiquense",
+      "feminino": "dominiquense"
+    },
+    {
+      "pais": "Egito",
+      "masculino": "egípcio",
+      "feminino": "egípcia"
+    },
+    {
+      "pais": "El Salvador",
+      "masculino": "salvadorenho",
+      "feminino": "salvadorenha"
+    },
+    {
+      "pais": "Emirados Árabes Unidos",
+      "masculino": "emiradense",
+      "feminino": "emiradense"
+    },
+    {
+      "pais": "Equador",
+      "masculino": "equatoriano",
+      "feminino": "equatoriana"
+    },
+    {
+      "pais": "Eritreia",
+      "masculino": "eritreu",
+      "feminino": "eritreia"
+    },
+    {
+      "pais": "Eslováquia",
+      "masculino": "eslovaco",
+      "feminino": "eslovaca"
+    },
+    {
+      "pais": "Eslovênia",
+      "masculino": "esloveno",
+      "feminino": "eslovena"
+    },
+    {
+      "pais": "Espanha",
+      "masculino": "espanhol",
+      "feminino": "espanhola"
+    },
+    {
+      "pais": "Essuatíni",
+      "masculino": "essuatiniano",
+      "feminino": "essuatiniana"
+    },
+    {
+      "pais": "Estados Unidos",
+      "masculino": "estadunidense",
+      "feminino": "estadunidense"
+    },
+    {
+      "pais": "Estônia",
+      "masculino": "estoniano",
+      "feminino": "estoniana"
+    },
+    {
+      "pais": "Etiópia",
+      "masculino": "etíope",
+      "feminino": "etíope"
+    },
+    {
+      "pais": "Fiji",
+      "masculino": "fijiano",
+      "feminino": "fijiana"
+    },
+    {
+      "pais": "Filipinas",
+      "masculino": "filipino",
+      "feminino": "filipina"
+    },
+    {
+      "pais": "Finlândia",
+      "masculino": "finlandês",
+      "feminino": "finlandesa"
+    },
+    {
+      "pais": "França",
+      "masculino": "francês",
+      "feminino": "francesa"
+    },
+    {
+      "pais": "Gabão",
+      "masculino": "gabonês",
+      "feminino": "gabonesa"
+    },
+    {
+      "pais": "Gâmbia",
+      "masculino": "gambiano",
+      "feminino": "gambiana"
+    },
+    {
+      "pais": "Gana",
+      "masculino": "ganês",
+      "feminino": "ganesa"
+    },
+    {
+      "pais": "Geórgia",
+      "masculino": "georgiano",
+      "feminino": "georgiana"
+    },
+    {
+      "pais": "Granada",
+      "masculino": "granadino",
+      "feminino": "granadina"
+    },
+    {
+      "pais": "Grécia",
+      "masculino": "grego",
+      "feminino": "grega"
+    },
+    {
+      "pais": "Guatemala",
+      "masculino": "guatemalteco",
+      "feminino": "guatemalteca"
+    },
+    {
+      "pais": "Guiana",
+      "masculino": "guianense",
+      "feminino": "guianense"
+    },
+    {
+      "pais": "Guiné",
+      "masculino": "guineense",
+      "feminino": "guineense"
+    },
+    {
+      "pais": "Guiné Equatorial",
+      "masculino": "equatoguineense",
+      "feminino": "equatoguineense"
+    },
+    {
+      "pais": "Guiné-Bissau",
+      "masculino": "guineense",
+      "feminino": "guineense"
+    },
+    {
+      "pais": "Haiti",
+      "masculino": "haitiano",
+      "feminino": "haitiana"
+    },
+    {
+      "pais": "Honduras",
+      "masculino": "hondurenho",
+      "feminino": "hondurenha"
+    },
+    {
+      "pais": "Hungria",
+      "masculino": "húngaro",
+      "feminino": "húngara"
+    },
+    {
+      "pais": "Iêmen",
+      "masculino": "iemenita",
+      "feminino": "iemenita"
+    },
+    {
+      "pais": "Ilhas Marshall",
+      "masculino": "marshallino",
+      "feminino": "marshallina"
+    },
+    {
+      "pais": "Ilhas Salomão",
+      "masculino": "salomônico",
+      "feminino": "salomônica"
+    },
+    {
+      "pais": "Índia",
+      "masculino": "indiano",
+      "feminino": "indiana"
+    },
+    {
+      "pais": "Indonésia",
+      "masculino": "indonésio",
+      "feminino": "indonésia"
+    },
+    {
+      "pais": "Irã",
+      "masculino": "iraniano",
+      "feminino": "iraniana"
+    },
+    {
+      "pais": "Iraque",
+      "masculino": "iraquiano",
+      "feminino": "iraquiana"
+    },
+    {
+      "pais": "Irlanda",
+      "masculino": "irlandês",
+      "feminino": "irlandesa"
+    },
+    {
+      "pais": "Islândia",
+      "masculino": "islandês",
+      "feminino": "islandesa"
+    },
+    {
+      "pais": "Israel",
+      "masculino": "israelense",
+      "feminino": "israelense"
+    },
+    {
+      "pais": "Itália",
+      "masculino": "italiano",
+      "feminino": "italiana"
+    },
+    {
+      "pais": "Jamaica",
+      "masculino": "jamaicano",
+      "feminino": "jamaicana"
+    },
+    {
+      "pais": "Japão",
+      "masculino": "japonês",
+      "feminino": "japonesa"
+    },
+    {
+      "pais": "Jordânia",
+      "masculino": "jordaniano",
+      "feminino": "jordaniana"
+    },
+    {
+      "pais": "Kiribati",
+      "masculino": "kiribatiano",
+      "feminino": "kiribatiana"
+    },
+    {
+      "pais": "Kosovo",
+      "masculino": "kosovar",
+      "feminino": "kosovar"
+    },
+    {
+      "pais": "Kuwait",
+      "masculino": "kuwaitiano",
+      "feminino": "kuwaitiana"
+    },
+    {
+      "pais": "Laos",
+      "masculino": "laosiano",
+      "feminino": "laosiana"
+    },
+    {
+      "pais": "Lesoto",
+      "masculino": "lesotiano",
+      "feminino": "lesotiana"
+    },
+    {
+      "pais": "Letônia",
+      "masculino": "letão",
+      "feminino": "letã"
+    },
+    {
+      "pais": "Líbano",
+      "masculino": "libanês",
+      "feminino": "libanesa"
+    },
+    {
+      "pais": "Libéria",
+      "masculino": "liberiano",
+      "feminino": "liberiana"
+    },
+    {
+      "pais": "Líbia",
+      "masculino": "líbio",
+      "feminino": "líbia"
+    },
+    {
+      "pais": "Liechtenstein",
+      "masculino": "liechtensteinense",
+      "feminino": "liechtensteinense"
+    },
+    {
+      "pais": "Lituânia",
+      "masculino": "lituano",
+      "feminino": "lituana"
+    },
+    {
+      "pais": "Luxemburgo",
+      "masculino": "luxemburguês",
+      "feminino": "luxemburguesa"
+    },
+    {
+      "pais": "Macedônia do Norte",
+      "masculino": "macedônio",
+      "feminino": "macedônia"
+    },
+    {
+      "pais": "Madagascar",
+      "masculino": "malgaxe",
+      "feminino": "malgaxe"
+    },
+    {
+      "pais": "Malásia",
+      "masculino": "malaio",
+      "feminino": "malaia"
+    },
+    {
+      "pais": "Malaui",
+      "masculino": "malauiano",
+      "feminino": "malauiana"
+    },
+    {
+      "pais": "Maldivas",
+      "masculino": "maldivo",
+      "feminino": "maldiva"
+    },
+    {
+      "pais": "Mali",
+      "masculino": "maliano",
+      "feminino": "maliana"
+    },
+    {
+      "pais": "Malta",
+      "masculino": "maltês",
+      "feminino": "maltesa"
+    },
+    {
+      "pais": "Marrocos",
+      "masculino": "marroquino",
+      "feminino": "marroquina"
+    },
+    {
+      "pais": "Maurícia",
+      "masculino": "mauriciano",
+      "feminino": "mauriciana"
+    },
+    {
+      "pais": "Mauritânia",
+      "masculino": "mauritano",
+      "feminino": "mauritana"
+    },
+    {
+      "pais": "México",
+      "masculino": "mexicano",
+      "feminino": "mexicana"
+    },
+    {
+      "pais": "Mianmar",
+      "masculino": "birmanês",
+      "feminino": "birmanesa"
+    },
+    {
+      "pais": "Micronésia",
+      "masculino": "micronésio",
+      "feminino": "micronésia"
+    },
+    {
+      "pais": "Moçambique",
+      "masculino": "moçambicano",
+      "feminino": "moçambicana"
+    },
+    {
+      "pais": "Moldávia",
+      "masculino": "moldavo",
+      "feminino": "moldava"
+    },
+    {
+      "pais": "Mônaco",
+      "masculino": "monegasco",
+      "feminino": "monegasca"
+    },
+    {
+      "pais": "Mongólia",
+      "masculino": "mongol",
+      "feminino": "mongol"
+    },
+    {
+      "pais": "Montenegro",
+      "masculino": "montenegrino",
+      "feminino": "montenegrina"
+    },
+    {
+      "pais": "Namíbia",
+      "masculino": "namibiano",
+      "feminino": "namibiana"
+    },
+    {
+      "pais": "Nauru",
+      "masculino": "nauruano",
+      "feminino": "nauruana"
+    },
+    {
+      "pais": "Nepal",
+      "masculino": "nepalês",
+      "feminino": "nepalesa"
+    },
+    {
+      "pais": "Nicarágua",
+      "masculino": "nicaraguense",
+      "feminino": "nicaraguense"
+    },
+    {
+      "pais": "Níger",
+      "masculino": "nigerino",
+      "feminino": "nigerina"
+    },
+    {
+      "pais": "Nigéria",
+      "masculino": "nigeriano",
+      "feminino": "nigeriana"
+    },
+    {
+      "pais": "Noruega",
+      "masculino": "norueguês",
+      "feminino": "norueguesa"
+    },
+    {
+      "pais": "Nova Zelândia",
+      "masculino": "neozelandês",
+      "feminino": "neozelandesa"
+    },
+    {
+      "pais": "Omã",
+      "masculino": "omanense",
+      "feminino": "omanense"
+    },
+    {
+      "pais": "Países Baixos",
+      "masculino": "neerlandês",
+      "feminino": "neerlandesa"
+    },
+    {
+      "pais": "Palau",
+      "masculino": "palauano",
+      "feminino": "palauana"
+    },
+    {
+      "pais": "Palestina",
+      "masculino": "palestino",
+      "feminino": "palestina"
+    },
+    {
+      "pais": "Panamá",
+      "masculino": "panamenho",
+      "feminino": "panamenha"
+    },
+    {
+      "pais": "Papua-Nova Guiné",
+      "masculino": "papuásio",
+      "feminino": "papuásia"
+    },
+    {
+      "pais": "Paquistão",
+      "masculino": "paquistanês",
+      "feminino": "paquistanesa"
+    },
+    {
+      "pais": "Paraguai",
+      "masculino": "paraguaio",
+      "feminino": "paraguaia"
+    },
+    {
+      "pais": "Peru",
+      "masculino": "peruano",
+      "feminino": "peruana"
+    },
+    {
+      "pais": "Polônia",
+      "masculino": "polonês",
+      "feminino": "polonesa"
+    },
+    {
+      "pais": "Portugal",
+      "masculino": "português",
+      "feminino": "portuguesa"
+    },
+    {
+      "pais": "Quênia",
+      "masculino": "queniano",
+      "feminino": "queniana"
+    },
+    {
+      "pais": "Quirguistão",
+      "masculino": "quirguiz",
+      "feminino": "quirguiz"
+    },
+    {
+      "pais": "Reino Unido",
+      "masculino": "britânico",
+      "feminino": "britânica"
+    },
+    {
+      "pais": "República Centro-Africana",
+      "masculino": "centro-africano",
+      "feminino": "centro-africana"
+    },
+    {
+      "pais": "República Democrática do Congo",
+      "masculino": "congolês",
+      "feminino": "congolesa"
+    },
+    {
+      "pais": "República Dominicana",
+      "masculino": "dominicano",
+      "feminino": "dominicana"
+    },
+    {
+      "pais": "República Tcheca",
+      "masculino": "tcheco",
+      "feminino": "tcheca"
+    },
+    {
+      "pais": "Romênia",
+      "masculino": "romeno",
+      "feminino": "romena"
+    },
+    {
+      "pais": "Ruanda",
+      "masculino": "ruandês",
+      "feminino": "ruandesa"
+    },
+    {
+      "pais": "Rússia",
+      "masculino": "russo",
+      "feminino": "russa"
+    },
+    {
+      "pais": "Samoa",
+      "masculino": "samoano",
+      "feminino": "samoana"
+    },
+    {
+      "pais": "San Marino",
+      "masculino": "sanmarinense",
+      "feminino": "sanmarinense"
+    },
+    {
+      "pais": "Santa Lúcia",
+      "masculino": "santa-lucense",
+      "feminino": "santa-lucense"
+    },
+    {
+      "pais": "São Cristóvão e Névis",
+      "masculino": "cristovense",
+      "feminino": "cristovense"
+    },
+    {
+      "pais": "São Tomé e Príncipe",
+      "masculino": "são-tomense",
+      "feminino": "são-tomense"
+    },
+    {
+      "pais": "São Vicente e Granadinas",
+      "masculino": "são-vicentino",
+      "feminino": "são-vicentina"
+    },
+    {
+      "pais": "Seicheles",
+      "masculino": "seichelense",
+      "feminino": "seichelense"
+    },
+    {
+      "pais": "Senegal",
+      "masculino": "senegalês",
+      "feminino": "senegalesa"
+    },
+    {
+      "pais": "Serra Leoa",
+      "masculino": "serra-leonês",
+      "feminino": "serra-leonesa"
+    },
+    {
+      "pais": "Sérvia",
+      "masculino": "sérvio",
+      "feminino": "sérvia"
+    },
+    {
+      "pais": "Singapura",
+      "masculino": "singapuriano",
+      "feminino": "singapuriana"
+    },
+    {
+      "pais": "Síria",
+      "masculino": "sírio",
+      "feminino": "síria"
+    },
+    {
+      "pais": "Somália",
+      "masculino": "somali",
+      "feminino": "somali"
+    },
+    {
+      "pais": "Sri Lanka",
+      "masculino": "cingalês",
+      "feminino": "cingalesa"
+    },
+    {
+      "pais": "Sudão",
+      "masculino": "sudanês",
+      "feminino": "sudanesa"
+    },
+    {
+      "pais": "Sudão do Sul",
+      "masculino": "sul-sudanês",
+      "feminino": "sul-sudanesa"
+    },
+    {
+      "pais": "Suécia",
+      "masculino": "sueco",
+      "feminino": "sueca"
+    },
+    {
+      "pais": "Suíça",
+      "masculino": "suíço",
+      "feminino": "suíça"
+    },
+    {
+      "pais": "Suriname",
+      "masculino": "surinamês",
+      "feminino": "surinamesa"
+    },
+    {
+      "pais": "Tailândia",
+      "masculino": "tailandês",
+      "feminino": "tailandesa"
+    },
+    {
+      "pais": "Tajiquistão",
+      "masculino": "tajique",
+      "feminino": "tajique"
+    },
+    {
+      "pais": "Tanzânia",
+      "masculino": "tanzaniano",
+      "feminino": "tanzaniana"
+    },
+    {
+      "pais": "Timor-Leste",
+      "masculino": "timorense",
+      "feminino": "timorense"
+    },
+    {
+      "pais": "Togo",
+      "masculino": "togolês",
+      "feminino": "togolesa"
+    },
+    {
+      "pais": "Tonga",
+      "masculino": "tonganês",
+      "feminino": "tonganesa"
+    },
+    {
+      "pais": "Trinidad e Tobago",
+      "masculino": "trinitário",
+      "feminino": "trinitária"
+    },
+    {
+      "pais": "Tunísia",
+      "masculino": "tunisiano",
+      "feminino": "tunisiana"
+    },
+    {
+      "pais": "Turcomenistão",
+      "masculino": "turcomeno",
+      "feminino": "turcomena"
+    },
+    {
+      "pais": "Turquia",
+      "masculino": "turco",
+      "feminino": "turca"
+    },
+    {
+      "pais": "Tuvalu",
+      "masculino": "tuvaluano",
+      "feminino": "tuvaluana"
+    },
+    {
+      "pais": "Ucrânia",
+      "masculino": "ucraniano",
+      "feminino": "ucraniana"
+    },
+    {
+      "pais": "Uganda",
+      "masculino": "ugandense",
+      "feminino": "ugandense"
+    },
+    {
+      "pais": "Uruguai",
+      "masculino": "uruguaio",
+      "feminino": "uruguaia"
+    },
+    {
+      "pais": "Uzbequistão",
+      "masculino": "uzbeque",
+      "feminino": "uzbeque"
+    },
+    {
+      "pais": "Vanuatu",
+      "masculino": "vanuatuense",
+      "feminino": "vanuatuense"
+    },
+    {
+      "pais": "Vaticano",
+      "masculino": "vaticano",
+      "feminino": "vaticana"
+    },
+    {
+      "pais": "Venezuela",
+      "masculino": "venezuelano",
+      "feminino": "venezuelana"
+    },
+    {
+      "pais": "Vietnã",
+      "masculino": "vietnamita",
+      "feminino": "vietnamita"
+    },
+    {
+      "pais": "Zâmbia",
+      "masculino": "zambiano",
+      "feminino": "zambiana"
+    },
+    {
+      "pais": "Zimbábue",
+      "masculino": "zimbabuano",
+      "feminino": "zimbabuana"
+    }
+  ]
+}

@@ -1792,8 +1792,17 @@ Dados que vários passos usam:
 > esse tipo de regra que volta sozinha na fase seguinte sob o nome de
 > "coerência".
 >
-> **Pré-condição de 205 a 212:** `npm run seed:fresh`, **exceto no 210**, que
-> precisa do órfão que já está no banco de desenvolvimento (ver o passo 204).
+> **Pré-condição de 205 a 212:** `npm run seed:fresh`, **em todos, sem
+> exceção.** Até a F-3 o 210 e o 212 eram exceções — contavam com estado
+> acumulado no banco de desenvolvimento (o órfão do passo 204, e a base
+> anterior à DEC-054). O `seed:fresh` da **F-4** apagou os dois, e os dois
+> foram **reescritos para criar a própria pré-condição**. Passo que depende de
+> dado que um reset apaga é passo que quebra sozinho. Ver a Parte 0 da F-4.
+>
+> Os passos **206** e **207** encadeiam no **205**: rodam **em sequência,
+> depois de um único `seed:fresh`**. Isso é sequência dentro da mesma rodada
+> semeada, não estado herdado de sessão anterior — não rode `seed:fresh` entre
+> eles, ou o encadeamento se perde.
 >
 > ⚠️ **O nome da primeira fase está PENDENTE DE RATIFICAÇÃO.** Ela deu duas
 > palavras — "fase inicial" e "fase de conhecimento". Adotada a segunda, porque
@@ -1824,7 +1833,9 @@ Dados que vários passos usam:
   Fase de origem: F-2d
 
 - [ ] **206. ⭐ Salvar a mudança de fase SEM motivo**
-  Pré-condição: o passo **205** executado.
+  Pré-condição: `npm run seed:fresh` **uma vez**, e o passo **205**
+  executado depois dele. **Não rode `seed:fresh` entre o 205 e este** — o
+  encadeamento é dentro da mesma rodada semeada.
   *"Não precisa anotar o porquê, só se ela quiser mesmo."*
   Passos: 1) escolher outra fase; 2) **deixar o campo "Motivo" totalmente
   vazio**; 3) clicar em **Mudar fase**.
@@ -1840,7 +1851,9 @@ Dados que vários passos usam:
   Fase de origem: F-2d
 
 - [ ] **207. 🚨 O histórico mostra `de → para`, com data — e é o passado da linha do tempo**
-  Pré-condição: os passos **205** e **206** executados no mesmo processo.
+  Pré-condição: `npm run seed:fresh` **uma vez**, e os passos **205** e
+  **206** executados depois dele, **no mesmo processo**. Os três formam uma
+  sequência: um seed, depois 205 → 206 → 207, sem reset no meio.
   **É o substrato da F-2e.** Ela pediu a linha do tempo (*"finalizado por etapa
   — fazer linha do tempo"*), e sem gravar agora a linha do tempo nasceria sem
   passado.
@@ -1923,22 +1936,37 @@ Dados que vários passos usam:
   Fase de origem: F-2d
 
 - [ ] **210. 🚨 A lacuna do Documento, fechada nas duas bocas**
-  Pré-condição: **NÃO rodar `seed:fresh`.** Este passo usa o **órfão que já está
-  no banco de desenvolvimento** — a *Peticao de Suspensao da Execucao* sob a
-  *Execucao Fiscal - IPTU*, achada no passo **204**. Ele fica lá **de
-  propósito**, como caso vivo.
-  **▶ ONDE IR.** Terminal do backend, depois **Documentos**.
+  Pré-condição: `npm run seed:fresh`. **O passo cria o próprio órfão.**
+  Até a F-3 ele usava o órfão que vivia no banco de desenvolvimento — a
+  *Peticao de Suspensao da Execucao* sob a *Execucao Fiscal - IPTU*, achada no
+  passo **204**. O `seed:fresh` da **F-4** apagou aquele banco. O par, porém, o
+  próprio seed reconstrói: a *Execucao Fiscal - IPTU* nasce com a *Peticao de
+  Suspensao da Execucao* pendurada nela. Basta **desativar o processo** para o
+  órfão nascer de novo, pelo caminho do produto — que é como ele nasceu da
+  primeira vez.
+  **▶ ONDE IR.** **Processos**, depois o terminal do backend, depois
+  **Documentos**.
   Passos:
-  1) rodar **`npm run auditar:orfaos`** e conferir que **o órfão continua
-     sendo achado**, nominalmente;
-  2) em **Processos**, com o filtro em **"Somente desativados"**, achar a
+  1) em **Processos**, achar a *Execucao Fiscal - IPTU* e conferir em
+     **Documentos** que a *Peticao de Suspensao da Execucao* está lá, **ativa**;
+  2) **desativar o processo**, pelo **⋮**, confirmando;
+  3) rodar **`npm run auditar:orfaos`** e conferir que **o órfão é achado**,
+     nominalmente;
+  4) em **Processos**, com o filtro em **"Somente desativados"**, achar a
      *Execucao Fiscal - IPTU*;
-  3) tentar **criar um documento novo** apontando para ela — pela lista de
+  5) tentar **criar um documento novo** apontando para ela — pela lista de
      Documentos, ou pela geração a partir de um modelo;
-  4) tentar **mover** um documento existente para ela, pela edição do documento.
-  Esperado no passo 1: o órfão **aparece**. A auditoria continua fazendo o
-  trabalho dela; a correção é escolha da advogada, e ninguém a fez por ela.
-  Esperado nos passos 3 e 4: a criação e a mudança são **recusadas**, e a
+  6) tentar **mover** um documento existente para ela, pela edição do documento.
+  Esperado no passo 2: a desativação **passa**, e o documento **continua
+  ativo** debaixo do processo inativo. **O órfão NASCE da desativação** — a
+  cascata não o alcança, por decisão da **DEC-052**: `deleteProcess` derruba os
+  vínculos processo↔cliente e mais nada. Se o documento for desativado junto,
+  alguém ampliou a cascata sem registrar, e **isso é reprovação do passo**.
+  Esperado no passo 3: o órfão **aparece**, como `Documento → Processo`, com o
+  **filho ATIVO nomeado** e o **pai INATIVO nomeado**. A auditoria continua
+  fazendo o trabalho dela; a correção é escolha da advogada, e ninguém a fez
+  por ela. **A URI não pode aparecer** — nem inteira, nem mascarada.
+  Esperado nos passos 5 e 6: a criação e a mudança são **recusadas**, e a
   mensagem **NOMEIA o processo** — *"Não é possível criar: o processo Execucao
   Fiscal - IPTU está desativado. Reative o processo primeiro."*
   **🚨 O que NÃO pode aparecer:** *"Processo não encontrado"*. **Era exatamente
@@ -1948,13 +1976,15 @@ Dados que vários passos usam:
   Conferir também que **reativar o processo** e então criar o documento
   **funciona** — uma guarda que fechasse o caminho legítimo trocaria um órfão
   por um módulo inutilizado.
-  **Ao terminar, NÃO conserte o órfão.** Ele é caso de teste vivo. Se ele
-  precisar sumir um dia, a escolha é da advogada e se faz pela tela, registro a
-  registro.
+  **Ao terminar, NÃO conserte o órfão por script.** A escolha entre desativar o
+  filho e reativar o pai é da advogada, e essa regra não muda — o que mudou é
+  que o órfão deixou de ser relíquia guardada no banco e passou a ser
+  **fabricado pelo próprio passo**, toda vez.
   Por que só olho humano: a suíte prova as três portas e a ausência de
   reativação de documento. O que ela não prova é **por onde a advogada chega**
   à tentativa, nem se a tela a deixa chegar.
-  Fase de origem: F-2d
+  Fase de origem: F-2d — **reescrito na F-4** (Parte 0), para deixar de depender
+  do órfão do passo 204.
 
 - [ ] **211. Desativar um cliente que é LITISCONSORTE no processo de outra pessoa**
   Pré-condição: `npm run seed:fresh`. **Fecha o relato do passo 201.**
@@ -1983,33 +2013,52 @@ Dados que vários passos usam:
   Fase de origem: F-2d
 
 - [ ] **212. A migração da DEC-054, rodada duas vezes**
-  Pré-condição: banco de desenvolvimento, **sem** `seed:fresh` antes.
+  Pré-condição: `npm run seed:fresh`.
+  ⚠️ **Leia antes, porque o esperado MUDOU.** Até a F-3 este passo dizia
+  "**sem** `seed:fresh` antes": ele contava com o banco de desenvolvimento
+  **anterior à DEC-054**, em que havia processo sem `fase`. Esse banco não
+  existe mais — o `seed:fresh` da **F-4** o apagou —, e **não há caminho no
+  produto que crie processo sem `fase`**: o schema tem `default` e o seed grava
+  o campo nos dez processos. Portanto **`fase preenchida agora` sai `0` já na
+  PRIMEIRA execução, e isso é o ESPERADO, não falha.** O que o passo continua
+  provando é a guarda, o relatório lido contra a base real, e a idempotência.
+  Ver a Parte 0 da F-4.
   Passos:
-  1) rodar **`npm run migrar:fase`**;
-  2) **ler o relatório**;
-  3) rodar **de novo**, o mesmo comando;
-  4) abrir **Processos** e conferir que a coluna **Fase** está preenchida em
+  1) rodar **`npm run migrar:fase -- --dry-run`**;
+  2) rodar **`npm run migrar:fase`**;
+  3) **ler o relatório**;
+  4) rodar **de novo**, o mesmo comando;
+  5) abrir **Processos** e conferir que a coluna **Fase** está preenchida em
      todos.
-  Esperado no passo 1: a guarda de banco da F-2b **PARA e pergunta** o nome do
+  Esperado no passo 1: **não pergunta nada e não grava nada** — o cabeçalho diz
+  `(DRY RUN — nada será gravado)`. `--dry-run` existe para olhar antes de agir,
+  e por isso **não** leva a guarda. Se ELE perguntar o nome do banco, alguém pôs
+  guarda onde não precisa.
+  Esperado no passo 2: a guarda de banco da F-2b **PARA e pergunta** o nome do
   banco — este script escreve. **A URI não pode aparecer**, nem mascarada.
-  Esperado no passo 2: o relatório lista os **valores reais de `status`
+  Esperado no passo 3: o relatório lista os **valores reais de `status`
   encontrados no banco**, com a contagem de cada um, e diz **em voz alta** que
-  **nenhum deles carrega informação de fase** — todos foram para a fase padrão.
-  Diz também quais processos estão com `status: "encerrado"`, **nominalmente**,
-  como candidatos à revisão dela.
+  **nenhum deles carrega informação de fase**. Diz também quais processos estão
+  com `status: "encerrado"`, **nominalmente**, como candidatos à revisão dela —
+  no seed são **dois**: *Acao Trabalhista - Verbas Rescisorias* e *Acao de
+  Cobranca de Divida*.
   **O script NÃO carimba trânsito em julgado em nenhum.** "Encerrado" diz que
   acabou, e não diz **como** nem **quando** — e uma data inventada é pior que
   nenhuma.
-  Esperado no passo 3: *"nada a fazer — a migração já havia sido aplicada
-  (idempotente)"*, e **`fase preenchida agora : 0`**.
-  Esperado no passo 4: nenhum processo com a coluna Fase vazia, e o campo
+  Esperado no passo 4: **exatamente o mesmo relatório do passo 3**, sem
+  diferença nenhuma — *"nada a fazer — a migração já havia sido aplicada
+  (idempotente)"*, **`fase preenchida agora : 0`** e **`fase já tinha : 10`**
+  nas duas execuções. A idempotência aqui se prova pela **igualdade das duas
+  saídas**, e não mais pela queda de um número para zero.
+  Esperado no passo 5: nenhum processo com a coluna Fase vazia, e o campo
   **`status` continua lá** — é outro eixo, e a listagem filtra por ele desde a
   Fase 2.
   Por que só olho humano: a suíte roda a migração duas vezes contra o banco de
   teste e compara documento por documento. O que ela não prova é o **texto do
   relatório contra a base real** — e é ele que a advogada vai ler para decidir o
   que fazer com os "encerrado".
-  Fase de origem: F-2d
+  Fase de origem: F-2d — **reescrito na F-4** (Parte 0), para deixar de depender
+  de um banco pré-DEC-054 que o reset apaga.
 
 ## 34. Fase F-3 — O calendário: o que vem, e o que já aconteceu
 
@@ -2068,7 +2117,8 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **214. ⭐ 🚨 Em 360 px a AGENDA é o padrão — e a grade continua alcançável**
-  Pré-condição: janela (ou DevTools) em **360 px de largura**, e recarregar a
+  Pré-condição: `npm run seed:fresh`. Janela (ou DevTools) em **360 px de
+  largura**, e recarregar a
   página com `/dashboard/agenda` **sem query string** (é a query que guarda a
   vista; com ela, o teste não vale).
   **▶ ONDE IR.** **Agenda**, em 360 px.
@@ -2142,8 +2192,11 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **217. ⭐ As duas naturezas se distinguem NUM RELANCE, e a legenda diz qual é qual**
-  Pré-condição: um mês que tenha **as duas coisas** — pelo menos um compromisso
-  e pelo menos um vencimento.
+  Pré-condição: `npm run seed:fresh`, e então **navegar até um mês que tenha
+  as duas coisas** — pelo menos um compromisso e pelo menos um vencimento de
+  parcela. O seed põe os compromissos em torno de **hoje**; o mês do
+  vencimento é o mesmo que o passo **216** já manda achar. Se o mês corrente
+  não tiver as duas, use aquele.
   **▶ ONDE IR.** **Agenda**, nas duas vistas.
   Passos:
   1) olhar a tela por **três segundos** e tentar dizer quais linhas são
@@ -2165,8 +2218,11 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **218. O "+N" de um dia cheio, e a célula que NÃO estica**
-  Pré-condição: um dia com **mais de três** itens. Se o seed não produzir um,
-  crie quatro compromissos no mesmo dia pelo passo 215.
+  Pré-condição: `npm run seed:fresh`, e então **criar quatro compromissos no
+  mesmo dia** pelo caminho do passo **215**. Criar sempre, sem conferir antes
+  se o seed já deixou um dia cheio: o passo precisa de um dia com **mais de
+  três** itens, e depender do que o seed *por acaso* produziu é depender de
+  estado que muda sem aviso.
   **▶ ONDE IR.** **Agenda**, vista **Mês**.
   Passos:
   1) olhar a linha da semana que contém o dia cheio;
@@ -2181,7 +2237,8 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **219. O estado vazio tem FRASE PRÓPRIA — e não é uma grade muda**
-  Pré-condição: navegar até um mês **sem nada** (dois ou três anos à frente).
+  Pré-condição: `npm run seed:fresh`, e então navegar até um mês **sem nada**
+  (dois ou três anos à frente).
   **▶ ONDE IR.** **Agenda**.
   Passos:
   1) navegar até um mês vazio, nas **duas** vistas;
@@ -2196,7 +2253,10 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **220. ⭐ A virada de MÊS e de ANO, sem perder a vista escolhida**
-  Pré-condição: nenhuma.
+  Pré-condição: `npm run seed:fresh`. O passo não depende de dado nenhum em
+  especial — a virada de mês e de ano é de navegação —, mas declara o seed
+  como todos os outros, para o roteiro poder ser rodado do início ao fim sem
+  que ninguém precise decidir onde resetar.
   **▶ ONDE IR.** **Agenda**.
   Passos:
   1) escolher a vista **Agenda**;
@@ -2253,7 +2313,9 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **222. ⭐ O compromisso COM HORA, e o compromisso do dia inteiro**
-  Pré-condição: nenhuma.
+  Pré-condição: `npm run seed:fresh`, e então **criar os dois compromissos**
+  que o passo compara — um **com hora** e um **de dia inteiro** —, em vez de
+  procurar no que o seed deixou.
   **▶ ONDE IR.** **Agenda**.
   Passos:
   1) criar dois compromissos no **mesmo dia**: um **com hora** (14:30) e um
@@ -2304,7 +2366,12 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **224. O sino leva ao lugar certo, e NÃO pede permissão de notificação**
-  Pré-condição: o sino com pelo menos um item de cada tipo.
+  Pré-condição: `npm run seed:fresh`, **e este passo antes do 223** — ou um
+  `seed:fresh` novo depois dele. O seed entrega as três seções cheias (dois
+  compromissos de hoje, um atrasado, e as parcelas vencidas do financeiro);
+  o passo **223 conclui e quita itens**, e ao terminá-lo o sino pode já não
+  ter mais um item de cada tipo. **É a ordem que garante a pré-condição, e
+  por isso ela está escrita aqui.**
   **▶ ONDE IR.** O **sino**.
   Passos:
   1) clicar num item da seção **Hoje**;
@@ -2322,8 +2389,12 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **225. ⭐ A linha do tempo do processo — e o financeiro que NÃO está nela**
-  Pré-condição: `npm run seed:fresh`, e um processo que já tenha **mudado de
-  fase** pelo menos uma vez (use o passo 205, ou mude a fase agora).
+  Pré-condição: `npm run seed:fresh`, e então **mudar a fase de um processo**
+  agora, pelo **⋮ → Gerenciar → "Andamento do processo"** — o passo precisa
+  de pelo menos uma mudança gravada. Mude aqui mesmo, sem contar com o passo
+  **205**: o seed nasce com `fase` preenchida e `historicoFase` **vazio**, e
+  um passo que dependa de outro ter rodado quebra quando o roteiro é feito
+  fora de ordem.
   **▶ ONDE IR.** **Processos** → **⋮ → Gerenciar** num processo com honorário
   → rolar até **"Linha do tempo"**, **abaixo** da ficha financeira.
   Passos:
@@ -2352,6 +2423,288 @@ Dados que vários passos usam:
   régua **se lê como tempo** — se o olho encontra o "hoje" sem percorrer a
   lista.
   Fase de origem: F-3
+
+
+## 35. Fase F-4 — o campo que sugere, e o painel que diz o que fazer
+
+> **A fase tem uma regra só, e ela é o passo 227.** O campo **SUGERE, NÃO
+> OBRIGA**. Autocomplete que recusa valor fora da tabela trava trabalho real no
+> dia em que a tabela está desatualizada — e ela vai estar: as quatro tabelas
+> são de **22/08/2026** e envelhecem sozinhas a partir daí. O TJPR cria comarca,
+> a CBO ganha ocupação, o CNJ muda assunto.
+>
+> **Grava-se o TEXTO**, exatamente como está na tabela. Não há campo de código,
+> nada foi migrado, e `{{comarca}}` continua sendo texto. O que a fase resolve é
+> a divergência de grafia **daqui em diante** — "Ponta Grossa", "ponta grossa",
+> "PG" —, e não o que já está gravado.
+>
+> ⚠️ **A tabela do CNJ veio de dump de terceiro**, não do SGT oficial, que
+> estava bloqueado. A ressalva está no `RELATORIO.md` do Davi, ao lado dos
+> arquivos em `public/tabelas/`.
+>
+> **Pré-condição de 226 a 234:** `npm run seed:fresh`.
+>
+> **Vara ficou de FORA de propósito** — a lista varia por comarca, muda com
+> frequência e não foi coletada. Continua texto livre, e não é defeito.
+
+- [ ] **226. ⭐ A comarca sugere SEM ACENTO, e se escolhe PELO TECLADO**
+  Pré-condição: `npm run seed:fresh`.
+  **▶ ONDE IR.** Menu lateral → **Processos** → **Novo processo** → campo
+  **Comarca**.
+  Passos:
+  1) digitar **`sao jose`** — tudo minúsculo, sem acento nenhum;
+  2) conferir a lista que abre;
+  3) **sem tocar no mouse**, descer com **↓** até *São José dos Pinhais*;
+  4) apertar **Enter**;
+  5) digitar de novo, agora **`GROSSA`** em maiúsculas, e escolher com o mouse;
+  6) abrir a lista outra vez e apertar **Esc**.
+  Esperado no passo 2: *São José dos Pinhais* aparece — **acentuada e com as
+  maiúsculas certas**, como está na tabela do TJPR. Se digitar sem acento não
+  achar, o campo não serve para nada: ninguém digita "ã" com pressa.
+  Esperado no passo 3: o item destacado **anda com a seta**, e o destaque é
+  visível. A lista **rola junto** se o item sair da área visível.
+  Esperado no passo 4: o campo fica com **"São José dos Pinhais"**, escrito
+  exatamente como na tabela, e a lista fecha. **O Enter NÃO pode salvar o
+  formulário** enquanto havia item escolhido na lista.
+  Esperado no passo 5: `GROSSA` acha **Ponta Grossa** — casa **no meio da
+  palavra**, e não só no começo.
+  Esperado no passo 6: **Esc fecha a lista e o texto digitado FICA no campo.**
+  Esc que apaga o que se digitou é reprovação do passo.
+  Conferir também que **a lista nunca passa de oito itens** — digitar apenas
+  `a` não pode despejar 161 comarcas na tela.
+  Por que só olho humano: a suíte prova o filtro (sem acento, sem caixa, no
+  meio, com teto) como função pura, e prova que as teclas estão tratadas. O que
+  ela não prova é se **o destaque é visível** e se a lista cobre o campo
+  seguinte.
+  Fase de origem: F-4
+
+- [ ] **227. ⭐ 🚨 UMA COMARCA QUE NÃO EXISTE, DIGITADA E SALVA ASSIM MESMO**
+  Pré-condição: `npm run seed:fresh`. **É O PASSO QUE A FASE INTEIRA EXISTE
+  PARA TER.** Se só um passo desta fase for executado, que seja este.
+  **▶ ONDE IR.** **Processos** → **Novo processo** → campo **Comarca**.
+  Passos:
+  1) preencher o processo normalmente (título e cliente);
+  2) no campo **Comarca**, digitar **`Comarca de Marte`** — que não está na
+     tabela e nunca vai estar;
+  3) ler o que a tela diz;
+  4) **clicar fora do campo**, e voltar a olhá-lo;
+  5) **salvar o processo**;
+  6) abrir o processo salvo e conferir a comarca;
+  7) repetir com **`Ponta Grosa`** (um "s" só) — um erro de digitação de
+     verdade, que também tem que passar.
+  Esperado no passo 3: aparece uma frase dizendo que **nada na lista casa** e
+  que **pode salvar assim mesmo**. Nenhuma cor de erro, nenhum campo vermelho,
+  nenhum aviso de valor inválido — **não há nada errado acontecendo**.
+  Esperado no passo 4: **o texto continua lá, intacto.** 🚨 Se ao sair do campo
+  ele **limpar**, **reverter** ou **trocar pela sugestão mais parecida**, é
+  **reprovação do passo** — é exatamente a "melhoria" que a fase existe para
+  impedir.
+  Esperado no passo 5: **salva.** Sem erro de validação, sem mensagem, sem
+  bloqueio do botão.
+  Esperado no passo 6: a comarca gravada é **`Comarca de Marte`**, letra por
+  letra.
+  🚨 **O que NÃO pode acontecer, em nenhum dos sete passos:** o botão de salvar
+  desabilitado; uma mensagem do tipo *"escolha uma opção da lista"*; o campo
+  exigindo valor da tabela; o valor sumindo. **Qualquer um desses reprova a
+  fase, não só o passo.**
+  Conferir também o mesmo com **Profissão** ("Encantador de serpentes") e
+  **Nacionalidade** ("marciana") no cadastro de cliente PF: a regra é do
+  componente, e vale nos cinco campos.
+  Por que só olho humano: a suíte prova que não existe caminho de recusa no
+  código, e a mutação que introduz um `onBlur` de limpeza derruba o teste. O
+  que ela não prova é se **a advogada percebe que pode salvar** — se a frase do
+  estado vazio convida ou assusta.
+  Fase de origem: F-4
+
+- [ ] **228. ⭐ Profissão pela CBO, e a nacionalidade FLEXIONADA pelo sexo**
+  Pré-condição: `npm run seed:fresh`. **A procuração é quem lê isto** —
+  *"brasileira, casada, professora"*.
+  **▶ ONDE IR.** Menu lateral → **Clientes** → **Novo cliente** → **Pessoa
+  física**.
+  Passos:
+  1) **sem escolher o sexo ainda**, digitar `brasil` no campo **Nacionalidade**;
+  2) escolher **Sexo: Feminino**;
+  3) digitar `brasil` de novo em Nacionalidade;
+  4) trocar para **Sexo: Masculino** e digitar `brasil` mais uma vez;
+  5) no campo **Profissão**, digitar `advog`;
+  6) digitar `medico hematologista` — sem acento.
+  Esperado no passo 1: aparecem **as duas formas** — *brasileiro* e
+  *brasileira*. Sem sexo escolhido o sistema **não decide por ela**. Deve haver
+  uma dica dizendo que escolher o sexo faz a sugestão vir já flexionada.
+  Esperado no passo 3: sugere **`brasileira`**, e **não** `brasileiro`.
+  Esperado no passo 4: sugere **`brasileiro`**.
+  Esperado no passo 5: aparecem ocupações da CBO com "advog" no nome.
+  Esperado no passo 6: acha **Médico hematologista** — acentuado na tabela,
+  achado sem acento.
+  **A nacionalidade continua UM campo de texto**, como sempre foi. O que mudou
+  é a sugestão. Se a tela passar a ter **dois campos** de nacionalidade, ou se
+  a geração de documento começar a flexionar sozinha, alguém mexeu no modelo —
+  e isso **não foi feito nesta fase, de propósito** (ver o relatório da F-4).
+  Por que só olho humano: a suíte prova a flexão pelo sexo como função pura. O
+  que ela não prova é se a dica aparece na hora certa e se a troca de sexo
+  **atualiza a sugestão** sem limpar o que já estava escrito.
+  Fase de origem: F-4
+
+- [ ] **229. ⭐ A classe e o assunto do CNJ no processo**
+  Pré-condição: `npm run seed:fresh`.
+  ⚠️ **Leia antes:** a fase pediu um campo **Assunto** alimentado pela tabela de
+  assuntos do CNJ, e mandou **não tocar no backend**. `Process` **não tem**
+  campo `assunto`, e criá-lo seria schema, lista de campos permitidos,
+  validação e testes no servidor. O assunto foi então para o campo **`area`**,
+  que já existia e guarda a mesma coisa — os assuntos de primeiro nível do CNJ
+  são literalmente *"DIREITO TRIBUTÁRIO"*, *"DIREITO PREVIDENCIÁRIO"*, que é o
+  que a advogada hoje digita à mão como "Tributario". **É decisão registrada**,
+  não descuido. Ver o relatório da F-4.
+  **▶ ONDE IR.** **Processos** → **Novo processo**.
+  Passos:
+  1) no campo **Tipo de Ação (classe do CNJ)**, digitar `embargos`;
+  2) escolher um item pelo teclado;
+  3) no campo **Área / assunto (CNJ)**, digitar `tributar`;
+  4) escolher um item;
+  5) salvar e reabrir o processo.
+  Esperado no passo 1: aparecem classes do CNJ — *Embargos de Declaração* entre
+  elas.
+  Esperado no passo 3: aparecem assuntos do CNJ — *DIREITO TRIBUTÁRIO* entre
+  eles.
+  Esperado no passo 5: os dois valores gravados **em texto**, exatamente como
+  na tabela.
+  Conferir também que **Vara continua texto livre, SEM sugestão** — ficou de
+  fora de propósito, porque a lista varia por comarca e não foi coletada.
+  Ausência de sugestão na Vara **não é defeito**; sugestão na Vara **é**.
+  Por que só olho humano: a suíte prova que os campos usam o componente e que
+  as tabelas carregam. O que ela não prova é se o nome do CNJ, que é longo e
+  todo em maiúsculas nos níveis de cima, **cabe e se lê** no campo.
+  Fase de origem: F-4
+
+- [ ] **230. ⭐ 🚨 A TELA ABRE SEM ATRASO — a tabela do CNJ não trava o formulário**
+  Pré-condição: `npm run seed:fresh`. **É a Parte 1 da fase inteira, e ela só
+  se vê aqui.** A tabela do CNJ tem **674 KB**.
+  **▶ ONDE IR.** DevTools → aba **Network**, filtro em **Fetch/XHR** e em
+  **Doc/Other**. Depois: **login**, **Dashboard**, **Financeiro**,
+  **Processos → Novo processo**.
+  Passos:
+  1) com o Network aberto e **limpo**, fazer login e olhar o dashboard;
+  2) passar por **Financeiro** e por **Clientes**;
+  3) conferir a lista de requisições;
+  4) abrir **Processos → Novo processo** e **não tocar em nenhum campo**;
+  5) **clicar no campo Comarca**;
+  6) **clicar no campo Tipo de Ação**;
+  7) clicar em **Área / assunto** logo em seguida.
+  Esperado nos passos 1 a 3: **nenhuma requisição a `/tabelas/*.json`.** Login,
+  dashboard, financeiro e clientes **não** baixam tabela nenhuma. 🚨 Se
+  `classes-assuntos-cnj.json` aparecer aqui, os 674 KB voltaram para o caminho
+  de toda tela — é **reprovação do passo**.
+  Esperado no passo 4: **ainda nenhuma.** Abrir o formulário não basta; é o
+  **uso do campo** que dispara.
+  Esperado no passo 5: baixa **`comarcas-pr.json`** (12 KB) — e **só ele**.
+  Esperado no passo 6: baixa **`classes-assuntos-cnj.json`**. O formulário
+  **não congela** enquanto isso: dá para continuar digitando nos outros campos,
+  e o campo mostra que está carregando.
+  Esperado no passo 7: **nenhuma requisição nova.** Classe e assunto vêm do
+  mesmo arquivo, e ele já está em memória — **um download, não dois**.
+  Conferir também, voltando ao formulário uma segunda vez na mesma sessão: **as
+  tabelas não são baixadas de novo**.
+  Por que só olho humano: a suíte prova pelo build que nenhuma tabela está
+  dentro dos chunks. O que ela não prova é o **atraso percebido** — se o campo
+  demora a ficar útil no primeiro clique, num computador comum.
+  Fase de origem: F-4
+
+- [ ] **231. ⭐ Os blocos do painel abrem, fecham, e a escolha é LEMBRADA**
+  Pré-condição: `npm run seed:fresh`.
+  **▶ ONDE IR.** **Dashboard**.
+  Passos:
+  1) olhar quais blocos estão **abertos** e quais estão **fechados** ao chegar;
+  2) fechar **"Precisa de atenção"** e abrir **"Resumo Geral"**;
+  3) navegar para outra tela e **voltar**;
+  4) **recarregar a página** (F5);
+  5) fechar e abrir um bloco **só pelo teclado** — Tab até o cabeçalho, depois
+     **Enter** e **espaço**.
+  Esperado no passo 1: **"Precisa de atenção", "No mês" e "Próximos
+  vencimentos" ABERTOS**; **"Acumulado do escritório", "Resumo Geral" e
+  "Distribuição por Status" FECHADOS**. O que exige atenção primeiro;
+  estatística depois. Um painel que abre tudo obriga a rolar para achar o que
+  importa.
+  Esperado nos passos 3 e 4: **a escolha do passo 2 continua valendo.**
+  Esperado no passo 5: o cabeçalho **recebe foco com Tab**, tem **anel de foco
+  visível**, e responde **a Enter e a espaço** — porque é um botão de verdade.
+  Conferir também que **cada bloco mostra a ação que ele sugere**: "Registrar
+  pagamento" no de atenção, "Nova parcela" no do mês, "Ver honorários", "Ver
+  processos" — e que **os botões têm aparência de botão** (se saírem como texto
+  cru, faltou o CSS).
+  Por que só olho humano: a suíte prova a ordem dos blocos, quais nascem
+  abertos, e que a preferência sobrevive a `localStorage` bloqueado. O que ela
+  não prova é se **a primeira olhada do dia cai no lugar certo**.
+  Fase de origem: F-4
+
+- [ ] **232. ⭐ 🚨 O PAINEL E O SINO DIZEM O MESMO NÚMERO**
+  Pré-condição: `npm run seed:fresh`. **É o defeito que o passo 135 pegou uma
+  vez** — dois números diferentes para a mesma coisa na mesma tela.
+  **▶ ONDE IR.** **Dashboard**, com o **sino** visível no cabeçalho.
+  Passos:
+  1) ler a contagem do **sino** e abrir a lista dele;
+  2) contar quantos itens há em **"Parcelas vencidas"**;
+  3) ler a contagem ao lado de **"Precisa de atenção"** e a lista de vencidas
+     dentro do bloco;
+  4) ler a nota do cartão **"Total vencido"**, em "No mês";
+  5) **registrar o pagamento** de uma parcela vencida, quitando-a;
+  6) voltar ao dashboard e **recarregar**;
+  7) reler os três lugares.
+  Esperado nos passos 2, 3 e 4: **o mesmo número de parcelas vencidas nos
+  três.** A contagem do bloco de atenção soma vencidas **e** as que vencem em
+  7 dias, então ela pode ser maior — mas a **lista de vencidas** dentro dele e
+  a nota do "Total vencido" têm que bater com o sino, item por item.
+  Esperado no passo 7: **os três caíram juntos**, na mesma quantidade.
+  🚨 **Qualquer divergência é reprovação**, mesmo de um. Não existe "arredonda
+  diferente": os três leem a mesma lista, da mesma requisição.
+  Conferir também que **as parcelas vencidas NÃO aparecem duas vezes** dentro
+  do bloco de atenção — uma como vencida e outra como "vence nos próximos 7
+  dias". As duas listas são disjuntas.
+  Por que só olho humano: a suíte prova que painel e sino chamam a mesma função
+  e a mesma rota, e que o painel não filtra por status por conta própria. O que
+  ela não prova é o número **na tela**, depois de um pagamento real.
+  Fase de origem: F-4
+
+- [ ] **233. Os cartões do painel em 360 px — os três empilhados**
+  Pré-condição: `npm run seed:fresh`, e janela (ou DevTools) em **360 px de
+  largura**. **Fecha a pendência do passo 181.**
+  **▶ ONDE IR.** **Dashboard**, com todos os blocos **abertos**.
+  Passos:
+  1) abrir os seis blocos;
+  2) percorrer a página **de cima a baixo**;
+  3) tentar **deslizar a página para o lado**.
+  Esperado no passo 2: os cartões de **"No mês"**, de **"Acumulado do
+  escritório"** e de **"Resumo Geral"** estão **os três em uma coluna só**,
+  empilhados do mesmo jeito. Nenhum valor cortado, nenhum "R$" separado dos
+  dígitos.
+  Esperado no passo 3: **não desliza.** A página não tem rolagem horizontal
+  nenhuma.
+  Conferir também com um valor **grande** — se o seed não tiver, criar um
+  honorário de **R$ 1.234.567,89**: era o valor comprido que estourava a
+  trilha, porque `Intl` em pt-BR faz de "R$ 1.234.567,89" um token indivisível.
+  Por que só olho humano: a suíte prova que a regra de uma coluna existe e que
+  os três blocos usam a mesma grade. O que ela não prova é a **página em
+  360 px**, que é onde o defeito aparecia.
+  Fase de origem: F-4
+
+- [ ] **234. A tabela que NÃO carrega, e o campo que continua servindo**
+  Pré-condição: `npm run seed:fresh`.
+  **▶ ONDE IR.** DevTools → **Network** → **Offline** (ou bloquear
+  `/tabelas/*`). Depois **Processos → Novo processo**.
+  Passos:
+  1) com a rede da tabela bloqueada, clicar no campo **Comarca**;
+  2) ler o que a tela diz;
+  3) **digitar uma comarca e salvar**;
+  4) restaurar a rede, recarregar, e clicar no campo de novo.
+  Esperado no passo 2: uma frase discreta dizendo que **não deu para carregar
+  as sugestões** e que **pode digitar normalmente**. Sem tela de erro, sem
+  toast vermelho, sem campo bloqueado.
+  Esperado no passo 3: **salva.** Sugerir é serviço; falhar em sugerir não pode
+  virar impedimento de cadastrar.
+  Esperado no passo 4: **tenta de novo e funciona.** Uma falha de rede não pode
+  condenar o campo a ficar mudo pelo resto da sessão.
+  Por que só olho humano: a suíte prova que o erro não fica memoizado. O que
+  ela não prova é se a mensagem **tranquiliza** em vez de assustar.
+  Fase de origem: F-4
 
 
 ## Validado
@@ -4669,6 +5022,15 @@ Dados que vários passos usam:
   > auditoria continua achando, enquanto os testes provam que um novo não pode
   > mais nascer com a mensagem errada. **Quem for limpar o banco de
   > desenvolvimento, leia isto antes.**
+  >
+  > **ATUALIZAÇÃO — F-4 (25/08/2026).** Este órfão **não existe mais**: a F-4
+  > roda `seed:fresh` e o banco de desenvolvimento foi refeito. Nada se perdeu.
+  > O passo **210**, que era o único a depender dele, foi **reescrito para
+  > fabricar o próprio órfão** — o seed reconstrói o mesmo par (*Peticao de
+  > Suspensao da Execucao* sob a *Execucao Fiscal - IPTU*), e basta desativar o
+  > processo para o órfão nascer de novo, pelo caminho do produto. A lição fica
+  > registrada: **guardar caso de teste dentro do banco de desenvolvimento é
+  > guardá-lo no lugar mais volátil que existe.** Ver a Parte 0 da F-4.
 
 ## Automatizado
 

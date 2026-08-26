@@ -274,6 +274,35 @@
   .upcoming-right { width: 100%; justify-content: space-between; }
 }
 
+/* ── Os três blocos de cartões empilham do MESMO jeito (F-4, passo 181) ────
+   O defeito: em 360 px, "Resumo Geral" fluía sem problema e os dois blocos de
+   dinheiro — "No mês" e "Acumulado do escritório" — exigiam deslize
+   horizontal. Os três usam a MESMA `.summary-grid`, com a mesma regra de duas
+   colunas; a diferença nunca esteve no CSS, e sim no conteúdo.
+
+   `Intl` em pt-BR separa "R$" dos dígitos com espaço NÃO-SEPARÁVEL (U+00A0), e
+   dígito não tem oportunidade de quebra: "R$ 1.234.567,89" é **um único token
+   indivisível**. Em duas colunas a 360 px cada trilha fica com ~150 px, e um
+   item de grade não encolhe abaixo da largura intrínseca do conteúdo
+   (`min-width: auto` é o padrão) — a trilha estica, e com ela a página. Os
+   cartões do "Resumo Geral" escapavam por sorte: `toLocaleString` de um
+   inteiro cabe em 150 px.
+
+   Por isso a correção NÃO é quebrar o valor. Quebrar "R$ 1.234.567,89" no
+   meio produz um número ilegível, e a F-1b.2 já decidiu que o valor é
+   indivisível por construção. A correção é dar largura ao cartão: uma coluna
+   só, onde o valor cabe inteiro.
+
+   `min-width: 0` junto, como cinto e suspensório: se um dia entrar um valor
+   maior que a coluna única, a trilha encolhe em vez de empurrar a página. */
+@media (max-width: 480px) {
+  .summary-grid { grid-template-columns: 1fr; }
+}
+
+.summary-card {
+  min-width: 0;
+}
+
 /* ── Nota de rodapé de um bloco de cartões (F-1a) ──────────────────────────
    Explica um termo que entra na conta dos cartões acima sem ter cartão
    próprio — hoje o saldo adiantado. Renderizada só quando o valor existe. */
