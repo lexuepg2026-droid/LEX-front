@@ -1792,8 +1792,17 @@ Dados que vários passos usam:
 > esse tipo de regra que volta sozinha na fase seguinte sob o nome de
 > "coerência".
 >
-> **Pré-condição de 205 a 212:** `npm run seed:fresh`, **exceto no 210**, que
-> precisa do órfão que já está no banco de desenvolvimento (ver o passo 204).
+> **Pré-condição de 205 a 212:** `npm run seed:fresh`, **em todos, sem
+> exceção.** Até a F-3 o 210 e o 212 eram exceções — contavam com estado
+> acumulado no banco de desenvolvimento (o órfão do passo 204, e a base
+> anterior à DEC-054). O `seed:fresh` da **F-4** apagou os dois, e os dois
+> foram **reescritos para criar a própria pré-condição**. Passo que depende de
+> dado que um reset apaga é passo que quebra sozinho. Ver a Parte 0 da F-4.
+>
+> Os passos **206** e **207** encadeiam no **205**: rodam **em sequência,
+> depois de um único `seed:fresh`**. Isso é sequência dentro da mesma rodada
+> semeada, não estado herdado de sessão anterior — não rode `seed:fresh` entre
+> eles, ou o encadeamento se perde.
 >
 > ⚠️ **O nome da primeira fase está PENDENTE DE RATIFICAÇÃO.** Ela deu duas
 > palavras — "fase inicial" e "fase de conhecimento". Adotada a segunda, porque
@@ -1824,7 +1833,9 @@ Dados que vários passos usam:
   Fase de origem: F-2d
 
 - [ ] **206. ⭐ Salvar a mudança de fase SEM motivo**
-  Pré-condição: o passo **205** executado.
+  Pré-condição: `npm run seed:fresh` **uma vez**, e o passo **205**
+  executado depois dele. **Não rode `seed:fresh` entre o 205 e este** — o
+  encadeamento é dentro da mesma rodada semeada.
   *"Não precisa anotar o porquê, só se ela quiser mesmo."*
   Passos: 1) escolher outra fase; 2) **deixar o campo "Motivo" totalmente
   vazio**; 3) clicar em **Mudar fase**.
@@ -1840,7 +1851,9 @@ Dados que vários passos usam:
   Fase de origem: F-2d
 
 - [ ] **207. 🚨 O histórico mostra `de → para`, com data — e é o passado da linha do tempo**
-  Pré-condição: os passos **205** e **206** executados no mesmo processo.
+  Pré-condição: `npm run seed:fresh` **uma vez**, e os passos **205** e
+  **206** executados depois dele, **no mesmo processo**. Os três formam uma
+  sequência: um seed, depois 205 → 206 → 207, sem reset no meio.
   **É o substrato da F-2e.** Ela pediu a linha do tempo (*"finalizado por etapa
   — fazer linha do tempo"*), e sem gravar agora a linha do tempo nasceria sem
   passado.
@@ -1923,22 +1936,37 @@ Dados que vários passos usam:
   Fase de origem: F-2d
 
 - [ ] **210. 🚨 A lacuna do Documento, fechada nas duas bocas**
-  Pré-condição: **NÃO rodar `seed:fresh`.** Este passo usa o **órfão que já está
-  no banco de desenvolvimento** — a *Peticao de Suspensao da Execucao* sob a
-  *Execucao Fiscal - IPTU*, achada no passo **204**. Ele fica lá **de
-  propósito**, como caso vivo.
-  **▶ ONDE IR.** Terminal do backend, depois **Documentos**.
+  Pré-condição: `npm run seed:fresh`. **O passo cria o próprio órfão.**
+  Até a F-3 ele usava o órfão que vivia no banco de desenvolvimento — a
+  *Peticao de Suspensao da Execucao* sob a *Execucao Fiscal - IPTU*, achada no
+  passo **204**. O `seed:fresh` da **F-4** apagou aquele banco. O par, porém, o
+  próprio seed reconstrói: a *Execucao Fiscal - IPTU* nasce com a *Peticao de
+  Suspensao da Execucao* pendurada nela. Basta **desativar o processo** para o
+  órfão nascer de novo, pelo caminho do produto — que é como ele nasceu da
+  primeira vez.
+  **▶ ONDE IR.** **Processos**, depois o terminal do backend, depois
+  **Documentos**.
   Passos:
-  1) rodar **`npm run auditar:orfaos`** e conferir que **o órfão continua
-     sendo achado**, nominalmente;
-  2) em **Processos**, com o filtro em **"Somente desativados"**, achar a
+  1) em **Processos**, achar a *Execucao Fiscal - IPTU* e conferir em
+     **Documentos** que a *Peticao de Suspensao da Execucao* está lá, **ativa**;
+  2) **desativar o processo**, pelo **⋮**, confirmando;
+  3) rodar **`npm run auditar:orfaos`** e conferir que **o órfão é achado**,
+     nominalmente;
+  4) em **Processos**, com o filtro em **"Somente desativados"**, achar a
      *Execucao Fiscal - IPTU*;
-  3) tentar **criar um documento novo** apontando para ela — pela lista de
+  5) tentar **criar um documento novo** apontando para ela — pela lista de
      Documentos, ou pela geração a partir de um modelo;
-  4) tentar **mover** um documento existente para ela, pela edição do documento.
-  Esperado no passo 1: o órfão **aparece**. A auditoria continua fazendo o
-  trabalho dela; a correção é escolha da advogada, e ninguém a fez por ela.
-  Esperado nos passos 3 e 4: a criação e a mudança são **recusadas**, e a
+  6) tentar **mover** um documento existente para ela, pela edição do documento.
+  Esperado no passo 2: a desativação **passa**, e o documento **continua
+  ativo** debaixo do processo inativo. **O órfão NASCE da desativação** — a
+  cascata não o alcança, por decisão da **DEC-052**: `deleteProcess` derruba os
+  vínculos processo↔cliente e mais nada. Se o documento for desativado junto,
+  alguém ampliou a cascata sem registrar, e **isso é reprovação do passo**.
+  Esperado no passo 3: o órfão **aparece**, como `Documento → Processo`, com o
+  **filho ATIVO nomeado** e o **pai INATIVO nomeado**. A auditoria continua
+  fazendo o trabalho dela; a correção é escolha da advogada, e ninguém a fez
+  por ela. **A URI não pode aparecer** — nem inteira, nem mascarada.
+  Esperado nos passos 5 e 6: a criação e a mudança são **recusadas**, e a
   mensagem **NOMEIA o processo** — *"Não é possível criar: o processo Execucao
   Fiscal - IPTU está desativado. Reative o processo primeiro."*
   **🚨 O que NÃO pode aparecer:** *"Processo não encontrado"*. **Era exatamente
@@ -1948,13 +1976,15 @@ Dados que vários passos usam:
   Conferir também que **reativar o processo** e então criar o documento
   **funciona** — uma guarda que fechasse o caminho legítimo trocaria um órfão
   por um módulo inutilizado.
-  **Ao terminar, NÃO conserte o órfão.** Ele é caso de teste vivo. Se ele
-  precisar sumir um dia, a escolha é da advogada e se faz pela tela, registro a
-  registro.
+  **Ao terminar, NÃO conserte o órfão por script.** A escolha entre desativar o
+  filho e reativar o pai é da advogada, e essa regra não muda — o que mudou é
+  que o órfão deixou de ser relíquia guardada no banco e passou a ser
+  **fabricado pelo próprio passo**, toda vez.
   Por que só olho humano: a suíte prova as três portas e a ausência de
   reativação de documento. O que ela não prova é **por onde a advogada chega**
   à tentativa, nem se a tela a deixa chegar.
-  Fase de origem: F-2d
+  Fase de origem: F-2d — **reescrito na F-4** (Parte 0), para deixar de depender
+  do órfão do passo 204.
 
 - [ ] **211. Desativar um cliente que é LITISCONSORTE no processo de outra pessoa**
   Pré-condição: `npm run seed:fresh`. **Fecha o relato do passo 201.**
@@ -1983,33 +2013,52 @@ Dados que vários passos usam:
   Fase de origem: F-2d
 
 - [ ] **212. A migração da DEC-054, rodada duas vezes**
-  Pré-condição: banco de desenvolvimento, **sem** `seed:fresh` antes.
+  Pré-condição: `npm run seed:fresh`.
+  ⚠️ **Leia antes, porque o esperado MUDOU.** Até a F-3 este passo dizia
+  "**sem** `seed:fresh` antes": ele contava com o banco de desenvolvimento
+  **anterior à DEC-054**, em que havia processo sem `fase`. Esse banco não
+  existe mais — o `seed:fresh` da **F-4** o apagou —, e **não há caminho no
+  produto que crie processo sem `fase`**: o schema tem `default` e o seed grava
+  o campo nos dez processos. Portanto **`fase preenchida agora` sai `0` já na
+  PRIMEIRA execução, e isso é o ESPERADO, não falha.** O que o passo continua
+  provando é a guarda, o relatório lido contra a base real, e a idempotência.
+  Ver a Parte 0 da F-4.
   Passos:
-  1) rodar **`npm run migrar:fase`**;
-  2) **ler o relatório**;
-  3) rodar **de novo**, o mesmo comando;
-  4) abrir **Processos** e conferir que a coluna **Fase** está preenchida em
+  1) rodar **`npm run migrar:fase -- --dry-run`**;
+  2) rodar **`npm run migrar:fase`**;
+  3) **ler o relatório**;
+  4) rodar **de novo**, o mesmo comando;
+  5) abrir **Processos** e conferir que a coluna **Fase** está preenchida em
      todos.
-  Esperado no passo 1: a guarda de banco da F-2b **PARA e pergunta** o nome do
+  Esperado no passo 1: **não pergunta nada e não grava nada** — o cabeçalho diz
+  `(DRY RUN — nada será gravado)`. `--dry-run` existe para olhar antes de agir,
+  e por isso **não** leva a guarda. Se ELE perguntar o nome do banco, alguém pôs
+  guarda onde não precisa.
+  Esperado no passo 2: a guarda de banco da F-2b **PARA e pergunta** o nome do
   banco — este script escreve. **A URI não pode aparecer**, nem mascarada.
-  Esperado no passo 2: o relatório lista os **valores reais de `status`
+  Esperado no passo 3: o relatório lista os **valores reais de `status`
   encontrados no banco**, com a contagem de cada um, e diz **em voz alta** que
-  **nenhum deles carrega informação de fase** — todos foram para a fase padrão.
-  Diz também quais processos estão com `status: "encerrado"`, **nominalmente**,
-  como candidatos à revisão dela.
+  **nenhum deles carrega informação de fase**. Diz também quais processos estão
+  com `status: "encerrado"`, **nominalmente**, como candidatos à revisão dela —
+  no seed são **dois**: *Acao Trabalhista - Verbas Rescisorias* e *Acao de
+  Cobranca de Divida*.
   **O script NÃO carimba trânsito em julgado em nenhum.** "Encerrado" diz que
   acabou, e não diz **como** nem **quando** — e uma data inventada é pior que
   nenhuma.
-  Esperado no passo 3: *"nada a fazer — a migração já havia sido aplicada
-  (idempotente)"*, e **`fase preenchida agora : 0`**.
-  Esperado no passo 4: nenhum processo com a coluna Fase vazia, e o campo
+  Esperado no passo 4: **exatamente o mesmo relatório do passo 3**, sem
+  diferença nenhuma — *"nada a fazer — a migração já havia sido aplicada
+  (idempotente)"*, **`fase preenchida agora : 0`** e **`fase já tinha : 10`**
+  nas duas execuções. A idempotência aqui se prova pela **igualdade das duas
+  saídas**, e não mais pela queda de um número para zero.
+  Esperado no passo 5: nenhum processo com a coluna Fase vazia, e o campo
   **`status` continua lá** — é outro eixo, e a listagem filtra por ele desde a
   Fase 2.
   Por que só olho humano: a suíte roda a migração duas vezes contra o banco de
   teste e compara documento por documento. O que ela não prova é o **texto do
   relatório contra a base real** — e é ele que a advogada vai ler para decidir o
   que fazer com os "encerrado".
-  Fase de origem: F-2d
+  Fase de origem: F-2d — **reescrito na F-4** (Parte 0), para deixar de depender
+  de um banco pré-DEC-054 que o reset apaga.
 
 ## 34. Fase F-3 — O calendário: o que vem, e o que já aconteceu
 
@@ -2068,7 +2117,8 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **214. ⭐ 🚨 Em 360 px a AGENDA é o padrão — e a grade continua alcançável**
-  Pré-condição: janela (ou DevTools) em **360 px de largura**, e recarregar a
+  Pré-condição: `npm run seed:fresh`. Janela (ou DevTools) em **360 px de
+  largura**, e recarregar a
   página com `/dashboard/agenda` **sem query string** (é a query que guarda a
   vista; com ela, o teste não vale).
   **▶ ONDE IR.** **Agenda**, em 360 px.
@@ -2142,8 +2192,11 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **217. ⭐ As duas naturezas se distinguem NUM RELANCE, e a legenda diz qual é qual**
-  Pré-condição: um mês que tenha **as duas coisas** — pelo menos um compromisso
-  e pelo menos um vencimento.
+  Pré-condição: `npm run seed:fresh`, e então **navegar até um mês que tenha
+  as duas coisas** — pelo menos um compromisso e pelo menos um vencimento de
+  parcela. O seed põe os compromissos em torno de **hoje**; o mês do
+  vencimento é o mesmo que o passo **216** já manda achar. Se o mês corrente
+  não tiver as duas, use aquele.
   **▶ ONDE IR.** **Agenda**, nas duas vistas.
   Passos:
   1) olhar a tela por **três segundos** e tentar dizer quais linhas são
@@ -2165,8 +2218,11 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **218. O "+N" de um dia cheio, e a célula que NÃO estica**
-  Pré-condição: um dia com **mais de três** itens. Se o seed não produzir um,
-  crie quatro compromissos no mesmo dia pelo passo 215.
+  Pré-condição: `npm run seed:fresh`, e então **criar quatro compromissos no
+  mesmo dia** pelo caminho do passo **215**. Criar sempre, sem conferir antes
+  se o seed já deixou um dia cheio: o passo precisa de um dia com **mais de
+  três** itens, e depender do que o seed *por acaso* produziu é depender de
+  estado que muda sem aviso.
   **▶ ONDE IR.** **Agenda**, vista **Mês**.
   Passos:
   1) olhar a linha da semana que contém o dia cheio;
@@ -2181,7 +2237,8 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **219. O estado vazio tem FRASE PRÓPRIA — e não é uma grade muda**
-  Pré-condição: navegar até um mês **sem nada** (dois ou três anos à frente).
+  Pré-condição: `npm run seed:fresh`, e então navegar até um mês **sem nada**
+  (dois ou três anos à frente).
   **▶ ONDE IR.** **Agenda**.
   Passos:
   1) navegar até um mês vazio, nas **duas** vistas;
@@ -2196,7 +2253,10 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **220. ⭐ A virada de MÊS e de ANO, sem perder a vista escolhida**
-  Pré-condição: nenhuma.
+  Pré-condição: `npm run seed:fresh`. O passo não depende de dado nenhum em
+  especial — a virada de mês e de ano é de navegação —, mas declara o seed
+  como todos os outros, para o roteiro poder ser rodado do início ao fim sem
+  que ninguém precise decidir onde resetar.
   **▶ ONDE IR.** **Agenda**.
   Passos:
   1) escolher a vista **Agenda**;
@@ -2253,7 +2313,9 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **222. ⭐ O compromisso COM HORA, e o compromisso do dia inteiro**
-  Pré-condição: nenhuma.
+  Pré-condição: `npm run seed:fresh`, e então **criar os dois compromissos**
+  que o passo compara — um **com hora** e um **de dia inteiro** —, em vez de
+  procurar no que o seed deixou.
   **▶ ONDE IR.** **Agenda**.
   Passos:
   1) criar dois compromissos no **mesmo dia**: um **com hora** (14:30) e um
@@ -2304,7 +2366,12 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **224. O sino leva ao lugar certo, e NÃO pede permissão de notificação**
-  Pré-condição: o sino com pelo menos um item de cada tipo.
+  Pré-condição: `npm run seed:fresh`, **e este passo antes do 223** — ou um
+  `seed:fresh` novo depois dele. O seed entrega as três seções cheias (dois
+  compromissos de hoje, um atrasado, e as parcelas vencidas do financeiro);
+  o passo **223 conclui e quita itens**, e ao terminá-lo o sino pode já não
+  ter mais um item de cada tipo. **É a ordem que garante a pré-condição, e
+  por isso ela está escrita aqui.**
   **▶ ONDE IR.** O **sino**.
   Passos:
   1) clicar num item da seção **Hoje**;
@@ -2322,8 +2389,12 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **225. ⭐ A linha do tempo do processo — e o financeiro que NÃO está nela**
-  Pré-condição: `npm run seed:fresh`, e um processo que já tenha **mudado de
-  fase** pelo menos uma vez (use o passo 205, ou mude a fase agora).
+  Pré-condição: `npm run seed:fresh`, e então **mudar a fase de um processo**
+  agora, pelo **⋮ → Gerenciar → "Andamento do processo"** — o passo precisa
+  de pelo menos uma mudança gravada. Mude aqui mesmo, sem contar com o passo
+  **205**: o seed nasce com `fase` preenchida e `historicoFase` **vazio**, e
+  um passo que dependa de outro ter rodado quebra quando o roteiro é feito
+  fora de ordem.
   **▶ ONDE IR.** **Processos** → **⋮ → Gerenciar** num processo com honorário
   → rolar até **"Linha do tempo"**, **abaixo** da ficha financeira.
   Passos:
@@ -4669,6 +4740,15 @@ Dados que vários passos usam:
   > auditoria continua achando, enquanto os testes provam que um novo não pode
   > mais nascer com a mensagem errada. **Quem for limpar o banco de
   > desenvolvimento, leia isto antes.**
+  >
+  > **ATUALIZAÇÃO — F-4 (25/08/2026).** Este órfão **não existe mais**: a F-4
+  > roda `seed:fresh` e o banco de desenvolvimento foi refeito. Nada se perdeu.
+  > O passo **210**, que era o único a depender dele, foi **reescrito para
+  > fabricar o próprio órfão** — o seed reconstrói o mesmo par (*Peticao de
+  > Suspensao da Execucao* sob a *Execucao Fiscal - IPTU*), e basta desativar o
+  > processo para o órfão nascer de novo, pelo caminho do produto. A lição fica
+  > registrada: **guardar caso de teste dentro do banco de desenvolvimento é
+  > guardá-lo no lugar mais volátil que existe.** Ver a Parte 0 da F-4.
 
 ## Automatizado
 
