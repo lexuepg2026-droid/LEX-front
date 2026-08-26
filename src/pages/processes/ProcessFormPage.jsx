@@ -12,6 +12,9 @@ import {
   rotuloDaFase,
 } from '../../utils/enums';
 import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
+import CampoComSugestoes from '../../components/ui/CampoComSugestoes';
+import useTabelaDominio from '../../hooks/useTabelaDominio';
+import { rotuloComarca, rotuloCnj } from '../../utils/tabelasDominio';
 import './ProcessPage.css';
 
 const STATUS_OPTIONS = ['ativo', 'encerrado', 'suspenso'];
@@ -135,6 +138,20 @@ function ProcessoFormPage() {
     };
     fetchProcesso();
   }, [id, isEditing]);
+
+  // ── DEC-057 — a comarca sugere, e não obriga ─────────────────────────────
+  // A tabela do TJPR só é baixada quando o campo é usado; e o que ela devolve
+  // é sugestão, nunca trava. "Ponta Grossa", "ponta grossa" e uma comarca que
+  // não está na lista entram os três do mesmo jeito.
+  const comarcas = useTabelaDominio('comarcas');
+
+  // A tabela do CNJ (658 KB) só desce quando "Tipo de Ação" é usado. Quem abre
+  // o formulário e não toca no campo não a baixa — é a decisão inteira da
+  // Parte 1 desta fase, e é aqui que ela se paga.
+  const cnj = useTabelaDominio('cnj');
+
+  const definirCampo = (nome, valor) =>
+    setFormData(prev => ({ ...prev, [nome]: valor }));
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -412,13 +429,47 @@ function ProcessoFormPage() {
           </div>
 
           <div className="form-group span-1">
-            <label htmlFor="tipoAcao">Tipo de Ação</label>
-            <input type="text" id="tipoAcao" name="tipoAcao" value={formData.tipoAcao} onChange={handleChange} />
+            <label htmlFor="tipoAcao">Tipo de Ação (classe do CNJ)</label>
+            <CampoComSugestoes
+              id="tipoAcao"
+              name="tipoAcao"
+              value={formData.tipoAcao}
+              onChange={(valor) => definirCampo('tipoAcao', valor)}
+              itens={cnj.envelope?.classes ?? []}
+              rotulo={rotuloCnj}
+              aoPrimeiroUso={cnj.ativar}
+              carregando={cnj.carregando}
+              erro={cnj.erro}
+            />
           </div>
 
           <div className="form-group span-1">
-            <label htmlFor="area">Área</label>
-            <input type="text" id="area" name="area" value={formData.area} onChange={handleChange} />
+            {/* ── O "assunto" da F-4 mora AQUI, e é decisão registrada ──────
+                A fase pediu um campo de Assunto alimentado pela tabela de
+                assuntos do CNJ, e mandou NÃO tocar no backend. `Process` não
+                tem campo `assunto` — criá-lo seria schema, lista de campos
+                permitidos, validação e testes no backend, que esta fase não
+                abre. O campo que já existe e guarda a mesma coisa é `area`:
+                os assuntos de primeiro nível do CNJ são literalmente
+                "DIREITO TRIBUTÁRIO", "DIREITO PREVIDENCIÁRIO" — o que a
+                advogada hoje digita à mão como "Tributario", "Civel".
+
+                Consequência registrada: `{{areaProcesso}}` (rótulo "Área do
+                processo") passa a renderizar o texto do CNJ nos documentos
+                gerados daqui em diante. Nada migra, nada muda no que já está
+                gravado. Ver o relatório da F-4. */}
+            <label htmlFor="area">Área / assunto (CNJ)</label>
+            <CampoComSugestoes
+              id="area"
+              name="area"
+              value={formData.area}
+              onChange={(valor) => definirCampo('area', valor)}
+              itens={cnj.envelope?.assuntos ?? []}
+              rotulo={rotuloCnj}
+              aoPrimeiroUso={cnj.ativar}
+              carregando={cnj.carregando}
+              erro={cnj.erro}
+            />
           </div>
 
           <div className="form-group span-1">
@@ -438,7 +489,17 @@ function ProcessoFormPage() {
 
           <div className="form-group span-1">
             <label htmlFor="comarca">Comarca</label>
-            <input type="text" id="comarca" name="comarca" value={formData.comarca} onChange={handleChange} />
+            <CampoComSugestoes
+              id="comarca"
+              name="comarca"
+              value={formData.comarca}
+              onChange={(valor) => definirCampo('comarca', valor)}
+              itens={comarcas.envelope?.itens ?? []}
+              rotulo={rotuloComarca}
+              aoPrimeiroUso={comarcas.ativar}
+              carregando={comarcas.carregando}
+              erro={comarcas.erro}
+            />
           </div>
 
           {/* ── DEC-054 — a fase, no cadastro ────────────────────────────

@@ -1,0 +1,54 @@
+/* O campo que sugere e não obriga — DEC-057. Ver `CampoComSugestoes.jsx`. */
+
+.sugestoes {
+  position: relative;
+}
+
+.sugestoes__lista {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+
+  /* Teto de altura: com o limite de 8 sugestões a lista já não estica sem
+     fim, mas em 360 px oito linhas de "Auxiliar geral de conservação de vias
+     permanentes (exceto trilhos)" quebram em duas e cobrem o formulário. */
+  max-height: 15rem;
+  overflow-y: auto;
+
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 6px);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.12));
+}
+
+.sugestoes__item {
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  color: var(--color-text);
+
+  /* Nome de ocupação da CBO passa de 70 caracteres. Sem isto a palavra longa
+     empurra a caixa e a lista fica mais larga que o campo. */
+  overflow-wrap: anywhere;
+}
+
+/* Um estado visual só, servindo teclado e mouse: o `onMouseEnter` move o
+   índice ativo, então `:hover` não precisa de regra própria — e assim o que a
+   seta destaca e o que o mouse destaca não podem divergir. */
+.sugestoes__item--ativo {
+  background-color: var(--color-surface-alt, rgba(0, 0, 0, 0.06));
+}
+
+.sugestoes__aviso {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.sugestoes__aviso--erro {
+  color: var(--color-warning, var(--color-text-muted));
+}

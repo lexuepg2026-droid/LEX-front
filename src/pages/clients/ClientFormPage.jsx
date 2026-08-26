@@ -7,6 +7,9 @@ import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import { maskCPF, maskCNPJ, maskCEP, maskPhone, unmask } from '../../utils/masks';
 import { UFS, SEXO_OPTIONS, ESTADO_CIVIL_OPTIONS, TIPO_PESSOA_OPTIONS, labelDe } from '../../utils/enums';
 import { buscarEnderecoPorCEP } from '../../utils/viacep';
+import CampoComSugestoes from '../../components/ui/CampoComSugestoes';
+import useTabelaDominio from '../../hooks/useTabelaDominio';
+import { rotuloProfissao, gentilicos } from '../../utils/tabelasDominio';
 import './ClientPage.css';
 
 function ClienteFormPage() {
@@ -111,6 +114,26 @@ function ClienteFormPage() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+
+  // ── DEC-057 — profissão e nacionalidade sugerem, e não obrigam ───────────
+  // As duas tabelas só descem quando o campo é usado, e nenhuma das duas
+  // recusa o que foi digitado. Profissão fora da CBO entra; gentílico fora da
+  // lista entra.
+  const profissoes = useTabelaDominio('profissoes');
+  const nacionalidades = useTabelaDominio('nacionalidades');
+
+  const definirCampo = (nome, valor) =>
+    setFormData(prev => ({ ...prev, [nome]: valor }));
+
+  // A nacionalidade continua sendo UM campo de texto, como sempre foi — o que
+  // mudou é que a sugestão sai flexionada pelo `sexo` já preenchido no
+  // cadastro, porque é isso que a procuração precisa ler ("brasileira,
+  // casada, professora"). Sem sexo escolhido, oferece as duas formas e não
+  // decide por ela. Ver `gentilicos` e o relatório da F-4.
+  const listaGentilicos = React.useMemo(
+    () => gentilicos(nacionalidades.envelope, formData.sexo),
+    [nacionalidades.envelope, formData.sexo]
+  );
 
   const handleMaskedChange = (mask) => (e) => {
     const { name, value } = e.target;
@@ -328,12 +351,34 @@ function ClienteFormPage() {
               </select>
             </div>
             <div className="form-group span-1">
-              <label>Profissão</label>
-              <input type="text" name="profissao" value={formData.profissao} onChange={handleChange} maxLength={60} />
+              <label htmlFor="profissao">Profissão</label>
+              <CampoComSugestoes
+                id="profissao"
+                name="profissao"
+                value={formData.profissao}
+                onChange={(valor) => definirCampo('profissao', valor)}
+                itens={profissoes.envelope?.itens ?? []}
+                rotulo={rotuloProfissao}
+                aoPrimeiroUso={profissoes.ativar}
+                carregando={profissoes.carregando}
+                erro={profissoes.erro}
+                maxLength={60}
+              />
             </div>
             <div className="form-group span-1">
-              <label>Nacionalidade</label>
-              <input type="text" name="nacionalidade" value={formData.nacionalidade} onChange={handleChange} maxLength={50} />
+              <label htmlFor="nacionalidade">Nacionalidade</label>
+              <CampoComSugestoes
+                id="nacionalidade"
+                name="nacionalidade"
+                value={formData.nacionalidade}
+                onChange={(valor) => definirCampo('nacionalidade', valor)}
+                itens={listaGentilicos}
+                aoPrimeiroUso={nacionalidades.ativar}
+                carregando={nacionalidades.carregando}
+                erro={nacionalidades.erro}
+                maxLength={50}
+                descricao={formData.sexo ? null : 'Escolha o sexo para a sugestão vir já flexionada.'}
+              />
             </div>
           </div>
         )}

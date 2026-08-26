@@ -1,0 +1,652 @@
+{
+  "tabela": "comarcas-pr",
+  "versao": "2026-08-22",
+  "fonte": "TJPR — Anexo I do Código de Organização e Divisão Judiciárias",
+  "url": "https://www.tjpr.jus.br/documents/17012/2505732/01+ANEXO+I+-+ENTRANCIAS.pdf/32ea2de4-a41e-4606-b3a8-31cfb14f3b73",
+  "itens": [
+    {
+      "nome": "Almirante Tamandaré",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Alto Paraná",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Alto Piquiri",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Altônia",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Ampére",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Andirá",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Antonina",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Apucarana",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Arapongas",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Arapoti",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Araucária",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Assaí",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Assis Chateaubriand",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Astorga",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Bandeirantes",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Barbosa Ferraz",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Barracão",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Bela Vista do Paraíso",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Bocaiúva do Sul",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Cambará",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Cambé",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Campina da Lagoa",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Campina Grande do Sul",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Campo Largo",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Campo Mourão",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Cândido de Abreu",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Cantagalo",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Capanema",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Capitão Leônidas Marques",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Carlópolis",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Cascavel",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Castro",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Catanduvas",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Centenário do Sul",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Cerro Azul",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Chopinzinho",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Cianorte",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Cidade Gaúcha",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Clevelândia",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Colombo",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Colorado",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Congonhinhas",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Corbélia",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Cornélio Procópio",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Coronel Vivida",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Cruzeiro do Oeste",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Curitiba",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Curiúva",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Dois Vizinhos",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Engenheiro Beltrão",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Faxinal",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Fazenda Rio Grande",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Formosa do Oeste",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Foz do Iguaçu",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Francisco Beltrão",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Goioerê",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Grandes Rios",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Guaíra",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Guaraniaçu",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Guarapuava",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Guaratuba",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Ibaiti",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Ibiporã",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Icaraíma",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Imbituva",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Ipiranga",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Iporã",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Irati",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Iretama",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Ivaiporã",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Jacarezinho",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Jaguapitã",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Jaguariaíva",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Jandaia do Sul",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Joaquim Távora",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Lapa",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Laranjeiras do Sul",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Loanda",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Londrina",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Mallet",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Mamborê",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Mandaguaçu",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Mandaguari",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Mangueirinha",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Manoel Ribas",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Marechal Cândido Rondon",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Marialva",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Marilândia do Sul",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Maringá",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Marmeleiro",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Matelândia",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Matinhos",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Medianeira",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Morretes",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Nova Aurora",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Nova Esperança",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Nova Fátima",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Nova Londrina",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Ortigueira",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Palmas",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Palmeira",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Palmital",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Palotina",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Paraíso do Norte",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Paranacity",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Paranaguá",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Paranavaí",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Pato Branco",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Peabiru",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Pérola",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Pinhais",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Pinhão",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Piraí do Sul",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Piraquara",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Pitanga",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Ponta Grossa",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Pontal do Paraná",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Porecatu",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Primeiro de Maio",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Prudentópolis",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Quedas do Iguaçu",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Realeza",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Rebouças",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Reserva",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Ribeirão Claro",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Ribeirão do Pinhal",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Rio Branco do Sul",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Rio Negro",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Rolândia",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Salto do Lontra",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Santa Fé",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Santa Helena",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Santa Isabel do Ivaí",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Santa Mariana",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Santo Antônio da Platina",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Santo Antonio do Sudoeste",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "São Jerônimo da Serra",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "São João",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "São João do Ivaí",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "São João do Triunfo",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "São José dos Pinhais",
+      "entrancia": "final"
+    },
+    {
+      "nome": "São Mateus do Sul",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "São Miguel do Iguaçu",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Sarandi",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Sengés",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Sertanópolis",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Siqueira Campos",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Teixeira Soares",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Telêmaco Borba",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Terra Boa",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Terra Rica",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Terra Roxa",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Tibagi",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Toledo",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Tomazina",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Ubiratã",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Umuarama",
+      "entrancia": "final"
+    },
+    {
+      "nome": "União da Vitória",
+      "entrancia": "final"
+    },
+    {
+      "nome": "Uraí",
+      "entrancia": "inicial"
+    },
+    {
+      "nome": "Wenceslau Braz",
+      "entrancia": "intermediaria"
+    },
+    {
+      "nome": "Xambrê",
+      "entrancia": "inicial"
+    }
+  ]
+}
