@@ -1,0 +1,99 @@
+/* Bloco colapsável do painel — F-4. Ver `BlocoDoPainel.jsx`. */
+
+.bloco {
+  margin-bottom: var(--space-6);
+}
+
+.bloco__cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.bloco__gatilho {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1 1 auto;
+  min-width: 0;
+
+  background: none;
+  border: none;
+  padding: var(--space-2) 0;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+}
+
+.bloco__titulo {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.bloco__icone {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.bloco__seta {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.bloco--fechado .bloco__seta {
+  transform: rotate(-90deg);
+}
+
+/* Quem prefere menos movimento não ganha a rotação. */
+@media (prefers-reduced-motion: reduce) {
+  .bloco__seta { transition: none; }
+}
+
+/* A contagem ao lado do título — o número que faz o bloco valer a atenção. */
+.bloco__contagem {
+  flex-shrink: 0;
+  min-width: 1.5rem;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill, 999px);
+  background-color: var(--color-danger);
+  color: var(--color-on-danger, #fff);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.5rem;
+  text-align: center;
+}
+
+.bloco__acao {
+  flex-shrink: 0;
+}
+
+.bloco__conteudo {
+  margin-top: var(--space-3);
+}
+
+/* Em 360 px a ação desce para a própria linha em vez de espremer o título. */
+@media (max-width: 480px) {
+  .bloco__acao { flex: 1 1 100%; }
+}
+
+/* Subtítulo dentro de um bloco — separa "vencidas" de "vencem em 7 dias" no
+   bloco de atenção. As duas listas respondem à mesma pergunta em urgências
+   diferentes, e juntá-las numa lista só apagaria a diferença. */
+.bloco__subtitulo {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.bloco__conteudo > .bloco__subtitulo:first-child {
+  margin-top: 0;
+}

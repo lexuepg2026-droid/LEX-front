@@ -5,6 +5,7 @@ import { Bell } from 'lucide-react';
 import calendarService from '../../api/calendarService';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { destinoDoItem } from '../../utils/calendarLabels';
+import { parcelasVencidasDoAviso } from '../../utils/painel';
 import './NotificationBell.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -97,7 +98,10 @@ function NotificationBell() {
   const secoes = [
     { chave: 'eventosHoje', titulo: 'Hoje', itens: avisos?.eventosHoje ?? [] },
     { chave: 'eventosAtrasados', titulo: 'Atrasados', itens: avisos?.eventosAtrasados ?? [] },
-    { chave: 'parcelasVencidas', titulo: 'Parcelas vencidas', itens: avisos?.parcelasVencidas ?? [] },
+    // Pela função compartilhada, e não por `avisos.parcelasVencidas` na mão:
+    // o painel lê deste mesmo lugar. Os dois dizem quantas parcelas estão
+    // vencidas, na mesma tela — e a F-4 fechou o caminho para divergirem.
+    { chave: 'parcelasVencidas', titulo: 'Parcelas vencidas', itens: parcelasVencidasDoAviso(avisos) },
   ];
 
   return (
