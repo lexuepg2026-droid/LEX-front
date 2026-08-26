@@ -2425,6 +2425,288 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 
+## 35. Fase F-4 — o campo que sugere, e o painel que diz o que fazer
+
+> **A fase tem uma regra só, e ela é o passo 227.** O campo **SUGERE, NÃO
+> OBRIGA**. Autocomplete que recusa valor fora da tabela trava trabalho real no
+> dia em que a tabela está desatualizada — e ela vai estar: as quatro tabelas
+> são de **22/08/2026** e envelhecem sozinhas a partir daí. O TJPR cria comarca,
+> a CBO ganha ocupação, o CNJ muda assunto.
+>
+> **Grava-se o TEXTO**, exatamente como está na tabela. Não há campo de código,
+> nada foi migrado, e `{{comarca}}` continua sendo texto. O que a fase resolve é
+> a divergência de grafia **daqui em diante** — "Ponta Grossa", "ponta grossa",
+> "PG" —, e não o que já está gravado.
+>
+> ⚠️ **A tabela do CNJ veio de dump de terceiro**, não do SGT oficial, que
+> estava bloqueado. A ressalva está no `RELATORIO.md` do Davi, ao lado dos
+> arquivos em `public/tabelas/`.
+>
+> **Pré-condição de 226 a 234:** `npm run seed:fresh`.
+>
+> **Vara ficou de FORA de propósito** — a lista varia por comarca, muda com
+> frequência e não foi coletada. Continua texto livre, e não é defeito.
+
+- [ ] **226. ⭐ A comarca sugere SEM ACENTO, e se escolhe PELO TECLADO**
+  Pré-condição: `npm run seed:fresh`.
+  **▶ ONDE IR.** Menu lateral → **Processos** → **Novo processo** → campo
+  **Comarca**.
+  Passos:
+  1) digitar **`sao jose`** — tudo minúsculo, sem acento nenhum;
+  2) conferir a lista que abre;
+  3) **sem tocar no mouse**, descer com **↓** até *São José dos Pinhais*;
+  4) apertar **Enter**;
+  5) digitar de novo, agora **`GROSSA`** em maiúsculas, e escolher com o mouse;
+  6) abrir a lista outra vez e apertar **Esc**.
+  Esperado no passo 2: *São José dos Pinhais* aparece — **acentuada e com as
+  maiúsculas certas**, como está na tabela do TJPR. Se digitar sem acento não
+  achar, o campo não serve para nada: ninguém digita "ã" com pressa.
+  Esperado no passo 3: o item destacado **anda com a seta**, e o destaque é
+  visível. A lista **rola junto** se o item sair da área visível.
+  Esperado no passo 4: o campo fica com **"São José dos Pinhais"**, escrito
+  exatamente como na tabela, e a lista fecha. **O Enter NÃO pode salvar o
+  formulário** enquanto havia item escolhido na lista.
+  Esperado no passo 5: `GROSSA` acha **Ponta Grossa** — casa **no meio da
+  palavra**, e não só no começo.
+  Esperado no passo 6: **Esc fecha a lista e o texto digitado FICA no campo.**
+  Esc que apaga o que se digitou é reprovação do passo.
+  Conferir também que **a lista nunca passa de oito itens** — digitar apenas
+  `a` não pode despejar 161 comarcas na tela.
+  Por que só olho humano: a suíte prova o filtro (sem acento, sem caixa, no
+  meio, com teto) como função pura, e prova que as teclas estão tratadas. O que
+  ela não prova é se **o destaque é visível** e se a lista cobre o campo
+  seguinte.
+  Fase de origem: F-4
+
+- [ ] **227. ⭐ 🚨 UMA COMARCA QUE NÃO EXISTE, DIGITADA E SALVA ASSIM MESMO**
+  Pré-condição: `npm run seed:fresh`. **É O PASSO QUE A FASE INTEIRA EXISTE
+  PARA TER.** Se só um passo desta fase for executado, que seja este.
+  **▶ ONDE IR.** **Processos** → **Novo processo** → campo **Comarca**.
+  Passos:
+  1) preencher o processo normalmente (título e cliente);
+  2) no campo **Comarca**, digitar **`Comarca de Marte`** — que não está na
+     tabela e nunca vai estar;
+  3) ler o que a tela diz;
+  4) **clicar fora do campo**, e voltar a olhá-lo;
+  5) **salvar o processo**;
+  6) abrir o processo salvo e conferir a comarca;
+  7) repetir com **`Ponta Grosa`** (um "s" só) — um erro de digitação de
+     verdade, que também tem que passar.
+  Esperado no passo 3: aparece uma frase dizendo que **nada na lista casa** e
+  que **pode salvar assim mesmo**. Nenhuma cor de erro, nenhum campo vermelho,
+  nenhum aviso de valor inválido — **não há nada errado acontecendo**.
+  Esperado no passo 4: **o texto continua lá, intacto.** 🚨 Se ao sair do campo
+  ele **limpar**, **reverter** ou **trocar pela sugestão mais parecida**, é
+  **reprovação do passo** — é exatamente a "melhoria" que a fase existe para
+  impedir.
+  Esperado no passo 5: **salva.** Sem erro de validação, sem mensagem, sem
+  bloqueio do botão.
+  Esperado no passo 6: a comarca gravada é **`Comarca de Marte`**, letra por
+  letra.
+  🚨 **O que NÃO pode acontecer, em nenhum dos sete passos:** o botão de salvar
+  desabilitado; uma mensagem do tipo *"escolha uma opção da lista"*; o campo
+  exigindo valor da tabela; o valor sumindo. **Qualquer um desses reprova a
+  fase, não só o passo.**
+  Conferir também o mesmo com **Profissão** ("Encantador de serpentes") e
+  **Nacionalidade** ("marciana") no cadastro de cliente PF: a regra é do
+  componente, e vale nos cinco campos.
+  Por que só olho humano: a suíte prova que não existe caminho de recusa no
+  código, e a mutação que introduz um `onBlur` de limpeza derruba o teste. O
+  que ela não prova é se **a advogada percebe que pode salvar** — se a frase do
+  estado vazio convida ou assusta.
+  Fase de origem: F-4
+
+- [ ] **228. ⭐ Profissão pela CBO, e a nacionalidade FLEXIONADA pelo sexo**
+  Pré-condição: `npm run seed:fresh`. **A procuração é quem lê isto** —
+  *"brasileira, casada, professora"*.
+  **▶ ONDE IR.** Menu lateral → **Clientes** → **Novo cliente** → **Pessoa
+  física**.
+  Passos:
+  1) **sem escolher o sexo ainda**, digitar `brasil` no campo **Nacionalidade**;
+  2) escolher **Sexo: Feminino**;
+  3) digitar `brasil` de novo em Nacionalidade;
+  4) trocar para **Sexo: Masculino** e digitar `brasil` mais uma vez;
+  5) no campo **Profissão**, digitar `advog`;
+  6) digitar `medico hematologista` — sem acento.
+  Esperado no passo 1: aparecem **as duas formas** — *brasileiro* e
+  *brasileira*. Sem sexo escolhido o sistema **não decide por ela**. Deve haver
+  uma dica dizendo que escolher o sexo faz a sugestão vir já flexionada.
+  Esperado no passo 3: sugere **`brasileira`**, e **não** `brasileiro`.
+  Esperado no passo 4: sugere **`brasileiro`**.
+  Esperado no passo 5: aparecem ocupações da CBO com "advog" no nome.
+  Esperado no passo 6: acha **Médico hematologista** — acentuado na tabela,
+  achado sem acento.
+  **A nacionalidade continua UM campo de texto**, como sempre foi. O que mudou
+  é a sugestão. Se a tela passar a ter **dois campos** de nacionalidade, ou se
+  a geração de documento começar a flexionar sozinha, alguém mexeu no modelo —
+  e isso **não foi feito nesta fase, de propósito** (ver o relatório da F-4).
+  Por que só olho humano: a suíte prova a flexão pelo sexo como função pura. O
+  que ela não prova é se a dica aparece na hora certa e se a troca de sexo
+  **atualiza a sugestão** sem limpar o que já estava escrito.
+  Fase de origem: F-4
+
+- [ ] **229. ⭐ A classe e o assunto do CNJ no processo**
+  Pré-condição: `npm run seed:fresh`.
+  ⚠️ **Leia antes:** a fase pediu um campo **Assunto** alimentado pela tabela de
+  assuntos do CNJ, e mandou **não tocar no backend**. `Process` **não tem**
+  campo `assunto`, e criá-lo seria schema, lista de campos permitidos,
+  validação e testes no servidor. O assunto foi então para o campo **`area`**,
+  que já existia e guarda a mesma coisa — os assuntos de primeiro nível do CNJ
+  são literalmente *"DIREITO TRIBUTÁRIO"*, *"DIREITO PREVIDENCIÁRIO"*, que é o
+  que a advogada hoje digita à mão como "Tributario". **É decisão registrada**,
+  não descuido. Ver o relatório da F-4.
+  **▶ ONDE IR.** **Processos** → **Novo processo**.
+  Passos:
+  1) no campo **Tipo de Ação (classe do CNJ)**, digitar `embargos`;
+  2) escolher um item pelo teclado;
+  3) no campo **Área / assunto (CNJ)**, digitar `tributar`;
+  4) escolher um item;
+  5) salvar e reabrir o processo.
+  Esperado no passo 1: aparecem classes do CNJ — *Embargos de Declaração* entre
+  elas.
+  Esperado no passo 3: aparecem assuntos do CNJ — *DIREITO TRIBUTÁRIO* entre
+  eles.
+  Esperado no passo 5: os dois valores gravados **em texto**, exatamente como
+  na tabela.
+  Conferir também que **Vara continua texto livre, SEM sugestão** — ficou de
+  fora de propósito, porque a lista varia por comarca e não foi coletada.
+  Ausência de sugestão na Vara **não é defeito**; sugestão na Vara **é**.
+  Por que só olho humano: a suíte prova que os campos usam o componente e que
+  as tabelas carregam. O que ela não prova é se o nome do CNJ, que é longo e
+  todo em maiúsculas nos níveis de cima, **cabe e se lê** no campo.
+  Fase de origem: F-4
+
+- [ ] **230. ⭐ 🚨 A TELA ABRE SEM ATRASO — a tabela do CNJ não trava o formulário**
+  Pré-condição: `npm run seed:fresh`. **É a Parte 1 da fase inteira, e ela só
+  se vê aqui.** A tabela do CNJ tem **674 KB**.
+  **▶ ONDE IR.** DevTools → aba **Network**, filtro em **Fetch/XHR** e em
+  **Doc/Other**. Depois: **login**, **Dashboard**, **Financeiro**,
+  **Processos → Novo processo**.
+  Passos:
+  1) com o Network aberto e **limpo**, fazer login e olhar o dashboard;
+  2) passar por **Financeiro** e por **Clientes**;
+  3) conferir a lista de requisições;
+  4) abrir **Processos → Novo processo** e **não tocar em nenhum campo**;
+  5) **clicar no campo Comarca**;
+  6) **clicar no campo Tipo de Ação**;
+  7) clicar em **Área / assunto** logo em seguida.
+  Esperado nos passos 1 a 3: **nenhuma requisição a `/tabelas/*.json`.** Login,
+  dashboard, financeiro e clientes **não** baixam tabela nenhuma. 🚨 Se
+  `classes-assuntos-cnj.json` aparecer aqui, os 674 KB voltaram para o caminho
+  de toda tela — é **reprovação do passo**.
+  Esperado no passo 4: **ainda nenhuma.** Abrir o formulário não basta; é o
+  **uso do campo** que dispara.
+  Esperado no passo 5: baixa **`comarcas-pr.json`** (12 KB) — e **só ele**.
+  Esperado no passo 6: baixa **`classes-assuntos-cnj.json`**. O formulário
+  **não congela** enquanto isso: dá para continuar digitando nos outros campos,
+  e o campo mostra que está carregando.
+  Esperado no passo 7: **nenhuma requisição nova.** Classe e assunto vêm do
+  mesmo arquivo, e ele já está em memória — **um download, não dois**.
+  Conferir também, voltando ao formulário uma segunda vez na mesma sessão: **as
+  tabelas não são baixadas de novo**.
+  Por que só olho humano: a suíte prova pelo build que nenhuma tabela está
+  dentro dos chunks. O que ela não prova é o **atraso percebido** — se o campo
+  demora a ficar útil no primeiro clique, num computador comum.
+  Fase de origem: F-4
+
+- [ ] **231. ⭐ Os blocos do painel abrem, fecham, e a escolha é LEMBRADA**
+  Pré-condição: `npm run seed:fresh`.
+  **▶ ONDE IR.** **Dashboard**.
+  Passos:
+  1) olhar quais blocos estão **abertos** e quais estão **fechados** ao chegar;
+  2) fechar **"Precisa de atenção"** e abrir **"Resumo Geral"**;
+  3) navegar para outra tela e **voltar**;
+  4) **recarregar a página** (F5);
+  5) fechar e abrir um bloco **só pelo teclado** — Tab até o cabeçalho, depois
+     **Enter** e **espaço**.
+  Esperado no passo 1: **"Precisa de atenção", "No mês" e "Próximos
+  vencimentos" ABERTOS**; **"Acumulado do escritório", "Resumo Geral" e
+  "Distribuição por Status" FECHADOS**. O que exige atenção primeiro;
+  estatística depois. Um painel que abre tudo obriga a rolar para achar o que
+  importa.
+  Esperado nos passos 3 e 4: **a escolha do passo 2 continua valendo.**
+  Esperado no passo 5: o cabeçalho **recebe foco com Tab**, tem **anel de foco
+  visível**, e responde **a Enter e a espaço** — porque é um botão de verdade.
+  Conferir também que **cada bloco mostra a ação que ele sugere**: "Registrar
+  pagamento" no de atenção, "Nova parcela" no do mês, "Ver honorários", "Ver
+  processos" — e que **os botões têm aparência de botão** (se saírem como texto
+  cru, faltou o CSS).
+  Por que só olho humano: a suíte prova a ordem dos blocos, quais nascem
+  abertos, e que a preferência sobrevive a `localStorage` bloqueado. O que ela
+  não prova é se **a primeira olhada do dia cai no lugar certo**.
+  Fase de origem: F-4
+
+- [ ] **232. ⭐ 🚨 O PAINEL E O SINO DIZEM O MESMO NÚMERO**
+  Pré-condição: `npm run seed:fresh`. **É o defeito que o passo 135 pegou uma
+  vez** — dois números diferentes para a mesma coisa na mesma tela.
+  **▶ ONDE IR.** **Dashboard**, com o **sino** visível no cabeçalho.
+  Passos:
+  1) ler a contagem do **sino** e abrir a lista dele;
+  2) contar quantos itens há em **"Parcelas vencidas"**;
+  3) ler a contagem ao lado de **"Precisa de atenção"** e a lista de vencidas
+     dentro do bloco;
+  4) ler a nota do cartão **"Total vencido"**, em "No mês";
+  5) **registrar o pagamento** de uma parcela vencida, quitando-a;
+  6) voltar ao dashboard e **recarregar**;
+  7) reler os três lugares.
+  Esperado nos passos 2, 3 e 4: **o mesmo número de parcelas vencidas nos
+  três.** A contagem do bloco de atenção soma vencidas **e** as que vencem em
+  7 dias, então ela pode ser maior — mas a **lista de vencidas** dentro dele e
+  a nota do "Total vencido" têm que bater com o sino, item por item.
+  Esperado no passo 7: **os três caíram juntos**, na mesma quantidade.
+  🚨 **Qualquer divergência é reprovação**, mesmo de um. Não existe "arredonda
+  diferente": os três leem a mesma lista, da mesma requisição.
+  Conferir também que **as parcelas vencidas NÃO aparecem duas vezes** dentro
+  do bloco de atenção — uma como vencida e outra como "vence nos próximos 7
+  dias". As duas listas são disjuntas.
+  Por que só olho humano: a suíte prova que painel e sino chamam a mesma função
+  e a mesma rota, e que o painel não filtra por status por conta própria. O que
+  ela não prova é o número **na tela**, depois de um pagamento real.
+  Fase de origem: F-4
+
+- [ ] **233. Os cartões do painel em 360 px — os três empilhados**
+  Pré-condição: `npm run seed:fresh`, e janela (ou DevTools) em **360 px de
+  largura**. **Fecha a pendência do passo 181.**
+  **▶ ONDE IR.** **Dashboard**, com todos os blocos **abertos**.
+  Passos:
+  1) abrir os seis blocos;
+  2) percorrer a página **de cima a baixo**;
+  3) tentar **deslizar a página para o lado**.
+  Esperado no passo 2: os cartões de **"No mês"**, de **"Acumulado do
+  escritório"** e de **"Resumo Geral"** estão **os três em uma coluna só**,
+  empilhados do mesmo jeito. Nenhum valor cortado, nenhum "R$" separado dos
+  dígitos.
+  Esperado no passo 3: **não desliza.** A página não tem rolagem horizontal
+  nenhuma.
+  Conferir também com um valor **grande** — se o seed não tiver, criar um
+  honorário de **R$ 1.234.567,89**: era o valor comprido que estourava a
+  trilha, porque `Intl` em pt-BR faz de "R$ 1.234.567,89" um token indivisível.
+  Por que só olho humano: a suíte prova que a regra de uma coluna existe e que
+  os três blocos usam a mesma grade. O que ela não prova é a **página em
+  360 px**, que é onde o defeito aparecia.
+  Fase de origem: F-4
+
+- [ ] **234. A tabela que NÃO carrega, e o campo que continua servindo**
+  Pré-condição: `npm run seed:fresh`.
+  **▶ ONDE IR.** DevTools → **Network** → **Offline** (ou bloquear
+  `/tabelas/*`). Depois **Processos → Novo processo**.
+  Passos:
+  1) com a rede da tabela bloqueada, clicar no campo **Comarca**;
+  2) ler o que a tela diz;
+  3) **digitar uma comarca e salvar**;
+  4) restaurar a rede, recarregar, e clicar no campo de novo.
+  Esperado no passo 2: uma frase discreta dizendo que **não deu para carregar
+  as sugestões** e que **pode digitar normalmente**. Sem tela de erro, sem
+  toast vermelho, sem campo bloqueado.
+  Esperado no passo 3: **salva.** Sugerir é serviço; falhar em sugerir não pode
+  virar impedimento de cadastrar.
+  Esperado no passo 4: **tenta de novo e funciona.** Uma falha de rede não pode
+  condenar o campo a ficar mudo pelo resto da sessão.
+  Por que só olho humano: a suíte prova que o erro não fica memoizado. O que
+  ela não prova é se a mensagem **tranquiliza** em vez de assustar.
+  Fase de origem: F-4
+
+
 ## Validado
 
 

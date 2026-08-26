@@ -3245,6 +3245,171 @@ e um sino que consulta o tempo todo.
 
 ---
 
+## DEC-057 (frontend) — o campo sugere e não obriga (F-4)
+
+**A regra, e ela é a fase inteira: o campo SUGERE, NÃO OBRIGA.**
+
+Se a comarca não estiver na lista, ela digita mesmo assim e salva. Não há
+`onBlur` que corrija, não há validação contra a tabela, não há "escolha uma
+opção da lista". O componente (`components/ui/CampoComSugestoes.jsx`) tem um
+poder só sobre o valor: **escrevê-lo quando alguém escolhe**. Nunca impedir,
+nunca reverter, nunca limpar.
+
+**Por quê.** Autocomplete que recusa valor fora da tabela trava trabalho real no
+dia em que a tabela está desatualizada — e ela vai estar. As quatro tabelas são
+de **22/08/2026** e envelhecem sozinhas: o TJPR cria comarca, a CBO ganha
+ocupação, o CNJ muda assunto. Um campo que envelhece junto com a tabela vira
+impedimento de cadastrar, e o custo cai inteiro sobre quem está com pressa.
+
+Há duas travas na suíte, e a segunda é a que importa: a mutação que introduz um
+`onBlur` de limpeza derruba `tests/sugestoes/filtro.test.js`, e o passo **227**
+do roteiro é o passo que a fase existe para ter.
+
+### Grava-se o TEXTO, não o código
+
+O que vai para o banco é o texto, exatamente como está na tabela quando a
+sugestão é escolhida. **Não há campo de código, nada foi migrado, e
+`{{comarca}}` continua sendo texto.**
+
+**Trade-off registrado.** Filtrar por código seria mais robusto: o código do CNJ
+não muda quando o nome muda, e dois escritórios digitando "Ponta Grossa" e
+"ponta grossa" gravariam a mesma chave. Não é o que esta fase entrega. O
+problema resolvido é a **divergência de grafia daqui em diante**; resolver
+retroativamente exigiria migração e uma decisão sobre o que já está gravado —
+nenhuma das duas foi pedida, e as duas são caras de desfazer.
+
+### As tabelas são estáticas e carregam SOB DEMANDA
+
+`public/tabelas/`, quatro arquivos, entregues pelo **Davi em 23/08/2026**:
+
+| Arquivo | Itens | Tamanho |
+|---|---|---|
+| `comarcas-pr.json` | 161 comarcas, com entrância | 12 KB |
+| `nacionalidades.json` | 196 países, masculino e feminino | 20 KB |
+| `profissoes-cbo.json` | 2.725 ocupações | 244 KB |
+| `classes-assuntos-cnj.json` | 847 classes + 5.598 assuntos | **674 KB** |
+
+**Ninguém os importa.** Um `import` de `.json` costura o arquivo dentro do chunk
+principal, e aí **toda tela do sistema** — login, dashboard, financeiro — baixa e
+interpreta meio megabyte de tabela processual que só o formulário de processo
+usa. Eles chegam por `fetch` (`utils/tabelasDominio.js`), na primeira vez que um
+campo que precisa deles é **usado** — não ao montar a tela —, memoizados **por
+promessa**, para dois campos do mesmo formulário (classe e assunto) dividirem um
+download só.
+
+Custo medido: o bundle principal foi de **557.416 para 565.083 bytes**. Com a
+tabela do CNJ importada estaticamente ele vai a **612.120**, e
+`tests/sugestoes/tabelas.test.js` derruba pelos chunks do build.
+
+`fetch` nativo e **não** o cliente de API: o `api.js` carrega o interceptor de
+401 da DEC-050, e um estático que voltasse 401 deslogaria a advogada no meio do
+cadastro.
+
+⚠️ **Requisito que vem da F-5.** `public/` sai do build **sem hash**, em URL
+estável (`/tabelas/comarcas-pr.json`) — é o que deixa o service worker cacheá-los
+por nome fixo, sem garimpar o `index.html` como faz hoje com os `/assets/*`.
+**A F-5 não foi implementada aqui**; o que esta fase fez foi não escolher um
+caminho que a impedisse. E o aviso que vai junto: URL estável significa **sem
+cache-busting** — o marcador de versão é o campo `versao` do envelope, e cache
+cego serviria tabela velha para sempre.
+
+### De onde vieram, e a ressalva do CNJ
+
+O **`RELATORIO.md` do Davi viaja junto das tabelas**, em `public/tabelas/`, e há
+teste que trava isso. Fontes: TJPR (Anexo I do Código de Organização Judiciária),
+MTE/CBO, ONU-IBGE.
+
+🚨 **A tabela do CNJ NÃO veio do SGT oficial.** A consulta oficial em massa
+estava bloqueada, e os dados foram puxados de um **dump de terceiro**
+(`palomaalves/tpu-assistente`) e formatados por IA. A ressalva está escrita no
+`RELATORIO.md`, e `tests/sugestoes/tabelas.test.js` falha se ela sumir de lá —
+porque quem abrir o arquivo daqui a um ano precisa saber disso **antes** de
+tratá-lo como fonte oficial.
+
+### Vara ficou de FORA, e foi decisão
+
+A lista de varas **varia por comarca**, muda com frequência e **não foi
+coletada** — o briefing do Davi já dizia. `vara` continua texto livre, sem
+sugestão. **Ausência de sugestão na Vara não é defeito; sugestão na Vara é.**
+Está escrito aqui para a próxima fase não "completar" a lista sem saber que a
+exclusão foi decidida.
+
+### A nacionalidade continua UM campo
+
+O LEX gera procuração — *"brasileira, casada, professora"* —, e hoje
+`nacionalidade` é **texto livre** com `default: "brasileira"`, resolvido por
+`{{nacionalidadeCliente}}` com formatador `texto`. O `sexo` existe no cadastro,
+como enum próprio, e **nunca flexionou nada**: um cliente homem sem correção
+manual gerava procuração dizendo "brasileira".
+
+A tabela do Davi traz as duas flexões, então a fase passou a **sugerir a forma
+certa** olhando o `sexo` já cadastrado. Sem sexo escolhido, oferece as duas e não
+decide por ela. **Virar dois campos, ou flexionar na geração do documento, é
+mudança de MODELO** — reportada, e não feita de passagem.
+
+### O que ficou fora do lugar que a fase pediu
+
+A F-4 pediu um campo **Assunto** alimentado pelos assuntos do CNJ, e mandou
+**não tocar no backend**. `Process` **não tem** campo `assunto`. O assunto foi
+para **`area`**, que já existia: os assuntos de primeiro nível do CNJ são
+literalmente *"DIREITO TRIBUTÁRIO"*, *"DIREITO PREVIDENCIÁRIO"* — o que a
+advogada digitava à mão como "Tributario". Consequência registrada:
+`{{areaProcesso}}` passa a renderizar o texto do CNJ nos documentos gerados
+**daqui em diante**; nada migra.
+
+---
+
+## O painel responde "o que eu preciso fazer hoje" (F-4, Parte 5)
+
+Seis blocos colapsáveis (`components/dashboard/BlocoDoPainel.jsx`), com a
+escolha lembrada em `localStorage` — e lida dentro de `try/catch`, porque em
+navegação privada ela lança, e um painel que não abre por causa disso seria pior
+do que um que não lembra.
+
+**Atenção primeiro, estatística depois.** Nascem abertos: *Precisa de atenção*,
+*No mês*, *Próximos vencimentos*. Nascem fechados: *Acumulado do escritório*,
+*Resumo Geral*, *Distribuição por Status*. Fechado **desmonta** o conteúdo — como
+`DashboardCharts` é `lazy`, quem não abre não baixa os 386 KB do recharts.
+
+O cabeçalho é um `<button>` com `aria-expanded`: um `<h2 onClick>` não recebe
+foco, não responde a Enter nem a espaço, e o leitor de tela anuncia um título em
+vez de um controle. A ação fica **fora** do botão, ao lado — link dentro de botão
+é HTML inválido, mesma razão dos dois irmãos de "Próximos vencimentos" (F-1b).
+
+### O número que não pode divergir do sino
+
+O sino conta parcelas vencidas **no cabeçalho** enquanto o painel as conta **no
+corpo** — mesma tela, mesmo instante. Antes da F-4 o painel chegava lá por três
+caminhos: `resumoFinanceiro.vencidas`, um filtro no cliente sobre todas as
+parcelas, e o sino. Os três liam o mesmo campo derivado (DEC-028) e concordavam
+— **por coincidência de consultas escritas à mão**, não por construção.
+
+Agora há **um caminho só**: `utils/painel.js`, alimentado por
+`GET /api/calendar/avisos`, a mesma requisição que o sino já fazia. Sino e painel
+chamam a mesma função; nenhum dos dois lê `avisos.parcelasVencidas` na mão. O
+valor em dinheiro continua vindo do resumo financeiro — o sino não expõe valor, e
+somar centavos no cliente abriria o terceiro caminho ao fechar o segundo.
+
+É o defeito que o **passo 135** pegou uma vez ("Honorários a Receber" contra
+"Honorários contratados"), fechado por construção. **O backend não foi tocado**:
+as consultas seguem duas no servidor; o que passou a ter caminho único é a tela.
+
+### Os cartões em 360 px (pendência do passo 181, fechada)
+
+A causa nunca esteve no CSS — os três blocos usam a mesma `.summary-grid`, com a
+mesma regra. Está no **conteúdo**: `Intl` em pt-BR separa "R$" dos dígitos com
+espaço não-separável, e dígito não tem oportunidade de quebra, então
+"R$ 1.234.567,89" é **um token indivisível**. Item de grade tem `min-width: auto`
+e não encolhe abaixo da largura intrínseca do conteúdo; duas colunas a 360 px dão
+~150 px por trilha, a trilha estica e a página com ela. O "Resumo Geral" escapava
+por sorte: inteiro formatado cabe.
+
+A correção é **dar largura ao cartão** (uma coluna só até 480 px), e não quebrar
+o valor — a F-1b.2 já decidiu que ele é indivisível por construção. `min-width: 0`
+junto, como cinto e suspensório.
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:
