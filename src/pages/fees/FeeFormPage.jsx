@@ -17,6 +17,8 @@ import {
   montarPayloadHonorario,
 } from '../../utils/feeCalc';
 import '../clients/ClientPage.css';
+import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORMULÁRIO DE HONORÁRIO — o campo `tipo` comanda a tela (DEC-027)
@@ -124,8 +126,19 @@ function FeeFormPage() {
   const campos = camposDoTipo(formData.tipo);
   const valorDerivado = derivarValorHonorario(formData.percentual, formData.valorBase);
 
+  const online = useOnlineStatus();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // ── Nenhum formulário aceita envio que vai falhar (F-5a, Parte 4) ────
+    //
+    // A primeira barreira é o botão anunciado como desabilitado; esta é a
+    // segunda, no handler, porque `aria-disabled` só ANUNCIA (DEC-053). A
+    // terceira é o interceptor de `api/axiosConfig.js`, que recusa a escrita
+    // antes da rede — ela cobre o sinal que cai ENTRE o clique e o envio.
+    //
+    // Deixar salvar para dar erro depois perde o que foi digitado.
+    if (!online) return;
 
     // Espelho do hook, para poupar uma viagem. O backend continua sendo a
     // última palavra: se esta validação e a de lá discordarem, quem vale é a
@@ -169,6 +182,7 @@ function FeeFormPage() {
       <h1 className="page-title">{isEditing ? 'Editar Honorário' : 'Novo Honorário'}</h1>
 
       <form onSubmit={handleSubmit} className="data-form">
+        {!online && <OfflineWriteReason />}
         <div className="form-grid section">
           <h3>Dados do Honorário</h3>
 
@@ -369,7 +383,8 @@ function FeeFormPage() {
           <button type="button" onClick={() => navigate('/dashboard/honorarios')} className="btn-cancel">
             Cancelar
           </button>
-          <button type="submit" disabled={loading} className="btn-primary">
+          <button type="submit"
+            aria-disabled={online ? undefined : 'true'} disabled={loading} className="btn-primary">
             {loading ? 'Salvando...' : 'Salvar'}
           </button>
         </div>

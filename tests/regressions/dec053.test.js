@@ -24,6 +24,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { motivoDeNaoReativar } from "../../src/utils/activationMessages.js";
+import { blockReason, MENSAGEM_ESCRITA_OFFLINE } from "../../src/offline/offlineMessages.js";
 
 const ler = (caminho) =>
   readFileSync(fileURLToPath(new URL(`../../${caminho}`, import.meta.url)), "utf8");
@@ -77,11 +78,28 @@ describe("DEC-053 — a tela não oferece o que o backend recusaria", () => {
   const listagem = semComentarios(ler("src/pages/processes/ProcessListPage.jsx"));
 
   test("o item 'Reativar' recebe o motivo vindo da listagem", () => {
+    // ── A F-5a embrulhou este motivo, e NÃO o substituiu ──────────────────
+    //
+    // Sem sinal, o mesmo item passa a ter dois motivos possíveis — o cliente
+    // desativado (DEC-053) e a falta de conexão (F-5a) — e `blockReason`
+    // escolhe qual aparece. O que este teste continua exigindo é que o motivo
+    // da própria linha seja o que chega ali: um `blockReason(null, …)` aqui
+    // teria perdido a DEC-053 em silêncio, que é a regressão a pegar.
     assert.match(
       listagem,
-      /motivo:\s*motivoDeNaoReativar\(p\.impedimentosDeReativacao\)/,
+      /motivo:\s*blockReason\(\s*motivoDeNaoReativar\(p\.impedimentosDeReativacao\)\s*,\s*\{\s*online\s*\}\s*\)/,
       "o item do menu precisa nascer com o motivo da própria linha"
     );
+  });
+
+  test("com sinal, quem manda continua sendo o motivo da DEC-053", () => {
+    // A prova de que o embrulho não engoliu a regra: online, `blockReason`
+    // devolve exatamente o que a listagem calculou.
+    const daLinha = motivoDeNaoReativar([{ tipo: "Client", id: "1", nome: "Ana Lima" }]);
+
+    assert.equal(blockReason(daLinha, { online: true }), daLinha);
+    assert.equal(blockReason(null, { online: true }), undefined);
+    assert.equal(blockReason(daLinha, { online: false }), MENSAGEM_ESCRITA_OFFLINE);
   });
 
   test("o preview é conferido ANTES de abrir o modal de reativação", () => {

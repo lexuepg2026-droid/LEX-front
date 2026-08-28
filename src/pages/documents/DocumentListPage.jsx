@@ -13,6 +13,8 @@ import { getApiErrorMessage } from '../../utils/apiError';
 import { toast } from '../../utils/toast';
 import '../../styles/modules.css';
 import './DocumentListPage.css';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { MENSAGEM_DOWNLOAD_OFFLINE, blockReason } from '../../offline/offlineMessages';
 
 // Só documentos GERADOS aparecem aqui. O caminho de upload segue dormente na
 // API (o campo `origem` aceita "upload"), mas fora da interface — o anteprojeto
@@ -26,6 +28,7 @@ function DocumentListPage() {
   const [error, setError] = useState('');
   const [deleteModal, setDeleteModal] = useState({ open: false, documento: null });
   const [baixando, setBaixando] = useState('');
+  const online = useOnlineStatus();
 
   const [searchParams] = useSearchParams();
   const processoId = searchParams.get('processoId');
@@ -69,6 +72,10 @@ function DocumentListPage() {
   };
 
   const baixar = async (documento, formato) => {
+    // PDF e DOCX NÃO ficam guardados neste aparelho (Parte 2 da F-5a): são
+    // binários grandes e o valor de tê-los offline é baixo perto do custo. Sem
+    // sinal a tela diz isso — no motivo do item, antes do clique.
+    if (!online) return;
     const chave = `${documento._id}-${formato}`;
     setBaixando(chave);
     try {
@@ -176,16 +183,19 @@ function DocumentListPage() {
                         {
                           rotulo: baixando === `${documento._id}-pdf` ? 'Baixando…' : 'Baixar PDF',
                           onSelecionar: () => baixar(documento, 'pdf'),
-                          desabilitado: Boolean(baixando)
+                          desabilitado: Boolean(baixando),
+                          motivo: online ? undefined : MENSAGEM_DOWNLOAD_OFFLINE
                         },
                         {
                           rotulo: baixando === `${documento._id}-docx` ? 'Baixando…' : 'Baixar DOCX',
                           onSelecionar: () => baixar(documento, 'docx'),
-                          desabilitado: Boolean(baixando)
+                          desabilitado: Boolean(baixando),
+                          motivo: online ? undefined : MENSAGEM_DOWNLOAD_OFFLINE
                         },
                         {
                           rotulo: 'Excluir',
                           destrutivo: true,
+                          motivo: blockReason(null, { online }),
                           onSelecionar: () => setDeleteModal({ open: true, documento })
                         }
                       ]}

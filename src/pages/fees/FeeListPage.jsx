@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import feeService from '../../api/feeService';
 import PageHeader from '../../components/ui/PageHeader';
@@ -13,6 +13,10 @@ import useListFilters from '../../hooks/useListFilters';
 import { formatDate, formatCurrency, formatPercent } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
+import OfflineNotice from '../../components/ui/OfflineNotice';
+import useCachedResource from '../../hooks/useCachedResource';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { MENSAGEM_ESCRITA_OFFLINE, blockReason } from '../../offline/offlineMessages';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import {
   TIPO_HONORARIO_OPTIONS,
@@ -25,51 +29,45 @@ import '../../styles/modules.css';
 const POR_PAGINA = 20;
 
 function FeeListPage({ embedded = false }) {
-  const [fees, setFees] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
   const [searchParams] = useSearchParams();
   const processoId = searchParams.get('processoId');
-  // ── A tela nunca soube quantos honorários existiam (F-1b.3) ─────────────
-  //
-  // Ela não passava `page` nem `limit`: recebia os 20 do default do backend e
-  // renderizava o array, sem paginador e sem o aviso de lista parcial que as
-  // outras duas listagens tinham desde a F-0. Quem tivesse 25 honorários via
-  // 20 e nada dizia que faltavam cinco.
-  const [total, setTotal] = useState(0);
+  const online = useOnlineStatus();
 
   const {
     filtros, buscaDebounced, page, setPage,
     definirFiltro, aplicarPreset, limpar, temFiltro
   } = useListFilters({ tipo: '', status: '' });
 
-  useEffect(() => {
-    let ativo = true;
-    setLoading(true);
-    setError('');
-    feeService.listFees({
-      page,
-      limit: POR_PAGINA,
-      processoId,
-      busca: buscaDebounced || undefined,
-      tipo: filtros.tipo || undefined,
-      status: filtros.status || undefined,
-      de: filtros.de || undefined,
-      ate: filtros.ate || undefined,
-    })
-      .then(res => {
-        if (!ativo) return;
-        const corpo = res.data;
-        setFees(corpo.data ?? corpo);
-        setTotal(typeof corpo.total === 'number' ? corpo.total : 0);
-      })
-      .catch(err => {
-        if (ativo) setError(getFinancialErrorMessage(err, 'Falha ao buscar honorários.'));
-      })
-      .finally(() => { if (ativo) setLoading(false); });
-    return () => { ativo = false; };
-  }, [processoId, page, buscaDebounced, filtros.tipo, filtros.status, filtros.de, filtros.ate]);
+  // ── DEC-058 (F-5a): espelho local da listagem, escopado por usuário ─────
+  //
+  // Guarda-se o ENVELOPE inteiro (`res.data`), e não só a lista: o `total` é
+  // ele que diz — e uma tela que voltasse do banco local sem o total mostraria
+  // 20 honorários sem dizer que há 25, que é exatamente o defeito que a F-1b.3
+  // corrigiu aqui.
+  //
+  // A tela nunca soube quantos honorários existiam (F-1b.3): ela não passava
+  // `page` nem `limit`, recebia os 20 do default do backend e renderizava o
+  // array, sem paginador e sem o aviso de lista parcial.
+  const consulta = {
+    page,
+    limit: POR_PAGINA,
+    processoId,
+    busca: buscaDebounced || undefined,
+    tipo: filtros.tipo || undefined,
+    status: filtros.status || undefined,
+    de: filtros.de || undefined,
+    ate: filtros.ate || undefined,
+  };
+  const { data, loading, error, updatedAt, fromCache, reload } = useCachedResource({
+    resource: 'fees',
+    params: consulta,
+    fetcher: () => feeService.listFees(consulta).then((res) => res.data),
+    fallbackError: 'Falha ao buscar honorários.',
+    mapError: getFinancialErrorMessage
+  });
+  const fees = data?.data ?? (Array.isArray(data) ? data : []);
+  const total = typeof data?.total === 'number' ? data.total : 0;
 
   const confirmDelete = (id) => setDeleteModal({ open: true, id });
 
@@ -78,7 +76,10 @@ function FeeListPage({ embedded = false }) {
     setDeleteModal({ open: false, id: null });
     try {
       await feeService.deleteFee(id);
-      setFees(fees.filter(f => f._id !== id));
+      // Refaz a consulta em vez de recortar a lista na memória: com o espelho
+      // local, uma lista recortada só na tela deixaria o dado guardado com o
+      // honorário que acabou de sair.
+      reload();
       toast.success('Honorário removido com sucesso.');
     } catch (err) {
       // 409 de integridade: o honorário tem parcelas ativas. A mensagem diz
@@ -103,6 +104,7 @@ function FeeListPage({ embedded = false }) {
 
   const body = (
     <>
+      {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
       {error && <p className="error-message">{error}</p>}
 
       {/* `honorarios={null}` — a listagem DE honorários não se filtra por
@@ -215,10 +217,15 @@ function FeeListPage({ embedded = false }) {
                     <ActionMenu
                       rotulo={`Ações do honorário ${fee.descricao}`}
                       itens={[
-                        { rotulo: 'Editar', to: `/dashboard/honorarios/editar/${fee._id}` },
+                        {
+                          rotulo: 'Editar',
+                          to: `/dashboard/honorarios/editar/${fee._id}`,
+                          motivo: blockReason(null, { online })
+                        },
                         {
                           rotulo: 'Excluir',
                           destrutivo: true,
+                          motivo: blockReason(null, { online }),
                           onSelecionar: () => confirmDelete(fee._id)
                         }
                       ]}
@@ -258,7 +265,12 @@ function FeeListPage({ embedded = false }) {
 
   return (
     <div className="module-container">
-      <PageHeader title="Honorários" actionLabel="+ Novo Honorário" actionTo="/dashboard/honorarios/novo" />
+      <PageHeader
+        title="Honorários"
+        actionLabel="+ Novo Honorário"
+        actionTo="/dashboard/honorarios/novo"
+        actionMotivo={online ? undefined : MENSAGEM_ESCRITA_OFFLINE}
+      />
       {body}
     </div>
   );

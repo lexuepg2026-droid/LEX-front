@@ -26,6 +26,8 @@ import {
 import '../../styles/modules.css';
 import '../../components/ui/Button.css';
 import './DocumentFinalTextPage.css';
+import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // EDITOR DE TEXTO FINAL
@@ -118,8 +120,14 @@ function DocumentFinalTextPage() {
 
   const sujo = texto !== textoSalvo;
 
+  const online = useOnlineStatus();
+
   const salvar = useCallback(async () => {
     if (!sujo) return;
+    // Sem sinal não se grava (F-5a, Parte 4). O botão é anunciado como
+    // desabilitado e o motivo aparece ao lado; a recusa acontece aqui porque
+    // `aria-disabled` só ANUNCIA (DEC-053).
+    if (!online) return;
 
     setSalvando(true);
     try {
@@ -133,7 +141,7 @@ function DocumentFinalTextPage() {
     } finally {
       setSalvando(false);
     }
-  }, [id, texto, sujo]);
+  }, [id, texto, sujo, online]);
 
   const baixar = useCallback(
     async (formato) => {
@@ -309,8 +317,14 @@ function DocumentFinalTextPage() {
           <button
             type="button"
             className="ui-btn ui-btn--secondary ui-btn--md"
-            onClick={() => baixar('pdf')}
+            onClick={() => {
+              // O arquivo é gerado pelo servidor e não fica guardado aqui
+              // (Parte 2 da F-5a) — sem sinal, o botão não dispara.
+              if (!online) return;
+              baixar('pdf');
+            }}
             disabled={Boolean(baixando)}
+            aria-disabled={online ? undefined : 'true'}
           >
             <Download size={15} aria-hidden="true" />
             {baixando === 'pdf' ? 'Baixando…' : 'PDF'}
@@ -318,8 +332,14 @@ function DocumentFinalTextPage() {
           <button
             type="button"
             className="ui-btn ui-btn--secondary ui-btn--md"
-            onClick={() => baixar('docx')}
+            onClick={() => {
+              // O arquivo é gerado pelo servidor e não fica guardado aqui
+              // (Parte 2 da F-5a) — sem sinal, o botão não dispara.
+              if (!online) return;
+              baixar('docx');
+            }}
             disabled={Boolean(baixando)}
+            aria-disabled={online ? undefined : 'true'}
           >
             <FileDown size={15} aria-hidden="true" />
             {baixando === 'docx' ? 'Baixando…' : 'DOCX'}
@@ -377,10 +397,12 @@ function DocumentFinalTextPage() {
                 className="ui-btn ui-btn--primary ui-btn--sm"
                 onClick={salvar}
                 disabled={!sujo || salvando}
+                aria-disabled={online ? undefined : 'true'}
               >
                 {salvando ? 'Salvando…' : 'Salvar texto'}
               </button>
             </div>
+            {!online && <OfflineWriteReason />}
           </div>
 
           <textarea

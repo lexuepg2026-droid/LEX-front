@@ -44,9 +44,54 @@ describe("passos 79 e 80: detalhe mostra o erro real, não a mensagem fixa", () 
     ["src/pages/processes/ProcessDetailPage.jsx", "Falha ao carregar dados do processo"]
   ];
 
+  // ── A F-5a mudou O LUGAR onde o erro vira texto, não a regra ────────────
+  //
+  // As duas telas de detalhe passaram a carregar por `hooks/useCachedResource`
+  // (DEC-058), que é quem chama `getApiErrorMessage(err, fallbackError)` —
+  // uma vez, para todas as telas convertidas. O `setError(getApiErrorMessage(…))`
+  // que existia em cada uma sumiu junto com o `useEffect` que o cercava.
+  //
+  // A regressão a pegar continua sendo a MESMA: a mensagem fixa voltando a ser
+  // o único caminho, dizendo a mesma coisa em 500, em 404 e em queda de rede.
+  // Por isso o teste aceita as duas formas — quem ainda tem `setError` é
+  // cobrado como antes; quem delega é cobrado por delegar de verdade, e o
+  // helper continua sendo exigido no fim da corrente.
+  const usaHook = (codigo) => /useCachedResource\(/.test(codigo);
+
+  test("o hook de carregamento é quem chama o helper — uma vez, para todas", () => {
+    const hook = ler("src/hooks/useCachedResource.js");
+    assert.match(
+      hook,
+      /import\s*\{[^}]*getApiErrorMessage[^}]*\}\s*from\s*['"][^'"]*apiError['"]/,
+      "o hook deixou de importar getApiErrorMessage"
+    );
+    assert.match(
+      hook,
+      /mapError\s*=\s*getApiErrorMessage/,
+      "o tradutor padrão do hook precisa ser o helper do projeto"
+    );
+    assert.match(
+      hook,
+      /setError\(mapError\(err, fallbackError\)\)/,
+      "a mensagem da tela precisa sair do helper, com o fallback da tela"
+    );
+  });
+
   for (const [arquivo, mensagemAntiga] of TELAS) {
     test(`${arquivo.split("/").pop()} passa o erro por getApiErrorMessage`, () => {
       const codigo = ler(arquivo);
+
+      if (usaHook(codigo)) {
+        // A tela delega. O que ela precisa provar é que entregou o fallback ao
+        // hook: sem `fallbackError`, o genérico do hook apagaria a frase que
+        // esta tela escolheu para o último recurso.
+        assert.match(
+          codigo,
+          /fallbackError:\s*['"]/,
+          "a tela delega o carregamento e não informou o fallback dela"
+        );
+        return;
+      }
 
       assert.match(
         codigo,
@@ -76,13 +121,16 @@ describe("passos 79 e 80: detalhe mostra o erro real, não a mensagem fixa", () 
       const ocorrencias = [...codigo.matchAll(new RegExp(mensagemAntiga, "g"))];
 
       for (const ocorrencia of ocorrencias) {
-        // A frase pode continuar existindo — como SEGUNDO argumento do helper,
-        // que é o texto de último recurso. O que não pode é ela ser o único
-        // caminho. Comentário explicando a mudança também é aceitável.
+        // A frase pode continuar existindo — como texto de último recurso:
+        // segundo argumento do helper, ou `fallbackError` entregue ao hook.
+        // O que não pode é ela ser o único caminho. Comentário explicando a
+        // mudança também é aceitável.
         const linha = codigo.slice(0, ocorrencia.index).split("\n").length;
         const conteudo = codigo.split("\n")[linha - 1];
         assert.ok(
-          conteudo.includes("getApiErrorMessage") || conteudo.trimStart().startsWith("//"),
+          conteudo.includes("getApiErrorMessage") ||
+            conteudo.includes("fallbackError") ||
+            conteudo.trimStart().startsWith("//"),
           `"${mensagemAntiga}" voltou a ser mensagem fixa na linha ${linha}: ${conteudo.trim()}`
         );
       }

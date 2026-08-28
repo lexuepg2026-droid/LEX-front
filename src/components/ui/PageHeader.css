@@ -20,3 +20,34 @@
   }
   .page-header-ui__title { font-size: var(--font-size-lg); }
 }
+
+/* ── A ação bloqueada e o motivo ao lado (F-5a) ──────────────────────────
+   O motivo é uma frase inteira, e o cabeçalho é `space-between`: sem o
+   `flex-wrap` a frase espremeria o título em telas estreitas. Ela quebra em
+   duas linhas e o botão continua onde estava. */
+.page-header-ui__acao {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  max-width: 60%;
+}
+
+/* O motivo NÃO é atenuado junto com o botão — mesma razão da DEC-053: ele é a
+   única coisa útil do conjunto. */
+.page-header-ui__motivo {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 1.35;
+  max-width: 34ch;
+  text-align: right;
+}
+
+@media (max-width: 767px) {
+  .page-header-ui__acao {
+    justify-content: flex-start;
+    max-width: 100%;
+  }
+  .page-header-ui__motivo { text-align: left; }
+}

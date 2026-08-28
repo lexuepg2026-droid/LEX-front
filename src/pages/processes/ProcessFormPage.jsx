@@ -16,6 +16,8 @@ import CampoComSugestoes from '../../components/ui/CampoComSugestoes';
 import useTabelaDominio from '../../hooks/useTabelaDominio';
 import { rotuloComarca, rotuloCnj } from '../../utils/tabelasDominio';
 import './ProcessPage.css';
+import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
 
 const STATUS_OPTIONS = ['ativo', 'encerrado', 'suspenso'];
 
@@ -242,8 +244,19 @@ function ProcessoFormPage() {
     }
   };
 
+  const online = useOnlineStatus();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // ── Nenhum formulário aceita envio que vai falhar (F-5a, Parte 4) ────
+    //
+    // A primeira barreira é o botão anunciado como desabilitado; esta é a
+    // segunda, no handler, porque `aria-disabled` só ANUNCIA (DEC-053). A
+    // terceira é o interceptor de `api/axiosConfig.js`, que recusa a escrita
+    // antes da rede — ela cobre o sinal que cai ENTRE o clique e o envio.
+    //
+    // Deixar salvar para dar erro depois perde o que foi digitado.
+    if (!online) return;
 
     // Validado aqui, antes de qualquer chamada: o backend recusa os dois casos,
     // mas deixar a requisição sair só para receber 400 gasta viagem e mostra a
@@ -330,6 +343,7 @@ function ProcessoFormPage() {
       <h1 className="page-title">{isEditing ? 'Editar Processo' : 'Registrar Novo Processo'}</h1>
 
       <form onSubmit={handleSubmit} className="data-form">
+        {!online && <OfflineWriteReason />}
         <div className="form-grid">
 
           <div className="form-group span-3">
@@ -627,7 +641,8 @@ function ProcessoFormPage() {
 
         <div className="form-actions">
           <button type="button" onClick={() => navigate('/dashboard/processos')} className="btn-cancel">Cancelar</button>
-          <button type="submit" disabled={loading} className="btn-primary">
+          <button type="submit"
+            aria-disabled={online ? undefined : 'true'} disabled={loading} className="btn-primary">
             {loading ? 'Salvando...' : 'Salvar'}
           </button>
         </div>

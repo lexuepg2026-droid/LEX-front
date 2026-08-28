@@ -8,6 +8,8 @@ import { UFS } from '../../utils/enums';
 import { prepararLogo, formatarTamanho } from '../../utils/imagem';
 import { toast } from '../../utils/toast';
 import './ProfilePage.css';
+import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
 
 // Espelho plano do usuário. Guardamos o valor MASCARADO (é o que aparece no
 // input) e desmascaramos só na hora de montar o payload.
@@ -174,8 +176,14 @@ function ProfilePage() {
     return payload;
   };
 
+  const online = useOnlineStatus();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Nenhum formulário aceita envio que vai falhar (F-5a, Parte 4): o botão
+    // é anunciado como desabilitado, e a recusa acontece aqui, porque
+    // `aria-disabled` só ANUNCIA (DEC-053).
+    if (!online) return;
     setError('');
     setHint('');
 
@@ -206,6 +214,10 @@ function ProfilePage() {
 
   const handleSenhaSubmit = async (e) => {
     e.preventDefault();
+    // Nenhum formulário aceita envio que vai falhar (F-5a, Parte 4): o botão
+    // é anunciado como desabilitado, e a recusa acontece aqui, porque
+    // `aria-disabled` só ANUNCIA (DEC-053).
+    if (!online) return;
     setSenhaError('');
 
     const { senhaAtual, novaSenha, confirmarNovaSenha } = senhas;
@@ -231,6 +243,7 @@ function ProfilePage() {
       <h1 className="page-title">Meu Perfil</h1>
 
       <form onSubmit={handleSubmit} className="data-form">
+        {!online && <OfflineWriteReason />}
 
         <div className="form-grid section">
           <h3>Dados pessoais</h3>
@@ -373,13 +386,14 @@ function ProfilePage() {
         {hint && <p className="form-hint">{hint}</p>}
 
         <div className="form-actions">
-          <button type="submit" disabled={saving} className="btn-primary">
+          <button type="submit" disabled={saving} aria-disabled={online ? undefined : 'true'} className="btn-primary">
             {saving ? 'Salvando...' : 'Salvar alterações'}
           </button>
         </div>
       </form>
 
       <form onSubmit={handleSenhaSubmit} className="data-form">
+        {!online && <OfflineWriteReason />}
         <div className="form-grid section">
           <h3>Segurança</h3>
           <div className="form-group span-1">
@@ -401,7 +415,7 @@ function ProfilePage() {
           {senhaError && <p className="error-message span-3">{senhaError}</p>}
 
           <div className="form-actions span-3">
-            <button type="submit" disabled={senhaSaving} className="btn-primary">
+            <button type="submit" disabled={senhaSaving} aria-disabled={online ? undefined : 'true'} className="btn-primary">
               {senhaSaving ? 'Alterando...' : 'Alterar senha'}
             </button>
           </div>

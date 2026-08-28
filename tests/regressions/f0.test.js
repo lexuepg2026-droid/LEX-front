@@ -215,8 +215,13 @@ describe("F-0/F-1b.3: as listagens por processo dizem o tamanho do conjunto", ()
     for (const [arquivo, rotulo] of LISTAGENS) {
       const codigo = semComentarios(ler(arquivo));
 
+      // Duas formas aceitas, e a razão de haver duas: a F-5a passou estas
+      // listagens para `useCachedResource`, que devolve o ENVELOPE inteiro —
+      // `setTotal(...)` deixou de existir e o total passou a ser derivado dele.
+      // A regra não mudou: o número que dimensiona o paginador é o do
+      // CONJUNTO, e não o tamanho da página que chegou.
       assert.match(
-        codigo, /setTotal\(/,
+        codigo, /setTotal\(|typeof data\?\.total === ['"]number['"]/,
         `${arquivo}: sem ler o \`total\`, a tela não tem como saber que há mais ` +
         `${rotulo} do que os que estão à vista`
       );

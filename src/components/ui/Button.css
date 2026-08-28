@@ -47,3 +47,12 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ── O botão anunciado como desabilitado (DEC-053, generalizado na F-5a) ──
+   `aria-disabled` não é `:disabled`, então a aparência precisa ser declarada
+   aqui: sem esta regra o botão bloqueado sem sinal ficaria com o visual de
+   ativo, e só o leitor de tela saberia que ele não funciona. */
+.ui-btn[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

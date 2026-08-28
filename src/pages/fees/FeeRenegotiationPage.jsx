@@ -17,6 +17,8 @@ import {
 } from './renegotiationPlan.js';
 import '../../styles/modules.css';
 import './FeeRenegotiationPage.css';
+import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // A TELA DO REPARCELAMENTO — DEC-049 (Fase F-1c.2)
@@ -80,6 +82,7 @@ const primeiroVencimentoSugerido = () => {
 function FeeRenegotiationPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const online = useOnlineStatus();
 
   const [honorario, setHonorario] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -177,6 +180,11 @@ function FeeRenegotiationPage() {
   })();
 
   const confirmar = async () => {
+    // Nenhum formulário aceita envio que vai falhar (F-5a, Parte 4): o botão
+    // é anunciado como desabilitado, e a recusa acontece aqui, porque
+    // `aria-disabled` só ANUNCIA (DEC-053).
+    if (!online) return;
+
     setSalvando(true);
     try {
       await feeService.createRenegotiation(id, {
@@ -473,7 +481,11 @@ function FeeRenegotiationPage() {
           type="button"
           className="ui-btn ui-btn--primary ui-btn--md"
           disabled={Boolean(impedimento) || salvando}
-          onClick={() => setConfirmando(true)}
+          aria-disabled={online ? undefined : 'true'}
+          onClick={() => {
+            if (!online) return;
+            setConfirmando(true);
+          }}
         >
           Reparcelar
         </button>
@@ -485,6 +497,7 @@ function FeeRenegotiationPage() {
           Cancelar
         </button>
         {impedimento && <span className="reparcelar-impedimento">{impedimento}</span>}
+        {!online && <OfflineWriteReason />}
       </div>
 
       {/* ── 6. A CONFIRMAÇÃO, em português ─────────────────────────────── */}
