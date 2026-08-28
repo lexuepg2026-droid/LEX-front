@@ -6,6 +6,10 @@ import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
+import OfflineNotice from '../../components/ui/OfflineNotice';
+import useCachedResource from '../../hooks/useCachedResource';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { MENSAGEM_ESCRITA_OFFLINE } from '../../offline/offlineMessages';
 import { getApiErrorMessage } from '../../utils/apiError';
 import {
   mensagemDesativarCliente,
@@ -14,9 +18,6 @@ import {
 import '../../styles/modules.css';
 
 function ClienteListPage() {
-  const [clientes, setClientes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   // DEC-052: um modal só para as duas ações — ver a nota em `ProcessListPage`.
   const [ativacaoModal, setAtivacaoModal] = useState({ open: false, id: null, acao: null });
   const [busca, setBusca] = useState('');
@@ -24,21 +25,30 @@ function ClienteListPage() {
   // Sem isto a reativação não teria onde acontecer: a listagem escondia os
   // desativados, e um cliente desativado por engano ficava assim para sempre.
   const [situacao, setSituacao] = useState('ativos');
-  const [versao, setVersao] = useState(0);
+  const online = useOnlineStatus();
 
   useEffect(() => {
     const t = setTimeout(() => setBuscaDebounced(busca), 300);
     return () => clearTimeout(t);
   }, [busca]);
 
-  useEffect(() => {
-    setLoading(true);
-    setError('');
-    clientService.getAllClients({ busca: buscaDebounced || undefined, situacao })
-      .then(res => setClientes(res.data.data ?? res.data))
-      .catch(() => setError('Falha ao buscar clientes.'))
-      .finally(() => setLoading(false));
-  }, [buscaDebounced, situacao, versao]);
+  // ── DEC-058: a listagem tem espelho local, escopado por usuário (F-5a) ──
+  //
+  // Com sinal, nada muda: busca no servidor e exibe. Sem sinal, exibe o que
+  // ESTA advogada já tinha consultado, com o aviso de idade no topo — e nunca
+  // o que outra pessoa consultou neste mesmo navegador, porque a chave do que
+  // se guarda carrega o id do usuário (`offline/cacheKey.js`).
+  //
+  // Os parâmetros da consulta são os MESMOS do `fetcher`: é o que faz a chave
+  // do cache distinguir "ativos" de "todos" e cada busca da anterior.
+  const consulta = { busca: buscaDebounced || undefined, situacao };
+  const { data, loading, error, updatedAt, fromCache, reload } = useCachedResource({
+    resource: 'clients',
+    params: consulta,
+    fetcher: () => clientService.getAllClients(consulta).then((res) => res.data.data ?? res.data),
+    fallbackError: 'Falha ao buscar clientes.'
+  });
+  const clientes = data ?? [];
 
   // O cliente NÃO cascateia — `deleteClient` só aceita desativar quem não
   // participa de processo ativo —, então não há contagem a buscar antes de
@@ -61,7 +71,7 @@ function ClienteListPage() {
       }
       // Refaz a busca: o cliente pode ou não continuar visível conforme o
       // filtro de situação, e adivinhar isso aqui duplicaria a regra do filtro.
-      setVersao(v => v + 1);
+      reload();
     } catch (err) {
       toast.error(getApiErrorMessage(
         err,
@@ -98,7 +108,18 @@ function ClienteListPage() {
   // um defeito pior que o original.
   return (
     <div className="module-container">
-      <PageHeader title="Clientes Registrados" actionLabel="Novo Cliente" actionTo="/dashboard/clientes/novo" />
+      {/* Sem sinal o botão CONTINUA na tela, atenuado e com o motivo ao lado
+          (DEC-053, generalizada na F-5a): botão ausente faz procurar, botão
+          desabilitado com explicação ensina. */}
+      <PageHeader
+        title="Clientes Registrados"
+        actionLabel="Novo Cliente"
+        actionTo="/dashboard/clientes/novo"
+        actionMotivo={online ? undefined : MENSAGEM_ESCRITA_OFFLINE}
+      />
+      {/* O aviso de idade fica ACIMA do erro e dos filtros: a primeira coisa a
+          saber sobre esta tela é de quando é o que ela mostra. */}
+      {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
       {error && <p className="error-message">{error}</p>}
 
       <div className="filter-bar">
@@ -178,7 +199,15 @@ function ClienteListPage() {
                       rotulo={`Ações de ${cliente.nome}`}
                       itens={[
                         { rotulo: 'Ver', to: `/dashboard/clientes/detalhe/${cliente._id}` },
-                        { rotulo: 'Editar', to: `/dashboard/clientes/editar/${cliente._id}` },
+                        /* Sem sinal, tudo que leva a gravar fica desabilitado
+                           COM o motivo. "Editar" entra na conta: o formulário
+                           existe para salvar, e abri-lo para recusar o envio no
+                           fim perderia o que foi digitado (Parte 4 da F-5a). */
+                        {
+                          rotulo: 'Editar',
+                          to: `/dashboard/clientes/editar/${cliente._id}`,
+                          motivo: online ? undefined : MENSAGEM_ESCRITA_OFFLINE
+                        },
                         /* DEC-052: as duas ações são mutuamente exclusivas — a
                            que aparece é a que o estado do registro permite.
                            "Excluir" virou "Desativar": sempre foi soft delete,
@@ -186,12 +215,14 @@ function ClienteListPage() {
                         cliente.ativo === false
                           ? {
                               rotulo: 'Reativar',
-                              onSelecionar: () => abrirAtivacao(cliente._id, 'reativar')
+                              onSelecionar: () => abrirAtivacao(cliente._id, 'reativar'),
+                              motivo: online ? undefined : MENSAGEM_ESCRITA_OFFLINE
                             }
                           : {
                               rotulo: 'Desativar',
                               destrutivo: true,
-                              onSelecionar: () => abrirAtivacao(cliente._id, 'desativar')
+                              onSelecionar: () => abrirAtivacao(cliente._id, 'desativar'),
+                              motivo: online ? undefined : MENSAGEM_ESCRITA_OFFLINE
                             }
                       ]}
                     />

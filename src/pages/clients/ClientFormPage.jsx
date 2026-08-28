@@ -11,6 +11,8 @@ import CampoComSugestoes from '../../components/ui/CampoComSugestoes';
 import useTabelaDominio from '../../hooks/useTabelaDominio';
 import { rotuloProfissao, gentilicos } from '../../utils/tabelasDominio';
 import './ClientPage.css';
+import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
 
 function ClienteFormPage() {
   const [tipoPessoa, setTipoPessoa] = useState('fisica');
@@ -163,8 +165,19 @@ function ClienteFormPage() {
     }));
   };
 
+  const online = useOnlineStatus();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // ── Nenhum formulário aceita envio que vai falhar (F-5a, Parte 4) ────
+    //
+    // A primeira barreira é o botão anunciado como desabilitado; esta é a
+    // segunda, no handler, porque `aria-disabled` só ANUNCIA (DEC-053). A
+    // terceira é o interceptor de `api/axiosConfig.js`, que recusa a escrita
+    // antes da rede — ela cobre o sinal que cai ENTRE o clique e o envio.
+    //
+    // Deixar salvar para dar erro depois perde o que foi digitado.
+    if (!online) return;
     setLoading(true);
     setError('');
     setCampoComErro(null);
@@ -308,6 +321,7 @@ function ClienteFormPage() {
       )}
 
       <form onSubmit={handleSubmit} className="data-form">
+        {!online && <OfflineWriteReason />}
 
         {tipoPessoa === 'fisica' && (
           <div className="form-grid section">
@@ -572,7 +586,8 @@ function ClienteFormPage() {
 
         <div className="form-actions">
           <button type="button" onClick={() => navigate('/dashboard/clientes')} className="btn-cancel">Cancelar</button>
-          <button type="submit" disabled={loading} className="btn-primary">
+          <button type="submit"
+            aria-disabled={online ? undefined : 'true'} disabled={loading} className="btn-primary">
             {loading ? 'Salvando...' : 'Salvar'}
           </button>
         </div>

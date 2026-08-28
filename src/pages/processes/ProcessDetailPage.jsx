@@ -16,6 +16,10 @@ import AccessDelivery from '../../components/processes/AccessDelivery';
 import ProcessFinancialSheet from '../../components/financeiro/ProcessFinancialSheet';
 import ProcessTimeline from '../../components/processes/ProcessTimeline';
 import Loading from '../../components/common/Loading';
+import OfflineNotice from '../../components/ui/OfflineNotice';
+import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import useCachedResource from '../../hooks/useCachedResource';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
 import './ProcessPage.css';
 import './ProcessTabs.css';
 import ProcessoTabs from './ProcessTabs';
@@ -34,9 +38,6 @@ const dataHoraBR = (iso) =>
     : '—';
 
 function ProcessoDetalhePage() {
-  const [processo, setProcesso] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   // Participantes vêm de `GET /processes/:id/clientes`, e NÃO do array
   // `participantes` que `GET /processes/:id` já devolve.
@@ -72,25 +73,34 @@ function ProcessoDetalhePage() {
   const [salvandoFase, setSalvandoFase] = useState(false);
 
   const { id } = useParams();
+  const online = useOnlineStatus();
 
+  // ── DEC-058 (F-5a): o processo que ela já abriu continua legível ────────
+  //
+  // A mensagem de erro continua saindo do helper — `useCachedResource` chama
+  // `getApiErrorMessage` por dentro com este mesmo fallback, e o genérico só
+  // aparece quando o servidor não manda mensagem nenhuma.
+  //
+  // **O que NÃO tem espelho local nesta tela**, e é decisão: os participantes
+  // com estado de portal, as confirmações de leitura e a ficha financeira
+  // (`ProcessFinancialSheet`). Sem sinal, o processo aparece e esses blocos
+  // ficam vazios — o que se perde é o selo do portal e os números da ficha, e
+  // o que se ganha é não guardar, por precaução, o que ela não pediu para ver.
+  const {
+    data: processo, loading, error, updatedAt, fromCache, reload
+  } = useCachedResource({
+    resource: 'process',
+    params: { id },
+    fetcher: () => processService.getProcessById(id).then((res) => res.data),
+    fallbackError: 'Falha ao carregar dados do processo.'
+  });
+
+  // O seletor de fase acompanha o processo carregado. Era um `setFaseEscolhida`
+  // dentro do `.then` do carregamento; com o espelho local o dado pode chegar
+  // do banco do navegador, e o seletor precisa acompanhar os dois caminhos.
   useEffect(() => {
-    const fetchProcesso = async () => {
-      try {
-        setLoading(true);
-        const response = await processService.getProcessById(id);
-        setProcesso(response.data);
-        setFaseEscolhida(response.data.fase ?? '');
-      } catch (err) {
-        // A mensagem fixa dizia "Falha ao carregar dados do processo" também em
-        // 500 e em queda de rede, e custava tempo de diagnóstico. O genérico
-        // fica só como fallback de quando o servidor não manda mensagem.
-        setError(getApiErrorMessage(err, 'Falha ao carregar dados do processo.'));
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProcesso();
-  }, [id]);
+    if (processo) setFaseEscolhida(processo.fase ?? '');
+  }, [processo]);
 
   useEffect(() => {
     let ativo = true;
@@ -115,6 +125,9 @@ function ProcessoDetalhePage() {
   // advogada ter aberto nada seria mentira; marcar uma a uma exigiria que ela
   // clicasse em cada registro para o número baixar.
   const abrirConfirmacoes = async () => {
+    // Abrir a lista MARCA as confirmações como vistas — é leitura e escrita no
+    // mesmo gesto, e por isso ela inteira fica indisponível sem sinal.
+    if (!online) return;
     setCarregandoConfirmacoes(true);
     try {
       const res = await processService.listProcessConfirmacoes(id);
@@ -137,6 +150,9 @@ function ProcessoDetalhePage() {
   // A única coisa que o desabilita é `salvandoFase` — evitar o clique duplo,
   // que gravaria duas entradas iguais no histórico.
   const salvarFase = async () => {
+    // `aria-disabled` só ANUNCIA — a recusa tem de ser feita aqui, senão o
+    // botão "desabilitado" continuaria disparando a ação (DEC-053).
+    if (!online) return;
     setSalvandoFase(true);
     try {
       const { data } = await processService.mudarFase(id, {
@@ -145,8 +161,11 @@ function ProcessoDetalhePage() {
         // *"não precisa anotar o porquê, só se ela quiser mesmo"*.
         motivo: motivoFase,
       });
-      setProcesso(data);
       setFaseEscolhida(data.fase ?? '');
+      // Refaz a leitura: é ela que atualiza a tela E o espelho local, de uma
+      // fonte só. Escrever o resultado do PATCH direto no estado deixaria o
+      // dado guardado desatualizado até a próxima visita.
+      reload();
       // O motivo é da TRANSIÇÃO, e a transição acabou: deixá-lo no campo faria
       // a próxima mudança herdar a justificativa da anterior.
       setMotivoFase('');
@@ -194,10 +213,24 @@ function ProcessoDetalhePage() {
             {processo.numeroProcesso ? ` | Nº: ${processo.numeroProcesso}` : ''}
           </span>
         </div>
-        <Link to={`/dashboard/processos/editar/${id}`} className="btn-primary">
-          Editar Processo
-        </Link>
+        {online ? (
+          <Link to={`/dashboard/processos/editar/${id}`} className="btn-primary">
+            Editar Processo
+          </Link>
+        ) : (
+          <button
+            type="button"
+            className="btn-primary"
+            aria-disabled="true"
+            onClick={(e) => e.preventDefault()}
+          >
+            Editar Processo
+          </button>
+        )}
       </div>
+
+      {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
+      {!online && <OfflineWriteReason />}
 
       <div className="processo-detalhe-secao">
         <h3>Clientes do Processo ({participantes.length})</h3>
@@ -248,12 +281,18 @@ function ProcessoDetalhePage() {
                     </span>
                   )}
 
+                  {/* A entrega de acesso GRAVA (gera código e senha
+                      provisória): sem sinal ela fica anunciada como
+                      desabilitada, e o motivo aparece uma vez, acima, para não
+                      repetir a mesma frase em cada participante da lista. */}
                   <button
                     type="button"
                     className="btn-secondary"
-                    onClick={() =>
-                      setEntregaAberta(entregaAberta === clienteId ? null : clienteId)
-                    }
+                    aria-disabled={online ? undefined : 'true'}
+                    onClick={() => {
+                      if (!online) return;
+                      setEntregaAberta(entregaAberta === clienteId ? null : clienteId);
+                    }}
                   >
                     {entregaAberta === clienteId ? 'Fechar entrega' : 'Entregar acesso'}
                   </button>
@@ -363,9 +402,11 @@ function ProcessoDetalhePage() {
             className="btn-primary"
             onClick={salvarFase}
             disabled={salvandoFase || !faseEscolhida}
+            aria-disabled={online ? undefined : 'true'}
           >
             {salvandoFase ? 'Salvando…' : 'Mudar fase'}
           </button>
+          {!online && <OfflineWriteReason />}
         </div>
 
         {/* ── A linha do tempo, em forma bruta (F-2d) ────────────────────
@@ -442,9 +483,11 @@ function ProcessoDetalhePage() {
               className="btn-primary"
               onClick={abrirConfirmacoes}
               disabled={carregandoConfirmacoes}
+              aria-disabled={online ? undefined : 'true'}
             >
               {carregandoConfirmacoes ? 'Carregando…' : 'Ver confirmações'}
             </button>
+            {!online && <OfflineWriteReason />}
           </>
         ) : confirmacoes.length === 0 ? (
           <p className="confirmacao-ajuda">

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useNavigate } from 'react-router-dom';
 import authService from '../api/authService';
 import { registrarSessao } from '../api/sessionLoss';
+import { startSession, clearAll } from '../offline/offlineCache';
 
 const AuthContext = createContext(null);
 
@@ -22,9 +23,21 @@ export function AuthProvider({ children }) {
 
   // /auth/me, /auth/login e /auth/register devolvem o mesmo envelope
   // `{ usuario }` desde a Fase 2D.1 — não há mais exceção por endpoint.
+  // ── O ESPELHO LOCAL É ESCOPADO, E A LIMPEZA VEM ANTES (DEC-058, F-5a) ───
+  //
+  // `startSession` apaga do IndexedDB tudo que NÃO é deste usuário, e roda
+  // **antes** de `registrarUsuario` — quem registra o usuário dispara a
+  // navegação, a navegação renderiza a tela e a tela grava. Limpar depois seria
+  // limpar por cima do que a sessão nova já escreveu.
+  //
+  // Ele é chamado nos DOIS caminhos de entrada porque só um deles é o login: o
+  // recarregar de página entra por `checkAuth`, com o cookie que já existia, e
+  // é exatamente o caminho de quem senta no computador do escritório e abre o
+  // sistema sem passar pela tela de login.
   const checkAuth = useCallback(async () => {
     try {
       const res = await authService.getMe();
+      await startSession(res.data.usuario?.id);
       registrarUsuario(res.data.usuario);
     } catch {
       // 401 aqui é o estado NORMAL de quem ainda não entrou, e é por isso que o
@@ -39,6 +52,7 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, senha) => {
     const res = await authService.login(email, senha);
+    await startSession(res.data.usuario?.id);
     registrarUsuario(res.data.usuario);
   }, [registrarUsuario]);
 
@@ -47,6 +61,7 @@ export function AuthProvider({ children }) {
   // direto ao sistema, em vez de devolvê-la à tela de login.
   const register = useCallback(async (payload) => {
     const res = await authService.register(payload);
+    await startSession(res.data.usuario?.id);
     registrarUsuario(res.data.usuario);
     return res.data.usuario;
   }, [registrarUsuario]);
@@ -57,6 +72,15 @@ export function AuthProvider({ children }) {
     } catch {
       // Falha na chamada de logout não impede a limpeza local da sessão.
     } finally {
+      // ⚠️ O LOGOUT APAGA TUDO (DEC-058). Não marca como inválido, não expira,
+      // não filtra na leitura: apaga. Sair da conta num computador emprestado
+      // — o do escritório, o da estagiária — precisa deixar o navegador limpo,
+      // e um dado "invalidado" que continua no disco continua sendo o dado.
+      //
+      // Fica no `finally` junto com o resto da limpeza local pela mesma razão
+      // que `registrarUsuario(null)` está aqui: falha na chamada de logout não
+      // pode deixar o espelho local para trás.
+      await clearAll();
       registrarUsuario(null);
       navigate('/login');
     }

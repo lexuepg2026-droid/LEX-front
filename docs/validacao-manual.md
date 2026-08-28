@@ -940,6 +940,13 @@ Dados que vários passos usam:
   Conferir também, em Application → Cache Storage: **nenhuma entrada de
   `/api/`**. Se houver, é vazamento — resposta autenticada em cache compartilhado
   com o próximo usuário do navegador.
+  **Emenda da F-5a (28/08/2026): este passo precisa ser REEXECUTADO depois do
+  deploy.** O service worker se comporta diferente em HTTPS real — escopo,
+  ciclo de vida e atualização não são os mesmos que em `localhost` —, e nada do
+  que se conferir aqui vale como prova do que vai acontecer no domínio de
+  produção. A F-5a acrescentou o IndexedDB ao lado do Cache Storage: quando
+  este passo for refeito, conferir **as duas** áreas em Application, e o passo
+  **236** é quem diz o que procurar no banco.
   Fase de origem: 4.5
 
 ### Foco visível
@@ -1809,51 +1816,16 @@ Dados que vários passos usam:
 > "inicial" é posicional e deixa de valer no instante em que o processo volta.
 > Se ela preferir a outra, muda-se o rótulo e nada é migrado.
 
-- [ ] **205. ⭐ 🚨 A fase anda para a FRENTE e para TRÁS — recursos → conhecimento inclusive**
-  Pré-condição: `npm run seed:fresh`. **É o passo que a fase existe para ter.**
-  **▶ ONDE IR.** Menu lateral → **Processos** → **⋮ → Gerenciar** num processo
-  qualquer → a seção **"Andamento do processo"**.
-  Passos:
-  1) conferir que o seletor **"Mudar a fase"** oferece **as quatro**: *Fase de
-     conhecimento*, *Sentença*, *Execução*, *Recursos*;
-  2) levar o processo até **Recursos** (pode ser em uma ou em várias mudanças);
-  3) **voltar** para **Fase de conhecimento**;
-  4) ir para **Execução**;
-  5) voltar para **Sentença**.
-  Esperado: **todas as cinco mudanças funcionam**, sem aviso, sem confirmação e
-  sem nenhuma opção desabilitada no seletor.
-  **NENHUMA opção pode aparecer cinza, riscada ou bloqueada.** Se alguma
-  aparecer, alguém inventou uma máquina de estados — e ela disse *"sim, pode
-  voltar"*. **Isso é reprovação do passo**, não observação.
-  Conferir também que o **rótulo é o da lista**: nunca `conhecimento` cru, nunca
-  `Sentenca` sem cedilha, nunca `Fase_de_conhecimento`.
-  Por que só olho humano: a suíte prova as 16 transições pela API e prova que
-  nenhuma opção do JSX é desabilitada. O que ela não prova é se a advogada
-  **percebe que pode voltar** — que é a pergunta inteira do passo.
-  Fase de origem: F-2d
-
-- [ ] **206. ⭐ Salvar a mudança de fase SEM motivo**
-  Pré-condição: `npm run seed:fresh` **uma vez**, e o passo **205**
-  executado depois dele. **Não rode `seed:fresh` entre o 205 e este** — o
-  encadeamento é dentro da mesma rodada semeada.
-  *"Não precisa anotar o porquê, só se ela quiser mesmo."*
-  Passos: 1) escolher outra fase; 2) **deixar o campo "Motivo" totalmente
-  vazio**; 3) clicar em **Mudar fase**.
-  Esperado: a mudança **acontece**. Sem erro, sem asterisco vermelho, sem
-  "campo obrigatório", sem o botão desabilitado enquanto o campo está vazio.
-  Conferir que a etiqueta do campo diz **"Motivo (opcional)"** — um campo sem
-  `required` mas sem aviso ainda parece obrigatório para quem está preenchendo.
-  Depois: mudar de novo, **agora com motivo**, e conferir que ele é guardado
-  como foi escrito.
-  Por que só olho humano: a suíte prova que a API aceita as três formas do vazio.
-  O que ela não prova é se a tela **parece** exigir — e um campo que parece
-  obrigatório é obedecido como se fosse.
-  Fase de origem: F-2d
-
 - [ ] **207. 🚨 O histórico mostra `de → para`, com data — e é o passado da linha do tempo**
   Pré-condição: `npm run seed:fresh` **uma vez**, e os passos **205** e
   **206** executados depois dele, **no mesmo processo**. Os três formam uma
   sequência: um seed, depois 205 → 206 → 207, sem reset no meio.
+  **Nota da F-5a (28/08/2026):** os passos **205** e **206** passaram e foram
+  para `## Validado`, e a F-5a rodou `seed:fresh` depois disso — o histórico
+  que eles gravaram não existe mais. Eles continuam sendo a **preparação**
+  deste passo e são repetíveis: execute-os de novo, na mesma rodada semeada,
+  antes de conferir o histórico aqui. Estar em `## Validado` diz que a regra
+  deles passou, não que a base ainda carregue o efeito.
   **É o substrato da F-2e.** Ela pediu a linha do tempo (*"finalizado por etapa
   — fazer linha do tempo"*), e sem gravar agora a linha do tempo nasceria sem
   passado.
@@ -2277,41 +2249,6 @@ Dados que vários passos usam:
   compromisso nenhum.
   Fase de origem: F-3
 
-- [ ] **221. ⭐ 🚨 A DATA QUE NÃO MUDA DE DIA — o passo mais importante da fase**
-  Pré-condição: `npm run seed:fresh`. **É o passo que a fase inteira existe
-  para ter.**
-  **▶ ONDE IR.** **Agenda** → criar compromisso.
-  Passos:
-  1) criar um compromisso com **Título** livre e **Data = 01/09/2026**, sem
-     hora;
-  2) salvar e voltar à agenda, em **setembro de 2026**;
-  3) conferir **em que casa da grade** ele caiu;
-  4) abrir o compromisso de novo e olhar o campo **Data**;
-  5) **mudar o fuso do sistema operacional** para um fuso a **leste** (por
-     exemplo, `Europe/Lisbon` ou `Asia/Tokyo`), **recarregar a página**, e
-     repetir os passos 3 e 4;
-  6) voltar o fuso para o de origem.
-  **A DATA NOMEADA E O DIA DA SEMANA ESPERADO:**
-  > **01/09/2026 é uma TERÇA-FEIRA.**
-  Esperado no passo 3: o compromisso está na casa do **dia 1**, na coluna
-  **ter**. Não no dia 31 de agosto (segunda), não no dia 2 (quarta).
-  Esperado no passo 4: o campo mostra **01/09/2026**.
-  Esperado no passo 5: **exatamente o mesmo**, no outro fuso. Nada se move.
-  **🚨 O QUE NÃO PODE ACONTECER:** o compromisso aparecer em **31/08/2026,
-  segunda-feira** (o modo de falha a oeste de Greenwich) ou em **02/09/2026,
-  quarta-feira** (a leste). **Se mudar de dia, é reprovação, e a fase volta.**
-  A razão: **data sem hora não é um instante, é uma casa do calendário.** Um
-  instante precisa de um fuso para virar dia, e é o fuso inventado que produz o
-  deslocamento. Por isso a data cruza a rede como texto `AAAA-MM-DD` e é
-  gravada em meia-noite UTC, como `dataVencimento` já é desde a Fase 4.
-  Repetir com uma parcela: conferir que o **vencimento** de uma parcela aparece
-  na agenda **no mesmo dia** que aparece na tela de Parcelas. Se as duas telas
-  discordarem sobre o mesmo vencimento, é o mesmo defeito visto de outro lado.
-  Por que só olho humano: a suíte grava e lê 01/09/2026 em dois fusos e confere
-  o instante no banco. O que ela não pode fazer é trocar o fuso do **sistema
-  operacional e do navegador** — que é onde a advogada de fato está.
-  Fase de origem: F-3
-
 - [ ] **222. ⭐ O compromisso COM HORA, e o compromisso do dia inteiro**
   Pré-condição: `npm run seed:fresh`, e então **criar os dois compromissos**
   que o passo compara — um **com hora** e um **de dia inteiro** —, em vez de
@@ -2476,44 +2413,6 @@ Dados que vários passos usam:
   meio, com teto) como função pura, e prova que as teclas estão tratadas. O que
   ela não prova é se **o destaque é visível** e se a lista cobre o campo
   seguinte.
-  Fase de origem: F-4
-
-- [ ] **227. ⭐ 🚨 UMA COMARCA QUE NÃO EXISTE, DIGITADA E SALVA ASSIM MESMO**
-  Pré-condição: `npm run seed:fresh`. **É O PASSO QUE A FASE INTEIRA EXISTE
-  PARA TER.** Se só um passo desta fase for executado, que seja este.
-  **▶ ONDE IR.** **Processos** → **Novo processo** → campo **Comarca**.
-  Passos:
-  1) preencher o processo normalmente (título e cliente);
-  2) no campo **Comarca**, digitar **`Comarca de Marte`** — que não está na
-     tabela e nunca vai estar;
-  3) ler o que a tela diz;
-  4) **clicar fora do campo**, e voltar a olhá-lo;
-  5) **salvar o processo**;
-  6) abrir o processo salvo e conferir a comarca;
-  7) repetir com **`Ponta Grosa`** (um "s" só) — um erro de digitação de
-     verdade, que também tem que passar.
-  Esperado no passo 3: aparece uma frase dizendo que **nada na lista casa** e
-  que **pode salvar assim mesmo**. Nenhuma cor de erro, nenhum campo vermelho,
-  nenhum aviso de valor inválido — **não há nada errado acontecendo**.
-  Esperado no passo 4: **o texto continua lá, intacto.** 🚨 Se ao sair do campo
-  ele **limpar**, **reverter** ou **trocar pela sugestão mais parecida**, é
-  **reprovação do passo** — é exatamente a "melhoria" que a fase existe para
-  impedir.
-  Esperado no passo 5: **salva.** Sem erro de validação, sem mensagem, sem
-  bloqueio do botão.
-  Esperado no passo 6: a comarca gravada é **`Comarca de Marte`**, letra por
-  letra.
-  🚨 **O que NÃO pode acontecer, em nenhum dos sete passos:** o botão de salvar
-  desabilitado; uma mensagem do tipo *"escolha uma opção da lista"*; o campo
-  exigindo valor da tabela; o valor sumindo. **Qualquer um desses reprova a
-  fase, não só o passo.**
-  Conferir também o mesmo com **Profissão** ("Encantador de serpentes") e
-  **Nacionalidade** ("marciana") no cadastro de cliente PF: a regra é do
-  componente, e vale nos cinco campos.
-  Por que só olho humano: a suíte prova que não existe caminho de recusa no
-  código, e a mutação que introduz um `onBlur` de limpeza derruba o teste. O
-  que ela não prova é se **a advogada percebe que pode salvar** — se a frase do
-  estado vazio convida ou assusta.
   Fase de origem: F-4
 
 - [ ] **228. ⭐ Profissão pela CBO, e a nacionalidade FLEXIONADA pelo sexo**
@@ -2706,6 +2605,228 @@ Dados que vários passos usam:
   ela não prova é se a mensagem **tranquiliza** em vez de assustar.
   Fase de origem: F-4
 
+
+## 36. Fase F-5a — ler sem sinal
+
+> **Pré-condição de toda a seção:** `npm run seed:fresh` e **dois usuários**
+> cadastrados (a advogada do seed e um segundo, criado em `/registrar`). Sem o
+> segundo usuário, o passo mais importante da fase não tem como ser executado.
+>
+> **Onde se olha o banco:** DevTools → **Application** → **Storage** →
+> **IndexedDB** → **`lex-offline`** → as duas stores, `entradas` e `indice`.
+> É a mesma gaveta onde o passo **140** confere o Cache Storage, uma prateleira
+> ao lado — e são **dois lugares diferentes**, com o mesmo risco.
+>
+> **O modo offline** é DevTools → **Network** → **Offline** (ou, no Chrome,
+> **Application → Service Workers → Offline**). Desligar o Wi-Fi de verdade
+> também serve, e é o teste mais honesto dos dois.
+
+- [ ] **235. ⭐ 🚨 O VAZAMENTO ENTRE USUÁRIOS — o passo que a fase inteira existe para ter**
+  `[só olho humano]`
+  Pré-condição: dois usuários, e o navegador **sem** o `lex-offline` (se
+  existir, apague o banco pelo DevTools antes de começar).
+  **▶ ONDE IR.** O sistema inteiro, e depois DevTools → Application → IndexedDB.
+  Passos:
+  1) entrar como o **usuário A** e **navegar de verdade**: Clientes, um cliente
+     pelo "Ver", Processos, um processo pelo "Gerenciar", Honorários, Parcelas,
+     Pagamentos, Financeiro e Agenda;
+  2) abrir o DevTools e **conferir que há entradas** em `lex-offline` →
+     `entradas`, e que **toda chave** começa com `lex-offline|u:<id do A>`;
+  3) **sair** pelo menu (Sair / Logout);
+  4) **sem fechar o navegador**, conferir o banco de novo;
+  5) entrar como o **usuário B** e navegar por duas ou três telas;
+  6) conferir o banco mais uma vez.
+  Esperado no passo 2: as chaves carregam **o id do usuário A**. Nenhuma chave
+  sem `u:`, nenhuma com `u:` vazio, nenhuma com `anonimo`, `comum` ou coisa
+  parecida.
+  Esperado no passo 4: **as duas stores VAZIAS.** O logout apaga — não marca
+  como inválido, não expira, não esconde na leitura. 🚨 Se sobrar **uma
+  entrada que seja**, é **reprovação da fase**, não observação do passo.
+  Esperado no passo 6: só chaves com **o id do B**. **Nada do A.**
+  🚨 **O que NÃO pode acontecer, em nenhum momento:** uma chave sem id de
+  usuário; uma chave do A visível depois do login do B; conteúdo do A dentro de
+  um registro do B. Qualquer um desses é o vazamento, e o vazamento é o que
+  esta fase existe para impedir.
+  Repetir uma variação: com A logado, **entrar direto como B** (sem passar pelo
+  logout, pela tela de login) — o banco tem de ficar só com o B. É o caminho de
+  quem senta no computador do escritório e troca de conta.
+  Por que só olho humano: a suíte prova a montagem da chave, a escolha do que
+  apagar e que o `logout` chama a limpeza. O que ela **não** pode fazer é olhar
+  o IndexedDB de verdade — `node --test` não tem navegador, e a fase proíbe
+  dependência nova. Este passo é a única prova de que o banco ficou vazio.
+  Fase de origem: F-5a
+
+- [ ] **236. ⭐ 🚨 SEM SINAL, A TELA DIZ DE QUANDO É O DADO**
+  `[só olho humano]`
+  Pré-condição: passo **235** feito (as telas precisam ter passado pela tela
+  com sinal — guarda-se o que se consultou, não o banco inteiro).
+  **▶ ONDE IR.** Clientes, Processos, Honorários, Parcelas, Pagamentos,
+  Financeiro e Agenda, com o DevTools em **Offline**.
+  Passos:
+  1) **anotar a hora** em que cada tela foi carregada com sinal;
+  2) pôr o DevTools em **Offline**;
+  3) navegar pelas mesmas telas;
+  4) ler o aviso no **topo** de cada uma.
+  Esperado: a lista continua na tela — a mesma que ela viu — e acima dela a
+  frase **"Sem conexão. Dados de hoje às HH:MM."**, com a hora do passo 1.
+  Conferir também que o aviso aparece **em cada tela**, e não uma vez só no
+  cabeçalho do sistema: a idade é **daquele dado**, e duas telas carregadas em
+  horas diferentes têm idades diferentes.
+  🚨 **O que NÃO pode acontecer:** a tela mostrar os dados **sem** o aviso.
+  Dado guardado exibido como dado ao vivo é o defeito que a Parte 3 da fase
+  existe para impedir — e é o que faz a advogada dizer um número errado ao
+  cliente ao telefone.
+  Por que só olho humano: a suíte prova a frase e o cálculo da idade, e prova
+  que toda tela convertida renderiza o aviso. O que ela não prova é se o aviso
+  **é visto** antes do número que ele qualifica.
+  Fase de origem: F-5a
+
+- [ ] **237. 🚨 A hora do aviso é a da ÚLTIMA ATUALIZAÇÃO, não a de agora**
+  `[só olho humano]`
+  Pré-condição: a mesma do **236**.
+  Passos:
+  1) carregar a tela de **Financeiro** com sinal e **anotar a hora do relógio**;
+  2) **esperar dois ou três minutos** (ou mais — quanto mais, melhor);
+  3) pôr em **Offline** e abrir a tela de novo;
+  4) comparar a hora do aviso com a hora **atual**.
+  Esperado: o aviso diz a hora do **passo 1**. Se ele disser a hora do passo 4,
+  a tela está carimbando o dado guardado com a hora de agora — **é reprovação
+  do passo**, e é a mentira exata que a fase proíbe.
+  Conferir também a virada do dia, se houver oportunidade: um dado carregado
+  ontem tem de aparecer como **"ontem às HH:MM"**, e não como "hoje".
+  Por que só olho humano: a suíte prova o formato com instantes fixos. O que
+  ela não pode fazer é **esperar** e comparar com o relógio da parede.
+  Fase de origem: F-5a
+
+- [ ] **238. ⭐ Os botões que gravam ficam desabilitados, COM o motivo ao lado**
+  `[só olho humano]`
+  Pré-condição: DevTools em **Offline**.
+  **▶ ONDE IR.** Clientes, Processos, Honorários, Parcelas, Pagamentos, Agenda.
+  Passos:
+  1) olhar o botão do cabeçalho de cada listagem (**Novo Cliente**, **Novo
+     Processo**, **+ Novo Honorário**, …);
+  2) abrir o menu **⋮** de uma linha qualquer;
+  3) tentar **clicar** nos itens que gravam.
+  Esperado no passo 1: o botão **continua na tela**, atenuado, com a frase
+  *"Sem conexão — você pode consultar, mas não registrar. Tente de novo quando
+  o sinal voltar."* ao lado. **Ele não some** — botão ausente faz procurar;
+  botão desabilitado com explicação ensina (DEC-053).
+  Esperado no passo 2: "Editar", "Excluir", "Desativar", "Reativar" e
+  "Estornar" aparecem desabilitados **com o motivo**.
+  Esperado no passo 3: **nada acontece** — nenhum modal abre, nenhuma
+  navegação, nenhum erro.
+  Conferir também com o **teclado**: percorrer o menu com `Tab`. O item
+  bloqueado **tem de receber foco** e ser anunciado como desabilitado — se ele
+  for pulado, o motivo ficou invisível justamente para quem depende de leitor
+  de tela, e isso é defeito.
+  Por que só olho humano: a suíte prova que os arquivos passam o motivo e
+  barram o clique. O que ela não prova é se a frase é **lida** e se o foco
+  chega nela.
+  Fase de origem: F-5a
+
+- [ ] **239. 🚨 Nenhum formulário aceita envio que vai falhar**
+  `[só olho humano]`
+  Pré-condição: um formulário **aberto com sinal** (por exemplo,
+  `/dashboard/clientes/novo`).
+  Passos:
+  1) com sinal, abrir o formulário e **preencher alguns campos**;
+  2) **cair a conexão** (DevTools → Offline) com o formulário aberto;
+  3) olhar o topo do formulário e o botão **Salvar**;
+  4) clicar em **Salvar**;
+  5) voltar o sinal e clicar em **Salvar** de novo.
+  Esperado no passo 3: a frase da fase aparece **no topo do formulário**, e o
+  botão fica anunciado como desabilitado.
+  Esperado no passo 4: **nada é enviado e nada se perde** — os campos
+  preenchidos continuam preenchidos, exatamente como estavam.
+  Esperado no passo 5: salva normalmente, **com o que foi digitado no passo 1**.
+  🚨 O que NÃO pode acontecer: o envio partir e voltar com erro de rede; o
+  formulário limpar; um "Erro ao salvar" genérico aparecer. Deixar salvar para
+  dar erro depois **perde o que foi digitado**, e é isso que a Parte 4 proíbe.
+  Por que só olho humano: a suíte prova as três barreiras no código. O que ela
+  não prova é que o texto digitado **sobrevive** ao clique recusado.
+  Fase de origem: F-5a
+
+- [ ] **240. ⭐ Ao voltar o sinal, a tela se atualiza SOZINHA**
+  `[só olho humano]`
+  Passos:
+  1) com o DevTools em **Offline**, abrir uma listagem e ver o aviso;
+  2) **sem tocar em nada na página**, voltar o Network para **Online**;
+  3) esperar alguns segundos, olhando a tela.
+  Esperado: o aviso **some sozinho** e a lista se refaz — sem recarregar a
+  página, sem F5, sem clicar em "tentar de novo".
+  Conferir também que o dado exibido depois é o **do servidor**: se alguma
+  coisa mudou por outro caminho enquanto estava offline, é a versão nova que
+  tem de aparecer.
+  🚨 Se for preciso recarregar a página para o aviso sumir, é reprovação do
+  passo: um aviso de "sem conexão" que permanece com conexão é pior que
+  nenhum — ele ensina a advogada a ignorá-lo.
+  Por que só olho humano: a suíte prova que o sinal é dependência do
+  carregamento. O que ela não prova é que a transição acontece **sem gesto**.
+  Fase de origem: F-5a
+
+- [ ] **241. 🚨 NENHUM PDF, NENHUM DOCX, guardado no aparelho**
+  `[só olho humano]`
+  Pré-condição: com sinal, **baixar** um recibo em Pagamentos e um documento em
+  PDF e em DOCX na tela de Documentos.
+  Passos:
+  1) baixar os três arquivos, com sinal;
+  2) abrir DevTools → Application → IndexedDB → `lex-offline` → `entradas` e
+     **percorrer as chaves e os valores**;
+  3) pôr em **Offline** e abrir o menu **⋮** de um pagamento e de um documento.
+  Esperado no passo 2: **nenhuma entrada** de PDF, DOCX ou binário. As chaves
+  são de listagem e de detalhe (`r:clients`, `r:fees`, `r:process`…), e não há
+  nada com `documents`, `download` ou conteúdo binário dentro.
+  Esperado no passo 3: "Baixar recibo", "Baixar PDF" e "Baixar DOCX" aparecem
+  desabilitados com a frase do **download** — *"o arquivo é gerado pelo servidor
+  e não fica guardado neste aparelho"* —, que é **diferente** da frase da
+  escrita, porque é outro motivo.
+  Por que só olho humano: a suíte prova que binário é recusado e que a lista do
+  que se guarda não tem documento nenhum. O que ela não prova é que **nada**
+  entrou no banco durante um uso real.
+  Fase de origem: F-5a
+
+- [ ] **242. A tela que ela NUNCA abriu diz isso — e não "falha ao carregar"**
+  `[só olho humano]`
+  Pré-condição: um usuário **recém-criado**, que entrou e ficou na tela
+  inicial, sem abrir mais nada.
+  Passos:
+  1) pôr o DevTools em **Offline**;
+  2) abrir uma tela que nunca foi aberta com sinal (Agenda, por exemplo, num
+     mês que nunca foi visitado);
+  3) ler a mensagem.
+  Esperado: a tela diz que **está sem conexão** e que **esta tela ainda não foi
+  aberta com sinal neste aparelho**, e sugere tentar quando o sinal voltar.
+  🚨 O que NÃO pode aparecer: "Falha ao carregar", "Erro de rede", "Network
+  Error" ou uma tela vazia sem explicação. **Se o app sabe que está offline,
+  ele diz isso.** Uma lista vazia sem aviso se lê como "não há nada", que é
+  outra coisa — e é o pior dos dois erros.
+  Conferir também numa tela **fora** das convertidas (Seções, por exemplo): a
+  mensagem também tem de falar em falta de sinal, e não em falha genérica — é o
+  interceptor que garante isso.
+  Por que só olho humano: a suíte prova as duas mensagens e a decisão entre
+  elas. O que ela não prova é **qual delas a tela mostra** em cada caso real.
+  Fase de origem: F-5a
+
+- [ ] **243. 🚨 O PORTAL DO CLIENTE não guarda NADA**
+  `[só olho humano]`
+  Pré-condição: um código de acesso de portal válido (passo **90** ou a entrega
+  de acesso na tela do processo).
+  **▶ ONDE IR.** `/portal`, **no navegador do cliente** (ou numa janela
+  anônima, que é o mais próximo disso).
+  Passos:
+  1) entrar no portal como cliente e navegar pelo processo e pelos documentos;
+  2) abrir DevTools → Application → **IndexedDB**;
+  3) conferir também o **Cache Storage**.
+  Esperado: **não existe** banco `lex-offline` — e, se existir por causa de um
+  uso anterior do sistema da advogada no mesmo navegador, **nenhuma entrada
+  nova** apareceu por causa do portal.
+  A razão, e ela é de privacidade e não de desempenho: **o aparelho do cliente
+  pode ser emprestado** (é o passo 93), e guardar dado jurídico nele é uma
+  decisão que ninguém tomou. A F-5a **não toca no portal**, de propósito.
+  Por que só olho humano: a suíte prova que nenhum arquivo do portal importa o
+  espelho local. O que ela não prova é o que sobra no aparelho depois de um uso
+  real.
+  Fase de origem: F-5a
 
 ## Validado
 
@@ -5031,6 +5152,125 @@ Dados que vários passos usam:
   > processo para o órfão nascer de novo, pelo caminho do produto. A lição fica
   > registrada: **guardar caso de teste dentro do banco de desenvolvimento é
   > guardá-lo no lugar mais volátil que existe.** Ver a Parte 0 da F-4.
+
+- [x] **205. ⭐ 🚨 A fase anda para a FRENTE e para TRÁS — recursos → conhecimento inclusive**
+  Pré-condição: `npm run seed:fresh`. **É o passo que a fase existe para ter.**
+  **▶ ONDE IR.** Menu lateral → **Processos** → **⋮ → Gerenciar** num processo
+  qualquer → a seção **"Andamento do processo"**.
+  Passos:
+  1) conferir que o seletor **"Mudar a fase"** oferece **as quatro**: *Fase de
+     conhecimento*, *Sentença*, *Execução*, *Recursos*;
+  2) levar o processo até **Recursos** (pode ser em uma ou em várias mudanças);
+  3) **voltar** para **Fase de conhecimento**;
+  4) ir para **Execução**;
+  5) voltar para **Sentença**.
+  Esperado: **todas as cinco mudanças funcionam**, sem aviso, sem confirmação e
+  sem nenhuma opção desabilitada no seletor.
+  **NENHUMA opção pode aparecer cinza, riscada ou bloqueada.** Se alguma
+  aparecer, alguém inventou uma máquina de estados — e ela disse *"sim, pode
+  voltar"*. **Isso é reprovação do passo**, não observação.
+  Conferir também que o **rótulo é o da lista**: nunca `conhecimento` cru, nunca
+  `Sentenca` sem cedilha, nunca `Fase_de_conhecimento`.
+  Por que só olho humano: a suíte prova as 16 transições pela API e prova que
+  nenhuma opção do JSX é desabilitada. O que ela não prova é se a advogada
+  **percebe que pode voltar** — que é a pergunta inteira do passo.
+  Fase de origem: F-2d
+
+  **Validado em 28/08/2026 pelo Daniel. Passou.**
+- [x] **206. ⭐ Salvar a mudança de fase SEM motivo**
+  Pré-condição: `npm run seed:fresh` **uma vez**, e o passo **205**
+  executado depois dele. **Não rode `seed:fresh` entre o 205 e este** — o
+  encadeamento é dentro da mesma rodada semeada.
+  *"Não precisa anotar o porquê, só se ela quiser mesmo."*
+  Passos: 1) escolher outra fase; 2) **deixar o campo "Motivo" totalmente
+  vazio**; 3) clicar em **Mudar fase**.
+  Esperado: a mudança **acontece**. Sem erro, sem asterisco vermelho, sem
+  "campo obrigatório", sem o botão desabilitado enquanto o campo está vazio.
+  Conferir que a etiqueta do campo diz **"Motivo (opcional)"** — um campo sem
+  `required` mas sem aviso ainda parece obrigatório para quem está preenchendo.
+  Depois: mudar de novo, **agora com motivo**, e conferir que ele é guardado
+  como foi escrito.
+  Por que só olho humano: a suíte prova que a API aceita as três formas do vazio.
+  O que ela não prova é se a tela **parece** exigir — e um campo que parece
+  obrigatório é obedecido como se fosse.
+  Fase de origem: F-2d
+
+  **Validado em 28/08/2026 pelo Daniel. Passou.**
+- [x] **221. ⭐ 🚨 A DATA QUE NÃO MUDA DE DIA — o passo mais importante da fase**
+  Pré-condição: `npm run seed:fresh`. **É o passo que a fase inteira existe
+  para ter.**
+  **▶ ONDE IR.** **Agenda** → criar compromisso.
+  Passos:
+  1) criar um compromisso com **Título** livre e **Data = 01/09/2026**, sem
+     hora;
+  2) salvar e voltar à agenda, em **setembro de 2026**;
+  3) conferir **em que casa da grade** ele caiu;
+  4) abrir o compromisso de novo e olhar o campo **Data**;
+  5) **mudar o fuso do sistema operacional** para um fuso a **leste** (por
+     exemplo, `Europe/Lisbon` ou `Asia/Tokyo`), **recarregar a página**, e
+     repetir os passos 3 e 4;
+  6) voltar o fuso para o de origem.
+  **A DATA NOMEADA E O DIA DA SEMANA ESPERADO:**
+  > **01/09/2026 é uma TERÇA-FEIRA.**
+  Esperado no passo 3: o compromisso está na casa do **dia 1**, na coluna
+  **ter**. Não no dia 31 de agosto (segunda), não no dia 2 (quarta).
+  Esperado no passo 4: o campo mostra **01/09/2026**.
+  Esperado no passo 5: **exatamente o mesmo**, no outro fuso. Nada se move.
+  **🚨 O QUE NÃO PODE ACONTECER:** o compromisso aparecer em **31/08/2026,
+  segunda-feira** (o modo de falha a oeste de Greenwich) ou em **02/09/2026,
+  quarta-feira** (a leste). **Se mudar de dia, é reprovação, e a fase volta.**
+  A razão: **data sem hora não é um instante, é uma casa do calendário.** Um
+  instante precisa de um fuso para virar dia, e é o fuso inventado que produz o
+  deslocamento. Por isso a data cruza a rede como texto `AAAA-MM-DD` e é
+  gravada em meia-noite UTC, como `dataVencimento` já é desde a Fase 4.
+  Repetir com uma parcela: conferir que o **vencimento** de uma parcela aparece
+  na agenda **no mesmo dia** que aparece na tela de Parcelas. Se as duas telas
+  discordarem sobre o mesmo vencimento, é o mesmo defeito visto de outro lado.
+  Por que só olho humano: a suíte grava e lê 01/09/2026 em dois fusos e confere
+  o instante no banco. O que ela não pode fazer é trocar o fuso do **sistema
+  operacional e do navegador** — que é onde a advogada de fato está.
+  Fase de origem: F-3
+
+  **Validado em 28/08/2026 pelo Daniel. Passou.**
+- [x] **227. ⭐ 🚨 UMA COMARCA QUE NÃO EXISTE, DIGITADA E SALVA ASSIM MESMO**
+  Pré-condição: `npm run seed:fresh`. **É O PASSO QUE A FASE INTEIRA EXISTE
+  PARA TER.** Se só um passo desta fase for executado, que seja este.
+  **▶ ONDE IR.** **Processos** → **Novo processo** → campo **Comarca**.
+  Passos:
+  1) preencher o processo normalmente (título e cliente);
+  2) no campo **Comarca**, digitar **`Comarca de Marte`** — que não está na
+     tabela e nunca vai estar;
+  3) ler o que a tela diz;
+  4) **clicar fora do campo**, e voltar a olhá-lo;
+  5) **salvar o processo**;
+  6) abrir o processo salvo e conferir a comarca;
+  7) repetir com **`Ponta Grosa`** (um "s" só) — um erro de digitação de
+     verdade, que também tem que passar.
+  Esperado no passo 3: aparece uma frase dizendo que **nada na lista casa** e
+  que **pode salvar assim mesmo**. Nenhuma cor de erro, nenhum campo vermelho,
+  nenhum aviso de valor inválido — **não há nada errado acontecendo**.
+  Esperado no passo 4: **o texto continua lá, intacto.** 🚨 Se ao sair do campo
+  ele **limpar**, **reverter** ou **trocar pela sugestão mais parecida**, é
+  **reprovação do passo** — é exatamente a "melhoria" que a fase existe para
+  impedir.
+  Esperado no passo 5: **salva.** Sem erro de validação, sem mensagem, sem
+  bloqueio do botão.
+  Esperado no passo 6: a comarca gravada é **`Comarca de Marte`**, letra por
+  letra.
+  🚨 **O que NÃO pode acontecer, em nenhum dos sete passos:** o botão de salvar
+  desabilitado; uma mensagem do tipo *"escolha uma opção da lista"*; o campo
+  exigindo valor da tabela; o valor sumindo. **Qualquer um desses reprova a
+  fase, não só o passo.**
+  Conferir também o mesmo com **Profissão** ("Encantador de serpentes") e
+  **Nacionalidade** ("marciana") no cadastro de cliente PF: a regra é do
+  componente, e vale nos cinco campos.
+  Por que só olho humano: a suíte prova que não existe caminho de recusa no
+  código, e a mutação que introduz um `onBlur` de limpeza derruba o teste. O
+  que ela não prova é se **a advogada percebe que pode salvar** — se a frase do
+  estado vazio convida ou assusta.
+  Fase de origem: F-4
+
+  **Validado em 28/08/2026 pelo Daniel. Passou.**
 
 ## Automatizado
 

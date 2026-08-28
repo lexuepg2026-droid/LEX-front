@@ -15,6 +15,8 @@ import { dataDaChave } from './monthGrid';
 // que pegou isto aqui, antes de a tela existir para alguém ver.
 import '../../components/ui/Button.css';
 import '../clients/ClientPage.css';
+import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORMULÁRIO DO EVENTO
@@ -129,8 +131,19 @@ function EventFormPage() {
     return limpo ? limpo : null;
   };
 
+  const online = useOnlineStatus();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // ── Nenhum formulário aceita envio que vai falhar (F-5a, Parte 4) ────
+    //
+    // A primeira barreira é o botão anunciado como desabilitado; esta é a
+    // segunda, no handler, porque `aria-disabled` só ANUNCIA (DEC-053). A
+    // terceira é o interceptor de `api/axiosConfig.js`, que recusa a escrita
+    // antes da rede — ela cobre o sinal que cai ENTRE o clique e o envio.
+    //
+    // Deixar salvar para dar erro depois perde o que foi digitado.
+    if (!online) return;
     setSalvando(true);
     setError('');
     setCampoComErro(null);
@@ -186,6 +199,7 @@ function EventFormPage() {
       {error && <p className="error-message" role="alert">{error}</p>}
 
       <form onSubmit={handleSubmit} className="data-form">
+        {!online && <OfflineWriteReason />}
         <div className="form-grid section">
           <h3>Dados do compromisso</h3>
 
@@ -321,7 +335,8 @@ function EventFormPage() {
           <button type="button" className="ui-btn ui-btn--secondary ui-btn--md" onClick={() => navigate('/dashboard/agenda')}>
             Cancelar
           </button>
-          <button type="submit" className="ui-btn ui-btn--primary ui-btn--md" disabled={salvando}>
+          <button type="submit"
+            aria-disabled={online ? undefined : 'true'} className="ui-btn ui-btn--primary ui-btn--md" disabled={salvando}>
             {salvando ? 'Salvando…' : 'Salvar'}
           </button>
         </div>

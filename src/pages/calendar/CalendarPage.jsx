@@ -1,12 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { CalendarDays, List, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 
 import calendarService from '../../api/calendarService';
 import PageHeader from '../../components/ui/PageHeader';
+import OfflineNotice from '../../components/ui/OfflineNotice';
+import useCachedResource from '../../hooks/useCachedResource';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { MENSAGEM_ESCRITA_OFFLINE } from '../../offline/offlineMessages';
 import EmptyState from '../../components/ui/EmptyState';
 import Loading from '../../components/common/Loading';
-import { getApiErrorMessage } from '../../utils/apiError';
 import { formatMonthKey, formatDate, formatCurrency } from '../../utils/formatters';
 import {
   LEGENDA, classeDaNatureza, destinoDoItem, rotuloDaNatureza,
@@ -42,10 +45,8 @@ function CalendarPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const [dados, setDados] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [diaAberto, setDiaAberto] = useState(null);
+  const online = useOnlineStatus();
 
   // ── A VISTA PADRÃO É DECIDIDA UMA VEZ, PELA LARGURA ───────────────────
   //
@@ -88,24 +89,23 @@ function CalendarPage() {
     [searchParams, setSearchParams, vista]
   );
 
-  useEffect(() => {
-    let ativo = true;
-    setLoading(true);
-    setError('');
-
-    // O intervalo é o da GRADE, não o do mês: a primeira e a última linha
-    // mostram dias vizinhos, e pedir só o mês as deixaria em branco — o que se
-    // lê como "não há nada nesse dia", e não como "esse dia é de outro mês".
-    calendarService
-      .getCalendar({ de: grade.primeiroDia, ate: grade.ultimoDia })
-      .then((res) => { if (ativo) setDados(res.data); })
-      .catch((err) => {
-        if (ativo) setError(getApiErrorMessage(err, 'Falha ao carregar a agenda.'));
-      })
-      .finally(() => { if (ativo) setLoading(false); });
-
-    return () => { ativo = false; };
-  }, [grade.primeiroDia, grade.ultimoDia]);
+  // O intervalo é o da GRADE, não o do mês: a primeira e a última linha
+  // mostram dias vizinhos, e pedir só o mês as deixaria em branco — o que se
+  // lê como "não há nada nesse dia", e não como "esse dia é de outro mês".
+  //
+  // DEC-058 (F-5a): o mês que ela já abriu continua legível sem sinal. As
+  // chaves do cache são as datas do intervalo, então cada mês visitado tem a
+  // sua entrada — e um mês nunca aberto diz que nunca foi aberto, em vez de
+  // aparecer vazio (que se leria como "não há compromissos").
+  const { data: dados, loading, error, updatedAt, fromCache } = useCachedResource({
+    resource: 'events',
+    params: { de: grade.primeiroDia, ate: grade.ultimoDia },
+    fetcher: () =>
+      calendarService
+        .getCalendar({ de: grade.primeiroDia, ate: grade.ultimoDia })
+        .then((res) => res.data),
+    fallbackError: 'Falha ao carregar a agenda.'
+  });
 
   // `?? []` dentro do `useMemo`, e não fora: um literal `[]` avaliado a cada
   // render é uma referência nova toda vez, e faria o agrupamento refazer-se em
@@ -129,13 +129,27 @@ function CalendarPage() {
 
   // Criar a partir do clique num DIA, com a data já preenchida. É o caminho que
   // faz a grade valer como ferramenta e não só como relatório.
-  const criarNoDia = (chave) => navigate(`/dashboard/agenda/novo?data=${chave}`);
+  //
+  // Sem sinal ela não leva a lugar nenhum: o formulário existe para gravar, e a
+  // Parte 4 da F-5a proíbe abrir o que vai recusar o envio no fim. O motivo já
+  // está dito no cabeçalho da tela, uma vez.
+  const criarNoDia = (chave) => {
+    if (!online) return;
+    navigate(`/dashboard/agenda/novo?data=${chave}`);
+  };
 
   const rotuloDoMes = formatMonthKey(grade.chaveDoMes);
 
   return (
     <div className="cal-page">
-      <PageHeader title="Agenda" actionLabel="Novo compromisso" actionTo="/dashboard/agenda/novo" />
+      <PageHeader
+        title="Agenda"
+        actionLabel="Novo compromisso"
+        actionTo="/dashboard/agenda/novo"
+        actionMotivo={online ? undefined : MENSAGEM_ESCRITA_OFFLINE}
+      />
+
+      {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
 
       <div className="cal-toolbar">
         <div className="cal-nav">

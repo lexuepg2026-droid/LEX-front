@@ -14,6 +14,10 @@ import {
 } from '../../utils/enums';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
+import OfflineNotice from '../../components/ui/OfflineNotice';
+import useCachedResource from '../../hooks/useCachedResource';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { MENSAGEM_ESCRITA_OFFLINE, blockReason } from '../../offline/offlineMessages';
 import { getApiErrorMessage } from '../../utils/apiError';
 import {
   mensagemDesativarProcesso,
@@ -23,9 +27,6 @@ import {
 import '../../styles/modules.css';
 
 function ProcessoListPage() {
-  const [processos, setProcessos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   // DEC-052: um modal só, para as duas ações. `acao` diz qual — e é ela que
   // escolhe a frase, o rótulo do botão e o verbo. Dois modais separados
   // divergiriam na primeira revisão de redação.
@@ -41,29 +42,31 @@ function ProcessoListPage() {
   // Sem isto a reativação não teria onde acontecer: a listagem escondia os
   // desativados e um menu com "Reativar" não teria linha onde existir.
   const [situacao, setSituacao] = useState('ativos');
-  // Contador de recarga: toda ação de ativação incrementa, e o efeito refaz a
-  // consulta com o filtro que estiver valendo.
-  const [versao, setVersao] = useState(0);
+  const online = useOnlineStatus();
 
   useEffect(() => {
     const t = setTimeout(() => setBuscaDebounced(busca), 300);
     return () => clearTimeout(t);
   }, [busca]);
 
-  useEffect(() => {
-    setLoading(true);
-    setError('');
-    processService.listProcesses({
-      busca: buscaDebounced || undefined,
-      status: status || undefined,
-      fase: fase || undefined,
-      liminar: liminar || undefined,
-      situacao
-    })
-      .then(res => setProcessos(res.data.data ?? res.data))
-      .catch(() => setError('Falha ao buscar processos.'))
-      .finally(() => setLoading(false));
-  }, [buscaDebounced, status, fase, liminar, situacao, versao]);
+  // DEC-058 (F-5a): a mesma consulta de sempre, agora com espelho local
+  // escopado por usuário. `reload` substitui o contador de recarga que existia
+  // aqui — toda ação de ativação continua refazendo a consulta com o filtro que
+  // estiver valendo.
+  const consulta = {
+    busca: buscaDebounced || undefined,
+    status: status || undefined,
+    fase: fase || undefined,
+    liminar: liminar || undefined,
+    situacao
+  };
+  const { data, loading, error, updatedAt, fromCache, reload } = useCachedResource({
+    resource: 'processes',
+    params: consulta,
+    fetcher: () => processService.listProcesses(consulta).then((res) => res.data.data ?? res.data),
+    fallbackError: 'Falha ao buscar processos.'
+  });
+  const processos = data ?? [];
 
   // ── DEC-052: a contagem vem ANTES da confirmação ────────────────────────
   //
@@ -93,7 +96,7 @@ function ProcessoListPage() {
         toast.error(`Não é possível reativar. ${impedimento}`);
         // A listagem é refeita para o menu passar a mostrar o motivo — a tela
         // estava desatualizada, e deixá-la assim faria a advogada clicar de novo.
-        setVersao(v => v + 1);
+        reload();
         return;
       }
 
@@ -124,7 +127,7 @@ function ProcessoListPage() {
       // Refaz a busca em vez de mexer na lista em memória: o processo pode ou
       // não continuar visível, conforme o filtro de situação em vigor, e
       // adivinhar isso aqui duplicaria a regra do filtro.
-      setVersao(v => v + 1);
+      reload();
     } catch (err) {
       toast.error(getApiErrorMessage(
         err,
@@ -150,7 +153,13 @@ function ProcessoListPage() {
 
   return (
     <div className="module-container">
-      <PageHeader title="Processos Registrados" actionLabel="Novo Processo" actionTo="/dashboard/processos/novo" />
+      <PageHeader
+        title="Processos Registrados"
+        actionLabel="Novo Processo"
+        actionTo="/dashboard/processos/novo"
+        actionMotivo={online ? undefined : MENSAGEM_ESCRITA_OFFLINE}
+      />
+      {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
       {error && <p className="error-message">{error}</p>}
 
       <div className="filter-bar">
@@ -305,12 +314,18 @@ function ProcessoListPage() {
                                  `motivo` é `null` quando nada impede, e é isso
                                  que devolve o item ao comportamento normal —
                                  sem `if` duplicando a linha inteira. */
-                              motivo: motivoDeNaoReativar(p.impedimentosDeReativacao),
+                              /* Sem sinal há DOIS motivos possíveis para o
+                                 mesmo item, e `blockReason` escolhe: a falta
+                                 de sinal ganha, porque bloqueia a ação inteira
+                                 agora. O motivo da DEC-053 volta a aparecer
+                                 quando o sinal voltar. */
+                              motivo: blockReason(motivoDeNaoReativar(p.impedimentosDeReativacao), { online }),
                               onSelecionar: () => abrirAtivacao(p._id, 'reativar')
                             }
                           : {
                               rotulo: 'Desativar',
                               destrutivo: true,
+                              motivo: blockReason(null, { online }),
                               onSelecionar: () => abrirAtivacao(p._id, 'desativar')
                             }
                       ]}

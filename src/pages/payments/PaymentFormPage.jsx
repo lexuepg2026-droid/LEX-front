@@ -20,6 +20,8 @@ import {
 import '../../styles/modules.css';
 import './PaymentFormPage.css';
 import '../clients/ClientPage.css';
+import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORMULÁRIO DE PAGAMENTO — reescrito na Fase F-1a
@@ -226,8 +228,19 @@ function PaymentFormPage() {
     if (campoComErro === 'valor') setCampoComErro(null);
   };
 
+  const online = useOnlineStatus();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // ── Nenhum formulário aceita envio que vai falhar (F-5a, Parte 4) ────
+    //
+    // A primeira barreira é o botão anunciado como desabilitado; esta é a
+    // segunda, no handler, porque `aria-disabled` só ANUNCIA (DEC-053). A
+    // terceira é o interceptor de `api/axiosConfig.js`, que recusa a escrita
+    // antes da rede — ela cobre o sinal que cai ENTRE o clique e o envio.
+    //
+    // Deixar salvar para dar erro depois perde o que foi digitado.
+    if (!online) return;
     setLoading(true);
     setError('');
     setCampoComErro(null);
@@ -283,6 +296,7 @@ function PaymentFormPage() {
       <h1 className="page-title">{isEditing ? 'Editar Pagamento' : 'Novo Pagamento'}</h1>
 
       <form onSubmit={handleSubmit} className="data-form">
+        {!online && <OfflineWriteReason />}
         <div className="form-grid section">
           <h3>Dados do Pagamento</h3>
 
@@ -513,7 +527,8 @@ function PaymentFormPage() {
             <button type="button" onClick={() => navigate('/dashboard/pagamentos')} className="btn-cancel">
               Cancelar
             </button>
-            <button type="submit" disabled={loading} className="btn-primary">
+            <button type="submit"
+            aria-disabled={online ? undefined : 'true'} disabled={loading} className="btn-primary">
               {loading ? 'Salvando...' : 'Salvar'}
             </button>
           </div>

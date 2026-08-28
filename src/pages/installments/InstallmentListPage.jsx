@@ -15,6 +15,10 @@ import { formatDate, formatCurrency } from '../../utils/formatters';
 import { rotuloCurtoDoHonorario } from '../../utils/feeLabel';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
+import OfflineNotice from '../../components/ui/OfflineNotice';
+import useCachedResource from '../../hooks/useCachedResource';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { MENSAGEM_ESCRITA_OFFLINE, blockReason } from '../../offline/offlineMessages';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { STATUS_PARCELA_OPTIONS, labelDe } from '../../utils/enums';
 import '../../styles/modules.css';
@@ -23,16 +27,13 @@ import { rotuloDaParcela } from '../../components/financeiro/installmentLabel';
 const POR_PAGINA = 20;
 
 function InstallmentListPage({ embedded = false }) {
-  const [installments, setInstallments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
   const [searchParams] = useSearchParams();
   const processoId = searchParams.get('processoId') || undefined;
   // Modo "desativadas" (Fase 4.5) — ver a nota em PaymentListPage. Vive junto
   // dos demais filtros para que ligá-lo também volte à página 1.
-  const [total, setTotal] = useState(0);
   const [honorarios, setHonorarios] = useState([]);
+  const online = useOnlineStatus();
 
   // ── O teto 100 + "Mostrando N de M" SAIU (F-1b.3) ───────────────────────
   //
@@ -54,36 +55,29 @@ function InstallmentListPage({ embedded = false }) {
     return () => { ativo = false; };
   }, []);
 
-  useEffect(() => {
-    let ativo = true;
-    setLoading(true);
-    setError('');
-    installmentService.listInstallments({
-      page,
-      limit: POR_PAGINA,
-      processoId,
-      honorarioId: filtros.honorarioId || undefined,
-      status: filtros.status || undefined,
-      inativos: filtros.inativos || undefined,
-      busca: buscaDebounced || undefined,
-      de: filtros.de || undefined,
-      ate: filtros.ate || undefined
-    })
-      .then(res => {
-        if (!ativo) return;
-        const corpo = res.data;
-        setInstallments(corpo.data ?? corpo);
-        setTotal(typeof corpo.total === 'number' ? corpo.total : 0);
-      })
-      .catch(err => {
-        if (ativo) setError(getFinancialErrorMessage(err, 'Falha ao buscar parcelas.'));
-      })
-      .finally(() => { if (ativo) setLoading(false); });
-    return () => { ativo = false; };
-  }, [
-    processoId, page, buscaDebounced,
-    filtros.honorarioId, filtros.status, filtros.inativos, filtros.de, filtros.ate
-  ]);
+  // DEC-058 (F-5a): espelho local da listagem, escopado por usuário. Guarda-se
+  // o ENVELOPE inteiro — o `total` é ele que diz, e sem o total o paginador
+  // sumiria sem que nada dissesse que há mais parcelas.
+  const consulta = {
+    page,
+    limit: POR_PAGINA,
+    processoId,
+    honorarioId: filtros.honorarioId || undefined,
+    status: filtros.status || undefined,
+    inativos: filtros.inativos || undefined,
+    busca: buscaDebounced || undefined,
+    de: filtros.de || undefined,
+    ate: filtros.ate || undefined
+  };
+  const { data, loading, error, updatedAt, fromCache, reload } = useCachedResource({
+    resource: 'installments',
+    params: consulta,
+    fetcher: () => installmentService.listInstallments(consulta).then((res) => res.data),
+    fallbackError: 'Falha ao buscar parcelas.',
+    mapError: getFinancialErrorMessage
+  });
+  const installments = data?.data ?? (Array.isArray(data) ? data : []);
+  const total = typeof data?.total === 'number' ? data.total : 0;
 
   // ── `handleReativar` SAIU na F-1a ────────────────────────────────────────
   //
@@ -103,7 +97,9 @@ function InstallmentListPage({ embedded = false }) {
     setDeleteModal({ open: false, id: null });
     try {
       await installmentService.deleteInstallment(id);
-      setInstallments(installments.filter(i => i._id !== id));
+      // Refaz a consulta em vez de recortar a lista na memória: recortar só na
+      // tela deixaria o espelho local com a parcela que acabou de sair.
+      reload();
       toast.success('Parcela removida com sucesso.');
     } catch (err) {
       // 409 de integridade: a parcela tem pagamentos ativos. A mensagem diz
@@ -132,6 +128,7 @@ function InstallmentListPage({ embedded = false }) {
 
   const body = (
     <>
+      {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
       {error && <p className="error-message">{error}</p>}
 
       <FinancialFilters
@@ -280,10 +277,15 @@ function InstallmentListPage({ embedded = false }) {
                       <ActionMenu
                         rotulo={`Ações da ${rotuloDaParcela({ numeroParcela: inst.numeroParcela, totalParcelas: inst.totalParcelas ?? null, totalNoPlanoVigente: inst.totalNoPlano ?? null }).toLowerCase()}`}
                         itens={[
-                          { rotulo: 'Editar', to: `/dashboard/parcelas/editar/${inst._id}` },
+                          {
+                            rotulo: 'Editar',
+                            to: `/dashboard/parcelas/editar/${inst._id}`,
+                            motivo: blockReason(null, { online })
+                          },
                           {
                             rotulo: 'Excluir',
                             destrutivo: true,
+                            motivo: blockReason(null, { online }),
                             onSelecionar: () => confirmDelete(inst._id)
                           }
                         ]}
@@ -325,7 +327,12 @@ function InstallmentListPage({ embedded = false }) {
 
   return (
     <div className="module-container">
-      <PageHeader title="Parcelas" actionLabel="+ Nova Parcela" actionTo="/dashboard/parcelas/novo" />
+      <PageHeader
+        title="Parcelas"
+        actionLabel="+ Nova Parcela"
+        actionTo="/dashboard/parcelas/novo"
+        actionMotivo={online ? undefined : MENSAGEM_ESCRITA_OFFLINE}
+      />
       {body}
     </div>
   );

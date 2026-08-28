@@ -1,0 +1,28 @@
+.offline-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  background-color: var(--color-warning-bg);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+/* O ícone não encolhe quando a frase quebra em duas linhas — em 360 px ela
+   quebra, e um ícone achatado é o que sobra de um `flex` sem esta linha. */
+.offline-notice svg {
+  flex-shrink: 0;
+  color: var(--color-warning);
+}
+
+/* O motivo do botão bloqueado, quando ele não cabe dentro do próprio botão.
+   Não é atenuado — mesma razão da DEC-053: ele é a única coisa útil ali. */
+.offline-write-reason {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.35;
+  margin: 0 0 var(--space-4);
+}

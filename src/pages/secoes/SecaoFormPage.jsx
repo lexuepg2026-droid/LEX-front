@@ -9,6 +9,8 @@ import { toast } from '../../utils/toast';
 import '../clients/ClientPage.css';
 import '../../components/ui/Button.css';
 import './SecaoPage.css';
+import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
 
 const EMPTY_FORM = { titulo: '', tipo: '', texto: '' };
 
@@ -86,8 +88,19 @@ function SecaoFormPage() {
     }, 0);
   };
 
+  const online = useOnlineStatus();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // ── Nenhum formulário aceita envio que vai falhar (F-5a, Parte 4) ────
+    //
+    // A primeira barreira é o botão anunciado como desabilitado; esta é a
+    // segunda, no handler, porque `aria-disabled` só ANUNCIA (DEC-053). A
+    // terceira é o interceptor de `api/axiosConfig.js`, que recusa a escrita
+    // antes da rede — ela cobre o sinal que cai ENTRE o clique e o envio.
+    //
+    // Deixar salvar para dar erro depois perde o que foi digitado.
+    if (!online) return;
     setError('');
     setCampoErro('');
 
@@ -132,6 +145,7 @@ function SecaoFormPage() {
       {error && <p className="error-message">{error}</p>}
 
       <form onSubmit={handleSubmit} className="data-form">
+        {!online && <OfflineWriteReason />}
         <div className="secao-editor">
           <div className="secao-editor__campos">
             <div className="form-group">
@@ -208,6 +222,7 @@ function SecaoFormPage() {
           </Link>
           <button
             type="submit"
+            aria-disabled={online ? undefined : 'true'}
             className="ui-btn ui-btn--primary ui-btn--md"
             disabled={loading}
           >

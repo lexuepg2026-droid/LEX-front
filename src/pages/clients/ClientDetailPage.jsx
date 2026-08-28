@@ -1,41 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import clientService from '../../api/clientService';
 import { formatCPF, formatCNPJ, formatPhone, formatCEP, formatDate } from '../../utils/formatters';
 import { labelDe, SEXO_OPTIONS, ESTADO_CIVIL_OPTIONS } from '../../utils/enums';
-import { getApiErrorMessage } from '../../utils/apiError';
 import Loading from '../../components/common/Loading';
+import OfflineNotice from '../../components/ui/OfflineNotice';
+import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import useCachedResource from '../../hooks/useCachedResource';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
 import './ClientPage.css';
 
 function ClientDetailPage() {
-  const [cliente, setCliente] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
   const { id } = useParams();
   const navigate = useNavigate();
+  const online = useOnlineStatus();
 
-  useEffect(() => {
-    const fetchCliente = async () => {
-      try {
-        const response = await clientService.getClientById(id);
-        setCliente(response.data);
-      } catch (err) {
-        // A mensagem fixa dizia "Cliente não encontrado" também em 500 e em
-        // queda de rede, e custava tempo de diagnóstico. O genérico fica só
-        // como fallback de quando o servidor não manda mensagem nenhuma.
-        setError(getApiErrorMessage(err, 'Não foi possível carregar o cliente.'));
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCliente();
-  }, [id]);
+  // DEC-058: o detalhe que ela já abriu continua legível sem sinal, com a
+  // idade do dado no topo. A mensagem de erro continua vindo do helper —
+  // `useCachedResource` chama `getApiErrorMessage` por dentro, com este mesmo
+  // fallback, e o genérico só aparece quando o servidor não manda mensagem.
+  const { data: cliente, loading, error, updatedAt, fromCache } = useCachedResource({
+    resource: 'client',
+    params: { id },
+    fetcher: () => clientService.getClientById(id).then((res) => res.data),
+    fallbackError: 'Não foi possível carregar o cliente.'
+  });
 
   // Padrão de carregamento do projeto (varredura B.5 da Fase 4.3): era um
   // <p> escrito à mão, sem o spinner que todas as outras telas usam.
   if (loading) return <Loading />;
   if (error) return <p className="error-message">{error}</p>;
+  if (!cliente) return <p className="error-message">Não foi possível carregar o cliente.</p>;
 
   const {
     tipoPessoa, nomeCompleto, cpf,
@@ -53,10 +48,28 @@ function ClientDetailPage() {
       <div className="page-header">
         <h1 className="page-title">Detalhe do Cliente</h1>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <Link to={`/dashboard/clientes/editar/${id}`} className="btn-action btn-edit">Editar</Link>
+          {/* Sem sinal, "Editar" continua visível e anunciado como
+              desabilitado (DEC-053: `aria-disabled`, não `disabled` — o motivo
+              precisa ser alcançável por quem depende de leitor de tela). */}
+          {online ? (
+            <Link to={`/dashboard/clientes/editar/${id}`} className="btn-action btn-edit">Editar</Link>
+          ) : (
+            <button
+              type="button"
+              className="btn-action btn-edit"
+              aria-disabled="true"
+              title={undefined}
+              onClick={(e) => e.preventDefault()}
+            >
+              Editar
+            </button>
+          )}
           <button onClick={() => navigate('/dashboard/clientes')} className="btn-action btn-view">Voltar</button>
         </div>
       </div>
+
+      {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
+      {!online && <OfflineWriteReason />}
 
       <div className="detail-section">
         <h3>{tipoPessoa === 'fisica' ? 'Pessoa Física' : 'Pessoa Jurídica'}</h3>

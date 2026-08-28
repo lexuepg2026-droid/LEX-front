@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import paymentService from '../../api/paymentService';
 import feeService from '../../api/feeService';
@@ -14,6 +14,14 @@ import { formatDate, formatCurrency } from '../../utils/formatters';
 import { rotuloCurtoDoHonorario } from '../../utils/feeLabel';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
+import OfflineNotice from '../../components/ui/OfflineNotice';
+import useCachedResource from '../../hooks/useCachedResource';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import {
+  MENSAGEM_ESCRITA_OFFLINE,
+  MENSAGEM_DOWNLOAD_OFFLINE,
+  blockReason
+} from '../../offline/offlineMessages';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { FORMA_PAGAMENTO_OPTIONS, labelDe } from '../../utils/enums';
 import { rotuloDasParcelas, temEstorno, estornadoIntegralmente } from './paymentRow.js';
@@ -23,9 +31,6 @@ import '../../styles/modules.css';
 const POR_PAGINA = 20;
 
 function PaymentListPage({ embedded = false }) {
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
   const processoId = searchParams.get('processoId') || undefined;
   // Um recibo por vez, por id: sem isso o botão de TODAS as linhas ficaria em
@@ -39,7 +44,7 @@ function PaymentListPage({ embedded = false }) {
   // rota morreu (DEC-034) e o pagamento deixou de ser desativável: desfazer
   // entrada é ESTORNO, e o pagamento estornado continua na listagem — com o
   // valor líquido dizendo quanto dele ainda vale.
-  const [total, setTotal] = useState(0);
+  const online = useOnlineStatus();
   // Os honorários que alimentam o seletor. Carregados uma vez: a lista muda
   // devagar, e recarregá-la a cada consulta de pagamento faria duas chamadas
   // por tecla digitada na busca.
@@ -67,37 +72,28 @@ function PaymentListPage({ embedded = false }) {
     return () => { ativo = false; };
   }, []);
 
-  // Uma função só para as duas ocasiões de ler a lista: a consulta e a volta
-  // do modal de estorno. Duplicar a chamada faria as duas divergirem no dia em
-  // que um filtro novo entrasse.
-  const carregarPagamentos = useCallback(({ comSpinner }) => {
-    if (comSpinner) setLoading(true);
-    setError('');
-    return paymentService.listPayments({
-      page,
-      limit: POR_PAGINA,
-      processoId,
-      honorarioId: filtros.honorarioId || undefined,
-      formaPagamento: filtros.formaPagamento || undefined,
-      busca: buscaDebounced || undefined,
-      de: filtros.de || undefined,
-      ate: filtros.ate || undefined
-    })
-      .then(res => {
-        const corpo = res.data;
-        setPayments(corpo.data ?? corpo);
-        setTotal(typeof corpo.total === 'number' ? corpo.total : 0);
-      })
-      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao buscar pagamentos.')))
-      .finally(() => { if (comSpinner) setLoading(false); });
-  }, [
-    processoId, page, buscaDebounced,
-    filtros.honorarioId, filtros.formaPagamento, filtros.de, filtros.ate
-  ]);
-
-  useEffect(() => {
-    carregarPagamentos({ comSpinner: true });
-  }, [carregarPagamentos]);
+  // DEC-058 (F-5a): a consulta passou para `useCachedResource`, que também é
+  // quem lê as duas ocasiões — a carga e a volta do modal de estorno, agora por
+  // `reload`. O envelope inteiro é guardado: o `total` é ele que diz.
+  const consulta = {
+    page,
+    limit: POR_PAGINA,
+    processoId,
+    honorarioId: filtros.honorarioId || undefined,
+    formaPagamento: filtros.formaPagamento || undefined,
+    busca: buscaDebounced || undefined,
+    de: filtros.de || undefined,
+    ate: filtros.ate || undefined
+  };
+  const { data, loading, error, updatedAt, fromCache, reload } = useCachedResource({
+    resource: 'payments',
+    params: consulta,
+    fetcher: () => paymentService.listPayments(consulta).then((res) => res.data),
+    fallbackError: 'Falha ao buscar pagamentos.',
+    mapError: getFinancialErrorMessage
+  });
+  const payments = data?.data ?? (Array.isArray(data) ? data : []);
+  const total = typeof data?.total === 'number' ? data.total : 0;
 
   // ── `handleReativar`, `confirmDelete` e `handleRemove` SAÍRAM na F-1a ────
   //
@@ -146,6 +142,7 @@ function PaymentListPage({ embedded = false }) {
 
   const body = (
     <>
+      {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
       {error && <p className="error-message">{error}</p>}
 
       <FinancialFilters
@@ -291,18 +288,29 @@ function PaymentListPage({ embedded = false }) {
                               {
                                 rotulo: reciboEmCurso === p._id ? 'Baixando…' : 'Baixar recibo',
                                 onSelecionar: () => baixarRecibo(p._id),
-                                desabilitado: reciboEmCurso === p._id
+                                desabilitado: reciboEmCurso === p._id,
+                                // O recibo é PDF, e PDF NÃO fica guardado neste
+                                // aparelho (Parte 2 da F-5a): é binário grande,
+                                // e o valor de tê-lo offline é baixo perto do
+                                // custo. Sem sinal, a tela diz isso — com a
+                                // frase do download, que não é a da escrita.
+                                motivo: online ? undefined : MENSAGEM_DOWNLOAD_OFFLINE
                               },
                               {
                                 // Estornar a partir da LINHA do pagamento
                                 // (F-1b): é onde a advogada está quando percebe
                                 // que o dinheiro voltou.
                                 rotulo: 'Estornar',
+                                motivo: blockReason(null, { online }),
                                 onSelecionar: () => setEstornoAberto(p._id)
                               }
                             ]
                           : []),
-                        { rotulo: 'Editar', to: `/dashboard/pagamentos/editar/${p._id}` }
+                        {
+                          rotulo: 'Editar',
+                          to: `/dashboard/pagamentos/editar/${p._id}`,
+                          motivo: blockReason(null, { online })
+                        }
                       ]}
                     />
                   </td>
@@ -341,7 +349,7 @@ function PaymentListPage({ embedded = false }) {
         // Sem spinner: trocar a lista inteira por um `<Loading />` depois de um
         // estorno faria a advogada perder de vista a linha que ela acabou de
         // mexer. Os números se atualizam no lugar.
-        await carregarPagamentos({ comSpinner: false });
+        reload({ comSpinner: false });
       }}
     />
   );
@@ -350,7 +358,12 @@ function PaymentListPage({ embedded = false }) {
 
   return (
     <div className="module-container">
-      <PageHeader title="Pagamentos" actionLabel="+ Novo Pagamento" actionTo="/dashboard/pagamentos/novo" />
+      <PageHeader
+        title="Pagamentos"
+        actionLabel="+ Novo Pagamento"
+        actionTo="/dashboard/pagamentos/novo"
+        actionMotivo={online ? undefined : MENSAGEM_ESCRITA_OFFLINE}
+      />
       {body}
       {modal}
     </div>
