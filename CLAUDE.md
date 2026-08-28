@@ -3551,6 +3551,20 @@ em portal cativo, a tela mostra o erro do servidor em vez do aviso de offline.
 Sem gambiarra de "ping": teste de conectividade próprio é outra decisão, com
 custo de bateria e de requisição, e ninguém a pediu.
 
+### ⚠️ Aviso para a F-5b: subir a versão do banco tem custo
+
+A outbox vai precisar de outra object store, e isso significa **subir
+`DB_VERSION`**. A partir daí, `indexedDB.open` pode disparar `onblocked` —
+quando outra aba do app ainda segura a conexão da versão anterior. O ramo já
+está tratado (`open` **rejeita**, e o `catch` do `offlineCache` deixa o app
+seguir online), mas quem subir a versão precisa saber de duas coisas:
+
+- o `startSession` do login **espera** por essa abertura; sem o `onblocked`, a
+  tela de login ficaria pendurada sem erro nenhum;
+- a migração precisa preservar o que já está guardado **ou apagá-lo de
+  propósito** — e apagar é o lado seguro, porque o formato antigo de chave já é
+  tratado como "não é meu" por `keysOfOtherUsers`.
+
 ### F-5a lê; F-5b escreve — e a separação é a decisão
 
 A F-5a **não grava offline**: sem fila, sem outbox, sem `POST` guardado para
