@@ -58,6 +58,10 @@ Sessão da advogada por cookie httpOnly `lex-token`; portal do cliente por
 - **Toda listagem usa o menu ⋮ na coluna de ações** (DEC-047). Ação dentro do
   menu, explicação fora dele, Excluir em vermelho e por último. Não há mais
   fileira de botões, e `col-acoes-menu` é a única medida de coluna de ação.
+- **Nada do usuário vai para o navegador sem o id dele na chave** (DEC-058).
+  Leitura e escrita do espelho local passam por `hooks/useCachedResource`; quem
+  monta chave é `offline/cacheKey.js`, e só ele. O logout apaga, e entrar com
+  outro id apaga antes de escrever. Varreduras em `tests/offline/`.
 - **Portal quebra a ordem do Tab** (emenda à DEC-046). Quem abrir um flutuante
   em `createPortal` conduz o foco explicitamente — entra, circula, volta no
   Esc. Sem `autoFocus`, nunca.
@@ -504,6 +508,15 @@ advogada — cache dela é vazamento esperando o segundo usuário no mesmo
 navegador. E número financeiro velho servido sem aviso faria a advogada planejar
 o mês com o dado do mês passado.
 
+> ⚠️ **A mesma regra existe em OUTRA API, e as duas se leem juntas.** A F-5a
+> passou a guardar resposta da API no **IndexedDB** — de propósito, e sob três
+> condições que esta regra aqui não precisava ter porque simplesmente não
+> guardava nada: chave escopada pelo id do usuário, limpeza no logout e limpeza
+> na troca de conta (**DEC-058**, `src/offline/`). O aviso de idade da Parte 3
+> é o que responde à segunda metade do parágrafo acima: o número velho aparece,
+> **dizendo que é velho**. **Quem mexer no `sw.js` precisa ler a DEC-058, e
+> vice-versa — é o mesmo vazamento em dois bancos do mesmo navegador.**
+
 **O SW não roda em desenvolvimento**, de propósito: cachearia os módulos que o
 Vite serve sem hash e a tela pararia de refletir o código — sem erro nenhum, que
 é o mesmo formato de armadilha silenciosa da sentinela de montagem da Fase 4.4.
@@ -592,6 +605,10 @@ A consequência é a divisão de trabalho que a Fase 4.2 firmou:
 | `tests/documents/folha.test.js` | o **ciclo de vida** da sentinela e a lista que alimenta a folha |
 | `tests/documents/regeracao.test.js` | os **parâmetros** da regeração e o texto do 409 |
 | `tests/css/appliedClasses.test.js` | que toda classe aplicada **alcança** regra |
+| `tests/offline/escopo.test.js` | que **não existe chave sem usuário**, e que uma leitura não atravessa escopo |
+| `tests/offline/politica.test.js` | o **limite e o descarte**, e a escolha entre rede e cache |
+| `tests/offline/idade.test.js` | a **idade do dado** e as frases do estado sem sinal |
+| `tests/offline/estatica.test.js` | a **fiação**: o logout limpando, a troca de conta limpando antes de escrever, o portal intocado |
 
 As varreduras estáticas limpam comentários antes de analisar. Sem isso, um
 comentário explicando "não se lê `err.response` direto" derrubaria a própria
@@ -3407,6 +3424,149 @@ por sorte: inteiro formatado cabe.
 A correção é **dar largura ao cartão** (uma coluna só até 480 px), e não quebrar
 o valor — a F-1b.2 já decidiu que ele é indivisível por construção. `min-width: 0`
 junto, como cinto e suspensório.
+
+---
+
+## DEC-058 (frontend) — a leitura offline, escopada por usuário (F-5a)
+
+> **É a mesma decisão do `/api/` fora do Cache Storage, escrita em outra API.**
+> Quem mexer numa precisa ler a outra: `sw.js` (Fase 4.5) e `src/offline/`
+> (F-5a) protegem contra o mesmo vazamento, em dois bancos diferentes do mesmo
+> navegador.
+
+### O risco, e por que ele não é hipotético
+
+Toda resposta da API é autenticada e pertence a **uma** advogada. A Fase 4.5
+travou isso no Cache Storage — nenhuma entrada de `/api/` — porque um cache
+compartilhado entrega a resposta da primeira pessoa à segunda que usar aquele
+navegador. **IndexedDB tem exatamente o mesmo problema, e o `pwa.test.js` não o
+cobre**, porque é outra API.
+
+O caso concreto é o computador do escritório: a advogada e a estagiária.
+
+### As três regras, e onde cada uma mora
+
+| Regra | Onde |
+|---|---|
+| todo dado guardado é escopado pelo **id do usuário** | `offline/cacheKey.js` — `buildKey` **lança** sem `userId` |
+| o **logout apaga tudo** | `offline/offlineCache.js` → `clearAll`, chamado no `finally` do `logout` |
+| entrar com **outro id** limpa o anterior **antes de escrever** | `startSession`, chamado no login, no cadastro e no `checkAuth` |
+
+`buildKey` lança em vez de devolver `null` ou cair num escopo padrão: **escopo
+padrão é onde os dados de duas pessoas se encontram.** O `checkAuth` está na
+lista porque recarregar a página não passa pelo login — é o caminho de quem
+senta no computador do escritório e abre o sistema com o cookie que já existia.
+
+A limpeza é `clear()` de verdade. Não marca como inválido, não expira, não
+filtra na leitura: **apaga**. Dado "invalidado" que continua no disco continua
+sendo o dado.
+
+### A arquitetura veio do TESTE, e não o contrário
+
+`node --test` não tem IndexedDB nem navegador, e a fase proibiu dependência nova
+— inclusive wrapper de IndexedDB. A saída não foi testar menos, foi **deslocar o
+que decide**:
+
+| Camada | Arquivo | O que faz |
+|---|---|---|
+| fina | `offline/offlineStore.js` | abrir, ler, escrever, apagar. **Nenhum `if` sobre conteúdo** |
+| pura | `offline/cacheKey.js` | a chave escopada, a serialização estável dos parâmetros |
+| pura | `offline/cachePolicy.js` | o que se guarda, o limite, o descarte, rede×cache |
+| pura | `offline/dataAge.js` | a idade do dado, em português |
+| pura | `offline/offlineMessages.js` | as frases, e qual motivo ganha quando há dois |
+| pura | `offline/writeGuard.js` | quais métodos gravam, e quando barrar |
+| fiação | `offline/offlineCache.js` | a ordem: escolher antes de gravar, limpar antes de escrever |
+
+**Regra para quem mexer:** se precisar de um `if` sobre o conteúdo dentro de
+`offlineStore.js`, ele está no arquivo errado.
+
+O que a suíte não alcança é o banco de verdade — e é por isso que o passo **235**
+do roteiro existe, com o DevTools aberto.
+
+### O que se guarda, e o que não
+
+Guarda-se **o que passou pela tela**: listagens e detalhes de clientes,
+processos, honorários, parcelas, pagamentos, resumo financeiro e agenda. A lista
+é uma **allowlist** (`CACHEABLE_RESOURCES`), porque esquecer de acrescentar
+deixa uma tela sem cache e esquecer de excluir põe no banco algo que ninguém
+decidiu pôr.
+
+**Não se guarda:** PDF e DOCX gerados (binário grande, valor baixo offline — a
+tela diz que o arquivo é do servidor), o que ela nunca abriu, e **nada do portal
+do cliente**.
+
+Limites: **5 MB**, **120 entradas**, **256 KB por entrada**, e o descarte é **o
+mais antigo primeiro**. Ter limite próprio, menor que o do navegador, é o que
+mantém o descarte sendo decisão nossa em vez de um `QuotaExceededError` no meio
+de uma navegação — que a advogada lê como "o sistema quebrou". "Antigo" é pelo
+`atualizadoEm`, e não pelo último acesso: descartar por acesso guardaria para
+sempre a tela que ela abre todo dia, com o número do mês passado dentro.
+
+### A idade do dado é obrigatória (Parte 3)
+
+Tela servida do espelho abre com **"Sem conexão. Dados de hoje às 14:32."** — a
+hora da última atualização **daquele dado**, nunca a atual. É a regra da
+**DEC-044** aplicada à tela inteira: *o que deixou de ser confiável diz que
+deixou*. Um saldo de duas horas atrás exibido como saldo de agora faz a advogada
+dizer um número errado ao cliente ao telefone.
+
+O aviso é **por tela**, e não um único no cabeçalho: duas telas carregadas em
+horas diferentes têm idades diferentes, e um aviso global teria de escolher uma
+hora só — que é a mentira que ele existe para não contar.
+
+`dataAge.js` é o único lugar do frontend que constrói `Date` a partir de um
+**instante**, e isso não contradiz a regra da F-3: aquela é sobre a **data do
+domínio** (`AAAA-MM-DD`, que não tem fuso a errar). Instante se lê no fuso de
+quem olha; data de calendário, não.
+
+### Indisponível não é quebrado (Parte 4)
+
+Três barreiras, e as três são necessárias:
+
+| Barreira | Onde | Contra o quê |
+|---|---|---|
+| botão/item anunciado como desabilitado, **com o motivo** | na tela, ao renderizar | o clique inútil |
+| `if (!online) return` no handler | no gesto | `aria-disabled` só ANUNCIA (DEC-053) |
+| interceptor de requisição | `api/axiosConfig.js` | o sinal que cai **entre** o clique e o envio, e as telas não convertidas |
+
+`aria-disabled` e não `disabled`, pela razão da DEC-053: botão desabilitado de
+verdade não recebe foco, e o motivo — que é o ponto inteiro — ficaria invisível
+para quem depende de leitor de tela.
+
+A terceira barreira também **acaba com o erro genérico de rede**: sem sinal, o
+interceptor troca a mensagem do erro pela explicação, e como `getApiErrorMessage`
+lê `err.message`, toda tela que já usa o helper passou a dizer "sem conexão" sem
+ser tocada. O `portalAxios.js` **não** recebeu isso.
+
+`blockReason` resolve o caso de haver dois motivos para o mesmo item (o cliente
+desativado da DEC-053 **e** a falta de sinal): a falta de sinal ganha, porque
+bloqueia a ação inteira agora — e o outro volta a mandar quando o sinal voltar.
+
+### `navigator.onLine` é assimétrico, e o app depende disso
+
+`false` é confiável; `true` significa "há rede", não "há internet". Por isso o
+app **só afirma "sem conexão" quando a resposta é `false`** — dizer isso a quem
+está conectado manda procurar o problema no lugar errado. O limite conhecido:
+em portal cativo, a tela mostra o erro do servidor em vez do aviso de offline.
+Sem gambiarra de "ping": teste de conectividade próprio é outra decisão, com
+custo de bateria e de requisição, e ninguém a pediu.
+
+### F-5a lê; F-5b escreve — e a separação é a decisão
+
+A F-5a **não grava offline**: sem fila, sem outbox, sem `POST` guardado para
+depois; não resolve conflito (sem escrita não há conflito); não toca no portal;
+não muda o MongoDB; e continua sem Web Push.
+
+A leitura vai inteira antes porque a escrita é a fase mais perigosa do projeto
+depois do dinheiro — outbox append-only, idempotência por UUID e fila de
+pendências revisada por humano quando dois aparelhos divergirem. Misturar as
+duas é o modo mais fácil de estragar as duas.
+
+**O que a F-5a deliberadamente NÃO faz, e a F-5b vai ter de decidir:** recarregar
+a página sem sinal continua caindo no login. A sessão é do servidor, o cookie é
+`httpOnly` e `/auth/me` não responde offline — dar identidade local ao app é uma
+decisão de segurança que a F-5b já precisa tomar para a outbox, e antecipá-la
+aqui seria decidir por ela.
 
 ---
 
