@@ -65,6 +65,15 @@ export const open = () => {
       }
     };
 
+    // ⚠️ AVISO PARA A F-5b: ela vai subir a versão do banco (a outbox é outra
+    // object store), e é **só** com uma versão nova que `onblocked` deixa de
+    // ser teórico — ele dispara quando outra aba segura a conexão antiga. Sem
+    // este ramo, a promessa nunca resolveria e o `startSession` do login
+    // ficaria pendurado: a advogada veria a tela de login não responder, sem
+    // erro nenhum. Rejeitar aqui faz o `catch` do `offlineCache` valer, e o
+    // app segue online — que é sempre melhor do que não seguir.
+    req.onblocked = () => reject(new Error('offline: banco bloqueado por outra aba'));
+
     req.onsuccess = () => {
       conexao = req.result;
       // Outra aba pediu uma versão nova do banco: fechar aqui é o que a deixa
