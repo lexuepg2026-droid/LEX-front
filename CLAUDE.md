@@ -615,6 +615,7 @@ A consequência é a divisão de trabalho que a Fase 4.2 firmou:
 | `tests/offline/estatica.test.js` | a **fiação**: o logout limpando, a troca de conta limpando antes de escrever, o portal intocado |
 | `tests/offline/fila.test.js` | o que **entra na fila** (e que o financeiro não entra), a ordem, a **parada na primeira falha** e as frases |
 | `tests/offline/filaEstatica.test.js` | que **nada é descartado sozinho**, que o logout avisa, e que as telas de dinheiro continuam bloqueadas |
+| `tests/infra/deploy.test.js` | que o modelo de variáveis **lista o que o código lê**, que `VITE_API_URL` de produção é `/api`, que o endereço de desenvolvimento **não sobrevive ao build** e que o Node é declarado com teto |
 
 As varreduras estáticas limpam comentários antes de analisar. Sem isso, um
 comentário explicando "não se lê `err.response` direto" derrubaria a própria
@@ -3691,6 +3692,109 @@ computador emprestado, que é onde ela precisa sair depressa.
 interceptor volta a recusar com a frase da F-5a. Dizer "ficou na fila" sobre
 algo que não ficou em lugar nenhum é **perda de dado com mensagem de sucesso** —
 o pior desfecho possível desta fase.
+
+---
+
+## DEC-061 — o deploy: dois serviços, uma origem só (D-1)
+
+> Fase de **infraestrutura**. Nenhum comportamento do sistema mudou; o que
+> mudou é ele conseguir rodar fora do `localhost`.
+
+### A arquitetura
+
+**Render, plano gratuito.** Um **Web Service** para a API (Express) e um
+**Static Site** para o `dist/` do Vite. O banco continua no **Atlas**, com
+`0.0.0.0/0` no IP Access List — o plano gratuito do Render não tem IP de saída
+fixo.
+
+O site serve a API **no mesmo domínio**, por um **rewrite** de `/api/*` para o
+Web Service:
+
+```
+navegador ──► https://<o-site>/dashboard        (arquivos do site)
+          └─► https://<o-site>/api/auth/login   ──rewrite──► https://<a-api>/api/auth/login
+```
+
+### Por que UMA origem, e não dois domínios
+
+**Por causa do cookie.** O `lex-token` é `httpOnly`. Com front e back em
+domínios diferentes ele vira **cross-site** e passa a exigir
+`SameSite=None; Secure` — que parte dos navegadores e dos bloqueadores recusa,
+de formas que só aparecem no aparelho de outra pessoa. **Numa banca, é o
+defeito que ninguém consegue depurar na hora.**
+
+Com o rewrite, o navegador vê tudo na mesma origem: o cookie continua como
+está (`SameSite=strict` em produção), **não há CORS**, e **nada da autenticação
+mudou nesta fase**.
+
+### O que isso exige do frontend
+
+**`VITE_API_URL=/api`** — um **caminho**, não uma URL. É o valor de produção, e
+é o que faz o navegador chamar o próprio domínio. Uma URL absoluta ali desfaz a
+decisão inteira, sem erro nenhum no build.
+
+A guarda de build da F-0 continua valendo e continua recusando a **ausência** da
+variável (passo 148). O que ela **não** pode passar a exigir é uma URL absoluta
+— há teste para isso, porque um `startsWith("http")` acrescentado por bom senso
+quebraria o deploy com cara de erro de configuração.
+
+### Duas regras de rewrite, e a ORDEM importa
+
+| # | Source | Destination | Action |
+|---|---|---|---|
+| 1 | `/api/*` | `https://<a-api>/api/*` | **Rewrite** |
+| 2 | `/*` | `/index.html` | **Rewrite** |
+
+- **Rewrite, nunca Redirect.** Redirect trocaria o domínio na barra do
+  navegador — e o cookie voltaria a ser cross-site, que é o que esta
+  arquitetura evita.
+- **A ordem é a regra**: o Render aplica a primeira que casa, e `/*` casa com
+  tudo. Invertidas, **toda chamada de API volta como o HTML do app**.
+- A regra 2 é o que faz **F5 numa tela interna** funcionar — quem conhece
+  `/dashboard/clientes` é o `react-router`, não o servidor.
+- O Render **não aplica regra quando existe arquivo no caminho**, então
+  `/assets/*` e `/tabelas/*` continuam sendo servidos direto.
+
+### A consequência para o service worker, e ela é nova
+
+Até esta fase, uma chamada de API ia para **outro domínio** e o `sw.js` nem
+chegava a considerá-la (`url.origin !== self.location.origin` → passa direto).
+Com o rewrite, `/api/*` passa a ser **mesma origem**: quem impede resposta
+autenticada de entrar no Cache Storage é, agora, **só** a regra
+`url.pathname.startsWith("/api/")`.
+
+**Ela deixou de ser redundante e passou a ser a única barreira.** Quem mexer no
+`sw.js` precisa saber disso — e o passo **256** do roteiro existe para conferi-la
+no ar.
+
+### `render.yaml` — e o que ele NÃO consegue resolver sozinho
+
+O blueprint na raiz descreve os **dois** serviços (o campo `repo` aponta para o
+repositório do backend) e marca os segredos como `sync: false`, que faz o Render
+**perguntá-los na tela** em vez de os guardar em arquivo versionado.
+
+**Uma linha depende de um valor que só existe depois:** o `destination` do
+rewrite é a URL pública da API, e ela só é conhecida quando o serviço é criado.
+Se o nome estiver em uso por outra conta, o Render dá outro hostname e o
+rewrite aponta para o lugar errado. O README manda conferir isso no primeiro
+apply, e o caminho manual está escrito ao lado.
+
+### A versão do Node é DECLARADA
+
+`engines.node: ">=20.0.0 <21.0.0"`, nos dois repositórios. Sem isso o Render usa
+o default **dele** — hoje a série 24 —, e o build rodaria numa versão que a
+suíte nunca tocou. O teto é exigência explícita da documentação do Render: faixa
+aberta resolve para o `latest`, que muda de major sozinho.
+
+### A hibernação do plano gratuito
+
+O Web Service gratuito **dorme depois de 15 minutos** sem requisição e leva
+**cerca de um minuto** para acordar. O site estático **não** dorme — quem dorme
+é a API, então o sintoma é o app abrir normal e a primeira consulta demorar.
+
+**Antes de qualquer demonstração, abrir o sistema alguns minutos antes.** Isso
+é pré-voo, como o passo 85: não é defeito a corrigir, é o plano gratuito, e o
+que não pode acontecer é a banca ser a primeira vez que alguém vê.
 
 ---
 

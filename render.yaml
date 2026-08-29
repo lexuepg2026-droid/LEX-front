@@ -1,0 +1,91 @@
+# ══════════════════════════════════════════════════════════════════════════
+# LEX — Blueprint do Render (D-1)
+#
+# Descreve os DOIS serviços do sistema. Um `render.yaml` vale para o
+# workspace inteiro e pode apontar para outro repositório pelo campo `repo`,
+# então este arquivo — que vive no repositório do frontend — também declara a
+# API, que vive no outro.
+#
+#   Render → Blueprints → New Blueprint Instance → escolher LEX-front → Apply
+#
+# Aplicar o blueprint cria (ou adota, se já existirem com o mesmo nome) os
+# dois serviços e PERGUNTA, na tela, o valor de cada variável marcada com
+# `sync: false`. **Nenhum segredo mora neste arquivo, e nenhum deve morar.**
+#
+# ⚠️ UMA LINHA PRECISA SER CONFERIDA DEPOIS DO PRIMEIRO APPLY: o `destination`
+#    do rewrite (lá embaixo). Ele é a URL pública da API, e a URL pública só
+#    existe depois de o serviço ser criado — se o nome `lex-uepg-api` já
+#    estiver em uso por outra conta do Render, a plataforma criará o serviço
+#    com outro hostname e o rewrite apontará para o lugar errado. Confira em
+#    Render → o serviço da API → a URL no topo da página, e corrija aqui.
+#
+# Se preferir criar os serviços pelo painel, o passo a passo com os mesmos
+# campos está no README. Os dois caminhos levam ao mesmo lugar.
+# ══════════════════════════════════════════════════════════════════════════
+
+services:
+  # ── A API (Express) ────────────────────────────────────────────────────
+  - type: web
+    name: lex-uepg-api
+    runtime: node
+    repo: https://github.com/lexuepg2026-droid/LEX-back
+    plan: free
+    # `npm ci` e não `npm install`: instala exatamente o que está no
+    # package-lock.json. Uma resolução diferente da que a suíte exercitou é a
+    # categoria de surpresa que só aparece no ar.
+    buildCommand: npm ci
+    startCommand: npm start
+    # `GET /` responde `{ message: "LEX API running" }` sem tocar no banco —
+    # é o que faz o health check não depender do Atlas estar acordado.
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Os três segredos são PERGUNTADOS no apply e guardados pelo Render.
+      # `sync: false` é o que impede que eles sejam versionados aqui.
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_PORTAL_SECRET
+        sync: false
+      # Origem aceita pelo CORS. Na arquitetura desta fase o CORS não é
+      # exercitado no caminho normal (o site chama a API na mesma origem, por
+      # rewrite), mas o valor certo evita confusão em quem for depurar.
+      # Preencher com a URL do site depois que ela existir.
+      - key: CORS_ORIGIN
+        sync: false
+      # PORT NÃO entra aqui: o Render injeta, e fixá-lo faz o health check
+      # nunca passar.
+
+  # ── O site (o `dist/` do Vite) ─────────────────────────────────────────
+  - type: web
+    name: lex-uepg-app
+    runtime: static
+    # Sem `repo`: o padrão é o repositório que contém este arquivo.
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      # O caminho relativo é a decisão da fase (DEC-061): o navegador chama
+      # `/api/...` no próprio domínio do site, e o rewrite abaixo encaminha.
+      # É isso que mantém o cookie de sessão como cookie de mesma origem.
+      - key: VITE_API_URL
+        value: /api
+
+    routes:
+      # ⚠️ A ORDEM IMPORTA. O Render aplica a PRIMEIRA regra que casa, e o
+      # `/*` de baixo casa com tudo: invertidas, toda chamada de API voltaria
+      # como o `index.html` do app, e o sintoma seria "a API responde HTML".
+      - type: rewrite
+        source: /api/*
+        destination: https://lex-uepg-api.onrender.com/api/*
+
+      # SPA: o roteamento é do `react-router`, e o servidor não conhece
+      # `/dashboard/clientes`. Sem esta regra, F5 em qualquer tela interna
+      # devolve 404 — o defeito clássico de SPA em hospedagem estática.
+      #
+      # O Render só aplica regra quando NÃO existe arquivo no caminho, então
+      # `/assets/...` e `/tabelas/...` continuam sendo servidos normalmente.
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -3026,6 +3026,152 @@ Dados que vários passos usam:
   prova é se os dois contadores lado a lado se confundem.
   Fase de origem: F-5b
 
+## 38. Fase D-1 — no ar, e não mais no `localhost`
+
+> **Todos os passos desta seção são para executar no AMBIENTE PUBLICADO.**
+> Nenhum deles é substituído pela validação em `localhost`, e a razão é a mesma
+> nos sete: o que muda no ar é justamente o que `localhost` não tem — HTTPS de
+> verdade, um proxy na frente, um domínio, e um serviço que hiberna.
+>
+> **Pré-condição de toda a seção:** os dois serviços publicados conforme o guia
+> do README do frontend, e a URL do site em mãos.
+>
+> **Anote a URL do site e a da API** no começo da rodada: metade dos defeitos
+> desta camada aparece como "a chamada saiu para o domínio errado", e sem os
+> dois endereços à vista não dá para ver isso no DevTools.
+
+- [ ] **252. ⭐ 🚨 LOGIN E F5 NO AR — a prova de que o cookie foi gravado e volta**
+  `[só olho humano]`
+  **▶ ONDE IR.** A URL do site, num navegador que nunca abriu o sistema.
+  Passos:
+  1) abrir o site e **entrar** com uma conta real;
+  2) DevTools → **Network** → achar a chamada `/api/auth/login` e olhar o
+     **domínio** para onde ela saiu;
+  3) DevTools → **Application → Cookies** e olhar em que domínio o `lex-token`
+     foi gravado;
+  4) apertar **F5**;
+  5) navegar para outra tela e apertar **F5** de novo.
+  Esperado no passo 2: a chamada sai para o **domínio do SITE**, e não para o
+  da API. É o rewrite funcionando — e é ele que mantém tudo na mesma origem.
+  🚨 Se ela sair para o domínio da API, o build foi feito com `VITE_API_URL`
+  apontando para lá: o cookie vai ser gravado no domínio errado e a sessão não
+  vai sobreviver ao F5. **Isso reprova a fase**, e o conserto é rebuildar com
+  `VITE_API_URL=/api`.
+  Esperado no passo 3: `lex-token` no **domínio do site**, com `HttpOnly` e
+  `Secure` marcados.
+  Esperado nos passos 4 e 5: **a sessão continua**. Sem tela de login, sem
+  "sessão expirada".
+  Conferir também que **não há erro de CORS** no console. Se houver, a chamada
+  não passou pelo rewrite.
+  Por que só olho humano: a suíte prova o cookie e a sessão contra o servidor
+  local. O que ela não pode fazer é publicar o sistema e ver o navegador
+  decidir se guarda o cookie — que é onde `SameSite` e `Secure` passam a valer
+  de verdade.
+  Fase de origem: D-1
+
+- [ ] **253. ⭐ F5 numa tela interna, e uma tela de cada módulo**
+  `[só olho humano]`
+  Pré-condição: logada, pelo passo 252.
+  Passos:
+  1) ir para **Clientes** e apertar **F5** com a URL `/dashboard/clientes` na
+     barra;
+  2) repetir em **Processos**, **Financeiro**, **Documentos** e **Agenda**;
+  3) em cada uma, conferir que a **lista carrega** (não o pixel — o dado).
+  Esperado no passo 1: a tela carrega. 🚨 Um **404** aqui é a regra de rewrite
+  `/*` → `/index.html` faltando, ou posta ANTES da regra de `/api/*` — e nesse
+  segundo caso as listas também não carregam, porque toda chamada de API volta
+  como HTML.
+  Esperado no passo 3: dados de verdade, vindos do Atlas.
+  Conferir também **uma escrita**: criar um compromisso na agenda e vê-lo
+  aparecer. Ler funciona com meia configuração; gravar não.
+  Por que só olho humano: hospedagem estática não conhece as rotas do
+  `react-router`, e isso só se manifesta no servidor real.
+  Fase de origem: D-1
+
+- [ ] **254. 🚨 O passo 148 contra o build que o Render roda**
+  `[só olho humano]`
+  **É a reexecução do passo 148**, agora com o comando exato do serviço.
+  Passos:
+  1) numa cópia limpa do repositório do frontend, **sem** `.env.production` e
+     **sem** `VITE_API_URL` no ambiente, rodar `npm ci && npm run build`;
+  2) ler a mensagem;
+  3) rodar de novo com `VITE_API_URL=/api npm run build`;
+  4) `grep -r "localhost:3001" dist/`.
+  Esperado no passo 1: o build **aborta**, nomeando `VITE_API_URL` e dizendo
+  como resolver.
+  Esperado no passo 3: conclui.
+  Esperado no passo 4: **zero**. (`localhost` sem porta aparece duas vezes,
+  vindo de `react-router` e do `axios`, e não é nosso — os dois usam
+  `window.location` quando ela existe. O que não pode sobreviver é o endereço
+  COM porta, que é o nosso.)
+  Por que agora: até a D-1 o valor de produção era uma URL absoluta; agora é o
+  caminho `/api`, e a guarda precisa continuar recusando a AUSÊNCIA sem passar
+  a recusar o caminho.
+  Fase de origem: D-1 (reexecução do 148)
+
+- [ ] **255. 🚨 Passo 139 REEXECUTADO — instalar o app em HTTPS real**
+  `[só olho humano]`
+  **A validação em `localhost` NÃO substitui esta.** O navegador trata
+  `localhost` como origem segura por exceção; em produção, quem vale é o
+  certificado, e o escopo do service worker passa a ser o domínio de verdade.
+  Passos: abrir o site publicado no Chrome; DevTools → **Application →
+  Manifest**; usar o botão de instalar da barra de endereço; abrir o app
+  instalado.
+  Esperado: o manifest é lido sem aviso, o app instala, e o app instalado abre
+  em `/dashboard` **já logado** (o cookie é do domínio, e o app instalado
+  compartilha o mesmo perfil).
+  Fase de origem: D-1 (reexecução do 139)
+
+- [ ] **256. 🚨 Passo 140 REEXECUTADO — recarregar OFFLINE, no ar**
+  `[só olho humano]`
+  **O passo mais importante da reexecução.** O service worker se comporta
+  diferente em HTTPS real: escopo, ciclo de vida e atualização não são os
+  mesmos de `localhost`, e o `dist/` publicado é outro arquivo que o servido
+  pelo `npm run preview`.
+  Passos: 1) abrir o site e navegar por algumas telas (com sinal); 2) DevTools
+  → Network → **Offline**; 3) **recarregar**; 4) Application → **Cache
+  Storage** e **IndexedDB**.
+  Esperado no passo 3: a **casca do app sobe** — layout, menu, tipografia — e a
+  tela mostra o erro no padrão do próprio app, não o dinossauro do navegador.
+  Esperado no passo 4: **nenhuma entrada de `/api/` no Cache Storage** (a regra
+  da Fase 4.5), e o `lex-offline` do IndexedDB com o que a F-5a guardou.
+  ⚠️ **Agora a API é servida na MESMA ORIGEM do site** (pelo rewrite). Até a
+  D-1, uma chamada para outro domínio nem chegava ao service worker; a partir
+  daqui, quem impede o cache de resposta autenticada é **só** a regra
+  `/api/*` do `sw.js`. Este passo é o que confere que ela está de pé no ar.
+  Conferir também os passos **236 a 243** (F-5a) e **244 a 251** (F-5b) neste
+  ambiente, ao menos os marcados 🚨.
+  Fase de origem: D-1 (reexecução do 140)
+
+- [ ] **257. Passo 142 REEXECUTADO — os cabeçalhos, contra o domínio publicado**
+  `[só olho humano]`
+  Passos: DevTools → Network → uma chamada de `/api/` → **Headers**.
+  Esperado: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+  `Referrer-Policy: strict-origin-when-cross-origin` e, **agora sim**,
+  `Strict-Transport-Security` — que em desenvolvimento não podia aparecer.
+  **`X-Powered-By` ausente.**
+  Conferir também a resposta do **site** (um arquivo estático): os cabeçalhos
+  do Express não valem para ela, porque quem a serve é o Render. Se algum deles
+  fizer falta ali, é configuração de Static Site, e fica anotado — não é
+  defeito do código.
+  Fase de origem: D-1 (reexecução do 142)
+
+- [ ] **258. A hibernação, medida — e o pré-voo da demonstração**
+  `[só olho humano]`
+  Pré-condição: o sistema **sem uso por mais de 15 minutos**.
+  Passos: 1) abrir o site e **cronometrar** a primeira chamada que fala com a
+  API (o login, por exemplo); 2) repetir a operação logo em seguida; 3) anotar
+  os dois tempos.
+  Esperado: a primeira leva cerca de **um minuto** (o Render mostra uma página
+  de carregamento enquanto o serviço sobe); a segunda é imediata.
+  **Isto não é defeito — é o plano gratuito.** O que se está validando é o
+  **pré-voo**: antes de qualquer demonstração, abrir o sistema alguns minutos
+  antes e fazer um login. Sem isso, a primeira tela da apresentação fica um
+  minuto parada, e não há nada na interface explicando por quê.
+  Anotar o tempo medido aqui, para o dia da banca não ser a primeira vez que
+  alguém o vê.
+  Fase de origem: D-1
+
 ## Validado
 
 
