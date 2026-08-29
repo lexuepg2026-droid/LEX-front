@@ -12,6 +12,17 @@ export const getApiErrorMessage = (err, fallback = 'Ocorreu um erro. Tente novam
   );
 };
 
+// O STATUS HTTP, quando houve resposta. Existe desde a F-5b porque a fila
+// precisa distinguir "não saiu do aparelho" (sem resposta) de "o servidor
+// recusou" (4xx) e de "o servidor falhou" (5xx) — três desfechos com três
+// tratamentos diferentes na tela de pendências.
+//
+// Ele fica AQUI, e não na fila, pela regra do projeto: quem abre o erro é este
+// arquivo. A varredura de `tests/financial/estatica.test.js` trava o resto —
+// e é ela que impede este getter de virar desculpa para as telas voltarem a
+// ler `err.response` por conta própria.
+export const getApiErrorStatus = (err) => err?.response?.status ?? null;
+
 // Campo que originou o erro ("email", "cpf", "oab", "cnpj"), quando o backend
 // informa. Serve para a UI rotear (destacar input, voltar de etapa) sem
 // interpretar o texto da mensagem — reescrever a mensagem quebrava o

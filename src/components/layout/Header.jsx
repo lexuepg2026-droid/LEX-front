@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBreadcrumbLabel } from '../../contexts/BreadcrumbContext';
 import NotificationBell from './NotificationBell';
+import PendingUploads from './PendingUploads';
 import './Header.css';
 
 const BREADCRUMB_MAP = {
@@ -99,6 +100,10 @@ function Header() {
       <div className="header-user">
         {/* O sino fica no cabeçalho, e não na Sidebar: ele precisa estar
             visível nas duas larguras, e em 360 px a Sidebar não existe. */}
+        {/* O contador da FILA vem antes do sino: o que não saiu do aparelho
+            é mais urgente do que o que o mundo cobra — e ele só aparece quando
+            existe (F-5b). */}
+        <PendingUploads />
         <NotificationBell />
         {nomeCompleto && (
           <>

@@ -118,12 +118,50 @@ export const buildKey = ({ userId, resource, params } = {}) => {
   return `${KEY_PREFIX}|u:${dono}|r:${resource}|p:${serializeParams(params)}`;
 };
 
+// ── A chave da FILA (F-5b) ───────────────────────────────────────────────
+//
+// A fila herda o escopo da DEC-058 pelo mesmo caminho do espelho de leitura: o
+// id do usuário está DENTRO da chave. É o que faz `keysOfOtherUsers` limpar a
+// fila de outra conta junto com o cache dela, sem uma segunda regra que
+// pudesse divergir da primeira.
+//
+// O formato tem três partes em vez de quatro: uma entrada de fila não tem
+// recurso nem parâmetros — ela tem a própria chave de idempotência, que já é
+// única por gravação.
+export const buildQueueKey = ({ userId, chave } = {}) => {
+  const dono = normalizeUserId(userId);
+  if (!dono) {
+    throw new Error(
+      'offline: entrada de fila sem usuário. A fila é escopada como o resto do espelho.'
+    );
+  }
+  if (dono.includes('|')) {
+    throw new Error('offline: o id do usuário não pode conter "|", que é o separador da chave');
+  }
+  if (typeof chave !== 'string' || chave.trim() === '' || chave.includes('|')) {
+    throw new Error('offline: a entrada de fila precisa de uma chave de idempotência');
+  }
+  return `${KEY_PREFIX}|u:${dono}|f:${chave.trim()}`;
+};
+
 // Volta da chave para as partes. Devolve `null` para o que não for uma chave
 // desta versão — inclusive lixo de uma versão anterior do formato, que a troca
 // de sessão trata como "não é meu" e apaga.
 export const parseKey = (key) => {
   if (typeof key !== 'string') return null;
   const partes = key.split('|');
+
+  // Entrada de fila: `lex-offline|u:<id>|f:<uuid>`. Devolve uma forma
+  // diferente de propósito — quem lê uma chave de fila precisa da chave de
+  // idempotência, e não de recurso e parâmetros que ela não tem.
+  if (partes.length === 3 && partes[0] === KEY_PREFIX &&
+      partes[1].startsWith('u:') && partes[2].startsWith('f:')) {
+    const dono = partes[1].slice(2);
+    const chave = partes[2].slice(2);
+    if (!dono || !chave) return null;
+    return { userId: dono, fila: true, chave };
+  }
+
   if (partes.length !== 4) return null;
   const [prefixo, u, r, p] = partes;
   if (prefixo !== KEY_PREFIX) return null;

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import authService from '../api/authService';
 import { registrarSessao } from '../api/sessionLoss';
 import { startSession, clearAll } from '../offline/offlineCache';
+import { registrarUsuarioAtual } from '../offline/currentUser';
 
 const AuthContext = createContext(null);
 
@@ -19,6 +20,14 @@ export function AuthProvider({ children }) {
   const registrarUsuario = useCallback((usuario) => {
     setUser(usuario);
     registrarSessao(Boolean(usuario));
+    // ── F-5b: o interceptor precisa saber de quem é a gravação ──────────
+    //
+    // Entrada de fila é escopada por usuário (DEC-058), e quem enfileira é o
+    // interceptor de `api/axiosConfig.js`, que não é componente e não pode
+    // chamar `useAuth`. Fica aqui, na mesma função por onde toda transição de
+    // sessão passa, pela mesma razão que `registrarSessao` está: separá-los
+    // seria criar duas verdades sobre quem está logado.
+    registrarUsuarioAtual(usuario?.id ?? null);
   }, []);
 
   // /auth/me, /auth/login e /auth/register devolvem o mesmo envelope

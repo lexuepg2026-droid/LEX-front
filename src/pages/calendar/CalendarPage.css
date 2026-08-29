@@ -491,3 +491,14 @@
      agenda e no dia aberto, que é onde a linha tem largura. */
   .cal-celula .cal-item__hora { display: none; }
 }
+
+/* O aviso de alteração não enviada (F-5b). Discreto e clicável: ele não é um
+   erro — é um ponteiro para a tela onde a decisão acontece. */
+.cal-pendencia {
+  font-size: var(--font-size-sm);
+  margin: 0 0 var(--space-3);
+}
+
+.cal-pendencia a {
+  color: var(--color-info);
+}

@@ -17,9 +17,16 @@
 // CONTEÚDO neste arquivo, ele está no arquivo errado. As únicas condições
 // permitidas aqui são sobre a disponibilidade do próprio IndexedDB.
 //
-// ── Duas object stores, e por quê ───────────────────────────────────────
-//   `entradas` — { chave, valor, atualizadoEm, bytes }: o dado.
+// ── Três object stores, e por quê ───────────────────────────────────────
+//   `entradas` — { chave, valor, atualizadoEm, bytes }: o dado lido (F-5a).
 //   `indice`   — { chave, bytes, atualizadoEm }: o mesmo, SEM o valor.
+//   `fila`     — { chave, entrada }: as gravações que ainda não subiram (F-5b).
+//
+// A fila é store separada, e não uma entrada especial do cache, porque as duas
+// têm ciclos de vida opostos: o cache é descartável — o descarte do mais
+// antigo é feature — e a fila **não pode perder nada**, nunca, por nenhum
+// motivo automático. Guardá-las juntas faria o descarte por cota apagar
+// trabalho da advogada.
 //
 // O descarte precisa saber o tamanho e a idade de TODAS as entradas a cada
 // gravação. Com uma store só, isso significaria carregar o banco inteiro na
@@ -29,9 +36,13 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 const DB_NAME = 'lex-offline';
-const DB_VERSION = 1;
+// Versão 2 (F-5b): a store `fila` entrou. O `onupgradeneeded` abaixo só CRIA o
+// que falta — nada do que a F-5a guardou é apagado, e o formato das chaves
+// dela não mudou. Ver o aviso de versão na DEC-058.
+const DB_VERSION = 2;
 const STORE_ENTRADAS = 'entradas';
 const STORE_INDICE = 'indice';
+const STORE_FILA = 'fila';
 
 // IndexedDB pode não existir: navegação privativa de alguns navegadores, modo
 // restrito, ou o próprio `node --test` importando este módulo por engano. Sem
@@ -62,6 +73,9 @@ export const open = () => {
       }
       if (!db.objectStoreNames.contains(STORE_INDICE)) {
         db.createObjectStore(STORE_INDICE, { keyPath: 'chave' });
+      }
+      if (!db.objectStoreNames.contains(STORE_FILA)) {
+        db.createObjectStore(STORE_FILA, { keyPath: 'chave' });
       }
     };
 
@@ -145,14 +159,62 @@ export const remove = async (chaves) => {
   return true;
 };
 
-// APAGA TUDO. É o que o logout chama, e é `clear()` de verdade — não marca
-// como inválido, não expira, não filtra na leitura: sair da conta num
-// computador emprestado precisa deixar o navegador limpo.
+// ── A FILA (F-5b) — as mesmas quatro operações, sem decisão nenhuma ──────
+//
+// A fila é pequena por natureza (o que uma advogada grava entre um sinal e
+// outro), então ela é lida inteira. Não há índice, não há paginação e não há
+// descarte: descartar entrada de fila é gesto humano, e ele vem da tela.
+export const putFila = async (registro) => {
+  const tx = await transacao('readwrite', [STORE_FILA]);
+  if (!tx) return false;
+  tx.objectStore(STORE_FILA).put(registro);
+  await new Promise((resolve, reject) => {
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+  return true;
+};
+
+export const listFila = async () => {
+  const tx = await transacao('readonly', [STORE_FILA]);
+  if (!tx) return [];
+  return (await promessa(tx.objectStore(STORE_FILA).getAll())) ?? [];
+};
+
+export const listFilaKeys = async () => {
+  const tx = await transacao('readonly', [STORE_FILA]);
+  if (!tx) return [];
+  return (await promessa(tx.objectStore(STORE_FILA).getAllKeys())) ?? [];
+};
+
+export const removeFila = async (chaves) => {
+  const lista = Array.isArray(chaves) ? chaves : [chaves];
+  if (lista.length === 0) return true;
+  const tx = await transacao('readwrite', [STORE_FILA]);
+  if (!tx) return false;
+  for (const chave of lista) tx.objectStore(STORE_FILA).delete(chave);
+  await new Promise((resolve, reject) => {
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+  return true;
+};
+
+// APAGA TUDO — inclusive a fila. É o que o logout chama, e é `clear()` de
+// verdade: não marca como inválido, não expira, não filtra na leitura. Sair da
+// conta num computador emprestado precisa deixar o navegador limpo.
+//
+// ⚠️ Apagar a fila apaga trabalho que a advogada fez. Quem chama **precisa ter
+// avisado antes** — a confirmação é da Parte 2 da F-5b, e vive na tela; aqui
+// embaixo não há como perguntar nada a ninguém.
 export const clear = async () => {
-  const tx = await transacao('readwrite', [STORE_ENTRADAS, STORE_INDICE]);
+  const tx = await transacao('readwrite', [STORE_ENTRADAS, STORE_INDICE, STORE_FILA]);
   if (!tx) return false;
   tx.objectStore(STORE_ENTRADAS).clear();
   tx.objectStore(STORE_INDICE).clear();
+  tx.objectStore(STORE_FILA).clear();
   await new Promise((resolve, reject) => {
     tx.oncomplete = resolve;
     tx.onerror = () => reject(tx.error);

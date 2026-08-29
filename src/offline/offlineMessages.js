@@ -50,6 +50,10 @@ export const isNetworkError = (err) =>
 // dentro, para a suíte poder provar os dois lados sem navegador.
 export const offlineErrorMessage = (err, { online = true } = {}) => {
   if (online) return null;
+  // A gravação que foi para a fila da F-5b já tem a frase certa em `message`,
+  // e ela diz o contrário de uma falha. Trocá-la aqui pela mensagem de leitura
+  // faria a tela anunciar perda de dado onde não houve nenhuma.
+  if (err?.enfileirado === true) return err.message;
   if (err?.offline === true) return MENSAGEM_ESCRITA_OFFLINE;
   if (!isNetworkError(err)) return null;
   return MENSAGEM_LEITURA_SEM_CACHE;

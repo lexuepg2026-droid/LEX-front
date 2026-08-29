@@ -1,0 +1,131 @@
+.pendencias__topo {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.pendencias__resumo {
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.pendencias__offline {
+  align-items: center;
+  background-color: var(--color-warning-bg);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  display: flex;
+  font-size: var(--font-size-sm);
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+}
+
+.pendencias__lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pendencia {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+/* A que falhou se distingue pela BORDA, e não por fundo cheio: ela continua
+   sendo uma linha da lista, e um bloco vermelho sólido no meio se leria como
+   "o sistema quebrou" em vez de "esta precisa da sua decisão". */
+.pendencia--falhou {
+  border-color: var(--color-danger);
+}
+
+.pendencia__cabecalho {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.pendencia__ordem {
+  align-items: center;
+  background-color: var(--color-surface-raised);
+  border-radius: 50%;
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-shrink: 0;
+  font-size: var(--font-size-sm);
+  height: 26px;
+  justify-content: center;
+  width: 26px;
+}
+
+.pendencia__descricao {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+}
+
+.pendencia__estado {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+  margin: var(--space-1) 0 0;
+}
+
+/* Duas colunas em tela larga, uma embaixo da outra em 360 px — comparar duas
+   versões espremidas lado a lado é pior do que lê-las em sequência. */
+.pendencia__versoes {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr 1fr;
+  margin-top: var(--space-3);
+}
+
+.pendencia__versao {
+  background-color: var(--color-surface-raised);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.pendencia__versao-titulo {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0 0 var(--space-2);
+}
+
+.pendencia__campos {
+  display: grid;
+  gap: var(--space-1) var(--space-2);
+  grid-template-columns: auto 1fr;
+  margin: 0;
+}
+
+.pendencia__campos dt {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.pendencia__campos dd {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.pendencia__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 767px) {
+  .pendencia__versoes { grid-template-columns: 1fr; }
+}
