@@ -2621,41 +2621,6 @@ Dados que vários passos usam:
 > **Application → Service Workers → Offline**). Desligar o Wi-Fi de verdade
 > também serve, e é o teste mais honesto dos dois.
 
-- [ ] **235. ⭐ 🚨 O VAZAMENTO ENTRE USUÁRIOS — o passo que a fase inteira existe para ter**
-  `[só olho humano]`
-  Pré-condição: dois usuários, e o navegador **sem** o `lex-offline` (se
-  existir, apague o banco pelo DevTools antes de começar).
-  **▶ ONDE IR.** O sistema inteiro, e depois DevTools → Application → IndexedDB.
-  Passos:
-  1) entrar como o **usuário A** e **navegar de verdade**: Clientes, um cliente
-     pelo "Ver", Processos, um processo pelo "Gerenciar", Honorários, Parcelas,
-     Pagamentos, Financeiro e Agenda;
-  2) abrir o DevTools e **conferir que há entradas** em `lex-offline` →
-     `entradas`, e que **toda chave** começa com `lex-offline|u:<id do A>`;
-  3) **sair** pelo menu (Sair / Logout);
-  4) **sem fechar o navegador**, conferir o banco de novo;
-  5) entrar como o **usuário B** e navegar por duas ou três telas;
-  6) conferir o banco mais uma vez.
-  Esperado no passo 2: as chaves carregam **o id do usuário A**. Nenhuma chave
-  sem `u:`, nenhuma com `u:` vazio, nenhuma com `anonimo`, `comum` ou coisa
-  parecida.
-  Esperado no passo 4: **as duas stores VAZIAS.** O logout apaga — não marca
-  como inválido, não expira, não esconde na leitura. 🚨 Se sobrar **uma
-  entrada que seja**, é **reprovação da fase**, não observação do passo.
-  Esperado no passo 6: só chaves com **o id do B**. **Nada do A.**
-  🚨 **O que NÃO pode acontecer, em nenhum momento:** uma chave sem id de
-  usuário; uma chave do A visível depois do login do B; conteúdo do A dentro de
-  um registro do B. Qualquer um desses é o vazamento, e o vazamento é o que
-  esta fase existe para impedir.
-  Repetir uma variação: com A logado, **entrar direto como B** (sem passar pelo
-  logout, pela tela de login) — o banco tem de ficar só com o B. É o caminho de
-  quem senta no computador do escritório e troca de conta.
-  Por que só olho humano: a suíte prova a montagem da chave, a escolha do que
-  apagar e que o `logout` chama a limpeza. O que ela **não** pode fazer é olhar
-  o IndexedDB de verdade — `node --test` não tem navegador, e a fase proíbe
-  dependência nova. Este passo é a única prova de que o banco ficou vazio.
-  Fase de origem: F-5a
-
 - [ ] **236. ⭐ 🚨 SEM SINAL, A TELA DIZ DE QUANDO É O DADO**
   `[só olho humano]`
   Pré-condição: passo **235** feito (as telas precisam ter passado pela tela
@@ -2711,6 +2676,13 @@ Dados que vários passos usam:
   *"Sem conexão — você pode consultar, mas não registrar. Tente de novo quando
   o sinal voltar."* ao lado. **Ele não some** — botão ausente faz procurar;
   botão desabilitado com explicação ensina (DEC-053).
+  ⚠️ **EMENDA DA F-5b (29/08/2026): a AGENDA saiu desta regra.** "Novo
+  compromisso" e a mudança de fase do processo **continuam ativos sem sinal** —
+  eles agora entram na FILA (DEC-059), e o aviso deles é outro, em azul:
+  *"você pode salvar assim mesmo"*. Nas duas telas, o comportamento esperado
+  aqui é o oposto: **botão ativo é o certo, e botão bloqueado é defeito.** O
+  resto da lista — clientes, processos, honorários, parcelas, pagamentos —
+  continua exatamente como este passo descreve.
   Esperado no passo 2: "Editar", "Excluir", "Desativar", "Reativar" e
   "Estornar" aparecem desabilitados **com o motivo**.
   Esperado no passo 3: **nada acontece** — nenhum modal abre, nenhuma
@@ -2736,6 +2708,11 @@ Dados que vários passos usam:
   5) voltar o sinal e clicar em **Salvar** de novo.
   Esperado no passo 3: a frase da fase aparece **no topo do formulário**, e o
   botão fica anunciado como desabilitado.
+  ⚠️ **EMENDA DA F-5b (29/08/2026): NÃO use o formulário de compromisso neste
+  passo.** Ele passou a gravar sem sinal (a alteração vai para a fila), e o
+  comportamento esperado dele é o do passo **244**. Use um formulário de
+  cliente, de honorário ou de pagamento — que continuam recusando, e é isso que
+  este passo confere.
   Esperado no passo 4: **nada é enviado e nada se perde** — os campos
   preenchidos continuam preenchidos, exatamente como estavam.
   Esperado no passo 5: salva normalmente, **com o que foi digitado no passo 1**.
@@ -2827,6 +2804,227 @@ Dados que vários passos usam:
   espelho local. O que ela não prova é o que sobra no aparelho depois de um uso
   real.
   Fase de origem: F-5a
+
+## 37. Fase F-5b — gravar sem sinal
+
+> **Pré-condição de toda a seção:** `npm run seed:fresh`, o app aberto uma vez
+> **com sinal** (para o espelho de leitura da F-5a existir), e — nos passos de
+> conflito — **dois navegadores** logados na MESMA conta (por exemplo, uma
+> janela normal e uma anônima).
+>
+> **Onde se olha a fila:** DevTools → **Application** → **IndexedDB** →
+> **`lex-offline`** → store **`fila`**. ⚠️ O painel **não se atualiza sozinho**
+> (é o achado do passo 235): clique em **Refresh database** antes de cada
+> leitura, ou leia pelo console. Quem esquecer disso vai ver fila onde já não
+> há, e concluir defeito onde não houve.
+>
+> **O que esta fase NÃO faz, e um passo confere:** o financeiro inteiro
+> continua indisponível sem sinal. Se um pagamento entrar na fila, é
+> reprovação da fase (passo **247**).
+
+- [ ] **244. ⭐ 🚨 DOIS COMPROMISSOS OFFLINE, E OS DOIS CHEGAM — na ordem, sem duplicar**
+  `[só olho humano]`
+  Pré-condição: app aberto e logado, com sinal.
+  **▶ ONDE IR.** **Agenda** → **Novo compromisso**, com o DevTools em
+  **Offline**.
+  Passos:
+  1) pôr o DevTools em **Offline**;
+  2) criar o compromisso **A** ("Audiência A", data de hoje) e salvar;
+  3) ler o que a tela diz **antes** de salvar e **depois** de salvar;
+  4) criar o compromisso **B** ("Reunião B") e salvar;
+  5) conferir o **contador ao lado do sino**;
+  6) **recarregar a página**, ainda offline, e conferir o contador de novo;
+  7) abrir **Alterações não enviadas** e conferir a ordem: **A antes de B**;
+  8) voltar o Network para **Online** e **não tocar em nada**;
+  9) esperar alguns segundos e olhar a agenda.
+  Esperado no passo 3: **antes**, um aviso azul dizendo que dá para salvar
+  assim mesmo e que a alteração vai para a fila; **depois**, uma mensagem
+  dizendo que ficou na fila — e **não** uma mensagem de erro. O formulário
+  fecha como fecharia num salvamento normal.
+  Esperado no passo 5: o contador mostra **2**.
+  Esperado no passo 6: **continua 2.** A fila sobrevive a recarregar a página —
+  se ela zerar, o que a advogada digitou foi para o lixo sem aviso, e isso é
+  **reprovação da fase**.
+  Esperado no passo 7: **A em primeiro, B em segundo**, cada um com o título
+  que ela digitou e a hora em que foi enfileirado.
+  Esperado no passo 9: os **dois** compromissos aparecem na agenda, o contador
+  **some** (não mostra zero), e a lista de pendências fica vazia — **sem
+  ninguém clicar em nada**.
+  🚨 **O que NÃO pode acontecer:** aparecer **quatro** compromissos (dois de
+  cada) — é a duplicação que a chave de idempotência existe para impedir;
+  aparecer só um; aparecer na ordem trocada.
+  Repetir uma vez com a rede caindo **no meio do envio** (voltar para Offline
+  logo depois de pôr Online): a fila para onde estava e continua depois. **Nada
+  pode sumir.**
+  Por que só olho humano: a suíte prova a ordem, a parada e a idempotência —
+  esta última pela API, de verdade. O que ela não pode fazer é desligar a rede
+  do navegador e conferir o que sobrou no IndexedDB.
+  Fase de origem: F-5b
+
+- [ ] **245. ⭐ 🚨 O CONFLITO DE DOIS APARELHOS — as duas versões, e a escolha é dela**
+  `[só olho humano]`
+  Pré-condição: **dois navegadores** logados na mesma conta (normal e anônima),
+  e um compromisso já existente — o **A** do passo 244 serve.
+  **▶ ONDE IR.** O mesmo compromisso, aberto para edição nos dois.
+  Passos:
+  1) no navegador **1**, abrir o compromisso para editar e **deixar aberto**;
+  2) pôr o navegador **1** em **Offline**;
+  3) no navegador **2** (online), editar o **mesmo** compromisso — mudar o
+     **local** para "Sala 2" — e salvar;
+  4) no navegador **1**, ainda offline, mudar o **local** para "Escritório" e
+     salvar;
+  5) voltar o navegador **1** para **Online**;
+  6) abrir **Alterações não enviadas** no navegador **1**.
+  Esperado no passo 4: a alteração entra na fila, como no passo 244.
+  Esperado no passo 6: a entrada aparece **com falha**, dizendo em português
+  que **o registro foi alterado em outro aparelho** — e mostrando **as duas
+  versões lado a lado**: "A sua versão" (Escritório) e "O que está no
+  servidor" (Sala 2).
+  🚨 **O que NÃO pode acontecer:** a gravação atrasada **sobrescrever** a do
+  outro aparelho em silêncio; a fila **descartar** a alteração dela; a tela
+  mostrar `409`, `PATCH /events/...` ou qualquer código.
+  Passos 7 e 8 — as duas saídas, uma em cada rodada:
+  7) clicar em **"Manter a minha versão"**: o local vira **Escritório**, de
+     propósito, e a pendência sai da lista;
+  8) repetir o cenário e clicar em **"Ficar com a do servidor"**: pede
+     confirmação **nomeando o compromisso**, e ao confirmar a alteração dela é
+     descartada — o local continua **Sala 2**.
+  Por que só olho humano: a suíte prova o 409 pela API e prova que a tela
+  monta as duas versões. O que ela não prova é se a advogada **entende** que a
+  escolha é dela — que é a pergunta inteira da DEC-060.
+  Fase de origem: F-5b
+
+- [ ] **246. ⭐ 🚨 SAIR COM FILA PENDENTE AVISA, E DIZ QUANTAS SÃO**
+  `[só olho humano]`
+  Pré-condição: DevTools em **Offline**, e **duas** alterações na fila (dois
+  compromissos criados offline).
+  Passos:
+  1) conferir que o contador mostra **2**;
+  2) clicar em **Sair**;
+  3) **ler o aviso**;
+  4) clicar em **"Continuar no sistema"**;
+  5) conferir o contador e a lista de pendências;
+  6) clicar em **Sair** de novo e, agora, confirmar **"Sair e descartar"**;
+  7) entrar de novo e conferir a fila.
+  Esperado no passo 3: o aviso diz **quantas** alterações serão descartadas —
+  *"Há 2 alterações que ainda não foram enviadas"* —, diz que **não há como
+  recuperá-las**, e oferece as duas saídas.
+  🚨 **Se ele sair direto, sem perguntar, é reprovação da fase**: trabalho da
+  advogada sumiu em silêncio, que é o que este passo existe para impedir.
+  Esperado no passo 5: **nada mudou** — as duas continuam lá. Cancelar cancela.
+  Esperado no passo 7: a fila está **vazia** — ela confirmou, e a DEC-058 apaga
+  tudo no logout, como sempre apagou.
+  Conferir também o **singular**: com **uma** só na fila, a frase precisa dizer
+  *"Há 1 alteração que ainda não foi enviada"*. "1 alterações" é o defeito de
+  concordância que o projeto já corrigiu duas vezes.
+  Por que só olho humano: a suíte prova a frase e prova que a confirmação está
+  ligada. O que ela não prova é se o aviso **aparece** antes da saída.
+  Fase de origem: F-5b
+
+- [ ] **247. 🚨 A ARMADILHA — REGISTRAR PAGAMENTO OFFLINE PRECISA SER IMPOSSÍVEL**
+  `[só olho humano]`
+  Pré-condição: DevTools em **Offline**.
+  **▶ ONDE IR.** **Financeiro** → **Recebimentos** → **+ Registrar
+  Recebimento**; depois **Honorários** e **Parcelas**.
+  Passos:
+  1) tentar chegar ao formulário de pagamento pelo botão da listagem;
+  2) se chegar, preencher e tentar salvar;
+  3) repetir com **honorário**, **parcela** e **estorno**;
+  4) abrir o DevTools → IndexedDB → `lex-offline` → **`fila`** (com **Refresh
+     database**) e olhar o conteúdo.
+  Esperado nos passos 1 a 3: **indisponível, com o motivo** — o botão continua
+  na tela, atenuado, com a frase da F-5a (*"você pode consultar, mas não
+  registrar"*). Nada é salvo, nada vai para lugar nenhum.
+  Esperado no passo 4: **a fila NÃO tem nenhuma entrada de dinheiro.** Nenhuma
+  URL de `/payments`, `/fees`, `/installments` ou `/reversals`.
+  🚨 **Se um pagamento entrar na fila, PARE e reporte — é reprovação da fase,
+  não do passo.** A razão está na Parte 0 da F-5b: toda validação de dinheiro
+  depende de estado do servidor que o aparelho offline não pode conferir, e um
+  recebimento enfileirado às 10h pode ser inválido às 15h. A advogada já teria
+  dito ao cliente que estava pago.
+  Por que só olho humano: a suíte prova que as rotas de dinheiro não são
+  enfileiráveis e que as telas continuam bloqueadas. O que ela não prova é se
+  existe **algum caminho na interface** que chegue lá.
+  Fase de origem: F-5b
+
+- [ ] **248. 🚨 A fila PARA na primeira falha, e não pula para a seguinte**
+  `[só olho humano]`
+  Pré-condição: dois navegadores logados na mesma conta.
+  Passos:
+  1) no navegador **2** (online), criar um compromisso **X** e depois
+     **excluí-lo**;
+  2) no navegador **1**, que tinha **X** na tela, ficar **Offline**;
+  3) no navegador **1**: **editar X** (que já não existe no servidor) e salvar;
+  4) ainda offline, criar um compromisso **Y** novo;
+  5) voltar o navegador **1** para **Online** e esperar;
+  6) abrir **Alterações não enviadas**.
+  Esperado: a edição de **X** aparece **com falha**, em português, e o
+  compromisso **Y continua na fila, sem ter sido enviado**.
+  A razão de parar: a próxima entrada pode depender da que falhou, e continuar
+  produziria metade das alterações aplicadas sem que nada na tela explique
+  quais.
+  Depois: **descartar** a entrada de X (com a confirmação) e conferir que **Y
+  sobe sozinho** logo em seguida.
+  🚨 **O que NÃO pode acontecer:** Y ser enviado antes de X ser resolvido; Y
+  sumir junto com X; a fila esvaziar sozinha.
+  Por que só olho humano: a suíte prova a parada em função pura. O que ela não
+  prova é o que a advogada vê quando isso acontece de verdade.
+  Fase de origem: F-5b
+
+- [ ] **249. Descartar pede confirmação, e a confirmação NOMEIA o que se perde**
+  `[só olho humano]`
+  Passos: 1) com uma alteração na fila, abrir **Alterações não enviadas**;
+  2) clicar em **Descartar**; 3) ler a frase; 4) **cancelar**; 5) conferir que
+  a entrada continua lá; 6) descartar de novo e **confirmar**.
+  Esperado no passo 3: a frase **nomeia o compromisso** (*"Descartar
+  'Compromisso "Audiência A", criado hoje às 14:32'?"*), diz que ele **nunca
+  chegou ao servidor** e que **não há como recuperá-lo**.
+  🚨 Uma frase genérica (*"descartar esta alteração?"*) é **defeito**: descartar
+  é o único caminho pelo qual trabalho da advogada some para sempre, e ela
+  precisa saber o que está perdendo antes de confirmar.
+  Esperado no passo 5: **nada mudou**.
+  Por que só olho humano: a suíte prova a frase e que o botão passa pela
+  confirmação. O que ela não prova é se a frase é **entendida** antes do
+  clique.
+  Fase de origem: F-5b
+
+- [ ] **250. A mudança de fase offline entra na fila — e o histórico não inventa transição**
+  `[só olho humano]`
+  Pré-condição: um processo qualquer, e o DevTools em **Offline**.
+  **▶ ONDE IR.** **Processos** → **⋮ → Gerenciar** → **"Andamento do processo"**.
+  Passos:
+  1) offline, mudar a fase e salvar;
+  2) ler o que a tela diz;
+  3) conferir o aviso de **alteração não enviada** na própria tela do processo;
+  4) voltar o sinal e esperar;
+  5) conferir a fase e o **histórico de fases**.
+  Esperado no passo 2: a mesma mensagem de fila do compromisso — não é erro.
+  Esperado no passo 3: a tela do processo diz que **há alteração não enviada** e
+  leva à lista de pendências. Ver o dado antigo achando que é o atual é o mesmo
+  defeito da idade do dado (F-5a).
+  Esperado no passo 5: a fase mudou **uma vez**, e o histórico ganhou **uma**
+  entrada — com o `de → para` certo.
+  Repetir o cenário de conflito: mudar a fase por outro aparelho enquanto este
+  está offline. A fila precisa **falhar** com as duas versões, e o histórico
+  **não pode** ganhar a transição recusada.
+  Por que só olho humano: a suíte prova a recusa e o histórico pela API. O que
+  ela não prova é o caminho da tela até lá.
+  Fase de origem: F-5b
+
+- [ ] **251. O contador da fila aparece quando há, some quando não há, e não é o sino**
+  `[só olho humano]`
+  Passos: 1) sem nada na fila, olhar o cabeçalho; 2) criar uma alteração
+  offline e olhar de novo; 3) provocar uma falha (passo 248) e olhar a cor;
+  4) resolver tudo e olhar mais uma vez.
+  Esperado: **zero não aparece** — nem como "0" (mesma regra do sino, F-3); com
+  pendência, aparece o número; com falha, ele **muda de cor**, porque falha é
+  decisão parada e pendência sobe sozinha.
+  Conferir que ele **não discorda do sino**: são dois contadores de coisas
+  diferentes — o sino conta o que o mundo cobra (prazos, vencidos), este conta
+  o que ainda não saiu deste aparelho. Ícones e cores diferentes.
+  Por que só olho humano: a suíte prova que zero não renderiza. O que ela não
+  prova é se os dois contadores lado a lado se confundem.
+  Fase de origem: F-5b
 
 ## Validado
 
@@ -5271,6 +5469,53 @@ Dados que vários passos usam:
   Fase de origem: F-4
 
   **Validado em 28/08/2026 pelo Daniel. Passou.**
+
+- [x] **235. ⭐ 🚨 O VAZAMENTO ENTRE USUÁRIOS — o passo que a fase inteira existe para ter**
+  `[só olho humano]`
+  Pré-condição: dois usuários, e o navegador **sem** o `lex-offline` (se
+  existir, apague o banco pelo DevTools antes de começar).
+  **▶ ONDE IR.** O sistema inteiro, e depois DevTools → Application → IndexedDB.
+  Passos:
+  1) entrar como o **usuário A** e **navegar de verdade**: Clientes, um cliente
+     pelo "Ver", Processos, um processo pelo "Gerenciar", Honorários, Parcelas,
+     Pagamentos, Financeiro e Agenda;
+  2) abrir o DevTools e **conferir que há entradas** em `lex-offline` →
+     `entradas`, e que **toda chave** começa com `lex-offline|u:<id do A>`;
+  3) **sair** pelo menu (Sair / Logout);
+  4) **sem fechar o navegador**, conferir o banco de novo;
+  5) entrar como o **usuário B** e navegar por duas ou três telas;
+  6) conferir o banco mais uma vez.
+  Esperado no passo 2: as chaves carregam **o id do usuário A**. Nenhuma chave
+  sem `u:`, nenhuma com `u:` vazio, nenhuma com `anonimo`, `comum` ou coisa
+  parecida.
+  Esperado no passo 4: **as duas stores VAZIAS.** O logout apaga — não marca
+  como inválido, não expira, não esconde na leitura. 🚨 Se sobrar **uma
+  entrada que seja**, é **reprovação da fase**, não observação do passo.
+  Esperado no passo 6: só chaves com **o id do B**. **Nada do A.**
+  🚨 **O que NÃO pode acontecer, em nenhum momento:** uma chave sem id de
+  usuário; uma chave do A visível depois do login do B; conteúdo do A dentro de
+  um registro do B. Qualquer um desses é o vazamento, e o vazamento é o que
+  esta fase existe para impedir.
+  Repetir uma variação: com A logado, **entrar direto como B** (sem passar pelo
+  logout, pela tela de login) — o banco tem de ficar só com o B. É o caminho de
+  quem senta no computador do escritório e troca de conta.
+  Por que só olho humano: a suíte prova a montagem da chave, a escolha do que
+  apagar e que o `logout` chama a limpeza. O que ela **não** pode fazer é olhar
+  o IndexedDB de verdade — `node --test` não tem navegador, e a fase proíbe
+  dependência nova. Este passo é a única prova de que o banco ficou vazio.
+  Fase de origem: F-5a
+
+  **Validado em 28/08/2026 pelo Daniel. Passou.**
+  > **A variação da troca de conta sem logout foi feita**, e por `/login`
+  > direto — entrando com a segunda conta por cima da sessão da primeira, sem
+  > passar pelo botão Sair. O banco ficou só com as chaves do segundo usuário.
+  >
+  > **A leitura foi pelo console**, e não pelo painel: o **Application →
+  > IndexedDB do DevTools não se atualiza sozinho** — ele mostra o estado do
+  > momento em que foi aberto, e continua mostrando as chaves antigas até
+  > alguém clicar em "Refresh database". Quem repetir este passo pelo painel,
+  > sem recarregar a visão, vai concluir que houve vazamento onde não houve.
+  > **Anotado aqui porque é o tipo de falso positivo que custa uma manhã.**
 
 ## Automatizado
 

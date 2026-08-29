@@ -15,7 +15,7 @@ import { dataDaChave } from './monthGrid';
 // que pegou isto aqui, antes de a tela existir para alguém ver.
 import '../../components/ui/Button.css';
 import '../clients/ClientPage.css';
-import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import OfflineQueueNotice from '../../components/ui/OfflineQueueNotice';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -56,6 +56,9 @@ function EventFormPage() {
   const [error, setError] = useState('');
   const [campoComErro, setCampoComErro] = useState(null);
   const [concluido, setConcluido] = useState(false);
+  // O `updatedAt` que esta tela leu (DEC-060). `null` na criação: não há
+  // versão anterior a preservar.
+  const [versaoVista, setVersaoVista] = useState(null);
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -110,6 +113,11 @@ function EventFormPage() {
           processoId: e.processoId ?? '',
         });
         setConcluido(Boolean(e.concluido));
+        // DEC-060: a versão que ESTA tela leu. Ela viaja no cabeçalho na hora
+        // de salvar, e é o que faz o servidor recusar a gravação atrasada em
+        // vez de atropelar a de outro aparelho — inclusive horas depois, se a
+        // gravação tiver ido para a fila.
+        setVersaoVista(e.updatedAt ?? null);
       })
       .catch((err) => {
         if (ativo) setError(getApiErrorMessage(err, 'Falha ao carregar o compromisso.'));
@@ -133,17 +141,19 @@ function EventFormPage() {
 
   const online = useOnlineStatus();
 
+  // ── ESTA TELA GRAVA SEM SINAL (F-5b, DEC-059) ─────────────────────────
+  //
+  // É uma das duas exceções da fase à regra da F-5a: compromisso da agenda vale
+  // por si, não depende de saldo nem de nenhum estado do servidor que o
+  // aparelho offline não possa conferir. O pior caso de um conflito é uma data
+  // que a advogada revê — e ela revê na tela de pendências, com as duas
+  // versões à vista.
+  //
+  // Não há mais `if (!online) return` aqui: o interceptor **enfileira** em vez
+  // de recusar, e devolve um erro marcado `enfileirado`, que o `catch` abaixo
+  // trata como o que é — o oposto de uma perda.
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // ── Nenhum formulário aceita envio que vai falhar (F-5a, Parte 4) ────
-    //
-    // A primeira barreira é o botão anunciado como desabilitado; esta é a
-    // segunda, no handler, porque `aria-disabled` só ANUNCIA (DEC-053). A
-    // terceira é o interceptor de `api/axiosConfig.js`, que recusa a escrita
-    // antes da rede — ela cobre o sinal que cai ENTRE o clique e o envio.
-    //
-    // Deixar salvar para dar erro depois perde o que foi digitado.
-    if (!online) return;
     setSalvando(true);
     setError('');
     setCampoComErro(null);
@@ -159,12 +169,21 @@ function EventFormPage() {
     };
 
     try {
-      if (isEditing) await eventService.updateEvent(id, payload);
+      if (isEditing) await eventService.updateEvent(id, payload, { versaoVista });
       else await eventService.createEvent(payload);
 
       toast.success(isEditing ? 'Compromisso atualizado.' : 'Compromisso registrado.');
       navigate('/dashboard/agenda');
     } catch (err) {
+      // Sem sinal, a gravação foi para a FILA. Não é erro, e a tela não pode
+      // dizer que é: o que a advogada digitou está guardado e sobe sozinho.
+      // Ela sai do formulário como sairia se tivesse salvado — com a diferença
+      // dita em português, e com a pendência visível ao lado do sino.
+      if (err?.enfileirado) {
+        toast.info(err.message);
+        navigate('/dashboard/agenda');
+        return;
+      }
       // O 409 da DEC-053 (processo desativado) chega aqui com a frase que
       // NOMEIA o processo. Ela é exibida inteira: é a mensagem que diz qual
       // registro reativar, e resumi-la mandaria a advogada procurar.
@@ -182,10 +201,18 @@ function EventFormPage() {
   // mesma razão pela qual a mudança de fase não mora no formulário do processo.
   const alternarConclusao = async () => {
     try {
-      const res = await eventService.concludeEvent(id, !concluido);
+      const res = await eventService.concludeEvent(id, !concluido, { versaoVista });
       setConcluido(Boolean(res.data.concluido));
+      setVersaoVista(res.data.updatedAt ?? null);
       toast.success(res.data.concluido ? 'Compromisso concluído.' : 'Compromisso reaberto.');
     } catch (err) {
+      if (err?.enfileirado) {
+        // A conclusão também entra na fila. O estado da tela acompanha o que
+        // ela pediu — desfazê-lo faria parecer que o clique não funcionou.
+        setConcluido((atual) => !atual);
+        toast.info(err.message);
+        return;
+      }
       toast.error(getApiErrorMessage(err, 'Erro ao mudar a conclusão.'));
     }
   };
@@ -199,7 +226,7 @@ function EventFormPage() {
       {error && <p className="error-message" role="alert">{error}</p>}
 
       <form onSubmit={handleSubmit} className="data-form">
-        {!online && <OfflineWriteReason />}
+        {!online && <OfflineQueueNotice />}
         <div className="form-grid section">
           <h3>Dados do compromisso</h3>
 
@@ -336,7 +363,7 @@ function EventFormPage() {
             Cancelar
           </button>
           <button type="submit"
-            aria-disabled={online ? undefined : 'true'} className="ui-btn ui-btn--primary ui-btn--md" disabled={salvando}>
+            className="ui-btn ui-btn--primary ui-btn--md" disabled={salvando}>
             {salvando ? 'Salvando…' : 'Salvar'}
           </button>
         </div>

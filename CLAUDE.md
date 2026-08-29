@@ -62,6 +62,10 @@ Sessão da advogada por cookie httpOnly `lex-token`; portal do cliente por
   Leitura e escrita do espelho local passam por `hooks/useCachedResource`; quem
   monta chave é `offline/cacheKey.js`, e só ele. O logout apaga, e entrar com
   outro id apaga antes de escrever. Varreduras em `tests/offline/`.
+- **Escrita offline só pelas quatro operações da lista** (DEC-059). O que não
+  está em `offline/outboxOperations.js` continua recusado pela guarda da F-5a —
+  e o financeiro está fora de propósito. Nada sai da fila sem sucesso do
+  servidor ou gesto humano com confirmação.
 - **Portal quebra a ordem do Tab** (emenda à DEC-046). Quem abrir um flutuante
   em `createPortal` conduz o foco explicitamente — entra, circula, volta no
   Esc. Sem `autoFocus`, nunca.
@@ -609,6 +613,8 @@ A consequência é a divisão de trabalho que a Fase 4.2 firmou:
 | `tests/offline/politica.test.js` | o **limite e o descarte**, e a escolha entre rede e cache |
 | `tests/offline/idade.test.js` | a **idade do dado** e as frases do estado sem sinal |
 | `tests/offline/estatica.test.js` | a **fiação**: o logout limpando, a troca de conta limpando antes de escrever, o portal intocado |
+| `tests/offline/fila.test.js` | o que **entra na fila** (e que o financeiro não entra), a ordem, a **parada na primeira falha** e as frases |
+| `tests/offline/filaEstatica.test.js` | que **nada é descartado sozinho**, que o logout avisa, e que as telas de dinheiro continuam bloqueadas |
 
 As varreduras estáticas limpam comentários antes de analisar. Sem isso, um
 comentário explicando "não se lê `err.response` direto" derrubaria a própria
@@ -3581,6 +3587,110 @@ a página sem sinal continua caindo no login. A sessão é do servidor, o cookie
 `httpOnly` e `/auth/me` não responde offline — dar identidade local ao app é uma
 decisão de segurança que a F-5b já precisa tomar para a outbox, e antecipá-la
 aqui seria decidir por ela.
+
+---
+
+## DEC-059 e DEC-060 (frontend) — a fila de escrita (F-5b)
+
+> A F-5a leu sem sinal; a F-5b **grava**. A separação é a decisão, e ela está
+> na DEC-058: a leitura foi inteira antes porque a escrita é a fase mais
+> perigosa do projeto depois do dinheiro.
+
+### DEC-059 — o que entra na fila, e o que NÃO
+
+**Só quatro operações**: criar, editar e concluir compromisso da agenda, e
+mudar a fase do processo (`offline/outboxOperations.js`). A regra da F-5a
+continua sendo a regra — **sem sinal, escrita não sai** —, e isto é uma **lista
+fechada de exceções** por cima dela.
+
+**O financeiro ficou de fora, e não é excesso de cautela.** Toda validação de
+dinheiro depende de estado do servidor que o navegador offline não tem como
+conferir: o saldo em aberto, se a parcela já foi quitada, se o honorário foi
+reparcelado, quanto ainda é estornável. Um pagamento enfileirado às 10h pode
+ser inválido às 15h — a parcela foi quitada por outro caminho, ou o plano foi
+substituído. Aí a fila teria de explicar à advogada **por que um recebimento
+que ela deu como registrado não existe**, depois de ela já ter dito ao cliente
+que estava pago. O Financeiro 2.0 levou oito subfases para a tela nunca mentir
+sobre dinheiro; **enfileirar dinheiro reintroduz a mentira pela porta do
+offline.**
+
+**Apagar compromisso também ficou fora**, por outro motivo: apagar offline o
+que ainda não foi criado no servidor exigiria remapear identificador local
+quando a criação subisse — a armadilha clássica de fila, e a que produz o pior
+defeito, que é apagar o registro errado.
+
+### A fila
+
+| Propriedade | Como |
+|---|---|
+| append-only | a entrada não se edita e não se reordena; muda o **estado** (`pendente` → sai, ou `pendente` → `falhou`) |
+| escopada por usuário | `buildQueueKey` — a MESMA chave da DEC-058, e por isso a mesma limpeza na troca de conta |
+| sobrevive a recarregar | store `fila` do IndexedDB (banco na versão **2**; nada da F-5a se perde) |
+| em ordem | por `criadoEm`, com `seq` desempatando o mesmo milissegundo |
+| **para na primeira falha** | a próxima pode depender da que falhou |
+| **nada é descartado sozinho** | sem teto de tentativas, sem prazo, sem expurgo |
+
+A fila é store **separada** do cache de leitura porque os ciclos de vida são
+opostos: no cache, descartar o mais antigo é feature; na fila, **perder é
+defeito**. Juntas, o descarte por cota apagaria trabalho da advogada.
+
+**Idempotência**: cada entrada nasce com um UUID no clique, e ele é o mesmo em
+todo reenvio — inclusive no "tentar de novo" da tela. É o que impede o reenvio
+de criar um segundo compromisso quando a rede caiu **depois** de o servidor
+gravar (DEC-059, lado do backend).
+
+### DEC-060 — conflito não se resolve sozinho
+
+A tela manda no cabeçalho `X-If-Unmodified-Since` o `updatedAt` que ela **leu**.
+Se o registro mudou desde então, o servidor recusa com **409** e devolve o que
+está gravado. A tela de pendências mostra **as duas versões** e a advogada
+escolhe:
+
+- **"Manter a minha versão"** → a entrada que levou 409 sai e **uma nova
+  entra**, com a versão do servidor e **chave de idempotência nova**.
+  Sobrescrever de propósito, depois de ver as duas, é **outra intenção** — e é
+  o que mantém a fila append-only;
+- **"Ficar com a do servidor"** → descarte, com a confirmação que nomeia o que
+  se perde.
+
+O cabeçalho vai **fora do corpo** porque o corpo passa pela guarda de campos
+permitidos do backend, que recusa campo desconhecido — e com razão. Nenhum
+contrato de rota mudou por causa desta fase.
+
+### A tela de pendências não é opcional
+
+**Sem ela, a fila é perda de dado silenciosa.** Uma gravação guardada que
+falhou, sem lugar onde apareça, é trabalho que some sem ninguém saber. Por isso
+a fase proibiu mergear fila sem tela — e por isso as Partes 2, 3 e 4 foram num
+commit só.
+
+Ela diz **o que era, de quando e o que houve**, em português; nunca
+`POST /events 409`. O contador fica ao lado do sino, com ícone e cor próprios:
+o sino conta o que o mundo cobra, este conta o que ainda não saiu daqui. Somá-los
+faria "3" significar coisas diferentes conforme o dia.
+
+### O logout com fila pendente — a tensão com a DEC-058
+
+A DEC-058 manda **apagar tudo** no logout, e ela continua valendo: sair da conta
+num computador emprestado precisa deixar o navegador limpo. Mas a fila não é
+cache — é trabalho que **nunca chegou ao servidor**.
+
+**A regra: avisa antes, dizendo quantas são, e a escolha é dela.** Nem apagar
+calado (perda de dado sem aviso), nem segurar o logout (decidir por ela).
+
+**Tentar enviar antes de sair foi considerado e descartado:** se houvesse sinal,
+a fila já teria subido sozinha — o reenvio dispara quando o sinal volta. Uma
+fila que ainda existe no momento do logout ou está sem sinal (e não vai subir)
+ou travou numa falha (e precisa de decisão, não de mais uma tentativa). Segurar
+a saída prenderia a advogada numa espera que já se sabe inútil, justamente no
+computador emprestado, que é onde ela precisa sair depressa.
+
+### Se a fila não conseguir gravar, a tela NÃO diz que gravou
+
+`enfileirar` devolve `null` quando o IndexedDB não aceitou a escrita, e o
+interceptor volta a recusar com a frase da F-5a. Dizer "ficou na fila" sobre
+algo que não ficou em lugar nenhum é **perda de dado com mensagem de sucesso** —
+o pior desfecho possível desta fase.
 
 ---
 

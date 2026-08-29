@@ -18,6 +18,9 @@ import ProcessTimeline from '../../components/processes/ProcessTimeline';
 import Loading from '../../components/common/Loading';
 import OfflineNotice from '../../components/ui/OfflineNotice';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import OfflineQueueNotice from '../../components/ui/OfflineQueueNotice';
+import { useOutbox } from '../../contexts/OutboxContext';
+import { MENSAGEM_ALTERACAO_NAO_ENVIADA } from '../../offline/outboxMessages';
 import useCachedResource from '../../hooks/useCachedResource';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
 import './ProcessPage.css';
@@ -74,6 +77,12 @@ function ProcessoDetalhePage() {
 
   const { id } = useParams();
   const online = useOnlineStatus();
+  const { entradas } = useOutbox();
+  // Só a pendência DESTE processo: a fila é do aparelho inteiro, e avisar aqui
+  // sobre a fase de outro processo faria o aviso perder o sentido.
+  const fasePendente = entradas.some(
+    (e) => e.operacao === 'mudarFase' && String(e.url).includes(String(id))
+  );
 
   // ── DEC-058 (F-5a): o processo que ela já abriu continua legível ────────
   //
@@ -149,13 +158,18 @@ function ProcessoDetalhePage() {
   //
   // A única coisa que o desabilita é `salvandoFase` — evitar o clique duplo,
   // que gravaria duas entradas iguais no histórico.
+  // ── A MUDANÇA DE FASE GRAVA SEM SINAL (F-5b, DEC-059) ─────────────────
+  //
+  // É a outra exceção da fase: a fase vale por si e não depende de nenhum
+  // estado do servidor que o aparelho offline não possa conferir. Sem sinal, o
+  // interceptor enfileira em vez de recusar — e a `versaoVista` viaja junto,
+  // para o servidor recusar a gravação atrasada em vez de empurrar para o
+  // histórico uma transição que parte de uma fase que já não é a atual.
   const salvarFase = async () => {
-    // `aria-disabled` só ANUNCIA — a recusa tem de ser feita aqui, senão o
-    // botão "desabilitado" continuaria disparando a ação (DEC-053).
-    if (!online) return;
     setSalvandoFase(true);
     try {
       const { data } = await processService.mudarFase(id, {
+        versaoVista: processo?.updatedAt ?? null,
         fase: faseEscolhida,
         // Opcional. Vazio não é enviado, e a transição acontece igual —
         // *"não precisa anotar o porquê, só se ela quiser mesmo"*.
@@ -171,6 +185,14 @@ function ProcessoDetalhePage() {
       setMotivoFase('');
       toast.success(`Fase alterada para ${rotuloDaFase(data.fase)}.`);
     } catch (err) {
+      if (err?.enfileirado) {
+        // Não é erro: o que ela pediu está guardado e sobe sozinho. O motivo
+        // volta a ficar vazio como voltaria num sucesso — ele é da transição,
+        // e a transição foi registrada (na fila).
+        setMotivoFase('');
+        toast.info(err.message);
+        return;
+      }
       toast.error(getApiErrorMessage(err, 'Não foi possível mudar a fase do processo.'));
     } finally {
       setSalvandoFase(false);
@@ -402,11 +424,17 @@ function ProcessoDetalhePage() {
             className="btn-primary"
             onClick={salvarFase}
             disabled={salvandoFase || !faseEscolhida}
-            aria-disabled={online ? undefined : 'true'}
           >
             {salvandoFase ? 'Salvando…' : 'Mudar fase'}
           </button>
-          {!online && <OfflineWriteReason />}
+          {/* Sem sinal, esta ação continua disponível — e o aviso diz o que
+              vai acontecer com ela (F-5b). */}
+          {!online && <OfflineQueueNotice />}
+          {fasePendente && (
+            <p className="andamento-detalhe">
+              <Link to="/dashboard/pendencias">{MENSAGEM_ALTERACAO_NAO_ENVIADA}</Link>
+            </p>
+          )}
         </div>
 
         {/* ── A linha do tempo, em forma bruta (F-2d) ────────────────────

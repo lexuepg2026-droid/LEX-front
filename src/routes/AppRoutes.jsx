@@ -28,6 +28,7 @@ import FinanceiroPage from '../pages/financeiro/FinanceiroPage';
 import CalendarPage from '../pages/calendar/CalendarPage';
 import EventFormPage from '../pages/calendar/EventFormPage';
 import ProfilePage from '../pages/profile/ProfilePage';
+import PendenciasPage from '../pages/pendencias/PendenciasPage';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PORTAL DO CLIENTE — mesmo app, chunk próprio
@@ -160,6 +161,14 @@ function AppRoutes() {
           <Route path="agenda" element={<CalendarPage />} />
           <Route path="agenda/novo" element={<EventFormPage />} />
           <Route path="agenda/editar/:id" element={<EventFormPage />} />
+
+          {/* ── A fila da F-5b (DEC-059) ──────────────────────────────────
+              Rota própria, e não modal: a lista tem N entradas, cada uma com
+              uma decisão possível, e o conflito mostra duas versões lado a
+              lado. É o mesmo critério da DEC-049 — modal serve para decisão
+              curta. Não há item de menu: chega-se pelo contador ao lado do
+              sino, que só aparece quando há o que resolver. */}
+          <Route path="pendencias" element={<PendenciasPage />} />
 
           <Route path="perfil" element={<ProfilePage />} />
         </Route>

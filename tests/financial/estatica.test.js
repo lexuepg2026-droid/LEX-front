@@ -187,6 +187,13 @@ describe("o tratamento de erro passa pelos helpers, nunca por err.response", () 
 
     for (const caminho of arquivosFonte()) {
       const relativo = caminho.replace(`${RAIZ}/`, "");
+      // O HELPER é quem abre o erro — a mesma exceção do teste do CORPO, logo
+      // acima. A F-5b acrescentou `getApiErrorStatus` ali porque a fila
+      // precisa distinguir "não saiu do aparelho" (sem resposta) de "o
+      // servidor recusou" (4xx) e "o servidor falhou" (5xx). Pô-lo em
+      // `utils/apiError.js` é o que impede as telas de voltarem a ler
+      // `err.response` por conta própria para chegar ao mesmo lugar.
+      if (relativo === "src/utils/apiError.js") continue;
       if (INTERCEPTORS.includes(relativo)) continue;
 
       const codigo = semComentarios(readFileSync(caminho, "utf8"));

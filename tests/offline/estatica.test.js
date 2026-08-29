@@ -290,13 +290,22 @@ describe("quem serve do espelho DIZ que está servindo do espelho", () => {
 });
 
 describe("nenhum formulário aceita envio que vai falhar", () => {
+  // ── A F-5b tirou UM formulário desta lista, e não afrouxou a regra ──────
+  //
+  // `EventFormPage` passou a GRAVAR sem sinal (DEC-059): o compromisso vai
+  // para a fila em vez de ser recusado. A regra desta varredura continua
+  // valendo nele — "nenhum formulário aceita envio que vai falhar" —, só que
+  // agora ela é satisfeita pelo outro lado: **o envio não falha**, ele fica
+  // guardado. O bloco seguinte é quem cobra isso dele.
+  //
+  // Todo o resto continua aqui, inclusive os quatro do financeiro, que a
+  // Parte 0 da F-5b manteve de fora da fila de propósito.
   const FORMULARIOS = [
     "src/pages/clients/ClientFormPage.jsx",
     "src/pages/processes/ProcessFormPage.jsx",
     "src/pages/fees/FeeFormPage.jsx",
     "src/pages/installments/InstallmentFormPage.jsx",
     "src/pages/payments/PaymentFormPage.jsx",
-    "src/pages/calendar/EventFormPage.jsx",
     "src/pages/secoes/SecaoFormPage.jsx",
     "src/pages/profile/ProfilePage.jsx"
   ];

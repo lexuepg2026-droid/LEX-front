@@ -1,4 +1,5 @@
 import api from './axiosConfig';
+import { cabecalhoDeVersao } from '../offline/versionHeader';
 
 const listProcesses = ({ page = 1, limit = 20, busca, status, situacao, fase, liminar } = {}) => {
   const params = { page, limit };
@@ -29,10 +30,14 @@ const deleteProcess = (id) => api.delete(`/processes/${id}`);
 //
 // `motivo` é OPCIONAL — *"não precisa anotar o porquê, só se ela quiser
 // mesmo"*. Vazio não é enviado; a transição acontece igual.
-const mudarFase = (id, { fase, motivo } = {}) => {
+// `versaoVista`: o `updatedAt` do processo que a tela leu (DEC-060). Vai no
+// cabeçalho — ver a nota em `api/eventService.js`. Sem ele, a mudança de fase
+// enfileirada horas antes sobrescreveria a que outro aparelho gravou no
+// meio-tempo, e o histórico registraria uma transição que não aconteceu.
+const mudarFase = (id, { fase, motivo, versaoVista } = {}) => {
   const corpo = { fase };
   if (motivo && motivo.trim()) corpo.motivo = motivo.trim();
-  return api.patch(`/processes/${id}/fase`, corpo);
+  return api.patch(`/processes/${id}/fase`, corpo, { headers: cabecalhoDeVersao(versaoVista) });
 };
 
 // DEC-052 — a volta. Restaura o processo e só os vínculos que a cascata dele

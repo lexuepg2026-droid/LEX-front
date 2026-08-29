@@ -6,8 +6,8 @@ import calendarService from '../../api/calendarService';
 import PageHeader from '../../components/ui/PageHeader';
 import OfflineNotice from '../../components/ui/OfflineNotice';
 import useCachedResource from '../../hooks/useCachedResource';
-import useOnlineStatus from '../../hooks/useOnlineStatus';
-import { MENSAGEM_ESCRITA_OFFLINE } from '../../offline/offlineMessages';
+import { MENSAGEM_ALTERACAO_NAO_ENVIADA } from '../../offline/outboxMessages';
+import { useOutbox } from '../../contexts/OutboxContext';
 import EmptyState from '../../components/ui/EmptyState';
 import Loading from '../../components/common/Loading';
 import { formatMonthKey, formatDate, formatCurrency } from '../../utils/formatters';
@@ -46,7 +46,11 @@ function CalendarPage() {
   const navigate = useNavigate();
 
   const [diaAberto, setDiaAberto] = useState(null);
-  const online = useOnlineStatus();
+  const { entradas } = useOutbox();
+  // Só as pendências DE AGENDA: uma mudança de fase esperando na fila não diz
+  // nada sobre esta tela, e avisar por ela treinaria a advogada a ignorar o
+  // aviso.
+  const temPendenciaDeAgenda = entradas.some((e) => e.operacao !== 'mudarFase');
 
   // ── A VISTA PADRÃO É DECIDIDA UMA VEZ, PELA LARGURA ───────────────────
   //
@@ -130,26 +134,33 @@ function CalendarPage() {
   // Criar a partir do clique num DIA, com a data já preenchida. É o caminho que
   // faz a grade valer como ferramenta e não só como relatório.
   //
-  // Sem sinal ela não leva a lugar nenhum: o formulário existe para gravar, e a
-  // Parte 4 da F-5a proíbe abrir o que vai recusar o envio no fim. O motivo já
-  // está dito no cabeçalho da tela, uma vez.
-  const criarNoDia = (chave) => {
-    if (!online) return;
-    navigate(`/dashboard/agenda/novo?data=${chave}`);
-  };
+  // Sem sinal ela CONTINUA levando (F-5b): compromisso é uma das duas coisas
+  // que a fila aceita, e o formulário avisa lá dentro o que vai acontecer.
+  const criarNoDia = (chave) => navigate(`/dashboard/agenda/novo?data=${chave}`);
 
   const rotuloDoMes = formatMonthKey(grade.chaveDoMes);
 
   return (
     <div className="cal-page">
+      {/* Sem `actionMotivo`: o botão continua ativo sem sinal (F-5b). O que
+          acontece com o que ela salvar está dito no formulário, e a pendência
+          aparece no contador ao lado do sino. */}
       <PageHeader
         title="Agenda"
         actionLabel="Novo compromisso"
         actionTo="/dashboard/agenda/novo"
-        actionMotivo={online ? undefined : MENSAGEM_ESCRITA_OFFLINE}
       />
 
       {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
+
+      {/* Enquanto houver alteração na fila, a tela onde o registro aparece diz
+          que o que está à vista é o do servidor — ver o dado antigo achando que
+          é o atual é o mesmo defeito da idade do dado, na F-5a. */}
+      {temPendenciaDeAgenda && (
+        <p className="cal-pendencia" role="status">
+          <Link to="/dashboard/pendencias">{MENSAGEM_ALTERACAO_NAO_ENVIADA}</Link>
+        </p>
+      )}
 
       <div className="cal-toolbar">
         <div className="cal-nav">

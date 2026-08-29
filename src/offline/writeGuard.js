@@ -29,6 +29,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { MENSAGEM_ESCRITA_OFFLINE } from './offlineMessages.js';
+import { MENSAGEM_ENFILEIRADO } from './outboxMessages.js';
 
 // `PATCH` é o verbo de atualização do projeto; `PUT` está na lista mesmo tendo
 // sido eliminado das três rotas financeiras, porque a guarda é sobre o método
@@ -51,6 +52,25 @@ export const shouldBlockWrite = ({ method, online } = {}) =>
 export const offlineWriteError = (config) => {
   const erro = new Error(MENSAGEM_ESCRITA_OFFLINE);
   erro.offline = true;
+  erro.config = config;
+  return erro;
+};
+
+// ── A F-5b abriu UMA exceção nesta guarda, e ela é uma lista fechada ─────
+//
+// Compromisso da agenda e mudança de fase passam a ser **enfileirados** em vez
+// de recusados (`offline/outboxOperations.js` diz quais são, e por que o
+// financeiro ficou de fora). A rejeição continua acontecendo — a requisição
+// não saiu do aparelho —, mas ela agora significa o oposto de uma perda: o que
+// foi digitado está guardado e sobe sozinho quando o sinal voltar.
+//
+// A marca `enfileirado` é o que permite à tela distinguir os dois casos sem
+// ler o texto da mensagem.
+export const offlineQueuedError = (config, entrada) => {
+  const erro = new Error(MENSAGEM_ENFILEIRADO);
+  erro.offline = true;
+  erro.enfileirado = true;
+  erro.entrada = entrada;
   erro.config = config;
   return erro;
 };

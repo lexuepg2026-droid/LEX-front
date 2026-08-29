@@ -1,0 +1,39 @@
+/* O contador da fila (F-5b). Fica ao lado do sino, com ícone e cor próprios:
+   ele conta outra coisa, e dois contadores iguais lado a lado se leem como o
+   mesmo número repetido. */
+.fila-badge {
+  align-items: center;
+  background-color: var(--color-info-bg);
+  border: 1px solid var(--color-info);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  text-decoration: none;
+}
+
+.fila-badge:hover {
+  background-color: var(--color-surface-raised);
+}
+
+.fila-badge svg {
+  color: var(--color-info);
+  flex-shrink: 0;
+}
+
+/* Falha é decisão PARADA: ela não sobe sozinha, e precisa se distinguir da
+   pendência comum, que sobe. */
+.fila-badge--falha {
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger);
+}
+
+.fila-badge--falha svg {
+  color: var(--color-danger);
+}
+
+.fila-badge__contagem {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
