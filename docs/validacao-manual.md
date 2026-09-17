@@ -729,9 +729,10 @@ Dados que vários passos usam:
   propósito — `true` significa "há rede", não "há internet"). Ficar sem
   internet **sem** derrubar a interface de rede deixa `onLine` em `true`, a
   guarda não dispara, a requisição sai e fica pendurada — que é precisamente o
-  "salvando até voltar a internet" descrito. **Ambiente desconhecido** (ver a
-  nota de sessão em `## Validado`): no Render, o servidor hibernando produz o
-  mesmo sintoma sem que a rede tenha caído.
+  "salvando até voltar a internet" descrito. **A execução foi no Render**
+  (confirmado pelo Daniel em 17/09/2026), e lá o servidor hibernando produz o
+  mesmo sintoma sem que a rede tenha caído — o que torna esta a explicação mais
+  provável, e não apenas uma entre duas.
   **O que falta:** reexecutar usando **DevTools → Network → Offline**, que é o
   que a pré-condição manda e o único jeito de garantir `onLine === false`;
   conferir que a mensagem é a de escrita offline e que a ordem volta sozinha.
@@ -1121,9 +1122,10 @@ Dados que vários passos usam:
   **O que falta:** reexecutar anotando a **frase exata** que a tela mostrou, e
   em qual dos cinco formulários. É o mesmo texto que o passo **207** viu em
   outro caminho — vale conferir se a origem é a mesma.
-  **Ambiente desconhecido** — ver a nota de sessão em `## Validado`. Importa
+  **Executado no Render** (confirmado pelo Daniel em 17/09/2026). Importa
   aqui: derrubar o backend local e bater num Render hibernando produzem a mesma
-  tela por motivos diferentes.
+  tela por motivos diferentes — e como foi no Render, a segunda hipótese passa a
+  ser a provável. Reexecutar **com o servidor aquecido**.
   Passos: abrir a edição de um registro e, com o backend derrubado (ou o id
   trocado por um inexistente na URL), recarregar.
   Esperado: o spinner some e a **mensagem de erro** da tela aparece. Spinner
@@ -1175,7 +1177,9 @@ Dados que vários passos usam:
   **O que falta:** reexecutar registrando **qual** listagem foi (recebimentos,
   parcelas, honorários, documentos) e se o 400 chega à tela — se chega e não é
   exibido, o defeito é de renderização; se não chega, é a consulta.
-  **Ambiente desconhecido** — ver a nota de sessão em `## Validado`.
+  **Executado no Render** (confirmado pelo Daniel em 17/09/2026). Não muda o
+  veredito: o 400 do id malformado é resposta do servidor, e servidor
+  hibernando não devolve tela vazia — devolve demora.
   Passos: editar a URL à mão para um `?processoId=` inválido (por exemplo
   `/dashboard/recebimentos?processoId=xyz`) e carregar.
   Esperado: a tela mostra a mensagem de erro do backend nomeando o filtro —
@@ -1773,23 +1777,33 @@ Dados que vários passos usam:
 
 - [ ] **207. 🚨 O histórico mostra `de → para`, com data — e é o passado da linha do tempo**
   **Executado pelo Davi em setembro de 2026 (data exata não registrada).
-  REPROVOU — continua pendente.** Anotação dele, palavra por palavra:
-  *"Aparece Network error e não muda nada"*.
-  **É a mudança de fase falhando**, e não o histórico: a preparação deste passo
-  (os 205 e 206) é justamente mudar a fase, e sem ela não há `de → para` a
-  conferir. **É a operação mais grave da lista** — `mudarFase` é uma das quatro
-  da fila offline da F-5b (DEC-059), e um erro de rede nela é exatamente o
-  cenário que a fila existe para tratar.
-  **⚠️ NÃO SE SABE O AMBIENTE, e aqui isso decide o veredito.** Se a execução
-  foi no **Render**, o plano gratuito **dorme depois de 15 minutos** e a
-  primeira requisição leva **cerca de um minuto** para acordar o Web Service —
-  um "Network error" nessa janela **não é defeito**, é a hibernação descrita na
-  DEC-061. Se foi local, com o backend no ar, é defeito de verdade.
-  **O que falta, e passa a fazer parte da PRÉ-CONDIÇÃO:** reexecutar **com o
-  servidor já aquecido** — abrir o sistema, esperar a primeira tela carregar de
-  fato, e só então mudar a fase. Anotar em qual ambiente foi.
-  Pré-condição: **servidor aquecido** (ver acima), `npm run seed:fresh` **uma
-  vez**, e os passos **205** e
+  INCONCLUSIVO — continua pendente. NÃO é reprovação.** Anotação dele, palavra
+  por palavra: *"Aparece Network error e não muda nada"*.
+  **O veredito mudou na A-1 (17/09/2026), e o que o mudou foi uma informação,
+  não uma correção de código.** O Daniel confirmou que a validação do Davi foi
+  executada **no ambiente publicado (Render)**. Na V-D o passo estava marcado
+  como REPROVADO porque o ambiente era desconhecido e o pior caso era defeito;
+  sabendo o ambiente, o pior caso deixa de ser o único.
+  **Por que o Render torna o relato compatível com o comportamento correto:** o
+  plano gratuito **dorme depois de 15 minutos** sem requisição e a primeira
+  chamada leva **cerca de um minuto** para acordar o Web Service (DEC-061). Um
+  *"Network error"* nessa janela **não é defeito** — é a hibernação, e é o
+  mesmo pré-voo que o passo **258** existe para medir.
+  **Mas não há como afirmar que foi isso.** Ninguém cronometrou, e ninguém
+  registrou se era a primeira requisição da sessão. *"Não muda nada"* é o que a
+  hibernação produz **e** o que um defeito produziria. **Por isso inconclusivo,
+  e não aprovado:** o passo não tem veredito, e continua pendente até ser
+  refeito em condição conhecida.
+  **É a operação mais grave da lista** — `mudarFase` é uma das quatro da fila
+  offline da F-5b (DEC-059) —, e é por isso que ele não pode ficar no limbo.
+  **O que falta, e passa a fazer parte da PRÉ-CONDIÇÃO:** **abrir o sistema
+  alguns minutos antes** e fazer uma operação qualquer que fale com a API (um
+  login serve), esperando a resposta chegar. Só então executar o passo. Se o
+  *"Network error"* reaparecer **com o servidor comprovadamente aquecido**,
+  aí sim é reprovação, e a fila offline passa a ser o primeiro lugar a olhar.
+  Pré-condição: **servidor aquecido — abrir o sistema alguns minutos antes e
+  esperar a primeira chamada à API responder** (ver acima), `npm run seed:fresh`
+  **uma vez**, e os passos **205** e
   **206** executados depois dele, **no mesmo processo**. Os três formam uma
   sequência: um seed, depois 205 → 206 → 207, sem reset no meio.
   **Nota da F-5a (28/08/2026):** os passos **205** e **206** passaram e foram
@@ -2560,7 +2574,7 @@ Dados que vários passos usam:
   conhecida é conteúdo indivisível (`Intl` em pt-BR faz de "R$ 1.234.567,89"
   um token só) esticando a trilha da grade, e ela se manifesta **por campo**.
   Ao reexecutar, anotar a tela, o bloco e o valor que estourou.
-  **Ambiente desconhecido** — ver a nota de sessão em `## Validado`. Não muda o
+  **Executado no Render** (confirmado pelo Daniel em 17/09/2026). Não muda o
   veredito aqui: largura de página não depende de Render nem de localhost.
   Pré-condição: `npm run seed:fresh`, e janela (ou DevTools) em **360 px de
   largura**. **Fecha a pendência do passo 181.**
@@ -2606,9 +2620,10 @@ Dados que vários passos usam:
   **O que falta AQUI:** reexecutar os quatro esperados deste passo (a frase
   discreta, o salvar mesmo assim, e a nova tentativa que funciona), sem a
   ressalva do sino, que agora tem passo próprio.
-  **Ambiente desconhecido** — ver a nota de sessão em `## Validado`. Aqui ele
-  importa: no Render, com o servidor hibernando, "não carregou" pode ter sido
-  lentidão da primeira requisição, e não o bloqueio da rede que o passo pede.
+  **Executado no Render** (confirmado pelo Daniel em 17/09/2026). Aqui isso
+  importa: com o servidor hibernando, "não carregou" pode ter sido lentidão da
+  primeira requisição, e não o bloqueio da rede que o passo pede. Reexecutar
+  **com o servidor aquecido**.
   Pré-condição: `npm run seed:fresh`.
   **▶ ONDE IR.** DevTools → **Network** → **Offline** (ou bloquear
   `/tabelas/*`). Depois **Processos → Novo processo**.
@@ -3355,20 +3370,25 @@ Dados que vários passos usam:
 > corpo de cada passo, com a ortografia dele — a anotação crua é a evidência, e
 > a interpretação está ao lado dela, nunca no lugar.
 >
-> **⚠️ DUAS PENDÊNCIAS DE INFORMAÇÃO sobre esta sessão, e as duas são do
-> Daniel:**
+> **✅ O AMBIENTE FOI CONFIRMADO em 17/09/2026 (fase A-1): a validação do Davi
+> foi executada no ambiente PUBLICADO (Render).** Os passos afetados — **128**,
+> **150**, **153**, **207**, **233** e **234** — foram atualizados, e o **207
+> mudou de veredito por causa disso**.
+>
+> **Por que o ambiente decidia vereditos.** O plano gratuito do Render **dorme
+> depois de 15 minutos** e leva cerca de um minuto para acordar (DEC-061). Um
+> *"Network error"* nessa janela **não é defeito** — é a hibernação. Sabendo que
+> foi no Render, o *"Aparece Network error e não muda nada"* do passo **207**
+> deixou de ser **reprovação** e passou a ser **INCONCLUSIVO**: o relato é
+> compatível com o comportamento correto, e ninguém cronometrou para saber.
+> Ele continua pendente, com "abrir o sistema alguns minutos antes" na
+> pré-condição.
+>
+> **⚠️ UMA PENDÊNCIA DE INFORMAÇÃO continua aberta, e é do Daniel:**
 >
 > | | O quê | Por que importa |
 > |---|---|---|
 > | **data** | a data exata não foi registrada. Os passos dizem **"em setembro de 2026 (data exata não registrada)"** | um passo validado é validado *contra uma versão do código*, e sem data não se sabe qual |
-> | **ambiente** | **não se sabe se ele executou no Render (publicado) ou localmente** | muda a leitura de vários passos, e **decide o veredito de pelo menos um** |
->
-> **Por que o ambiente decide vereditos.** O plano gratuito do Render **dorme
-> depois de 15 minutos** e leva cerca de um minuto para acordar (DEC-061). Um
-> *"Network error"* nessa janela **não é defeito** — é a hibernação. Os passos
-> afetados carregam a dúvida escrita no próprio corpo: **128**, **150**,
-> **153**, **207**, **233** e **234**. O **207** é o mais grave: se foi no
-> Render frio, pode não ser defeito nenhum; se foi local, é.
 >
 > **Os 11 que subiram para cá: 4, 12, 109, 125, 135, 141, 147, 158, 180, 197 e
 > 225.** Quatro deles fecham histórias antigas:
@@ -3386,7 +3406,8 @@ Dados que vários passos usam:
 >
 > | Situação | Passos | O que significa |
 > |---|---|---|
-> | **reprovado** | **128**, **153**, **207**, **215**, **233** (parcial) | houve defeito observado |
+> | **reprovado** | **128**, **153**, **215**, **233** (parcial) | houve defeito observado |
+> | **inconclusivo** | **207** | o relato é compatível com defeito **e** com a hibernação do Render. Reclassificado na A-1 |
 > | **aprovado com ressalva** | **154**, **212**, **234**, e o **150** (ambíguo) | passou, mas com algo por conferir — **ressalva não é aprovação** |
 > | **não executado** | **136**, **137**, **138**, **139**, **140**, **142**, **152**, e o **210** (parcial) | não houve veredito |
 >

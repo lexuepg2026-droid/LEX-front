@@ -3558,6 +3558,38 @@ em portal cativo, a tela mostra o erro do servidor em vez do aviso de offline.
 Sem gambiarra de "ping": teste de conectividade próprio é outra decisão, com
 custo de bateria e de requisição, e ninguém a pediu.
 
+#### 🚨 A FILA NÃO É ACIONADA quando `onLine` fica `true` sem internet (achado da V-D)
+
+**Isto é limitação conhecida da API do navegador, não defeito do código** — e
+precisa estar escrito porque é **exatamente o que um avaliador vai reproduzir
+desligando o wi-fi**.
+
+> A guarda de offline dispara com `navigator.onLine === false`. Perder conexão
+> sem derrubar a interface de rede — por exemplo, o roteador sem saída para a
+> internet — deixa `onLine` em `true`: a requisição sai e fica pendurada, e a
+> fila não é acionada. O sintoma é a tela dizendo que está salvando até a
+> conexão voltar.
+
+**Vale para a fila inteira, e não só para a operação em que o achado apareceu.**
+A guarda mora no interceptor (`api/axiosConfig.js`), antes de qualquer decisão
+sobre enfileirar: se `shouldBlockWrite` não dispara, nenhuma das quatro
+operações da DEC-059 chega a ser considerada. Compromisso e mudança de fase se
+comportam como a reordenação de seções do passo 128 — a requisição parte.
+
+**Como isso APARECE, e por que engana.** A tela mostra o indicador de
+salvamento e fica nele; quando o sinal volta, a requisição pendurada completa e
+grava. Parece a fila funcionando, e não é: nada foi enfileirado, nada
+sobreviveria a fechar a aba, e a tela de pendências fica vazia o tempo todo.
+
+**Como reproduzir o caminho CERTO:** DevTools → Network → **Offline**, que é o
+único gesto que garante `onLine === false`. É o que as pré-condições dos passos
+**128** e **244 a 251** mandam, e a razão de mandarem está aqui.
+
+**Não se "conserta" com um ping.** Um teste de conectividade próprio custa
+bateria e uma requisição periódica, e a decisão de não tê-lo está no parágrafo
+acima desde a F-5a. O que se faz é **saber e documentar** — e, no dia em que
+alguém demonstrar o offline, desligar a rede pelo DevTools e não pelo roteador.
+
 ### ⚠️ Aviso para a F-5b: subir a versão do banco tem custo
 
 A outbox vai precisar de outra object store, e isso significa **subir
