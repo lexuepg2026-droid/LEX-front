@@ -3292,6 +3292,200 @@ Dados que vários passos usam:
   apareceu com o Daniel.
   Fase de origem: V-D
 
+---
+
+## 40. Fase A-1 — a lista em ordem, e o e-mail que é conferido
+
+> Numeração contínua a partir do 260. Seis passos novos: **261 a 266**.
+> O total pendente vai de **112 para 118**.
+>
+> **Dois assuntos independentes, pedido direto do Daniel.** A listagem de
+> clientes passou a sair em ordem alfabética (**DEC-062**) e o formato do
+> e-mail passou a ser conferido (**DEC-063**).
+>
+> **O que a suíte já prova, e por que estes passos existem mesmo assim.** O
+> backend prova a ordem com nomes acentuados contra o Atlas de verdade, a
+> mistura de PF e PJ, a combinação com busca e situação, e três páginas sem id
+> repetido (`tests/clients/ordenacao.test.js`, 17). Prova também os onze casos
+> de e-mail, o `campo: "email"` do 400, e — o mais importante — que o login
+> continua respondendo 401 idêntico para malformado, inexistente e senha
+> errada (`tests/auth/email.test.js`, 21). O frontend prova o vocabulário, a
+> fiação do seletor e do paginador, e que as duas implementações da regra de
+> e-mail concordam caso a caso (`tests/regressions/a1.test.js`, 32).
+>
+> **Nada disso prova o que só olho humano vê:** que a ordem na tela é a ordem
+> que uma pessoa chamaria de alfabética, que o acentuado está onde ela vai
+> procurar, e que a mensagem de e-mail chega ao campo certo.
+>
+> **O passo 266 é o mais importante da fase** — é a propriedade que a DEC-063
+> mais arrisca.
+
+- [ ] **261. ⭐ A lista em ordem, com nome acentuado NO MEIO e não no fim**
+  Pré-condição: `npm run seed:fresh`, e então **cadastrar quatro clientes à
+  mão**, nesta ordem de cadastro (fora de ordem alfabética de propósito — se a
+  lista não ordenasse nada, ela sairia na ordem em que você digitou, e o passo
+  passaria por acidente):
+  **Zeca Nogueira**, **Álvaro Nogueira**, **Ana Nogueira**, **Alvaro Nogueira**
+  (o quarto **sem acento**, e é esse par que o passo existe para olhar).
+  **▶ ONDE IR.** Menu lateral → **Clientes**.
+  Passos:
+  1) abrir a listagem **sem tocar em nenhum controle**;
+  2) ler os quatro nomes, de cima para baixo;
+  3) procurar **"Álvaro Nogueira"** com o olho, como quem procura na letra A.
+  Esperado no passo 1: a lista **já vem em ordem alfabética** — o seletor de
+  ordenação nasce em **"Nome (A–Z)"**. Não é preciso escolher nada.
+  Esperado no passo 2: **"Álvaro Nogueira" e "Alvaro Nogueira" aparecem
+  JUNTOS**, um logo abaixo do outro, os dois **antes** de "Ana Nogueira", e
+  "Zeca Nogueira" por último.
+  **🚨 O QUE REPROVA O PASSO:** "Álvaro Nogueira" aparecer **depois de "Zeca
+  Nogueira"**, no fim da lista. Isso é ordenação binária de bytes — em UTF-8
+  toda letra acentuada tem byte maior que qualquer letra sem acento —, e num
+  cadastro brasileiro não é caso de borda: é metade dos nomes. A advogada
+  procuraria na letra A, não acharia, e concluiria que o cliente não está
+  cadastrado.
+  Conferir também: qual dos dois "Alvaro/Álvaro" vem primeiro **não importa**.
+  A collation compara só a letra base, então para o sistema os dois são o
+  mesmo nome — o que importa é que estejam **adjacentes**.
+  Por que só olho humano: a suíte prova a ordem que a API devolve. O que ela
+  não prova é se a ordem na tela é a que **uma pessoa** chamaria de alfabética
+  — e essa é a pergunta inteira do passo.
+  Fase de origem: A-1
+
+- [ ] **262. PF e PJ ordenados JUNTOS, não em dois blocos**
+  Pré-condição: o seed já traz os dois tipos. Confira que há ao menos **dois
+  clientes PF** e **dois PJ**; se não houver, cadastre.
+  **▶ ONDE IR.** **Clientes**, ordenação em **"Nome (A–Z)"**.
+  Passos: percorrer a coluna **"Nome / Razão Social"** de cima para baixo,
+  anotando ao lado de cada linha se ela é **Pessoa Física** ou **Pessoa
+  Jurídica** (a coluna **Tipo** diz).
+  Esperado: os dois tipos **se intercalam** conforme o alfabeto. Um PJ chamado
+  "Agro Campos Gerais" vem **antes** de uma PF chamada "Beatriz", e não depois
+  de todas as pessoas físicas.
+  **🚨 O QUE REPROVA:** todos os PJ em bloco (no começo **ou** no fim),
+  separados dos PF. Significa que a ordenação está lendo só um dos dois campos
+  de nome — PF guarda em `nomeCompleto`, PJ em `razaoSocial` —, e o tipo que
+  ficou de fora está ordenado por data de cadastro, sem nada dizendo isso.
+  Por que só olho humano: a suíte prova a sequência de tipos que a API devolve.
+  O que ela não prova é se a advogada, varrendo a tela, **encontra a empresa
+  onde esperaria encontrá-la**.
+  Fase de origem: A-1
+
+- [ ] **263. ⭐ 🚨 Mudar a ordenação com filtro aplicado VOLTA PARA A PÁGINA 1**
+  Pré-condição: **mais de 20 clientes cadastrados** — o paginador é de 20 por
+  página, e com menos que isso não há segunda página e não há o que conferir.
+  O seed traz 8: **cadastre até passar de 20**, ou use um script descartável.
+  É a mesma família dos passos **152** e **180**, e o motivo está escrito lá.
+  **▶ ONDE IR.** **Clientes**.
+  Passos:
+  1) deixar o seletor de situação em **"Ativos e desativados"** (é o filtro
+     que vai ficar aplicado o passo inteiro);
+  2) ir para a **página 2** pelo paginador;
+  3) **trocar a ordenação** para **"Nome (Z–A)"**;
+  4) olhar o paginador **e** o seletor de situação.
+  Esperado no passo 4: o paginador diz **"Página 1"**, e o seletor de situação
+  **continua em "Ativos e desativados"**.
+  **🚨 O QUE REPROVA, e é o ponto do passo:** continuar na **página 2**. A tela
+  não pareceria errada — ela mostraria, corretamente, a segunda página de uma
+  lista que acabou de virar do avesso. Os nomes mudam, a posição não, e não há
+  nada na tela explicando o que aconteceu. É o mesmo defeito que o passo **175**
+  pega nas listagens financeiras.
+  **Também reprova:** o filtro de situação voltar sozinho para "Somente
+  ativos". Trocar a ordem não pode perder o recorte — são coisas diferentes, e
+  a ordem não recorta nada.
+  Conferir também: **trocar de página não perde a ordenação.** Volte para a
+  página 2 e confirme que o seletor continua em "Nome (Z–A)" e que os nomes
+  seguem a sequência da página 1.
+  Conferir também que **"Filtros aplicados"** (se a tela vier a ter a barra)
+  **não nomeia a ordenação**: ordenar não recorta o conjunto, e anunciá-la ali
+  faria procurar por que a lista está curta quando ela não está.
+  Por que só olho humano: a suíte prova que o controle chama `definirFiltro`, e
+  que `definirFiltro` reinicia a página. O que ela não prova é o **percurso** —
+  que os três controles convivem na mesma tela sem um derrubar o outro.
+  Fase de origem: A-1
+
+- [ ] **264. ⭐ Cadastro com e-mail malformado: a mensagem E o campo destacado**
+  Pré-condição: **deslogado**.
+  **▶ ONDE IR.** `/registrar`, **etapa 1**.
+  Passos:
+  1) preencher nome e senha corretamente;
+  2) no e-mail, digitar **`daniel@lex..dev`** (com **dois pontos** seguidos —
+     é o caso que a expressão antiga aceitava);
+  3) tentar avançar;
+  4) repetir com **`daniel@lex`** (sem ponto) e com **`daniel @lex.dev`**
+     (com espaço).
+  Esperado: nos três, a tela **recusa** com **"E-mail inválido"** e o
+  **campo de e-mail fica destacado**. Nada do que foi digitado se perde.
+  **Conferir a frase, palavra por palavra:** ela é **"E-mail inválido"**, sem
+  ponto final. A mesma frase que o servidor devolveria — se a tela disser uma
+  coisa e o servidor outra, a advogada acha que são dois problemas.
+  Conferir também que **`daniel+tag@lex.dev` É ACEITO**: sinal de mais é
+  endereço válido e é usado de verdade. **Se a tela recusar, é reprovação** —
+  recusar endereço válido é o erro caro desta regra, porque a pessoa não
+  consegue se cadastrar e não tem como descobrir o motivo.
+  E que **`  daniel@lex.dev  `**, com espaços nas bordas, é **aceito** e
+  gravado sem eles.
+  Por que só olho humano: a suíte prova a regra e prova o `campo` que o 400
+  carrega. O que ela não prova é se o destaque **chega ao input certo**, na
+  etapa certa do assistente — é a outra metade do achado **V-1**, que o passo 4
+  fechou.
+  Fase de origem: A-1
+
+- [ ] **265. O login avisa SEM ENVIAR**
+  Pré-condição: **deslogado**, com o **DevTools aberto na aba Network**.
+  **▶ ONDE IR.** `/login`.
+  Passos:
+  1) limpar a aba Network;
+  2) digitar **`daniel`** no e-mail (sem `@`) e qualquer senha;
+  3) clicar em **Entrar**;
+  4) **olhar a aba Network**.
+  Esperado no passo 3: a tela mostra **"E-mail inválido"**.
+  **Esperado no passo 4, e é o ponto do passo: NENHUMA requisição para
+  `/api/auth/login` aparece.** A validação é da tela e existe para poupar a
+  viagem; se a requisição sair, ela não poupou nada.
+  Conferir também que o botão **não pisca "Entrando..."** e volta: a guarda
+  roda antes do estado de carregamento, e um botão que entra em carregamento
+  para uma requisição que nunca aconteceu é mentira de tela.
+  Conferir também que, **corrigindo o e-mail**, o login funciona normalmente —
+  a guarda não pode ficar presa depois de a pessoa consertar o campo.
+  Por que só olho humano: a suíte prova, por varredura, que a guarda está antes
+  do `await login()` e que há um `return`. O que ela não prova é que **nada
+  saiu pela rede** — isso é a aba Network, e não há DOM em `node --test`.
+  Fase de origem: A-1
+
+- [ ] **266. ⭐ 🚨 O login NÃO deixa descobrir quais e-mails têm conta**
+  **É O PASSO MAIS IMPORTANTE DA FASE.** A DEC-063 arrisca exatamente esta
+  propriedade, e ela é a que um avaliador testa primeiro.
+  Pré-condição: **deslogado**. Saber a conta do seed (**demo@lex.dev**) e uma
+  que **não existe** (`naoexiste@lex.dev`).
+  **▶ ONDE IR.** `/login`.
+  Passos, **anotando a mensagem EXATA de cada um**:
+  1) **`demo@lex.dev`** com a senha **errada** (`SenhaErrada123`);
+  2) **`naoexiste@lex.dev`** com qualquer senha;
+  3) comparar as duas mensagens, **palavra por palavra**.
+  Esperado: as duas dizem **exatamente a mesma coisa** — mesma frase, mesmo
+  lugar na tela, mesma cor. Nada distingue "esta conta existe e você errou a
+  senha" de "esta conta não existe".
+  **🚨 O QUE REPROVA:** qualquer diferença. Uma frase dizendo "usuário não
+  encontrado" num caso e "senha incorreta" no outro permite descobrir, um a um,
+  quais endereços têm conta no sistema — e isso vale tanto para a advogada
+  quanto para qualquer pessoa na internet, porque o login é público.
+  **Conferir também, e é a parte nova da A-1:** repetir com um e-mail
+  **malformado que passe pela tela**. A validação da tela barra `daniel`, então
+  use o DevTools para mandar a requisição direto, ou desabilite o JavaScript:
+  a resposta do **servidor** para `daniel@lex..dev` tem de ser **a mesma** dos
+  passos 1 e 2. **Se vier um erro diferente — "E-mail inválido", ou status
+  400 —, é reprovação**: o servidor passou a validar formato no login, e isso
+  separa "recusei antes de olhar o banco" de "olhei o banco".
+  **Por que a tela valida e o servidor não, e isso NÃO é inconsistência:** a
+  tela poupa uma viagem para quem digitou errado; o servidor precisa responder
+  igual para tudo, porque é ele que alguém consultaria em massa. A nota está
+  em `validations/authValidation.js`, e ela existe para que ninguém "conserte"
+  a diferença.
+  Por que só olho humano: a suíte compara os corpos byte a byte pela API. O que
+  ela não prova é o que a advogada **lê na tela** — a mesma frase pode aparecer
+  em lugares ou cores diferentes e denunciar a diferença do mesmo jeito.
+  Fase de origem: A-1
+
 ## Validado
 
 
