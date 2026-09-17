@@ -49,16 +49,6 @@ Dados que vários passos usam:
 
 ## 1. Cadastro (`/registrar`)
 
-- [ ] **4. Cadastro — e-mail duplicado volta para a etapa 1**
-  **Executado em 17/08/2026 — REPROVOU: campo de e-mail não foi destacado.
-  Achado V-1.** Permanece pendente até a correção.
-  Pré-condição: usar `demo@lex.dev` na etapa 1 e completar a etapa 2.
-  Passos: enviar o formulário.
-  Esperado: erro dizendo que o e-mail já está cadastrado, a tela **volta para
-  a etapa 1**, o campo de e-mail fica destacado e nada do que foi digitado se
-  perde.
-  Fase de origem: 1
-
 ---
 
 ## 2. Login (`/login`)
@@ -66,20 +56,6 @@ Dados que vários passos usam:
 ---
 
 ## 3. Perfil (`/dashboard/perfil`)
-
-- [ ] **12. Perfil — troca de senha**
-  **Executado em 17/08/2026 — REPROVOU: 401 de senha atual incorreta derruba
-  a sessão. Achado V-2.** Tentar trocar a senha informando a senha atual
-  errada levou para a tela de login em vez de mostrar o erro no formulário.
-  **CORRIGIDO na F-2a (DEC-050)** — a senha atual errada passou a responder
-  **422**, e o interceptor só desloga em **401**. Continua pendente: a correção
-  precisa ser **olhada**, e quem faz isso é o passo **191**, que exercita
-  exatamente este caminho. Executar o 191 antes deste.
-  Passos: trocar a senha para `Lex654321`, sair, entrar com a nova; depois
-  voltar a senha para `Lex123456`.
-  Esperado: a troca exige a senha atual; senha atual errada é recusada; o
-  login com a nova funciona.
-  Fase de origem: 1
 
 - [ ] **13. Perfil — logo de 800 KB é redimensionado e aceito** ⚠️
   **Não executado na sessão de 17/08/2026** — exige um arquivo de ~800 KB à
@@ -443,20 +419,6 @@ Dados que vários passos usam:
   sempre.
   Fase de origem: 4.2
 
-- [ ] **109. Excluir com dependente — a mensagem diz quantos**
-  `[automatizável]`
-  Pré-condição: um honorário **com** parcelas e uma parcela **com** pagamentos.
-  Passos: 1) tentar excluir o honorário; 2) ler a mensagem; 3) tentar excluir a
-  parcela; 4) ler a mensagem.
-  Esperado: as duas são recusadas, e cada mensagem diz **quantos** dependentes
-  existem e de que tipo ("3 parcelas ativas", "2 pagamentos ativos"), no
-  singular quando for um só. **Nenhum campo do formulário é destacado** —
-  não há input errado, há registro gravado.
-  Por que este passo existe: é o contrato do 409 de integridade
-  (`dependencia` + `quantidade`, sem `campo`), que existia desde a Fase 2E.1 e
-  **nunca tinha sido consumido por tela nenhuma**.
-  Fase de origem: 4.2
-
 
 ---
 
@@ -693,20 +655,6 @@ Dados que vários passos usam:
 
 ### Navegação
 
-- [ ] **125. Breadcrumb da Biblioteca de Seções e do Financeiro**
-  `[automatizável]`
-  Passos: abrir `/dashboard/secoes`, `/dashboard/secoes/nova`,
-  `/dashboard/secoes/editar/:id` e `/dashboard/financeiro`, lendo a trilha no
-  cabeçalho em cada uma.
-  Esperado: "LEX › Biblioteca de Seções", "LEX › Nova Seção",
-  "LEX › Biblioteca de Seções › Editar" e "LEX › Financeiro". Em 360 px a
-  trilha **encurta com reticências** em vez de empurrar o nome da usuária para
-  fora da tela.
-  Por que este passo existe: as quatro telas caíam no `return ['LEX']` do fim
-  de `buildBreadcrumb` — ficavam sem trilha nenhuma, e são justamente aquelas
-  em que se navega para dentro.
-  Fase de origem: 4.3
-
 
 ---
 
@@ -754,6 +702,39 @@ Dados que vários passos usam:
   Fase de origem: 4.4
 
 - [ ] **128. O rollback aparece quando a gravação falha**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  REPROVOU — continua pendente.** Anotação dele, palavra por palavra:
+  *"aparece na tela a mensagem de que esta salvando, até voltar a internet e
+  ela salvar"*.
+  **🔎 CONFERIDO NO CÓDIGO ANTES DE DECIDIR, porque a suspeita era de que o
+  passo tivesse envelhecido.** A F-5b passou a **enfileirar** gravações feitas
+  sem sinal, e o que o Davi descreveu tem a forma do comportamento novo. **Não
+  é o caso: a reordenação de seções FICOU DE FORA da fila.**
+  A lista de operações enfileiráveis é **fechada**, e tem quatro linhas
+  (`src/offline/outboxOperations.js`): `POST /events`, `PATCH /events/:id`,
+  `PATCH /events/:id/concluir` e `PATCH /processes/:id/fase` — compromisso da
+  agenda e mudança de fase, e nada mais. A reordenação é
+  `PATCH /documents/:id/secoes/reordenar` (`src/api/documentService.js:93`),
+  que não casa com nenhuma delas. No interceptor (`src/api/axiosConfig.js`),
+  sem operação enfileirável a recusa **volta a ser a da F-5a**, inteira:
+  `offlineWriteError`, com a frase *"Sem conexão — você pode consultar, mas não
+  registrar."* A montagem de documento é exatamente a família que a F-5b
+  deixou fora.
+  **Portanto o passo NÃO é reescrita: o comportamento observado é DEFEITO.** O
+  esperado continua valendo, e nada da F-5b o revogou. Offline, a reordenação
+  tem de ser recusada na hora — com rollback visível —, e não ficar pendurada
+  em "salvando" esperando o sinal voltar.
+  **A pista mais provável, e ela é do ambiente:** a guarda só dispara quando
+  `navigator.onLine === false` (`src/offline/online.js`, e é assimétrico de
+  propósito — `true` significa "há rede", não "há internet"). Ficar sem
+  internet **sem** derrubar a interface de rede deixa `onLine` em `true`, a
+  guarda não dispara, a requisição sai e fica pendurada — que é precisamente o
+  "salvando até voltar a internet" descrito. **Ambiente desconhecido** (ver a
+  nota de sessão em `## Validado`): no Render, o servidor hibernando produz o
+  mesmo sintoma sem que a rede tenha caído.
+  **O que falta:** reexecutar usando **DevTools → Network → Offline**, que é o
+  que a pré-condição manda e o único jeito de garantir `onLine === false`;
+  conferir que a mensagem é a de escrita offline e que a ordem volta sozinha.
   `[só olho humano]`
   Pré-condição: DevTools → Network → **Offline**, com três seções na folha.
   Passos: 1) ficar offline; 2) reordenar dois blocos; 3) voltar ao online.
@@ -843,21 +824,6 @@ Dados que vários passos usam:
 
 ### O gráfico
 
-- [ ] **135. Barra do mês sem o honorário cancelado**
-  `[automatizável]`
-  Pré-condição: seed carregado (tem 1 honorário cancelado, de R$ 800).
-  Passos: 1) no dashboard, ler a soma das barras de "Honorários contratados por
-  mês de cadastro"; 2) comparar com o cartão "Valor Contratado (total)";
-  3) abrir a ficha financeira do processo do honorário cancelado e conferir que
-  ele aparece na lista, atenuado, e **fora** do total contratado.
-  Esperado: a soma das barras **bate** com o "Valor Contratado (total)". O
-  cancelado não está em nenhum dos dois, e continua visível na ficha.
-  Por que este passo existe: era um achado reportado na Fase 4.3 e não
-  corrigido — o gráfico somava o cancelado enquanto o cartão logo acima o
-  excluía. Dois números do mesmo assunto, na mesma tela, sem nada explicando a
-  diferença.
-  Fase de origem: 4.4
-
 
 
 ## 18. Fase 4.5 — Auditoria Geral nº 2: reativação, PWA, foco e produção
@@ -875,6 +841,23 @@ Dados que vários passos usam:
 ### Reativação
 
 - [ ] **136. Reativar pagamento e ver o status recalcular**
+  **Tentado pelo Davi em setembro de 2026 (data exata não registrada). NÃO
+  EXECUTADO — continua pendente.** Anotação dele, palavra por palavra: *"não
+  consegui fazer a analise com efetividade por conta das opções, mas em resumo:
+  não consegui reativar o pagamento(advogada provavelmente tambem não
+  conseguiria)"*.
+  **🚨 ISTO É ACHADO DE USABILIDADE, NÃO FALHA DE EXECUÇÃO.** Uma pessoa de
+  fora, seguindo o roteiro escrito, **não encontrou o caminho** para reativar um
+  pagamento. A frase *"a advogada provavelmente também não conseguiria"* é a
+  observação mais valiosa desta rodada de validação: ela mede o produto, não o
+  executor. Ver também o resumo do próprio Davi no passo **142**, sobre o bloco
+  18 inteiro.
+  **O que falta:** este passo precisa ser **reescrito com o caminho nomeado em
+  cliques**, no padrão dos passos **185 a 190** — que foi exatamente o
+  tratamento que a F-1c.2.1 deu quando o mesmo problema apareceu com o Daniel.
+  Enquanto ele disser "em `/dashboard/pagamentos`, remover o pagamento" sem
+  dizer por qual menu, por qual seletor e em que ordem, ele continua sendo um
+  passo que só quem escreveu o código consegue seguir.
   `[automatizável]` — coberto por `tests/integrity/reativacao.test.js`
   Pré-condição: `npm run seed:fresh`; um honorário com parcela integralmente
   paga (status `pago`).
@@ -890,6 +873,18 @@ Dados que vários passos usam:
   Fase de origem: 4.5
 
 - [ ] **137. Reativar parcela**
+  **Tentado pelo Davi em setembro de 2026 (data exata não registrada). NÃO
+  EXECUTADO — continua pendente.** Anotação dele, palavra por palavra: *"mesmo
+  problema da anterior, sem fetivação da analise por confusão das opções(nas
+  parcelas a opção de ver as desativadas tem, mas não consegui reativar)"*.
+  **Achado de usabilidade, como o 136.** E esta anotação diz mais que a
+  anterior: o seletor **"Mostrar desativadas" ele achou** — o que falhou foi o
+  passo seguinte, a ação de reativar a partir da linha. Isso estreita onde
+  procurar: o caminho até a lista funciona; o que não se comunica é o **⋮ da
+  linha desativada** e o item dentro dele.
+  **O que falta:** reescrever com o caminho nomeado em cliques, no padrão dos
+  passos **185 a 190** — nomeando o seletor, a linha, o **⋮** e o item
+  **Reativar** dentro dele.
   `[automatizável]` — coberto por `tests/integrity/reativacao.test.js`
   Pré-condição: uma parcela sem pagamentos ativos, excluída.
   Passos: 1) em `/dashboard/parcelas`, marcar **Mostrar desativadas**;
@@ -899,6 +894,18 @@ Dados que vários passos usam:
   Fase de origem: 4.5
 
 - [ ] **138. ⭐ Reativar pagamento de parcela inativa — a mensagem de dependência**
+  **Tentado pelo Davi em setembro de 2026 (data exata não registrada). NÃO
+  EXECUTADO — continua pendente.** Anotação dele, palavra por palavra: *"tambem
+  sem efetividade da analise"*.
+  **Achado de usabilidade, como o 136 e o 137** — e aqui a consequência é
+  maior, porque este passo é `[só olho humano]` e o que ele mede é justamente
+  se **a advogada sai da mensagem sabendo o que fazer**. Quem não chega à
+  mensagem não pode julgá-la: o passo depende de conseguir montar o estado
+  (pagamento desativado sob parcela desativada) pelos caminhos dos passos 136 e
+  137, que foram os que não se comunicaram.
+  **O que falta:** reescrever com o caminho nomeado em cliques, no padrão dos
+  passos **185 a 190**, incluindo **como montar a pré-condição** — remover o
+  pagamento, depois a parcela — em cliques, e não só em prosa.
   `[só olho humano]`
   Pré-condição: um pagamento desativado **cuja parcela também está desativada**
   (remova o pagamento, depois a parcela).
@@ -915,6 +922,18 @@ Dados que vários passos usam:
 ### PWA
 
 - [ ] **139. ⭐ Instalar o app pelo navegador**
+  **Tentado pelo Davi em setembro de 2026 (data exata não registrada). NÃO
+  EXECUTADO — continua pendente.** Anotação dele, palavra por palavra: *"erro
+  ao executar os comandos"*.
+  **Não foi executado por falta de ambiente**, e não por defeito do produto: o
+  passo exige `npm run build && npm run preview` numa cópia local do
+  repositório, com as dependências instaladas e o `.env.production`
+  configurado. Quem valida sem o repo à mão não tem como chegar ao
+  `localhost:4173`.
+  **Reexecutar no ambiente PUBLICADO**, e não em `localhost` — é a emenda que
+  já consta no passo **140** e vale para os três (139, 140 e 142): **o service
+  worker se comporta diferente em HTTPS real**, e escopo, ciclo de vida e
+  atualização não são os mesmos. No ar, este passo dispensa build local.
   `[só olho humano]`
   Pré-condição: `npm run build && npm run preview` (o SW **não** roda em
   `npm run dev`, de propósito — ver o `CLAUDE.md` do frontend).
@@ -927,6 +946,14 @@ Dados que vários passos usam:
   Fase de origem: 4.5
 
 - [ ] **140. ⭐🚨 Recarregar OFFLINE e ver a casca do app**
+  **Tentado pelo Davi em setembro de 2026 (data exata não registrada). NÃO
+  EXECUTADO — continua pendente.** Anotação dele, palavra por palavra: *"não
+  consegui analisar"*.
+  **Não foi executado por falta de ambiente:** este passo tem o **139 como
+  pré-condição**, e o 139 parou no `npm run build && npm run preview`. Sem o
+  service worker instalado e os assets no precache, não há casca para subir.
+  **Reexecutar no ambiente PUBLICADO** — é o que a emenda da F-5a abaixo já
+  mandava, e no ar a pré-condição do 139 se resolve sozinha.
   `[só olho humano]`
   Pré-condição: passo 139 feito, app já aberto uma vez (o SW precisa ter
   instalado e cacheado os assets).
@@ -951,26 +978,28 @@ Dados que vários passos usam:
 
 ### Foco visível
 
-- [ ] **141. ⭐ Navegar o formulário de honorário só pelo teclado**
-  `[só olho humano]`
-  Pré-condição: `/dashboard/honorarios/novo`, **tema escuro** (o padrão — é onde
-  o anel dourado precisa se destacar do fundo verde).
-  Passos: 1) sem tocar no mouse, percorrer o formulário inteiro com `Tab`,
-  incluindo o `<select>` de tipo, os campos de dinheiro e os botões;
-  2) repetir na biblioteca de seções (filtros e busca), na montagem e nos
-  diálogos de regeração; 3) abrir um diálogo e fechá-lo com `Esc`.
-  Esperado: **em todo controle** há um anel dourado visível, deslocado da borda.
-  Nenhum ponto do percurso deixa o foco invisível. `Esc` continua fechando o
-  modal.
-  O que se confere aqui: a suíte prova que nenhum `outline: none` sobreviveu;
-  ela **não** prova que o anel é visível contra o fundo daquele componente. Dois
-  dos seis casos removidos estavam dentro de regras `:focus-visible` — a regra
-  que desenhava o foco era a que o apagava.
-  Fase de origem: 4.5
-
 ### Produção
 
 - [ ] **142. Conferir os cabeçalhos no preview de produção**
+  **Tentado pelo Davi em setembro de 2026 (data exata não registrada). NÃO
+  EXECUTADO — continua pendente.** As duas anotações dele, palavra por palavra:
+  *"Não consegui analisar"* e *"bloco 18 inteiro precisa ser revisado ou ser
+  analisado com emlhor orientação(cliente tambem precisaria dessa atenção a
+  mais na orientação)"*.
+  **Não foi executado por falta de ambiente:** o passo exige o backend rodando
+  com `NODE_ENV=production`, que é uma cópia local do repositório do backend
+  com a variável trocada. **Reexecutar no ambiente PUBLICADO**, onde o
+  `NODE_ENV` já é o de produção — e é lá que o `Strict-Transport-Security` tem
+  como aparecer de verdade, porque em `localhost` ele **não pode** (o navegador
+  passaria a exigir HTTPS de `localhost` por um ano).
+  **A segunda anotação é sobre a SEÇÃO 18 inteira, e é o resumo do Davi.** Ela
+  cobre os sete passos deste bloco — 136 a 142 — e diz que eles *"precisam ser
+  revisados ou analisados com melhor orientação"*, acrescentando que **o
+  cliente também precisaria dessa atenção a mais**. Lida junto com os passos
+  136 a 138, é a mesma conclusão por outro caminho: **o problema é o roteiro e
+  a tela, não quem executou**. Os três de reativação vão ser reescritos com o
+  caminho nomeado em cliques (padrão dos passos 185 a 190); os três de
+  PWA/produção vão ser refeitos no ar.
   `[automatizável]` — coberto por `tests/infra/producao.test.js`
   Pré-condição: backend rodando com `NODE_ENV=production`.
   Passos: DevTools → Network → qualquer requisição → **Headers**.
@@ -1039,17 +1068,6 @@ Dados que vários passos usam:
   Conferir também que `{{xptoQualquer}}` **não** recebe sugestão inventada.
   Fase de origem: 4.6
 
-- [ ] **147. ⭐ Seguir uma orientação de ponta a ponta até gerar**
-  Passos: com um honorário do tipo **fixo** e uma seção usando
-  `{{percentualHonorario}}`, tentar gerar; ler a orientação; **fazer exatamente
-  o que ela manda** (mudar o tipo do honorário para percentual, informando
-  percentual e valor base); gerar de novo.
-  Esperado: o documento é gerado, com o percentual no texto.
-  Por que este passo é o mais importante da fase: é a régua. Se em algum momento
-  a orientação mandar fazer algo que a tela não permite, o beco voltou — e
-  nenhum teste de texto pegaria isso.
-  Fase de origem: 4.6
-
 
 ## 20. Fase F-0 — Faxina: build, filtros, paginação e carregamento
 
@@ -1087,6 +1105,25 @@ Dados que vários passos usam:
   Fase de origem: F-0
 
 - [ ] **150. A leitura que FALHA não deixa o spinner girando**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  VEREDITO AMBÍGUO — continua pendente.** Anotação dele, palavra por palavra:
+  *"Pagina carrega mas sem dados, dizendo que não foi possivel carregar os
+  dados ou que teve erro na Network"*.
+  **A metade que este passo pede aconteceu:** o spinner sumiu e uma mensagem de
+  erro apareceu. Se o passo fosse só isso, teria passado.
+  **A metade que impede o veredito:** *"erro na Network"* é mensagem
+  **genérica**, e o projeto tem regra contra isso — a terceira barreira da F-5a
+  existe justamente para **acabar com o erro genérico de rede**, trocando a
+  mensagem do erro pela explicação em português. Não dá para saber, pela
+  anotação, qual das duas frases apareceu de fato ("não foi possível carregar
+  os dados" é aceitável; "Network error" não é) nem se as duas apareceram em
+  telas diferentes.
+  **O que falta:** reexecutar anotando a **frase exata** que a tela mostrou, e
+  em qual dos cinco formulários. É o mesmo texto que o passo **207** viu em
+  outro caminho — vale conferir se a origem é a mesma.
+  **Ambiente desconhecido** — ver a nota de sessão em `## Validado`. Importa
+  aqui: derrubar o backend local e bater num Render hibernando produzem a mesma
+  tela por motivos diferentes.
   Passos: abrir a edição de um registro e, com o backend derrubado (ou o id
   trocado por um inexistente na URL), recarregar.
   Esperado: o spinner some e a **mensagem de erro** da tela aparece. Spinner
@@ -1105,6 +1142,18 @@ Dados que vários passos usam:
   Fase de origem: F-0
 
 - [ ] **152. O aviso de lista incompleta aparece quando precisa**
+  **Tentado pelo Davi em setembro de 2026 (data exata não registrada). NÃO
+  EXECUTADO — continua pendente.** Anotação dele, palavra por palavra: *"não
+  consigo executar"*.
+  **Ele está certo, e o motivo já estava escrito no próprio passo:** a
+  pré-condição exige um processo com **mais de 100** parcelas ou pagamentos, e
+  **o seed não produz isso**. Sem o dado, não há aviso a conferir.
+  **É a mesma família do passo 180**, que carregou a marca de inverificável
+  desde a F-1b.3.2 e só foi executado depois de o dado ser **criado à mão**. A
+  diferença é de escala: lá eram ~6 operações; aqui são mais de 100 registros,
+  o que na prática pede um script descartável.
+  **Segue inexecutável** até alguém montar o conjunto. **Não altere o seed para
+  acomodar o passo** — a mesma razão do 172 e do 180.
   Pré-condição: um processo com **mais de 100** parcelas ou pagamentos. Não há
   no seed — precisa ser montado à mão (ou por script) para este passo.
   Esperado: acima da tabela, "Mostrando 100 de N …". Sem ele, a lista truncada
@@ -1115,6 +1164,18 @@ Dados que vários passos usam:
   Fase de origem: F-0
 
 - [ ] **153. Um link com id quebrado dá mensagem de campo, não lista errada**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  REPROVOU — continua pendente.** Anotação dele, palavra por palavra:
+  *"aparece tela vazia sem nehum dado ou conteudo"*.
+  **É o defeito que a F-0 corrigiu, de volta.** O passo exige **mensagem de
+  erro nomeando o filtro**, e diz textualmente que a lista vazia *"com cara de
+  'não há nada aqui'"* é o comportamento errado — era o que `/installments` e
+  `/payments` faziam com a mesma URL torta antes da F-0. Tela vazia **sem
+  conteúdo nenhum** é pior ainda que a lista vazia: não diz nem que houve erro.
+  **O que falta:** reexecutar registrando **qual** listagem foi (recebimentos,
+  parcelas, honorários, documentos) e se o 400 chega à tela — se chega e não é
+  exibido, o defeito é de renderização; se não chega, é a consulta.
+  **Ambiente desconhecido** — ver a nota de sessão em `## Validado`.
   Passos: editar a URL à mão para um `?processoId=` inválido (por exemplo
   `/dashboard/recebimentos?processoId=xyz`) e carregar.
   Esperado: a tela mostra a mensagem de erro do backend nomeando o filtro —
@@ -1125,6 +1186,19 @@ Dados que vários passos usam:
   Fase de origem: F-0
 
 - [ ] **154. As duas mensagens reescritas, lidas por quem não escreveu o código**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  APROVADO COM RESSALVA — continua pendente.** As duas anotações dele, palavra
+  por palavra: *"Funcionando, mas precisa verificação para garantir que o teste
+  foi feito da maneira correta"* e *"19 Aprovado com ressalvas"*.
+  **A ressalva é sobre a execução, não sobre a tela:** o próprio executor não
+  teve certeza de ter exercitado o caminho certo. Um passo cujo executor duvida
+  de ter testado a coisa certa não é um passo validado — e por isso ele **não**
+  subiu para `## Validado`.
+  **O que falta:** reexecutar, conferindo que os dois cenários são de fato os
+  que o passo descreve — (1) um `status` inválido **junto com** a falta de data
+  de vencimento, no mesmo salvamento, e (2) um modelo de **PJ** gerado para um
+  cliente **PF**. É a combinação que produz o defeito; um dos dois sozinho não
+  exercita o separador nem o título.
   Passos: 1) tentar salvar um honorário com `status` inválido **e** sem data
   de vencimento — ler a mensagem; 2) gerar um modelo de PJ para um cliente PF —
   ler o **título** do erro, não a lista.
@@ -1243,20 +1317,6 @@ Dados que vários passos usam:
   antes de qualquer recibo ir a cliente real.
   Fase de origem: F-1a.1 · lista corrigida na F-1a.2
 
-- [ ] **158. O honorário reparcelado não pode dizer "Pendente" com dinheiro recebido**
-  Pré-condição: `npm run seed:fresh`.
-  Passos: abrir a aba financeira do processo **"Ação de Cobrança de Dívida"** e
-  olhar a **linha do honorário "Assessoria tributária — processo
-  administrativo"** — só ela, e as duas informações lado a lado.
-  Esperado: onde se lê **"Recebido: R$ 1.500,00"**, o badge diz
-  **"Parcialmente pago"**. Nunca **"Pendente"**.
-  Por que só olho humano: a contradição é **visual e de leitura** — os dois
-  valores estão certos cada um por si, e o defeito só existe quando os dois
-  aparecem na mesma linha. Nenhuma asserção de valor pega isso; foi assim que o
-  A-4 sobreviveu à suíte inteira da F-1a. A suíte agora trava a causa
-  (`derivacao.test.js`, seção 9), e este passo fecha a outra metade.
-  Fase de origem: F-1a.2
-
 ## 22. Fase F-1b — a UX do dinheiro
 
 > Numeração contínua a partir do 158. Seis passos novos: **159 a 164**.
@@ -1343,64 +1403,6 @@ Dados que vários passos usam:
 > aparência vai ser refeito com o desenho novo, e o passo **167** já está
 > marcado para reexecução.
 
-- [ ] **180. O extrato pagina em vez de acumular**
-  **⚠️ INVERIFICÁVEL com os dados atuais — não reprovado. Número corrigido em
-  20/08/2026.**
-
-  **O que foi afirmado sem conferir, e é falso:** que executar o **passo 165**
-  encheria o extrato o bastante para haver segunda página. **Conferido na tela
-  em 20/08/2026:** depois de executar o 165, o extrato do honorário de
-  **divórcio litigioso** mostra **"10 movimentações"**. O paginador é de **20
-  por página**, então **não há segunda página** e não há o que verificar. A
-  afirmação anterior ficou registrada aqui em vez de apagada, para a próxima
-  pessoa não repetir a tentativa.
-
-  **As duas saídas honestas**, à escolha de quem for executar:
-
-  **(a) Encher o extrato à mão.** Cada **pagamento** gera duas linhas
-  (pagamento + alocação) e cada **estorno** gera duas (estorno + desalocação).
-  De 10 para além de 20 são cerca de **6 operações** — registrar 3 pagamentos e
-  estornar 3, por exemplo. Só então o paginador tem duas páginas.
-
-  **(b) Reavaliar depois da F-1c.2.** A aposta era que o reparcelamento pela
-  tela geraria linhas de extrato suficientes sozinho.
-
-  **🔴 MEDIDO na F-1c.2 (21/08/2026): a aposta (b) NÃO se confirma. O passo
-  segue inverificável, e agora se sabe por quê.**
-
-  Contagem real no banco, para o honorário do divórcio litigioso logo depois do
-  `seed:fresh`: **1 pagamento, 0 estornos, 2 alocações, 0 desalocações, 0
-  reparcelamentos = 3 movimentações**. Depois do passo 165, sobe para as **10**
-  observadas em 20/08/2026.
-
-  Um reparcelamento acrescenta **pouco**: 1 linha de reparcelamento, mais as
-  alocações automáticas do saldo adiantado (só se houver crédito) e as mudanças
-  de status. Na prática, **1 a 3 linhas** — de 10 para 11 ou 13, e o paginador é
-  de **20 por página**. **Não há segunda página**, e não haverá por este
-  caminho.
-
-  **A única saída que resta é a (a): encher o extrato à mão.** Cada pagamento
-  gera duas linhas (pagamento + alocação) e cada estorno gera duas (estorno +
-  desalocação) — de 10 para além de 20 são cerca de **6 operações**: registrar
-  3 pagamentos e estornar 3.
-
-  **Não altere o seed para acomodar o passo** — pela mesma razão do passo 172:
-  o passo é que foi escrito contra dados que não existem.
-
-  Pré-condição: `npm run seed:fresh`, o passo **165** executado, **e** as ~6
-  operações da saída (a) registradas à mão.
-  Passos: registrar as ~6 operações; depois abrir a página do honorário de
-  **divórcio litigioso** e ir ao **Extrato**.
-  Esperado: no lugar do botão **"Carregar mais (N restantes)"**, há o **mesmo
-  paginador** das listagens — "1–20 de N movimentações", "Página 1 de X", e os
-  dois botões. Avançar e **voltar** funciona: com o acúmulo não havia como
-  voltar, porque não existia posição para onde voltar.
-  Conferir: depois de registrar um **estorno** pelo extrato, a lista volta para
-  a **página 1** — ficar na página 4 de uma história que acabou de mudar de
-  tamanho mostraria uma janela deslocada.
-  Conferir o **singular** (F-1b.3.1): num honorário com uma movimentação só, o
-  rodapé diz **"1 movimentação"**.
-  Fase de origem: F-1b.3, número corrigido na F-1b.3.2
 ## 25. Fase F-1b.3.1 — o menu de ações sai da tela
 
 > Numeração contínua a partir do 180. Dois passos novos: **181 e 182**.
@@ -1695,53 +1697,6 @@ Dados que vários passos usam:
 >
 > **Pré-condição de 196 a 199:** `npm run seed:fresh`.
 
-- [ ] **197. ⭐ 🚨 Reativar devolve SÓ quem a cascata derrubou**
-  > **Executado em 22/08/2026 pelo Daniel. CONTINUA ABERTO — achado o
-  > órfão da DEC-053.** O que este passo pede funcionou: a cascata
-  > devolveu só quem ela derrubou, e o removido à mão continuou fora.
-  > **Mas foi possível reativar um processo cujo CLIENTE estava
-  > desativado**, e o resultado é um órfão visível — o processo volta às
-  > listagens, o cliente não, e clicar no nome do cliente cai num registro
-  > que o sistema trata como arquivado.
-  >
-  > A DEC-052 governava só a DESCIDA (reativar o pai não reativa os
-  > filhos). Nada dizia sobre a SUBIDA. A **DEC-053** (F-2c) fechou as duas
-  > bocas — reativar e criar sob pai inativo — e a recusa NOMEIA o pai.
-  >
-  > **Continua aberto até a revalidação**, que inclui os passos novos
-  > **201 a 204**. Reexecutar este passo INTEIRO, e não só a parte nova: a
-  > guarda da DEC-053 entra no mesmo caminho que este passo percorre.
-  Pré-condição: `npm run seed:fresh`. **É o passo que a fase existe para ter.**
-  **▶ ONDE IR.** Menu lateral → **Processos** → o mesmo processo com
-  litisconsórcio do passo 196 (se já o desativou, reative-o primeiro, ou use
-  outro com mais de um participante).
-  **A ordem importa e é o ponto do passo.** Sem remover um participante à mão
-  **antes**, "restaurar tudo" e "restaurar só a cascata" dão o mesmo resultado —
-  e o passo passaria em cima do defeito.
-  Passos:
-  1) abrir **Gerenciar** → aba/bloco de **participantes**;
-  2) **remover à mão** um participante que **não** seja o principal — anote o
-     nome dele;
-  3) voltar à listagem e **desativar** o processo (passo 196);
-  4) trocar o seletor de situação para **Somente desativados**;
-  5) no ⋮ da linha, escolher **Reativar**;
-  6) **ler o modal**: ele diz quantos voltam, e que os removidos à mão **não**
-     voltam;
-  7) confirmar;
-  8) abrir **Gerenciar** → participantes.
-  Esperado: os participantes que caíram pela desativação **voltaram**. O que
-  você removeu à mão no passo 2 **NÃO voltou** — e é essa ausência que prova a
-  DEC-052.
-  **Se ele voltar, PARE** — a reativação está restaurando tudo, e a advogada
-  perdeu a decisão que tomou de propósito.
-  Conferir também o número do modal do passo 6: ele conta **só** os da cascata,
-  então é **menor** que o total de participantes desativados.
-  Por que só olho humano: a suíte cobre exatamente este cenário. O que ela não
-  cobre é o **caminho da interface** — que a remoção manual e a desativação
-  sejam alcançáveis nesta ordem, e que a advogada consiga conferir o resultado
-  sem ir ao banco.
-  Fase de origem: F-2b
-
 
 ---
 
@@ -1817,7 +1772,24 @@ Dados que vários passos usam:
 > Se ela preferir a outra, muda-se o rótulo e nada é migrado.
 
 - [ ] **207. 🚨 O histórico mostra `de → para`, com data — e é o passado da linha do tempo**
-  Pré-condição: `npm run seed:fresh` **uma vez**, e os passos **205** e
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  REPROVOU — continua pendente.** Anotação dele, palavra por palavra:
+  *"Aparece Network error e não muda nada"*.
+  **É a mudança de fase falhando**, e não o histórico: a preparação deste passo
+  (os 205 e 206) é justamente mudar a fase, e sem ela não há `de → para` a
+  conferir. **É a operação mais grave da lista** — `mudarFase` é uma das quatro
+  da fila offline da F-5b (DEC-059), e um erro de rede nela é exatamente o
+  cenário que a fila existe para tratar.
+  **⚠️ NÃO SE SABE O AMBIENTE, e aqui isso decide o veredito.** Se a execução
+  foi no **Render**, o plano gratuito **dorme depois de 15 minutos** e a
+  primeira requisição leva **cerca de um minuto** para acordar o Web Service —
+  um "Network error" nessa janela **não é defeito**, é a hibernação descrita na
+  DEC-061. Se foi local, com o backend no ar, é defeito de verdade.
+  **O que falta, e passa a fazer parte da PRÉ-CONDIÇÃO:** reexecutar **com o
+  servidor já aquecido** — abrir o sistema, esperar a primeira tela carregar de
+  fato, e só então mudar a fase. Anotar em qual ambiente foi.
+  Pré-condição: **servidor aquecido** (ver acima), `npm run seed:fresh` **uma
+  vez**, e os passos **205** e
   **206** executados depois dele, **no mesmo processo**. Os três formam uma
   sequência: um seed, depois 205 → 206 → 207, sem reset no meio.
   **Nota da F-5a (28/08/2026):** os passos **205** e **206** passaram e foram
@@ -1908,6 +1880,24 @@ Dados que vários passos usam:
   Fase de origem: F-2d
 
 - [ ] **210. 🚨 A lacuna do Documento, fechada nas duas bocas**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  PARCIALMENTE EXECUTADO — continua pendente.** Anotação dele, palavra por
+  palavra: *"site não permite gerar documento para site desativado"*.
+  **O que ele descreveu é o comportamento ESPERADO**, com outras palavras: é a
+  **primeira boca da DEC-053** — não criar documento sob processo inativo — e
+  ela **passou**. ("site desativado", na anotação, é o processo desativado.)
+  **Mas o passo pede as DUAS bocas**, e a segunda não foi verificada: mover um
+  documento existente para o processo inativo (o passo 6 da lista abaixo), que
+  é a boca da **reativação de documento sob pai inativo**. Também não há
+  registro de ter rodado `npm run auditar:orfaos` (passo 3), nem de conferir a
+  frase exata da recusa.
+  **🚨 O que importa, e a anotação não diz:** se a mensagem **NOMEIA o
+  processo**. *"Não é possível criar: o processo Execucao Fiscal - IPTU está
+  desativado. Reative o processo primeiro."* é aprovação; *"Processo não
+  encontrado"* é reprovação, e é exatamente o defeito que a DEC-053 existe para
+  matar. Recusar **não basta** — recusar **explicando** é o que o passo mede.
+  **O que falta:** os passos 3 e 6, a frase da recusa, e a conferência de que
+  **reativar o processo e então criar o documento funciona**.
   Pré-condição: `npm run seed:fresh`. **O passo cria o próprio órfão.**
   Até a F-3 ele usava o órfão que vivia no banco de desenvolvimento — a
   *Peticao de Suspensao da Execucao* sob a *Execucao Fiscal - IPTU*, achada no
@@ -1985,6 +1975,17 @@ Dados que vários passos usam:
   Fase de origem: F-2d
 
 - [ ] **212. A migração da DEC-054, rodada duas vezes**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  APROVADO COM RESSALVA — continua pendente.** Anotação dele, palavra por
+  palavra: *"Aprovado com ressalvas"*.
+  **A ressalva NÃO foi descrita, e é isso que mantém o passo aberto.** Não se
+  sabe qual dos cinco "esperados" ficou com ressalva — o dry run que não
+  pergunta, a guarda de banco que pergunta, o texto do relatório, a igualdade
+  das duas execuções, ou a coluna Fase preenchida. Uma ressalva sem conteúdo
+  não pode ser avaliada nem fechada.
+  **O que falta:** refazer o passo **com a ressalva nomeada** — dizendo em qual
+  dos passos 1 a 5 ela apareceu e o que se viu ali. Enquanto ela for anônima,
+  o passo não tem como ir para `## Validado`.
   Pré-condição: `npm run seed:fresh`.
   ⚠️ **Leia antes, porque o esperado MUDOU.** Até a F-3 este passo dizia
   "**sem** `seed:fresh` antes": ele contava com o banco de desenvolvimento
@@ -2115,6 +2116,23 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
 - [ ] **215. ⭐ Criar um compromisso CLICANDO NUM DIA**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  REPROVOU — continua pendente.** Anotação dele, palavra por palavra:
+  *"clicando com o mouse não abre nada, com o tab sim"*.
+  **O passo 1 não acontece**: clicar no número do dia não abre o formulário. Se
+  o caminho de teclado funciona e o de mouse não, o alvo do clique e o alvo do
+  foco **não são o mesmo elemento** — o tratador está pendurado em algo que o
+  Tab alcança e o ponteiro não, ou há um elemento por cima capturando o clique.
+  **É a INVERSÃO EXATA do defeito da F-1b.3.2** (emenda à DEC-046), onde o
+  menu de ações abria ao mouse e **não** ao teclado: lá, `createPortal`
+  propagava os eventos pela árvore do React mas a ordem de tabulação era a do
+  DOM real, e o painel ficava inalcançável por Tab. Aqui o par está trocado de
+  lado. **Se a causa for da mesma família — tratador no elemento errado —, o
+  diagnóstico começa no mesmo lugar**: qual elemento recebe o evento, e qual
+  recebe o foco.
+  **O que falta:** achar o elemento que o Tab alcança e conferir se é ele que
+  tem o `onClick`; repetir na vista **Agenda** (passo 5), para saber se o
+  defeito é da grade ou dos dois caminhos.
   Pré-condição: `npm run seed:fresh`.
   **▶ ONDE IR.** **Agenda**, vista **Mês**.
   Passos:
@@ -2325,42 +2343,6 @@ Dados que vários passos usam:
   que entrou código que a fase excluiu por escrito.
   Fase de origem: F-3
 
-- [ ] **225. ⭐ A linha do tempo do processo — e o financeiro que NÃO está nela**
-  Pré-condição: `npm run seed:fresh`, e então **mudar a fase de um processo**
-  agora, pelo **⋮ → Gerenciar → "Andamento do processo"** — o passo precisa
-  de pelo menos uma mudança gravada. Mude aqui mesmo, sem contar com o passo
-  **205**: o seed nasce com `fase` preenchida e `historicoFase` **vazio**, e
-  um passo que dependa de outro ter rodado quebra quando o roteiro é feito
-  fora de ordem.
-  **▶ ONDE IR.** **Processos** → **⋮ → Gerenciar** num processo com honorário
-  → rolar até **"Linha do tempo"**, **abaixo** da ficha financeira.
-  Passos:
-  1) conferir as entradas, de cima para baixo;
-  2) achar a marca de **"hoje"**;
-  3) procurar, na linha do tempo, qualquer coisa de **dinheiro**;
-  4) clicar num compromisso listado.
-  Esperado no passo 1: em **ordem de data**, com quatro tipos distinguíveis:
-  **Fase** (de → para, com o motivo quando houver), **Encerramento**,
-  **Liminar** e **Compromisso**. A primeira entrada diz *"Processo cadastrado
-  em Fase de conhecimento"* — é o **nascimento**, e sem ele um processo criado
-  direto em "execução" pareceria sempre ter estado lá.
-  Esperado no passo 2: uma **linha tracejada** atravessando a régua, escrita
-  **"hoje"**. Os compromissos **futuros** ficam **abaixo** dela, esmaecidos e
-  com marca tracejada.
-  Esperado no passo 3: **nada.** Nenhum honorário, nenhuma parcela, nenhum
-  pagamento, nenhum valor em reais.
-  Esperado no passo 4: abre o compromisso.
-  **Por que o financeiro não entra, e é decisão:** o extrato do honorário
-  responde outra pergunta — "quanto foi cobrado, quanto entrou, o que voltou" —
-  e já a responde bem. Cinco entradas de fase somem debaixo de quarenta linhas
-  de um plano parcelado em doze. **A ficha financeira continua na mesma página,
-  em seção própria, logo acima.**
-  Por que só olho humano: a suíte prova que o serviço não importa nenhum model
-  financeiro e que nenhum valor vaza na resposta. O que ela não prova é se a
-  régua **se lê como tempo** — se o olho encontra o "hoje" sem percorrer a
-  lista.
-  Fase de origem: F-3
-
 
 ## 35. Fase F-4 — o campo que sugere, e o painel que diz o que fazer
 
@@ -2564,6 +2546,22 @@ Dados que vários passos usam:
   Fase de origem: F-4
 
 - [ ] **233. Os cartões do painel em 360 px — os três empilhados**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  REPROVAÇÃO PARCIAL — continua pendente.** Anotação dele, palavra por palavra:
+  *"Alguns campos não ficam sem barra de rolagem horizontal"*.
+  **Isto não é ressalva, é o passo 3 falhando.** O esperado no passo 3 é
+  categórico — *"não desliza. A página não tem rolagem horizontal nenhuma"* —,
+  e a regra da F-1b.2 por trás dele também: **nenhuma barra de rolagem
+  horizontal da PÁGINA em 360 px**. O que rola de lado é a tabela, dentro do
+  `.table-wrapper`; a página, não. Se alguns campos ainda a produzem, o defeito
+  que este passo fecha (a pendência do passo 181) **não está fechado**.
+  **O que falta:** registrar **quais telas e quais campos**. A anotação diz
+  "alguns campos" sem nomeá-los, e sem os nomes não há o que corrigir: a causa
+  conhecida é conteúdo indivisível (`Intl` em pt-BR faz de "R$ 1.234.567,89"
+  um token só) esticando a trilha da grade, e ela se manifesta **por campo**.
+  Ao reexecutar, anotar a tela, o bloco e o valor que estourou.
+  **Ambiente desconhecido** — ver a nota de sessão em `## Validado`. Não muda o
+  veredito aqui: largura de página não depende de Render nem de localhost.
   Pré-condição: `npm run seed:fresh`, e janela (ou DevTools) em **360 px de
   largura**. **Fecha a pendência do passo 181.**
   **▶ ONDE IR.** **Dashboard**, com todos os blocos **abertos**.
@@ -2586,6 +2584,31 @@ Dados que vários passos usam:
   Fase de origem: F-4
 
 - [ ] **234. A tabela que NÃO carrega, e o campo que continua servindo**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  APROVADO COM RESSALVA — continua pendente.** Anotação dele, palavra por
+  palavra: *"Aprovado com ressalvas/sino só atualiza se fopr clicado
+  novamente"*.
+  **🚨 A ressalva NÃO é ressalva deste passo — é um DEFEITO, e de outro
+  assunto.** O que este passo verifica é o campo Comarca sobrevivendo à tabela
+  que não carrega; o sino não tem nada com isso. A observação foi feita de
+  passagem, e **ela contraria a DEC-055 e a regra escrita do sino**:
+  > *"Não existe 'marcar como lido'. (…) Um contador que só zera com clique
+  > treina a pessoa a zerar sem olhar."*
+  O contador existe para mostrar **o que exige atenção**. A decisão registrada
+  é que ele **não tem estado de lido**: o número baixa quando o item é
+  **resolvido** — o compromisso concluído, a parcela quitada —, nunca quando é
+  **visto**. Um contador que só se atualiza ao ser clicado ensina exatamente o
+  gesto que a decisão existe para impedir.
+  **Não dá para fechar o defeito dentro deste passo**, porque este passo não
+  olha o sino. O passo **259** foi aberto para verificar especificamente se o
+  contador se atualiza sozinho depois de um compromisso concluído ou de uma
+  parcela quitada, **sem nenhuma interação com o sino**.
+  **O que falta AQUI:** reexecutar os quatro esperados deste passo (a frase
+  discreta, o salvar mesmo assim, e a nova tentativa que funciona), sem a
+  ressalva do sino, que agora tem passo próprio.
+  **Ambiente desconhecido** — ver a nota de sessão em `## Validado`. Aqui ele
+  importa: no Render, com o servidor hibernando, "não carregou" pode ter sido
+  lentidão da primeira requisição, e não o bloqueio da rede que o passo pede.
   Pré-condição: `npm run seed:fresh`.
   **▶ ONDE IR.** DevTools → **Network** → **Offline** (ou bloquear
   `/tabelas/*`). Depois **Processos → Novo processo**.
@@ -3172,6 +3195,88 @@ Dados que vários passos usam:
   alguém o vê.
   Fase de origem: D-1
 
+---
+
+## 39. Fase V-D — o que a validação do Davi abriu
+
+> Numeração contínua a partir do 258. Dois passos novos: **259 e 260**.
+> O total pendente vai de **110 para 112**.
+>
+> **Os dois nasceram de anotações, não de código novo.** A V-D não tocou em
+> nenhuma linha do sistema: ela incorporou ao roteiro a rodada de validação que
+> o Davi executou, e duas coisas que ele viu não cabiam em nenhum passo
+> existente.
+>
+> O **259** vem do passo **234**, onde a observação sobre o sino apareceu de
+> passagem, num passo que não olha o sino. O **260** vem do bloco **136 a 138**,
+> onde a reescrita dos três passos pode não bastar — se não bastar, é porque
+> falta um passo de travessia, e não mais orientação dentro de cada um.
+
+- [ ] **259. 🚨 O contador do sino se atualiza SOZINHO**
+  `[só olho humano]`
+  Pré-condição: `npm run seed:fresh`, e um **compromisso de hoje** ainda não
+  concluído mais uma **parcela vencida** ainda não quitada — o seed tem as duas
+  coisas; confira o número do sino antes de começar e **anote-o**.
+  **▶ ONDE IR.** O **sino**, no cabeçalho, visível em qualquer tela.
+  Passos:
+  1) **sem clicar no sino**, ir à **Agenda** e **concluir** o compromisso de
+     hoje;
+  2) voltar o olho ao sino e **ler o número**, ainda sem clicar nele;
+  3) **sem clicar no sino**, ir a **Parcelas** e **quitar** a parcela vencida
+     (registrar um pagamento que a feche por inteiro);
+  4) voltar o olho ao sino e **ler o número**, ainda sem clicar nele.
+  Esperado nos passos 2 e 4: o número **baixou**, cada vez. Se ele estiver o
+  mesmo e só corrigir depois de o sino ser **clicado**, o passo **REPROVA**.
+  **🚨 O que este passo existe para impedir, e é decisão registrada
+  (DEC-055):** o sino **não tem estado de lido**. O número baixa quando o item
+  é **resolvido**, nunca quando é **visto**. *"Um contador que só zera com
+  clique treina a pessoa a zerar sem olhar"* — e um contador que só se
+  **atualiza** ao ser clicado faz o mesmo estrago por outro caminho: ela passa
+  a clicar para saber se o número é verdade.
+  Conferir também: **zero não aparece**, nem como "0" — o badge só é
+  renderizado com total maior que zero.
+  Conferir também o `aria-label` do botão: ele carrega o **número**, porque
+  badge é informação visual pura.
+  Por que só olho humano: a suíte varre o componente e prova que não existe
+  `marcarComoLido`, `naoLidos` nem `.post(`. O que ela **não** prova é que o
+  total que chega do backend é **relido** depois de uma operação que o muda —
+  é comportamento entre telas, e não há DOM em `node --test`.
+  **De onde veio:** anotação do Davi no passo **234** — *"sino só atualiza se
+  fopr clicado novamente"* —, registrada lá e verificada aqui.
+  Fase de origem: V-D
+
+- [ ] **260. ⭐ Reativar pagamento e parcela — a travessia, em cliques nomeados**
+  `[só olho humano]`
+  **Execute este passo SÓ se a reescrita dos passos 136 a 138 não tiver
+  bastado.** Ele não substitui os três: eles verificam **o efeito** (o status
+  que recalcula, a mensagem de dependência que aponta a porta certa); este
+  verifica **se o caminho é achável** por quem não escreveu o código.
+  Pré-condição: `npm run seed:fresh`, e **quem executar não pode ser quem
+  escreveu o roteiro**. O passo mede descoberta; quem já sabe o caminho não tem
+  como medi-la.
+  **▶ ONDE IR.** Nada é dito aqui de propósito — achar é metade do passo.
+  Passos, e **anote quantos cliques e quantas voltas atrás cada um custou**:
+  1) **desativar** um pagamento;
+  2) **encontrar** o pagamento desativado — a lista dele não é a lista padrão;
+  3) **reativar** esse pagamento;
+  4) repetir os três com uma **parcela**.
+  Esperado: os quatro se completam **sem consultar código, sem perguntar a
+  ninguém e sem abrir o banco**. Em cada um, o que fazer em seguida está
+  **escrito na tela** — no seletor, no menu **⋮** ou na mensagem.
+  **REPROVA se:** algum dos quatro exigir adivinhar onde fica a opção, ou se a
+  pessoa chegar à lista de desativados e não descobrir como reativar dali. Foi
+  exatamente isso que aconteceu no passo **137**: *"nas parcelas a opção de ver
+  as desativadas tem, mas não consegui reativar"* — a lista se comunica, a ação
+  na linha não.
+  **Anotar o que travou, nominalmente.** "Não achei" não é achado; "não havia
+  nada na linha dizendo que o **⋮** tinha mais itens" é.
+  **De onde veio:** o bloco 136 a 138 da validação do Davi — *"não consegui
+  reativar o pagamento (advogada provavelmente tambem não conseguiria)"* — e o
+  resumo dele no passo **142**, sobre a seção 18 inteira. É a mesma família do
+  tratamento que a **F-1c.2.1** deu aos passos 185 a 190, quando o problema
+  apareceu com o Daniel.
+  Fase de origem: V-D
+
 ## Validado
 
 
@@ -3243,6 +3348,62 @@ Dados que vários passos usam:
 > executados, e o ciclo do 198 se comportou como previsto. O que falhou no 197
 > é uma porta que o 198 não abre.
 
+> **Sessão do DAVI — 28 passos anotados, 11 aqui (fase V-D).** É a primeira
+> rodada de validação executada por **outra pessoa**, e isso muda o que ela
+> mede: onde o Daniel sabia o caminho de cor, o Davi seguiu o que está escrito.
+> As 30 anotações que ele devolveu ficam preservadas **palavra por palavra** no
+> corpo de cada passo, com a ortografia dele — a anotação crua é a evidência, e
+> a interpretação está ao lado dela, nunca no lugar.
+>
+> **⚠️ DUAS PENDÊNCIAS DE INFORMAÇÃO sobre esta sessão, e as duas são do
+> Daniel:**
+>
+> | | O quê | Por que importa |
+> |---|---|---|
+> | **data** | a data exata não foi registrada. Os passos dizem **"em setembro de 2026 (data exata não registrada)"** | um passo validado é validado *contra uma versão do código*, e sem data não se sabe qual |
+> | **ambiente** | **não se sabe se ele executou no Render (publicado) ou localmente** | muda a leitura de vários passos, e **decide o veredito de pelo menos um** |
+>
+> **Por que o ambiente decide vereditos.** O plano gratuito do Render **dorme
+> depois de 15 minutos** e leva cerca de um minuto para acordar (DEC-061). Um
+> *"Network error"* nessa janela **não é defeito** — é a hibernação. Os passos
+> afetados carregam a dúvida escrita no próprio corpo: **128**, **150**,
+> **153**, **207**, **233** e **234**. O **207** é o mais grave: se foi no
+> Render frio, pode não ser defeito nenhum; se foi local, é.
+>
+> **Os 11 que subiram para cá: 4, 12, 109, 125, 135, 141, 147, 158, 180, 197 e
+> 225.** Quatro deles fecham histórias antigas:
+>
+> | Passo | O que fecha |
+> |---|---|
+> | **4** | o achado **V-1** — o campo de e-mail que não era destacado. Reprovava desde 17/08/2026 |
+> | **12** | a metade do **V-2** que faltava: a troca de senha **ponta a ponta**. O 401 já tinha sido morto pela DEC-050 e conferido pelo passo 191 |
+> | **180** | perde a marca de **inverificável**, carregada desde a F-1b.3.2. A saída que funcionou foi encher o extrato **à mão** |
+> | **197** | reaberto desde a F-2c pelo órfão da **DEC-053**. A revalidação que ele exigia é esta |
+>
+> **Os outros 17 continuam pendentes, e por três motivos diferentes** — a
+> distinção está escrita em cada passo, porque tratá-los igual seria perder a
+> informação:
+>
+> | Situação | Passos | O que significa |
+> |---|---|---|
+> | **reprovado** | **128**, **153**, **207**, **215**, **233** (parcial) | houve defeito observado |
+> | **aprovado com ressalva** | **154**, **212**, **234**, e o **150** (ambíguo) | passou, mas com algo por conferir — **ressalva não é aprovação** |
+> | **não executado** | **136**, **137**, **138**, **139**, **140**, **142**, **152**, e o **210** (parcial) | não houve veredito |
+>
+> **🚨 O achado mais valioso desta sessão não é um defeito de código.** Nos
+> passos **136 a 138** o Davi não conseguiu reativar um pagamento seguindo o
+> roteiro, e escreveu: *"advogada provavelmente tambem não conseguiria"*. No
+> **142** ele resumiu: *"bloco 18 inteiro precisa ser revisado ou ser analisado
+> com emlhor orientação(cliente tambem precisaria dessa atenção a mais na
+> orientação)"*. **Isso é usabilidade, não falha de execução** — e é o tipo de
+> coisa que só aparece quando quem valida não é quem escreveu. Os três passos
+> vão ser reescritos com o caminho **nomeado em cliques**, no padrão dos passos
+> 185 a 190, que foi o tratamento da F-1c.2.1 para o mesmo problema.
+>
+> Dois passos novos nasceram daqui: o **259** (o contador do sino se atualiza
+> sozinho, da anotação do passo 234) e o **260** (a travessia da reativação, do
+> bloco 136–138).
+
 - [x] **1. Cadastro — assistente de duas etapas**
   **Validado em 17/08/2026 pelo Daniel. Passou.**
   Pré-condição: deslogado.
@@ -3267,6 +3428,20 @@ Dados que vários passos usam:
   Passos: digitar um CEP válido (ex.: `84010-330`) e sair do campo.
   Esperado: logradouro, bairro, cidade e UF chegam preenchidos; o foco vai
   para o número.
+  Fase de origem: 1
+
+- [x] **4. Cadastro — e-mail duplicado volta para a etapa 1**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  Passou.** Anotação dele, palavra por palavra: *"Aprovado"*.
+  **Histórico:** executado em 17/08/2026 — REPROVOU, porque o campo de e-mail
+  não era destacado. Era o **achado V-1**, registrado no `CLAUDE.md` do
+  frontend. **O V-1 FECHA AQUI**: o que ele descrevia é exatamente o que este
+  passo exige, e este passo passou.
+  Pré-condição: usar `demo@lex.dev` na etapa 1 e completar a etapa 2.
+  Passos: enviar o formulário.
+  Esperado: erro dizendo que o e-mail já está cadastrado, a tela **volta para
+  a etapa 1**, o campo de e-mail fica destacado e nada do que foi digitado se
+  perde.
   Fase de origem: 1
 
 - [x] **5. Cadastro leva direto ao sistema autenticado**
@@ -3321,6 +3496,22 @@ Dados que vários passos usam:
   Passos: apagar o conteúdo do Instagram (ou da chave PIX), salvar, dar F5.
   Esperado: o campo continua vazio depois do F5. Se voltar com o valor antigo,
   o backend ignorou a limpeza — que é exatamente o bug que a Fase 1.3 corrigiu.
+  Fase de origem: 1
+
+- [x] **12. Perfil — troca de senha**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  Passou.** Anotação dele, palavra por palavra: *"Aprovado"*.
+  **Histórico:** executado em 17/08/2026 — REPROVOU, porque o 401 da senha
+  atual incorreta derrubava a sessão. Era o **achado V-2**. **CORRIGIDO na
+  F-2a (DEC-050)** — a senha atual errada passou a responder **422**, e o
+  interceptor só desloga em **401**. O passo **191**, que exercita só esse
+  caminho, já tinha passado em 21/08/2026; este passo cobre **mais** que o
+  V-2 — a troca de senha ponta a ponta, com logout e login pela senha nova —,
+  e era essa metade que continuava por olhar. **Ela fecha aqui.**
+  Passos: trocar a senha para `Lex654321`, sair, entrar com a nova; depois
+  voltar a senha para `Lex123456`.
+  Esperado: a troca exige a senha atual; senha atual errada é recusada; o
+  login com a nova funciona.
   Fase de origem: 1
 
 - [x] **14. Perfil — remover o logo**
@@ -4004,6 +4195,87 @@ Dados que vários passos usam:
   o tamanho do dedo.
   Fase de origem: 3.2
 
+- [x] **109. Excluir com dependente — a mensagem diz quantos**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  Passou.** Anotação dele, palavra por palavra: *"Aprovado"*.
+  `[automatizável]`
+  Pré-condição: um honorário **com** parcelas e uma parcela **com** pagamentos.
+  Passos: 1) tentar excluir o honorário; 2) ler a mensagem; 3) tentar excluir a
+  parcela; 4) ler a mensagem.
+  Esperado: as duas são recusadas, e cada mensagem diz **quantos** dependentes
+  existem e de que tipo ("3 parcelas ativas", "2 pagamentos ativos"), no
+  singular quando for um só. **Nenhum campo do formulário é destacado** —
+  não há input errado, há registro gravado.
+  Por que este passo existe: é o contrato do 409 de integridade
+  (`dependencia` + `quantidade`, sem `campo`), que existia desde a Fase 2E.1 e
+  **nunca tinha sido consumido por tela nenhuma**.
+  Fase de origem: 4.2
+
+- [x] **125. Breadcrumb da Biblioteca de Seções e do Financeiro**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  Passou.** Anotação dele, palavra por palavra: *"aprovado"*.
+  `[automatizável]`
+  Passos: abrir `/dashboard/secoes`, `/dashboard/secoes/nova`,
+  `/dashboard/secoes/editar/:id` e `/dashboard/financeiro`, lendo a trilha no
+  cabeçalho em cada uma.
+  Esperado: "LEX › Biblioteca de Seções", "LEX › Nova Seção",
+  "LEX › Biblioteca de Seções › Editar" e "LEX › Financeiro". Em 360 px a
+  trilha **encurta com reticências** em vez de empurrar o nome da usuária para
+  fora da tela.
+  Por que este passo existe: as quatro telas caíam no `return ['LEX']` do fim
+  de `buildBreadcrumb` — ficavam sem trilha nenhuma, e são justamente aquelas
+  em que se navega para dentro.
+  Fase de origem: 4.3
+
+- [x] **135. Barra do mês sem o honorário cancelado**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  Passou.** Anotação dele, palavra por palavra: *"Aprovado"*.
+  `[automatizável]`
+  Pré-condição: seed carregado (tem 1 honorário cancelado, de R$ 800).
+  Passos: 1) no dashboard, ler a soma das barras de "Honorários contratados por
+  mês de cadastro"; 2) comparar com o cartão "Valor Contratado (total)";
+  3) abrir a ficha financeira do processo do honorário cancelado e conferir que
+  ele aparece na lista, atenuado, e **fora** do total contratado.
+  Esperado: a soma das barras **bate** com o "Valor Contratado (total)". O
+  cancelado não está em nenhum dos dois, e continua visível na ficha.
+  Por que este passo existe: era um achado reportado na Fase 4.3 e não
+  corrigido — o gráfico somava o cancelado enquanto o cartão logo acima o
+  excluía. Dois números do mesmo assunto, na mesma tela, sem nada explicando a
+  diferença.
+  Fase de origem: 4.4
+
+- [x] **141. ⭐ Navegar o formulário de honorário só pelo teclado**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  Passou.** Anotação dele, palavra por palavra: *"Aprovado"*.
+  `[só olho humano]`
+  Pré-condição: `/dashboard/honorarios/novo`, **tema escuro** (o padrão — é onde
+  o anel dourado precisa se destacar do fundo verde).
+  Passos: 1) sem tocar no mouse, percorrer o formulário inteiro com `Tab`,
+  incluindo o `<select>` de tipo, os campos de dinheiro e os botões;
+  2) repetir na biblioteca de seções (filtros e busca), na montagem e nos
+  diálogos de regeração; 3) abrir um diálogo e fechá-lo com `Esc`.
+  Esperado: **em todo controle** há um anel dourado visível, deslocado da borda.
+  Nenhum ponto do percurso deixa o foco invisível. `Esc` continua fechando o
+  modal.
+  O que se confere aqui: a suíte prova que nenhum `outline: none` sobreviveu;
+  ela **não** prova que o anel é visível contra o fundo daquele componente. Dois
+  dos seis casos removidos estavam dentro de regras `:focus-visible` — a regra
+  que desenhava o foco era a que o apagava.
+  Fase de origem: 4.5
+
+- [x] **147. ⭐ Seguir uma orientação de ponta a ponta até gerar**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  Passou.** Anotação dele, palavra por palavra: *"Aprovado"*.
+  Passos: com um honorário do tipo **fixo** e uma seção usando
+  `{{percentualHonorario}}`, tentar gerar; ler a orientação; **fazer exatamente
+  o que ela manda** (mudar o tipo do honorário para percentual, informando
+  percentual e valor base); gerar de novo.
+  Esperado: o documento é gerado, com o percentual no texto.
+  Por que este passo é o mais importante da fase: é a régua. Se em algum momento
+  a orientação mandar fazer algo que a tela não permite, o beco voltou — e
+  nenhum teste de texto pegaria isso.
+  Fase de origem: 4.6
+
 - [x] **155. O campo de busca não perde o foco ao digitar**
   **Validado em 17/08/2026 pelo Daniel. Passou.**
   Passos: abrir `/dashboard/clientes`, clicar no campo de busca e digitar um
@@ -4062,6 +4334,22 @@ Dados que vários passos usam:
 > página, e chegavam. O que não cabia era a tela em 360 px — LEX é PWA, e tela
 > nova que não cabe em celular é defeito. Foi daí que nasceu a **F-1b.2**, com
 > a varredura de responsividade das cinco telas da F-1b (passo **167**).
+
+- [x] **158. O honorário reparcelado não pode dizer "Pendente" com dinheiro recebido**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  Passou.** Anotação dele, palavra por palavra: *"Aprovado"*.
+  Pré-condição: `npm run seed:fresh`.
+  Passos: abrir a aba financeira do processo **"Ação de Cobrança de Dívida"** e
+  olhar a **linha do honorário "Assessoria tributária — processo
+  administrativo"** — só ela, e as duas informações lado a lado.
+  Esperado: onde se lê **"Recebido: R$ 1.500,00"**, o badge diz
+  **"Parcialmente pago"**. Nunca **"Pendente"**.
+  Por que só olho humano: a contradição é **visual e de leitura** — os dois
+  valores estão certos cada um por si, e o defeito só existe quando os dois
+  aparecem na mesma linha. Nenhuma asserção de valor pega isso; foi assim que o
+  A-4 sobreviveu à suíte inteira da F-1a. A suíte agora trava a causa
+  (`derivacao.test.js`, seção 9), e este passo fecha a outra metade.
+  Fase de origem: F-1a.2
 
 - [x] **159. ⭐ O preview bate com o realizado, depois de salvar**
   **Validado em 18/08/2026 pelo Daniel. Passou.**
@@ -4633,6 +4921,56 @@ Dados que vários passos usam:
   ação — escondê-la faria a advogada abrir um menu para descobrir por que falta
   um botão) e o **"Reparcelada"** da parcela cancelada.
   Fase de origem: F-1b.3, reaberto na F-1b.3.1
+
+- [x] **180. O extrato pagina em vez de acumular**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  Passou.** Anotação dele, palavra por palavra: *"Aprovado"*.
+
+  **✅ A MARCAÇÃO DE INVERIFICÁVEL SAIU.** De 21/08/2026 (F-1b.3.2) até esta
+  execução o passo carregava **⚠️ INVERIFICÁVEL com os dados atuais — não
+  reprovado**: com o banco do seed o extrato não chegava a ter segunda página,
+  e sem segunda página não há paginador a conferir. **O Davi conseguiu
+  executá-lo**, e **a saída que funcionou foi a (a) — encher o extrato à
+  mão**, que é a pré-condição escrita abaixo. A saída (b) continua descartada.
+
+  **As duas medições que sustentavam a marcação ficam registradas**, porque
+  elas é que explicam por que a pré-condição é o que é — e quem reexecutar o
+  passo sem elas vai repetir a tentativa que já se sabe inútil:
+
+  - **20/08/2026, na tela:** depois de executar o **passo 165**, o extrato do
+    honorário de **divórcio litigioso** mostra **"10 movimentações"**. O
+    paginador é de **20 por página** — não há segunda página. A aposta de que
+    o 165 encheria o extrato sozinho era **falsa**.
+  - **21/08/2026 (F-1c.2), no banco:** para o mesmo honorário logo depois do
+    `seed:fresh`, **1 pagamento, 0 estornos, 2 alocações, 0 desalocações, 0
+    reparcelamentos = 3 movimentações**; com o 165, as 10 acima. Um
+    reparcelamento acrescenta **1 a 3 linhas** — de 10 para 11 ou 13. **A
+    aposta (b), de que o reparcelamento pela tela bastaria, também era falsa.**
+
+  **A saída (a), que é a que funcionou:** cada **pagamento** gera duas linhas
+  (pagamento + alocação) e cada **estorno** gera duas (estorno + desalocação).
+  De 10 para além de 20 são cerca de **6 operações** — registrar 3 pagamentos e
+  estornar 3. Só então o paginador tem duas páginas.
+
+  **Não altere o seed para acomodar o passo** — pela mesma razão do passo 172:
+  o passo é que foi escrito contra dados que não existem. É a mesma família do
+  passo **152**, que segue inexecutável exatamente por não ter tido esse
+  tratamento.
+
+  Pré-condição: `npm run seed:fresh`, o passo **165** executado, **e** as ~6
+  operações da saída (a) registradas à mão.
+  Passos: registrar as ~6 operações; depois abrir a página do honorário de
+  **divórcio litigioso** e ir ao **Extrato**.
+  Esperado: no lugar do botão **"Carregar mais (N restantes)"**, há o **mesmo
+  paginador** das listagens — "1–20 de N movimentações", "Página 1 de X", e os
+  dois botões. Avançar e **voltar** funciona: com o acúmulo não havia como
+  voltar, porque não existia posição para onde voltar.
+  Conferir: depois de registrar um **estorno** pelo extrato, a lista volta para
+  a **página 1** — ficar na página 4 de uma história que acabou de mudar de
+  tamanho mostraria uma janela deslocada.
+  Conferir o **singular** (F-1b.3.1): num honorário com uma movimentação só, o
+  rodapé diz **"1 movimentação"**.
+  Fase de origem: F-1b.3, número corrigido na F-1b.3.2
 
 - [x] **181. ⭐ 🚨 O menu abre inteiro em 360 px, inclusive na última linha**
   **Validado em 20/08/2026 pelo Daniel. Passou.**
@@ -5238,6 +5576,57 @@ Dados que vários passos usam:
   antes de uma operação que derruba vários registros.
   Fase de origem: F-2b
 
+- [x] **197. ⭐ 🚨 Reativar devolve SÓ quem a cascata derrubou**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  Passou.** Anotação dele, palavra por palavra: *"Aprovado"*.
+  **O passo FECHA AQUI.** Ele estava reaberto desde 22/08/2026 por causa do
+  órfão da DEC-053, e a revalidação que a nota abaixo exigia é esta.
+  > **Histórico — executado em 22/08/2026 pelo Daniel. FICOU ABERTO — achado o
+  > órfão da DEC-053.** O que este passo pede funcionou: a cascata
+  > devolveu só quem ela derrubou, e o removido à mão continuou fora.
+  > **Mas foi possível reativar um processo cujo CLIENTE estava
+  > desativado**, e o resultado é um órfão visível — o processo volta às
+  > listagens, o cliente não, e clicar no nome do cliente cai num registro
+  > que o sistema trata como arquivado.
+  >
+  > A DEC-052 governava só a DESCIDA (reativar o pai não reativa os
+  > filhos). Nada dizia sobre a SUBIDA. A **DEC-053** (F-2c) fechou as duas
+  > bocas — reativar e criar sob pai inativo — e a recusa NOMEIA o pai.
+  >
+  > **Ficou aberto até a revalidação**, que inclui os passos novos
+  > **201 a 204**. Reexecutar este passo INTEIRO, e não só a parte nova: a
+  > guarda da DEC-053 entra no mesmo caminho que este passo percorre.
+  Pré-condição: `npm run seed:fresh`. **É o passo que a fase existe para ter.**
+  **▶ ONDE IR.** Menu lateral → **Processos** → o mesmo processo com
+  litisconsórcio do passo 196 (se já o desativou, reative-o primeiro, ou use
+  outro com mais de um participante).
+  **A ordem importa e é o ponto do passo.** Sem remover um participante à mão
+  **antes**, "restaurar tudo" e "restaurar só a cascata" dão o mesmo resultado —
+  e o passo passaria em cima do defeito.
+  Passos:
+  1) abrir **Gerenciar** → aba/bloco de **participantes**;
+  2) **remover à mão** um participante que **não** seja o principal — anote o
+     nome dele;
+  3) voltar à listagem e **desativar** o processo (passo 196);
+  4) trocar o seletor de situação para **Somente desativados**;
+  5) no ⋮ da linha, escolher **Reativar**;
+  6) **ler o modal**: ele diz quantos voltam, e que os removidos à mão **não**
+     voltam;
+  7) confirmar;
+  8) abrir **Gerenciar** → participantes.
+  Esperado: os participantes que caíram pela desativação **voltaram**. O que
+  você removeu à mão no passo 2 **NÃO voltou** — e é essa ausência que prova a
+  DEC-052.
+  **Se ele voltar, PARE** — a reativação está restaurando tudo, e a advogada
+  perdeu a decisão que tomou de propósito.
+  Conferir também o número do modal do passo 6: ele conta **só** os da cascata,
+  então é **menor** que o total de participantes desativados.
+  Por que só olho humano: a suíte cobre exatamente este cenário. O que ela não
+  cobre é o **caminho da interface** — que a remoção manual e a desativação
+  sejam alcançáveis nesta ordem, e que a advogada consiga conferir o resultado
+  sem ir ao banco.
+  Fase de origem: F-2b
+
 - [x] **198. O ciclo: desativar → reativar → desativar → reativar**
   **Validado em 22/08/2026 pelo Daniel. Passou.**
   Pré-condição: o passo **197** executado, com o participante removido à mão
@@ -5576,6 +5965,44 @@ Dados que vários passos usam:
   Fase de origem: F-3
 
   **Validado em 28/08/2026 pelo Daniel. Passou.**
+- [x] **225. ⭐ A linha do tempo do processo — e o financeiro que NÃO está nela**
+  **Executado pelo Davi em setembro de 2026 (data exata não registrada).
+  Passou.** Anotação dele, palavra por palavra: *"Aprovado"*.
+  Pré-condição: `npm run seed:fresh`, e então **mudar a fase de um processo**
+  agora, pelo **⋮ → Gerenciar → "Andamento do processo"** — o passo precisa
+  de pelo menos uma mudança gravada. Mude aqui mesmo, sem contar com o passo
+  **205**: o seed nasce com `fase` preenchida e `historicoFase` **vazio**, e
+  um passo que dependa de outro ter rodado quebra quando o roteiro é feito
+  fora de ordem.
+  **▶ ONDE IR.** **Processos** → **⋮ → Gerenciar** num processo com honorário
+  → rolar até **"Linha do tempo"**, **abaixo** da ficha financeira.
+  Passos:
+  1) conferir as entradas, de cima para baixo;
+  2) achar a marca de **"hoje"**;
+  3) procurar, na linha do tempo, qualquer coisa de **dinheiro**;
+  4) clicar num compromisso listado.
+  Esperado no passo 1: em **ordem de data**, com quatro tipos distinguíveis:
+  **Fase** (de → para, com o motivo quando houver), **Encerramento**,
+  **Liminar** e **Compromisso**. A primeira entrada diz *"Processo cadastrado
+  em Fase de conhecimento"* — é o **nascimento**, e sem ele um processo criado
+  direto em "execução" pareceria sempre ter estado lá.
+  Esperado no passo 2: uma **linha tracejada** atravessando a régua, escrita
+  **"hoje"**. Os compromissos **futuros** ficam **abaixo** dela, esmaecidos e
+  com marca tracejada.
+  Esperado no passo 3: **nada.** Nenhum honorário, nenhuma parcela, nenhum
+  pagamento, nenhum valor em reais.
+  Esperado no passo 4: abre o compromisso.
+  **Por que o financeiro não entra, e é decisão:** o extrato do honorário
+  responde outra pergunta — "quanto foi cobrado, quanto entrou, o que voltou" —
+  e já a responde bem. Cinco entradas de fase somem debaixo de quarenta linhas
+  de um plano parcelado em doze. **A ficha financeira continua na mesma página,
+  em seção própria, logo acima.**
+  Por que só olho humano: a suíte prova que o serviço não importa nenhum model
+  financeiro e que nenhum valor vaza na resposta. O que ela não prova é se a
+  régua **se lê como tempo** — se o olho encontra o "hoje" sem percorrer a
+  lista.
+  Fase de origem: F-3
+
 - [x] **227. ⭐ 🚨 UMA COMARCA QUE NÃO EXISTE, DIGITADA E SALVA ASSIM MESMO**
   Pré-condição: `npm run seed:fresh`. **É O PASSO QUE A FASE INTEIRA EXISTE
   PARA TER.** Se só um passo desta fase for executado, que seja este.
