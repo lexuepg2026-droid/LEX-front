@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import clientService from '../../api/clientService';
 import PageHeader from '../../components/ui/PageHeader';
 import ActionMenu from '../../components/ui/ActionMenu';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
+import Paginador from '../../components/ui/Paginador';
+import useListFilters from '../../hooks/useListFilters';
+import { ORDENS_CLIENTE, ORDEM_CLIENTE_PADRAO } from '../../utils/ordemCliente';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
 import OfflineNotice from '../../components/ui/OfflineNotice';
@@ -17,20 +20,34 @@ import {
 } from '../../utils/activationMessages';
 import '../../styles/modules.css';
 
+// 20 por página, o mesmo das listagens financeiras. Não é número escolhido
+// aqui: é o que `POR_PAGINA` já significa nas outras telas, e um valor
+// diferente faria a advogada aprender dois ritmos de navegação no mesmo
+// sistema.
+const POR_PAGINA = 20;
+
 function ClienteListPage() {
   // DEC-052: um modal só para as duas ações — ver a nota em `ProcessListPage`.
   const [ativacaoModal, setAtivacaoModal] = useState({ open: false, id: null, acao: null });
-  const [busca, setBusca] = useState('');
-  const [buscaDebounced, setBuscaDebounced] = useState('');
-  // Sem isto a reativação não teria onde acontecer: a listagem escondia os
-  // desativados, e um cliente desativado por engano ficava assim para sempre.
-  const [situacao, setSituacao] = useState('ativos');
   const online = useOnlineStatus();
 
-  useEffect(() => {
-    const t = setTimeout(() => setBuscaDebounced(busca), 300);
-    return () => clearTimeout(t);
-  }, [busca]);
+  // ── A-1: o estado dos filtros passou a vir do hook (F-1b.3) ─────────────
+  //
+  // Esta tela mantinha `busca`, `situacao` e o debounce em `useState` próprio,
+  // porque não tinha página nenhuma para reiniciar. Com a ordenação e o
+  // paginador, ela passa a ter — e a REGRA 1 do hook (mudar filtro volta para
+  // a página 1) é exatamente o defeito que o passo 175 existe para pegar.
+  //
+  // Escrever o `setPage(1)` à mão aqui seria a quarta cópia da regra, e o
+  // comentário do próprio hook diz por que isso dá errado: a tela escrita por
+  // último copia a anterior e esquece.
+  //
+  // `honorarioId`, `preset`, `de` e `ate` vêm no estado do hook e ficam
+  // INERTES nesta tela: são recorte financeiro, e cliente não tem período. O
+  // hook é de listagem, não do módulo financeiro.
+  const {
+    filtros, buscaDebounced, page, setPage, definirFiltro
+  } = useListFilters({ situacao: 'ativos', ordem: ORDEM_CLIENTE_PADRAO });
 
   // ── DEC-058: a listagem tem espelho local, escopado por usuário (F-5a) ──
   //
@@ -41,14 +58,28 @@ function ClienteListPage() {
   //
   // Os parâmetros da consulta são os MESMOS do `fetcher`: é o que faz a chave
   // do cache distinguir "ativos" de "todos" e cada busca da anterior.
-  const consulta = { busca: buscaDebounced || undefined, situacao };
+  //
+  // `page` e `ordem` entram na consulta, e por isso entram na CHAVE do cache:
+  // cada página e cada sentido têm espelho próprio, e voltar para uma página
+  // já vista funciona sem sinal.
+  const consulta = {
+    page,
+    limit: POR_PAGINA,
+    busca: buscaDebounced || undefined,
+    situacao: filtros.situacao,
+    ordem: filtros.ordem
+  };
   const { data, loading, error, updatedAt, fromCache, reload } = useCachedResource({
     resource: 'clients',
     params: consulta,
-    fetcher: () => clientService.getAllClients(consulta).then((res) => res.data.data ?? res.data),
+    // Guarda-se o ENVELOPE inteiro, e não só o array: é ele que traz o
+    // `total`, e sem o total o paginador sumiria sem nada dizer que há mais
+    // clientes. Mesma razão escrita em `InstallmentListPage`.
+    fetcher: () => clientService.getAllClients(consulta).then((res) => res.data),
     fallbackError: 'Falha ao buscar clientes.'
   });
-  const clientes = data ?? [];
+  const clientes = data?.data ?? (Array.isArray(data) ? data : []);
+  const total = typeof data?.total === 'number' ? data.total : 0;
 
   // O cliente NÃO cascateia — `deleteClient` só aceita desativar quem não
   // participa de processo ativo —, então não há contagem a buscar antes de
@@ -126,21 +157,39 @@ function ClienteListPage() {
         <input
           type="text"
           placeholder="Buscar por nome, razão social ou email..."
-          value={busca}
-          onChange={e => setBusca(e.target.value)}
+          value={filtros.busca}
+          onChange={e => definirFiltro('busca', e.target.value)}
           maxLength={80}
         />
         {/* DEC-052 — é por este seletor que um cliente desativado volta a ser
             alcançável. Sem ele, um cliente desativado por engano ficava
             desativado para sempre. */}
         <select
-          value={situacao}
-          onChange={e => setSituacao(e.target.value)}
+          value={filtros.situacao}
+          onChange={e => definirFiltro('situacao', e.target.value)}
           aria-label="Situação do registro"
         >
           <option value="ativos">Somente ativos</option>
           <option value="inativos">Somente desativados</option>
           <option value="todos">Ativos e desativados</option>
+        </select>
+        {/* DEC-062 — o padrão é A–Z, e `definirFiltro` é o que devolve a
+            lista para a página 1 ao trocar o sentido. Sem isso, quem está na
+            página 4 e inverte a ordem continua na página 4 de uma lista que
+            acabou de virar do avesso: os nomes mudam, a posição não, e não há
+            nada na tela explicando o que aconteceu.
+
+            A ordenação NÃO entra em "Filtros aplicados" — ordenar não recorta
+            o conjunto, e anunciá-la ali faria a advogada procurar por que a
+            lista está curta quando ela não está. */}
+        <select
+          value={filtros.ordem}
+          onChange={e => definirFiltro('ordem', e.target.value)}
+          aria-label="Ordenação da lista"
+        >
+          {ORDENS_CLIENTE.map((o) => (
+            <option key={o.valor} value={o.valor}>{o.rotulo}</option>
+          ))}
         </select>
       </div>
 
@@ -233,6 +282,26 @@ function ClienteListPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* O paginador fica FORA do `loading`: sumi-lo durante a consulta faria
+          a página pular a cada clique em "Próxima".
+
+          Ele entra nesta tela na A-1, e não por simetria: com a ordem
+          alfabética como padrão, a listagem pedia 20 e mostrava os 20
+          PRIMEIROS do alfabeto, em silêncio. Antes disso o recorte também
+          existia, mas por data de cadastro — e escondia os mais antigos, que
+          é a metade que ninguém procura. Ordenado por nome, o recorte passa a
+          esconder o fim do alfabeto: um cliente chamado "Zeca" simplesmente
+          não existiria na tela. */}
+      {!loading && total > 0 && (
+        <Paginador
+          page={page}
+          limit={POR_PAGINA}
+          total={total}
+          rotulo="cliente"
+          onMudarPagina={setPage}
+        />
       )}
 
       <Modal

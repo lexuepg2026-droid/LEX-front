@@ -3558,6 +3558,38 @@ em portal cativo, a tela mostra o erro do servidor em vez do aviso de offline.
 Sem gambiarra de "ping": teste de conectividade próprio é outra decisão, com
 custo de bateria e de requisição, e ninguém a pediu.
 
+#### 🚨 A FILA NÃO É ACIONADA quando `onLine` fica `true` sem internet (achado da V-D)
+
+**Isto é limitação conhecida da API do navegador, não defeito do código** — e
+precisa estar escrito porque é **exatamente o que um avaliador vai reproduzir
+desligando o wi-fi**.
+
+> A guarda de offline dispara com `navigator.onLine === false`. Perder conexão
+> sem derrubar a interface de rede — por exemplo, o roteador sem saída para a
+> internet — deixa `onLine` em `true`: a requisição sai e fica pendurada, e a
+> fila não é acionada. O sintoma é a tela dizendo que está salvando até a
+> conexão voltar.
+
+**Vale para a fila inteira, e não só para a operação em que o achado apareceu.**
+A guarda mora no interceptor (`api/axiosConfig.js`), antes de qualquer decisão
+sobre enfileirar: se `shouldBlockWrite` não dispara, nenhuma das quatro
+operações da DEC-059 chega a ser considerada. Compromisso e mudança de fase se
+comportam como a reordenação de seções do passo 128 — a requisição parte.
+
+**Como isso APARECE, e por que engana.** A tela mostra o indicador de
+salvamento e fica nele; quando o sinal volta, a requisição pendurada completa e
+grava. Parece a fila funcionando, e não é: nada foi enfileirado, nada
+sobreviveria a fechar a aba, e a tela de pendências fica vazia o tempo todo.
+
+**Como reproduzir o caminho CERTO:** DevTools → Network → **Offline**, que é o
+único gesto que garante `onLine === false`. É o que as pré-condições dos passos
+**128** e **244 a 251** mandam, e a razão de mandarem está aqui.
+
+**Não se "conserta" com um ping.** Um teste de conectividade próprio custa
+bateria e uma requisição periódica, e a decisão de não tê-lo está no parágrafo
+acima desde a F-5a. O que se faz é **saber e documentar** — e, no dia em que
+alguém demonstrar o offline, desligar a rede pelo DevTools e não pelo roteador.
+
 ### ⚠️ Aviso para a F-5b: subir a versão do banco tem custo
 
 A outbox vai precisar de outra object store, e isso significa **subir
@@ -3795,6 +3827,124 @@ O Web Service gratuito **dorme depois de 15 minutos** sem requisição e leva
 **Antes de qualquer demonstração, abrir o sistema alguns minutos antes.** Isso
 é pré-voo, como o passo 85: não é defeito a corrigir, é o plano gratuito, e o
 que não pode acontecer é a banca ser a primeira vez que alguém vê.
+
+---
+
+## DEC-062 (frontend) — o seletor de ordem, e o paginador que a ordem exigiu (A-1)
+
+> A decisão completa — o campo derivado, a collation `pt` medida contra o
+> Atlas, o índice e a migração — está por extenso no **CLAUDE.md do backend**.
+> Aqui fica o que é decisão de interface.
+
+### O seletor
+
+`utils/ordemCliente.js` — espelho **sem endpoint** de `ORDENACOES_CLIENTE` do
+backend, pela razão de sempre: é **constante, não dado**. Duas opções, com
+**valor gravado separado do rótulo** (`nome_asc` → "Nome (A–Z)"), como a DEC-039
+fixou para todo vocabulário do projeto.
+
+**O padrão é A–Z**, e a tela manda o valor **explícito** para a API em vez de
+confiar em os dois padrões continuarem iguais.
+
+**Nenhum `<option value="nome_asc">` escrito à mão.** O seletor é montado de
+`ORDENS_CLIENTE.map` — um `<option>` no JSX seria a segunda lista, livre para
+divergir, que é o defeito que `statusVisual.js` existe para não repetir.
+
+**A ordenação NÃO entra em "Filtros aplicados".** Ordenar não recorta o
+conjunto, e anunciá-la ali faria a advogada procurar por que a lista está curta
+quando ela não está.
+
+### O estado saiu para `useListFilters`, e o motivo é a página 1
+
+A `ClientListPage` guardava `busca` e `situacao` em `useState` próprio, com
+debounce próprio. Funcionava porque **não havia página nenhuma para reiniciar**.
+
+Com a ordenação, passa a haver — e a regra é a do passo **175**: *mudar filtro
+volta para a página 1*. Quem está na página 4 e inverte a ordem continua na
+página 4 de uma lista que virou do avesso; a tela não erra, mostra corretamente
+a quarta página de outro conjunto, e nada explica por que os nomes mudaram.
+
+**Escrever o `setPage(1)` à mão aqui seria a quarta cópia da regra**, e o
+comentário do próprio hook diz por que isso dá errado. Há varredura proibindo
+`setFiltros(` direto na tela — é a única forma de a regra se perder sem que mais
+nada mude.
+
+`honorarioId`, `preset`, `de` e `ate` vêm no estado do hook e ficam **inertes**
+nesta tela: são recorte financeiro, e cliente não tem período. O hook é de
+listagem, não do módulo financeiro.
+
+### 🚨 A listagem de clientes NÃO TINHA PAGINADOR, e a ordem alfabética tornou isso um defeito
+
+Ela chamava `getAllClients()` sem `page`/`limit`, e o serviço tem
+`limit = 20` no default: **a tela pedia 20 e mostrava 20**, com o `total` do
+envelope descartado. Com 8 clientes no seed, ninguém notou.
+
+**O recorte já existia; o que muda é O QUE ele esconde.** Por `createdAt: -1`
+ele escondia os clientes **mais antigos** — a metade que ninguém procura numa
+lista de cadastro. Ordenado por nome, passa a esconder **o fim do alfabeto**: um
+cliente chamado "Zeca" simplesmente não existiria na tela, e a busca seria a
+única forma de alcançá-lo.
+
+Entrou o **`<Paginador>`**, sem uma linha de mudança nele — o comentário do
+componente já previa as listagens não financeiras desde a F-1b.3. O envelope
+inteiro passou a ser guardado no espelho local (DEC-058), porque é dele que sai
+o `total`: com `clientes.length` o paginador diria "1–20 de 20" com 137 clientes
+no banco.
+
+**`page` e `ordem` entram na CHAVE do cache offline**, junto com busca e
+situação: cada página e cada sentido têm espelho próprio, e voltar a uma página
+já vista funciona sem sinal.
+
+**Só a listagem de clientes.** Processos, documentos e seções continuam sem
+paginador — converter tela que ninguém pediu segue sendo o trabalho que some no
+meio de outro.
+
+---
+
+## DEC-063 (frontend) — a mesma regra, a mesma frase, e a tela do login (A-1)
+
+> O porquê da assimetria entre cadastro e login está por extenso no **CLAUDE.md
+> do backend**, e é a parte que mais precisa ser lida antes de "corrigir" algo.
+
+### A regra tem UM dono, e o defeito era ter dois
+
+`utils/email.js` espelha `src/utils/email.js` do backend. Antes da A-1 a
+expressão vivia **escrita à mão dentro do `RegisterPage.jsx`**, e a mesma
+expressão vivia no `authValidation.js` — duas implementações da mesma regra,
+**com o mesmo furo**: as duas aceitavam `daniel@lex..dev`.
+
+O teste de paridade **importa as duas implementações e compara caso a caso**,
+inclusive casos fora da tabela da fase — é ali que duas cópias costumam
+divergir, porque ninguém as escreveu pensando neles. Varredura estática não
+bastaria: dois arquivos podem ter a mesma aparência e discordar num caso.
+
+**A frase também é única.** A tela dizia *"E-mail inválido."* (com ponto) e o
+servidor *"E-mail inválido"* (sem) — a mesma recusa com duas caras, conforme a
+validação acontecesse antes ou depois do envio.
+
+### A tela do login valida; o servidor não
+
+```js
+// LoginPage.jsx — a ORDEM é a decisão
+if (!emailValido(email)) { setError(MENSAGEM_EMAIL_INVALIDO); return; }
+setLoading(true);
+await login(email, senha);
+```
+
+Três coisas, e as três têm teste:
+
+1. **a guarda vem antes do `await login()`** — o ponto é **não enviar**, e o
+   passo **265** confere isso na aba Network;
+2. **há `return`** — sem ele a mensagem apareceria *e* a requisição sairia, que
+   é o defeito com cara de correção;
+3. **`setLoading(true)` fica DEPOIS** — senão o botão entra em "Entrando..." e
+   volta, piscando, para uma requisição que nunca aconteceu.
+
+**O servidor continua sem validar formato no login, de propósito**, e isso não é
+inconsistência: a tela poupa uma viagem para quem digitou errado; o servidor
+precisa responder igual para tudo, porque é ele que alguém consultaria em massa
+para descobrir quais e-mails têm conta. **O passo 266 é o que fecha essa
+metade**, e é o passo mais importante da fase.
 
 ---
 
