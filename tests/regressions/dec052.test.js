@@ -178,10 +178,34 @@ describe("DEC-052 — a contagem vem antes da confirmação", () => {
 // 4 — Os desativados precisam ser alcançáveis
 // ═══════════════════════════════════════════════════════════════════════════
 describe("DEC-052 — o filtro de situação", () => {
+  // ── REESCRITO na A-1, e não afrouxado ───────────────────────────────────
+  //
+  // As duas asserções abaixo travavam o MECANISMO (`setSituacao`,
+  // `useState('ativos')`) e não a REGRA. Quando a `ClientListPage` passou a
+  // tirar o estado de `useListFilters` — para ganhar a página 1 ao mudar de
+  // filtro, que é a regra do passo 175 —, elas caíram sobre uma tela que
+  // continuava perfeitamente correta: o seletor estava lá, com as três
+  // opções, e o padrão continuava "ativos".
+  //
+  // É o caso que o projeto já nomeou na F-1b.3: **um teste que trava o andaime
+  // contra a obra é um teste que precisa ser reescrito, não apagado.** O que
+  // elas passam a medir é a regra da DEC-052, que não mudou:
+  //
+  //   • existe um seletor de situação, com as três opções;
+  //   • o padrão é "ativos" — quem não mexer nele vê a listagem de sempre.
+  //
+  // As duas formas de guardar esse padrão são aceitas de propósito: a
+  // `ProcessListPage` continua com `useState('ativos')` e a `ClientListPage`
+  // declara `situacao: 'ativos'` nos iniciais do hook. Exigir uma delas seria
+  // travar o andaime de novo, uma fase depois.
   test("as duas listagens têm o seletor de situação", () => {
     for (const arquivo of LISTAGENS) {
       const codigo = semComentarios(ler(arquivo));
-      assert.match(codigo, /setSituacao/, `${arquivo}: falta o filtro de situação`);
+      assert.match(
+        codigo,
+        /aria-label="Situação do registro"/,
+        `${arquivo}: falta o seletor de situação`
+      );
       for (const valor of ["ativos", "inativos", "todos"]) {
         assert.match(
           codigo, new RegExp(`value="${valor}"`),
@@ -196,7 +220,8 @@ describe("DEC-052 — o filtro de situação", () => {
     for (const arquivo of LISTAGENS) {
       const codigo = semComentarios(ler(arquivo));
       assert.match(
-        codigo, /useState\('ativos'\)/,
+        codigo,
+        /useState\('ativos'\)|situacao: 'ativos'/,
         `${arquivo}: o padrão do filtro precisa continuar "ativos"`
       );
     }

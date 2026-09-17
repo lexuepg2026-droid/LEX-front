@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getApiErrorMessage } from '../../utils/apiError';
+import { emailValido, MENSAGEM_EMAIL_INVALIDO } from '../../utils/email';
 import './LoginPage.css';
 import logo from '../../assets/logo-lex.jpeg';
 
@@ -17,6 +18,25 @@ function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // ── DEC-063: a tela valida o formato; o SERVIDOR não ─────────────────
+    //
+    // Aqui é conveniência pura: poupa uma requisição e avisa o erro de
+    // digitação sem envolver o servidor. Repare que a validação acontece
+    // ANTES do `setLoading(true)` e o `return` sai sem chamar `login()` — o
+    // ponto do passo 264 é justamente que nada é enviado.
+    //
+    // **E o servidor continua sem validar formato, de propósito.** Ele
+    // responde 401 "Credenciais inválidas" para e-mail inexistente e para
+    // senha errada, com corpo idêntico, e um 400 que só e-mail malformado
+    // recebe permitiria descobrir quais endereços têm conta. Quem contornar
+    // esta tela recebe o mesmo 401 de sempre, que é o comportamento certo.
+    // A nota inteira está em `validations/authValidation.js`, no backend.
+    if (!emailValido(email)) {
+      setError(MENSAGEM_EMAIL_INVALIDO);
+      return;
+    }
+
     setLoading(true);
 
     try {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
+import { emailValido, MENSAGEM_EMAIL_INVALIDO } from '../../utils/email';
 import { maskCPF, maskCEP, maskPhone, unmask } from '../../utils/masks';
 import { buscarEnderecoPorCEP } from '../../utils/viacep';
 import { UFS } from '../../utils/enums';
@@ -9,7 +10,11 @@ import { toast } from '../../utils/toast';
 import './RegisterPage.css';
 import logo from '../../assets/logo-lex.jpeg';
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// A expressão de e-mail que vivia AQUI saiu na A-1 (DEC-063). Ela era uma
+// cópia da que estava em `validations/authValidation.js`, no backend, e as
+// duas tinham o mesmo furo: aceitavam `daniel@lex..dev`. Duas implementações
+// da mesma regra divergem na primeira correção que alguém fizer num lado só —
+// e aqui divergir significa a tela aceitar o que o servidor vai recusar.
 
 const INITIAL_FORM = {
   // Etapa 1 — acesso
@@ -60,7 +65,12 @@ function RegisterPage() {
 
   const validateStep1 = () => {
     if (!form.nomeCompleto.trim()) return 'Informe o nome completo.';
-    if (!EMAIL_REGEX.test(form.email.trim())) return 'E-mail inválido.';
+    // A frase vem da fonte única: a tela e o servidor recusam o mesmo
+    // endereço com o MESMO texto. Antes da A-1 esta dizia "E-mail inválido."
+    // (com ponto) e o servidor dizia "E-mail inválido" (sem) — a mesma recusa
+    // com duas caras, conforme a validação tivesse acontecido antes ou depois
+    // do envio.
+    if (!emailValido(form.email)) return MENSAGEM_EMAIL_INVALIDO;
     if (form.senha.length < 8 || !/[a-zA-Z]/.test(form.senha) || !/\d/.test(form.senha)) {
       return 'A senha deve ter no mínimo 8 caracteres, com ao menos uma letra e um número.';
     }
