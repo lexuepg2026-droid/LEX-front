@@ -5,7 +5,7 @@ import clientService from '../../api/clientService';
 import { toast } from '../../utils/toast';
 import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import { maskCPF, maskCNPJ, maskCEP, maskPhone, unmask } from '../../utils/masks';
-import { UFS, SEXO_OPTIONS, ESTADO_CIVIL_OPTIONS, TIPO_PESSOA_OPTIONS, labelDe } from '../../utils/enums';
+import { UFS, SEXO_OPTIONS, ESTADO_CIVIL_OPTIONS, TIPO_PESSOA_OPTIONS } from '../../utils/enums';
 import { buscarEnderecoPorCEP } from '../../utils/viacep';
 import CampoComSugestoes from '../../components/ui/CampoComSugestoes';
 import useTabelaDominio from '../../hooks/useTabelaDominio';
@@ -16,6 +16,9 @@ import useOnlineStatus from '../../hooks/useOnlineStatus';
 
 function ClienteFormPage() {
   const [tipoPessoa, setTipoPessoa] = useState('fisica');
+  // O tipo que está GRAVADO (F-6.2). Só a edição o preenche; serve para saber se
+  // a advogada está trocando o tipo e para avisar o que a gravação vai remover.
+  const [tipoOriginal, setTipoOriginal] = useState(null);
   const [formData, setFormData] = useState({
     nomeCompleto: '', cpf: '',
     rg: '', dataNascimento: '', sexo: '', estadoCivil: '', profissao: '', nacionalidade: 'brasileira',
@@ -70,6 +73,7 @@ function ClienteFormPage() {
         const response = await clientService.getClientById(id);
         const d = response.data;
         setTipoPessoa(d.tipoPessoa);
+        setTipoOriginal(d.tipoPessoa);
         // A API guarda dígitos puros; a UI trabalha com o valor mascarado.
         setFormData({
           nomeCompleto: d.nomeCompleto || '',
@@ -116,6 +120,38 @@ function ClienteFormPage() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+
+  // ── Troca de tipo (F-6.2) ────────────────────────────────────────────────
+  //
+  // Trocar o rádio NÃO apaga nada do estado: os campos dos dois tipos ficam
+  // guardados em `formData`, e voltar ao tipo original antes de salvar
+  // devolve tudo como estava. O que sai de verdade é decidido no envio —
+  // `handleSubmit` só monta o payload com os campos do tipo escolhido, e o
+  // servidor remove do cadastro os do tipo oposto (hook do model `Client`).
+  //
+  // Um PJ carregado para edição tem `nacionalidade` vazia, e virar PF com o
+  // campo vazio gravaria `null` — enquanto o cadastro novo de PF nasce com
+  // "brasileira". Repõe o mesmo padrão da criação, sem sobrescrever nada que
+  // já esteja preenchido.
+  const trocarTipoPessoa = (novoTipo) => {
+    setTipoPessoa(novoTipo);
+    if (novoTipo === 'fisica') {
+      setFormData(prev => (prev.nacionalidade ? prev : { ...prev, nacionalidade: 'brasileira' }));
+    }
+  };
+
+  // O que a gravação vai REMOVER, dito na língua da advogada. Só existe
+  // enquanto o tipo escolhido difere do gravado.
+  const trocandoTipo = isEditing && tipoOriginal !== null && tipoPessoa !== tipoOriginal;
+  const perdaNaTroca = tipoPessoa === 'juridica'
+    ? {
+        remove: 'pessoa física (nome completo, CPF, RG, data de nascimento, sexo, estado civil, profissão e nacionalidade)',
+        preencha: 'os dados empresariais',
+      }
+    : {
+        remove: 'pessoa jurídica (CNPJ, razão social, nome fantasia e representante legal)',
+        preencha: 'os dados pessoais',
+      };
 
   // ── DEC-057 — profissão e nacionalidade sugerem, e não obrigam ───────────
   // As duas tabelas só descem quando o campo é usado, e nenhuma das duas
@@ -300,25 +336,30 @@ function ClienteFormPage() {
     <div className="cliente-page-container">
       <h1 className="page-title">{isEditing ? 'Editar Cliente' : 'Registrar Novo Cliente'}</h1>
 
-      {!isEditing && (
-        <div className="form-group tipo-pessoa-seletor">
-          <label>Tipo de Pessoa:</label>
-          <div className="radio-group">
-            {TIPO_PESSOA_OPTIONS.map(({ value, label }) => (
-              <React.Fragment key={value}>
-                <input type="radio" id={`tipo_${value}`} name="tipoPessoa" value={value}
-                       checked={tipoPessoa === value} onChange={() => setTipoPessoa(value)} />
-                <label htmlFor={`tipo_${value}`}>{label}</label>
-              </React.Fragment>
-            ))}
-          </div>
+      {/* O seletor aparece na criação E na edição (F-6.2). Na edição ele troca
+          o tipo de um cliente já cadastrado — o `_id` não muda, então processos
+          e honorários continuam ligados a ele. */}
+      <div className="form-group tipo-pessoa-seletor">
+        <label>Tipo de Pessoa:</label>
+        <div className="radio-group">
+          {TIPO_PESSOA_OPTIONS.map(({ value, label }) => (
+            <React.Fragment key={value}>
+              <input type="radio" id={`tipo_${value}`} name="tipoPessoa" value={value}
+                     checked={tipoPessoa === value} onChange={() => trocarTipoPessoa(value)} />
+              <label htmlFor={`tipo_${value}`}>{label}</label>
+            </React.Fragment>
+          ))}
         </div>
-      )}
-      {isEditing && (
-        <p className="tipo-pessoa-label">
-          Tipo: <strong>{labelDe(TIPO_PESSOA_OPTIONS, tipoPessoa)}</strong>
-        </p>
-      )}
+        {trocandoTipo && (
+          <p className="tipo-pessoa-aviso" role="status">
+            Ao salvar, os dados de {perdaNaTroca.remove} deste cliente serão
+            removidos. Preencha {perdaNaTroca.preencha} abaixo. Processos e
+            honorários continuam ligados ao cliente; documentos já gerados
+            mantêm o texto de quando foram criados. Para desistir, escolha o
+            tipo anterior antes de salvar.
+          </p>
+        )}
+      </div>
 
       <form onSubmit={handleSubmit} className="data-form">
         {!online && <OfflineWriteReason />}

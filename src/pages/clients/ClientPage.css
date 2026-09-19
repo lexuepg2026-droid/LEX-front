@@ -133,7 +133,18 @@
 }
 .detail-section p { margin: 8px 0; }
 
-.tipo-pessoa-label { color: var(--text-color); margin-bottom: 10px; }
+
+/* Aviso da troca de tipo na edição (F-6.2): o que a gravação vai remover. */
+.tipo-pessoa-aviso {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-color);
+  background: rgba(184, 157, 75, 0.1);
+  border-left: 3px solid rgba(184, 157, 75, 0.8);
+  border-radius: 4px;
+}
 
 /* Painel informativo somente-leitura dentro de formulários */
 .form-info-box {

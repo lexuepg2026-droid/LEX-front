@@ -244,10 +244,14 @@ describe("passo 83: os rádios de tipo de pessoa saem do enum", () => {
       /TIPO_PESSOA_OPTIONS\.map\(/,
       "os rádios voltaram a ser escritos um a um em vez de sair do enum"
     );
-    assert.match(
-      codigo,
-      /labelDe\(\s*TIPO_PESSOA_OPTIONS/,
-      "o texto 'Tipo: …' da edição não sai mais do enum"
+    // F-6.2: a edição deixou de ter um "Tipo: …" fixo (`labelDe`) porque o
+    // seletor agora aparece nela também. Continua havendo UM ÚNICO ponto que
+    // monta os rádios — se a edição voltasse a ter uma cópia própria, o rótulo
+    // teria duas fontes de novo.
+    assert.equal(
+      (codigo.match(/TIPO_PESSOA_OPTIONS\.map\(/g) ?? []).length,
+      1,
+      "os rádios de tipo de pessoa precisam sair de UM só ponto da tela"
     );
 
     // E os rótulos NÃO voltam como literal repetido na tela — que é o defeito
