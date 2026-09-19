@@ -34,6 +34,33 @@ const STATUS_PROCESSO = {
   },
 };
 
+// ── Fase processual (DEC-054, F-6.1) ───────────────────────────────────────
+//
+// Os RÓTULOS são os da advogada (vocabulário da Laís, `utils/enums.js`) — é o
+// nome que ela vai usar ao telefonar. O que muda para o cliente é a explicação:
+// "Execução" e "Recursos" são jargão, e a frase é o que ele de fato lê.
+//
+// Não há ordem nem "passo X de 4" aqui, de propósito: o processo pode voltar de
+// fase, e uma barra de progresso prometeria uma linha reta que não existe.
+const FASE_PROCESSO = {
+  conhecimento: {
+    rotulo: 'Fase de conhecimento',
+    explicacao: 'O juiz analisa o caso e as provas apresentadas pelos dois lados.',
+  },
+  sentenca: {
+    rotulo: 'Sentença',
+    explicacao: 'O juiz já decidiu o caso.',
+  },
+  execucao: {
+    rotulo: 'Execução',
+    explicacao: 'Fase de fazer valer o que foi decidido.',
+  },
+  recursos: {
+    rotulo: 'Recursos',
+    explicacao: 'A decisão está sendo reexaminada por um tribunal superior.',
+  },
+};
+
 // A explicação importa mais que o rótulo. "Autor" um leigo até adivinha;
 // "terceiro interessado" e "litisconsorte", não — e é justamente o papel dele
 // no processo, a informação que ele mais precisa entender.
@@ -75,6 +102,14 @@ export const rotuloStatus = (status) => STATUS_PROCESSO[status]?.rotulo ?? statu
 
 export const explicacaoStatus = (status) => STATUS_PROCESSO[status]?.explicacao ?? '';
 
+export const rotuloFase = (fase) => FASE_PROCESSO[fase]?.rotulo ?? fase ?? '—';
+
+export const explicacaoFase = (fase) => FASE_PROCESSO[fase]?.explicacao ?? '';
+
+// Trânsito em julgado: a decisão é definitiva e não cabe mais recurso.
+export const EXPLICACAO_TRANSITO_EM_JULGADO =
+  'Não cabe mais recurso: o processo terminou por completo.';
+
 export const rotuloPapel = (papel) => PAPEL[papel]?.rotulo ?? papel ?? '—';
 
 export const explicacaoPapel = (papel) => PAPEL[papel]?.explicacao ?? '';
@@ -97,6 +132,24 @@ export const formatarData = (iso) => {
   return data.toLocaleDateString('pt-BR', { timeZone: FUSO });
 };
 
+// ── Data SEM hora (F-6.1) ───────────────────────────────────────────────────
+//
+// `dataDistribuicao` e `transitoEmJulgadoEm` são datas de calendário: o backend
+// as grava como meia-noite UTC (`2026-03-15T00:00:00.000Z`) e elas NÃO
+// representam um instante. Formatadas em Brasília, meia-noite UTC vira 21h do
+// dia ANTERIOR — a tela mostraria 14/03 para um trânsito em julgado de 15/03,
+// e data errada em fato processual é o pior erro possível nesta tela.
+//
+// Por isso UTC aqui, o mesmo critério da tela da advogada
+// (`ProcessDetailPage`, `formatters.js`). `formatarData` acima continua para
+// INSTANTES reais (`dataGeracao` do documento), onde Brasília é o certo.
+export const formatarDataCivil = (iso) => {
+  if (!iso) return '—';
+  const data = new Date(iso);
+  if (Number.isNaN(data.getTime())) return '—';
+  return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+};
+
 export const formatarDataHora = (iso) => {
   if (!iso) return '—';
   const data = new Date(iso);
@@ -114,9 +167,13 @@ export const formatarDataHora = (iso) => {
 export default {
   rotuloStatus,
   explicacaoStatus,
+  rotuloFase,
+  explicacaoFase,
+  EXPLICACAO_TRANSITO_EM_JULGADO,
   rotuloPapel,
   explicacaoPapel,
   rotuloTipoDocumento,
   formatarData,
+  formatarDataCivil,
   formatarDataHora,
 };

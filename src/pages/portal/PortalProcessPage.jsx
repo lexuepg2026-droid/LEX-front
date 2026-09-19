@@ -4,10 +4,13 @@ import PortalDocumentList from '../../components/portal/PortalDocumentList';
 import PortalConfirmation from '../../components/portal/PortalConfirmation';
 import { getApiErrorMessage } from '../../utils/apiError';
 import {
+  EXPLICACAO_TRANSITO_EM_JULGADO,
+  explicacaoFase,
   explicacaoPapel,
   explicacaoStatus,
-  formatarData,
+  formatarDataCivil,
   formatarDataHora,
+  rotuloFase,
   rotuloPapel,
   rotuloStatus,
 } from '../../utils/portalLabels';
@@ -112,6 +115,33 @@ function PortalProcessPage() {
             </dd>
           </div>
 
+          {/* Fase (DEC-054) é onde o processo ESTÁ; "Situação" acima é o eixo
+              administrativo. Sem a fase o cliente sabia que o processo andava,
+              mas não em que ponto. */}
+          {processo.fase && (
+            <div className="portal-dado">
+              <dt className="portal-dado__rotulo">Fase do processo</dt>
+              <dd className="portal-dado__valor">
+                {rotuloFase(processo.fase)}
+                {explicacaoFase(processo.fase) && (
+                  <span className="portal-ajuda"> {explicacaoFase(processo.fase)}</span>
+                )}
+              </dd>
+            </div>
+          )}
+
+          {/* Independe da fase e do "Situação": a advogada registra cada um à
+              mão, e um processo transitado pode ainda constar como em curso. */}
+          {processo.transitoEmJulgadoEm && (
+            <div className="portal-dado">
+              <dt className="portal-dado__rotulo">Trânsito em julgado</dt>
+              <dd className="portal-dado__valor">
+                {formatarDataCivil(processo.transitoEmJulgadoEm)}
+                <span className="portal-ajuda"> {EXPLICACAO_TRANSITO_EM_JULGADO}</span>
+              </dd>
+            </div>
+          )}
+
           <div className="portal-dado">
             <dt className="portal-dado__rotulo">A sua posição no processo</dt>
             <dd className="portal-dado__valor">
@@ -160,7 +190,7 @@ function PortalProcessPage() {
           {processo.dataDistribuicao && (
             <div className="portal-dado">
               <dt className="portal-dado__rotulo">Distribuído em</dt>
-              <dd className="portal-dado__valor">{formatarData(processo.dataDistribuicao)}</dd>
+              <dd className="portal-dado__valor">{formatarDataCivil(processo.dataDistribuicao)}</dd>
             </div>
           )}
         </dl>
