@@ -3948,6 +3948,55 @@ metade**, e é o passo mais importante da fase.
 
 ---
 
+## DEC-064 (frontend) — as telas que o e-mail abre, e o aviso que não bloqueia (A-2)
+
+O detalhe da decisão está no **CLAUDE.md do backend**. Aqui, o que é da tela.
+
+**Três telas públicas, fora do `ProtectedRoute`** (quem esqueceu a senha não tem
+sessão; quem clica no link de confirmação pode estar noutro navegador):
+`/esqueci-senha`, `/redefinir-senha` e `/confirmar-email`. Os dois últimos
+caminhos são os que o backend põe no link do e-mail — mudar um lado sem o outro
+quebra o link em silêncio.
+
+- **O token sai da barra de endereço** logo depois de lido (`navigate(..., { replace: true })`):
+  na barra ele iria para o histórico, para o "copiar link" e, conforme o
+  cabeçalho `Referrer`, para o próximo site aberto daqui.
+- **A confirmação envia UM pedido só.** `React.StrictMode` monta o efeito duas
+  vezes em desenvolvimento, e o segundo envio do mesmo token responderia "já
+  utilizado" e sobrescreveria o sucesso. O guarda é um `ref` (que sobrevive à
+  remontagem), e há teste — a mutação que o remove derruba um.
+- **`POST` também na confirmação**, embora ela "só leia um link": o link abre uma
+  TELA, e é a tela que chama a API. Um `GET` com o token seria consumido por
+  antivírus e leitores de e-mail que pré-visualizam links.
+- **Redefinir e confirmar não abrem sessão.** A redefinição manda ao login; a
+  confirmação só chama `checkAuth()` para o aviso sumir sem F5.
+- **A recuperação tem UMA mensagem.** A tela não tem ramo por existência de
+  conta — nem tem como saber. Como no login (DEC-063), ela confere o formato
+  antes de enviar e o servidor não.
+
+**O aviso "Confirme seu e-mail"** (`components/layout/EmailConfirmationBanner.jsx`)
+fica no topo do layout, ao lado do conteúdo — **nunca envolvendo o `Outlet`**. Só
+aparece com `emailConfirmadoEm === null` (com `undefined`, servidor sem o campo,
+afirmar "não confirmado" seria dizer o que ninguém verificou). **O login não é
+bloqueado** (decisão do Daniel), e `tests/regressions/a2.test.js` trava isso pela
+raiz: **só o aviso pode consultar esse campo** — a mutação que faz o
+`ProtectedRoute` olhá-lo derruba o teste. "Já confirmei" existe porque a
+confirmação acontece em outra aba.
+
+**O botão do aviso tem estilo próprio** (`.email-banner__botao`): `.btn-secondary`
+só tem regra dentro de `ProcessPage.css`, e a varredura de CSS — que existe para
+isso — acusou a classe inalcançável a partir do layout.
+
+**E-mail do cliente (`ClientFormPage.jsx`):** a tela confere o formato com a
+função única (`utils/email.js`) e, como o servidor, **só de um e-mail que mudou**
+em relação ao gravado (`emailOriginal`). Continua opcional — sem `required`.
+
+Passos de roteiro: **267 a 271**. Os dois primeiros (o e-mail chega; a
+recuperação de ponta a ponta) só se validam no ambiente publicado, com o
+provedor configurado.
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:

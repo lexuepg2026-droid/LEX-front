@@ -3486,6 +3486,107 @@ Dados que vários passos usam:
   em lugares ou cores diferentes e denunciar a diferença do mesmo jeito.
   Fase de origem: A-1
 
+## 41. Fase A-2 — e-mail confirmado, senha recuperável, e o e-mail do cliente
+
+> Numeração contínua a partir do 266. Cinco passos novos: **267 a 271**. O
+> total pendente vai de **118 para 123**.
+>
+> **O que mudou (DEC-064).** A advogada passou a receber e-mail no cadastro
+> (confirmar a conta) e pode recuperar a senha sozinha. O login **não** fica
+> bloqueado até confirmar — decisão do Daniel, por causa da demonstração. O
+> e-mail do cliente passou a ter formato conferido, e continua opcional.
+>
+> **O que a suíte já prova, e por que estes passos existem mesmo assim.** O
+> backend prova, com o envio SIMULADO, que o token expira, vale uma vez, que a
+> resposta é a mesma para e-mail com conta e sem conta, e que a redefinição
+> derruba as sessões (`tests/auth/emailSenha.test.js`, `emailService.test.js`,
+> `tests/clients/emailCliente.test.js`). O frontend prova a fiação das telas
+> (`tests/regressions/a2.test.js`).
+>
+> **Nada disso prova que o e-mail CHEGA.** Os passos 267 e 268 são os únicos que
+> exercitam o provedor de verdade, e dependem da configuração no painel do
+> Render (`EMAIL_PROVIDER`, `EMAIL_API_KEY`, `EMAIL_FROM`, `APP_URL`) — ver
+> `.env.production.example`. Se o primeiro envio real falhar, o formato do que se
+> manda a cada provedor está em `tests/auth/emailService.test.js`.
+
+- [ ] **267. ⭐ 🚨 O e-mail de confirmação CHEGA, e o link confirma** `[só olho humano]`
+  Pré-condição: **ambiente publicado** com as quatro variáveis de e-mail
+  configuradas. Uma caixa de entrada real, que você abra.
+  **▶ ONDE IR.** `/registrar`, no site publicado.
+  Passos: 1) criar uma conta com o **seu** e-mail; 2) abrir a caixa de entrada
+  (e o **spam**); 3) clicar no botão do e-mail; 4) na tela que abre, ler o
+  resultado; 5) voltar ao sistema.
+  Esperado: o e-mail chega em poucos minutos, com o assunto "Confirme seu
+  e-mail — LEX" e um botão; o link abre uma tela **"E-mail confirmado"**; no
+  sistema, o aviso amarelo "Confirme seu e-mail" **some** (com "Já confirmei",
+  ou depois de recarregar). Clicar no MESMO link de novo diz que o link já foi
+  utilizado.
+  **🚨 O QUE REPROVA:** o e-mail não chega (nem no spam) — e aí a causa está
+  no provedor ou na configuração, não no código: conferir `EMAIL_FROM` (precisa
+  ser o remetente verificado no provedor) e `APP_URL`. Um link que aponta para
+  `localhost` é `APP_URL` faltando.
+  Por que só olho humano: o que se prova em teste é o que o sistema ENTREGA ao
+  provedor; que o provedor aceite, entregue e não mande para o spam só uma caixa
+  real mostra.
+  Fase de origem: A-2
+
+- [ ] **268. ⭐ 🚨 Recuperar a senha, do e-mail até o login** `[só olho humano]`
+  Pré-condição: o passo 267 passou (o envio funciona). **Dois navegadores** (ou
+  um normal e uma janela anônima), o primeiro **logado** na conta.
+  **▶ ONDE IR.** `/login` → **"Esqueci minha senha"**.
+  Passos: 1) no navegador B, clicar em "Esqueci minha senha" e informar o e-mail
+  da conta; 2) ler a mensagem na tela; 3) abrir o e-mail e clicar no botão; 4)
+  escolher uma senha nova (mín. 8, com letra e número) e confirmar; 5) entrar
+  com a senha nova; 6) voltar ao navegador A (que estava logado) e **recarregar**.
+  Esperado: a tela do passo 2 diz que "se o e-mail tiver uma conta, enviaremos as
+  instruções"; o e-mail chega com o assunto "Redefinição de senha — LEX"; depois
+  de trocar, a senha ANTIGA deixa de entrar; o navegador A **volta para o
+  login** (a sessão antiga foi encerrada).
+  **🚨 O QUE REPROVA:** a senha antiga continuar valendo; o navegador A continuar
+  logado; ou o link, depois de usado, servir de novo.
+  Por que só olho humano: o envio e a troca entre dois aparelhos.
+  Fase de origem: A-2
+
+- [ ] **269. O aviso de e-mail não confirmado NÃO impede de trabalhar, e o reenvio se comporta** `[automatizável]`
+  Pré-condição: uma conta **nova**, com o e-mail ainda não confirmado (não clicar
+  no link do primeiro e-mail).
+  **▶ ONDE IR.** Qualquer tela depois do login.
+  Passos: 1) entrar; 2) navegar por Clientes, Processos e Financeiro; 3) no aviso
+  do topo, clicar em **"Reenviar e-mail"**; 4) clicar de novo **logo em seguida**;
+  5) abrir o link do e-mail e clicar em **"Já confirmei"**.
+  Esperado: todas as telas funcionam normalmente, só com o aviso no topo; o
+  primeiro reenvio diz "E-mail enviado"; o segundo, em seguida, diz **"Aguarde um
+  minuto"**; depois de confirmar, o aviso some.
+  **A conta demo (`demo@lex.dev`) já nasce confirmada** — nela o aviso nunca
+  aparece, de propósito (não é uma caixa de entrada real).
+  Fase de origem: A-2
+
+- [ ] **270. ⭐ 🚨 "Esqueci minha senha" responde IGUAL para e-mail com conta e sem conta** `[automatizável]`
+  **É a propriedade que a DEC-064 mais arrisca**, e a irmã do passo 266: o login
+  não pode deixar descobrir quais e-mails têm conta, e a recuperação também não.
+  Pré-condição: **deslogado**. Uma conta existente (`demo@lex.dev`) e uma que não
+  existe (`naoexiste@lex.dev`).
+  **▶ ONDE IR.** `/esqueci-senha`.
+  Passos, **anotando a mensagem EXATA de cada um**: 1) `demo@lex.dev`; 2)
+  `naoexiste@lex.dev`; 3) comparar as duas mensagens **palavra por palavra**, e
+  também **quanto demoraram**.
+  Esperado: a **mesma** frase, no mesmo lugar, na mesma cor. Nada distingue "a
+  conta existe" de "a conta não existe".
+  **🚨 O QUE REPROVA:** qualquer diferença — uma frase "e-mail não encontrado", ou
+  uma resposta claramente mais lenta num dos casos.
+  Fase de origem: A-2
+
+- [ ] **271. O e-mail do cliente: formato conferido, campo opcional, cliente antigo não trava** `[automatizável]`
+  **▶ ONDE IR.** `/dashboard/clientes` → **Novo cliente** e **Editar**.
+  Passos: 1) cadastrar um cliente com o e-mail `joao..silva@lex.dev` (dois pontos);
+  2) cadastrar um com e-mail `joao@lex` (sem ponto); 3) cadastrar um **sem
+  e-mail nenhum**; 4) cadastrar um com `joao+teste@lex.dev`; 5) editar um cliente
+  **antigo** só para mudar o telefone.
+  Esperado: 1 e 2 são **recusados**, com a mensagem "E-mail inválido" e o campo de
+  e-mail **destacado**; 3 e 4 funcionam; 5 salva normalmente, **mesmo que o
+  e-mail antigo seja torto** — o formato só é cobrado de um e-mail que MUDOU.
+  Fase de origem: A-2
+
 ## Validado
 
 
