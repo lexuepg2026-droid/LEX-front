@@ -29,6 +29,10 @@ export const getApiErrorStatus = (err) => err?.response?.status ?? null;
 // roteamento em silêncio. Devolve null quando a resposta não traz o campo.
 export const getApiErrorField = (err) => err?.response?.data?.campo || null;
 
+// O `codigo` estável do erro (ex.: `tokenExpirado`), para a tela decidir o que
+// fazer sem interpretar a frase da mensagem.
+export const getApiErrorCode = (err) => err?.response?.data?.codigo || null;
+
 // Corpo `errors` das respostas de erro, quando existe. O backend usa esse
 // envelope para tudo que a tela precisa renderizar de forma estruturada — a
 // lista de pendências do 422, os dados do documento anterior no 409 da

@@ -7,6 +7,7 @@ import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import { maskCPF, maskCNPJ, maskCEP, maskPhone, unmask } from '../../utils/masks';
 import { UFS, SEXO_OPTIONS, ESTADO_CIVIL_OPTIONS, TIPO_PESSOA_OPTIONS } from '../../utils/enums';
 import { buscarEnderecoPorCEP } from '../../utils/viacep';
+import { emailValido, MENSAGEM_EMAIL_INVALIDO } from '../../utils/email';
 import CampoComSugestoes from '../../components/ui/CampoComSugestoes';
 import useTabelaDominio from '../../hooks/useTabelaDominio';
 import { rotuloProfissao, gentilicos } from '../../utils/tabelasDominio';
@@ -19,6 +20,11 @@ function ClienteFormPage() {
   // O tipo que está GRAVADO (F-6.2). Só a edição o preenche; serve para saber se
   // a advogada está trocando o tipo e para avisar o que a gravação vai remover.
   const [tipoOriginal, setTipoOriginal] = useState(null);
+  // O e-mail que está GRAVADO (A-2). Serve para a mesma regra do servidor: o
+  // formato só é cobrado de um e-mail que MUDOU — a tela reenvia o e-mail em todo
+  // salvamento, e um cliente antigo com e-mail torto não pode travar a edição do
+  // telefone por causa de um campo que ninguém tocou.
+  const [emailOriginal, setEmailOriginal] = useState('');
   const [formData, setFormData] = useState({
     nomeCompleto: '', cpf: '',
     rg: '', dataNascimento: '', sexo: '', estadoCivil: '', profissao: '', nacionalidade: 'brasileira',
@@ -74,6 +80,7 @@ function ClienteFormPage() {
         const d = response.data;
         setTipoPessoa(d.tipoPessoa);
         setTipoOriginal(d.tipoPessoa);
+        setEmailOriginal(d.email || '');
         // A API guarda dígitos puros; a UI trabalha com o valor mascarado.
         setFormData({
           nomeCompleto: d.nomeCompleto || '',
@@ -214,9 +221,26 @@ function ClienteFormPage() {
     //
     // Deixar salvar para dar erro depois perde o que foi digitado.
     if (!online) return;
-    setLoading(true);
     setError('');
     setCampoComErro(null);
+
+    // ── A-2 (DEC-064): o formato do e-mail do cliente, conferido na tela ─────
+    // A MESMA função do login e do cadastro (`utils/email.js`, DEC-063), e a
+    // mesma exceção do servidor: só vale para e-mail que mudou. O campo segue
+    // OPCIONAL — vazio passa. Conveniência que poupa a viagem; o servidor é
+    // quem recusa de verdade.
+    const emailDigitado = formData.email.trim();
+    if (
+      emailDigitado &&
+      emailDigitado.toLowerCase() !== emailOriginal.trim().toLowerCase() &&
+      !emailValido(emailDigitado)
+    ) {
+      setError(MENSAGEM_EMAIL_INVALIDO);
+      setCampoComErro('email');
+      return;
+    }
+
+    setLoading(true);
 
     // Campo opcional esvaziado precisa ir como `null` na edição: `undefined`
     // some no JSON.stringify, a chave nem chega ao backend e o merge parcial

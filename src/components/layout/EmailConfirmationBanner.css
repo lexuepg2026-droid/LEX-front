@@ -1,0 +1,61 @@
+.email-banner {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-warning-bg);
+  border-bottom: 1px solid var(--color-warning);
+  color: var(--text-color);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.email-banner__texto {
+  flex: 1 1 320px;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.email-banner__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.email-banner__aviso {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 13px;
+}
+
+.email-banner__aviso--ok {
+  color: var(--color-success);
+}
+
+.email-banner__aviso--erro {
+  color: var(--color-danger);
+}
+
+/* Botão próprio: `.btn-secondary` só tem regra dentro de ProcessPage.css, e o
+   layout não alcança a folha de uma tela (a varredura de CSS trava isso). */
+.email-banner__botao {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--text-color);
+  background: transparent;
+  color: var(--text-color);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.email-banner__botao:hover:not(:disabled) {
+  background: var(--color-warning-bg);
+}
+
+.email-banner__botao:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

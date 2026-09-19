@@ -1,0 +1,37 @@
+/* Telas de e-mail da advogada (A-2): recuperar senha, redefinir e confirmar.
+   O layout (coluna, logo, campos, botão) vem de LoginPage.css — só o que é
+   próprio destas telas mora aqui. */
+
+.login-page .auth-titulo {
+  font-size: 20px;
+  margin: 0 0 8px;
+  text-align: center;
+  color: var(--text-color);
+}
+
+.login-page .auth-texto {
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--text-color);
+  opacity: 0.85;
+  margin: 0 0 18px;
+}
+
+.login-page .auth-mensagem {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-color);
+  border: 1px solid var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.login-page .auth-mensagem--erro {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+}

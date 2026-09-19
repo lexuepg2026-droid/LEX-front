@@ -2,6 +2,9 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LoginPage from '../pages/auth/LoginPage';
 import RegisterPage from '../pages/auth/RegisterPage';
+import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from '../pages/auth/ResetPasswordPage';
+import ConfirmEmailPage from '../pages/auth/ConfirmEmailPage';
 import DashboardPage from '../pages/dashboard/DashboardPage';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 import DashboardHomePage from '../pages/dashboard/DashboardHomePage';
@@ -65,6 +68,13 @@ function AppRoutes() {
       <Route path="/" element={<LoginPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registrar" element={<RegisterPage />} />
+
+      {/* A-2 (DEC-064): as três telas que o e-mail abre. Públicas, e FORA do
+          `ProtectedRoute` de propósito: quem esqueceu a senha não tem sessão, e
+          quem clica no link de confirmação pode estar em outro navegador. */}
+      <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
+      <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
+      <Route path="/confirmar-email" element={<ConfirmEmailPage />} />
 
       {/* ── Portal do cliente ──────────────────────────────────────────────
           O `PortalAuthProvider` envolve SÓ este ramo: fora dele o contexto do
