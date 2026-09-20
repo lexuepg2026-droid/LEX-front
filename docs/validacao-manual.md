@@ -3557,8 +3557,10 @@ Dados que vários passos usam:
   Esperado: todas as telas funcionam normalmente, só com o aviso no topo; o
   primeiro reenvio diz "E-mail enviado"; o segundo, em seguida, diz **"Aguarde um
   minuto"**; depois de confirmar, o aviso some.
-  **A conta demo (`demo@lex.dev`) já nasce confirmada** — nela o aviso nunca
-  aparece, de propósito (não é uma caixa de entrada real).
+  **A conta demo (`demo@lex.dev`) nasce NÃO confirmada** (decisão do Daniel na
+  semeadura com volume) — nela o aviso APARECE, de propósito, para o fluxo poder
+  ser mostrado. Confirmar o e-mail dela exige uma caixa de entrada real; para os
+  passos acima use uma conta nova.
   Fase de origem: A-2
 
 - [ ] **270. ⭐ 🚨 "Esqueci minha senha" responde IGUAL para e-mail com conta e sem conta** `[automatizável]`
