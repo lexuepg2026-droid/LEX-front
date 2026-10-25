@@ -495,9 +495,11 @@ describe("F-1b — o nome do honorário leva à página dele", () => {
   });
 
   test("não há item de menu novo: a página se alcança pelos links", () => {
-    const sidebar = semComentarios(ler("src/components/layout/Sidebar.jsx"));
+    // Desde a Fase 2a o menu é um mapa só, lido pelo cabeçalho e pela barra de
+    // baixo (`navegacao.js`); a Sidebar saiu.
+    const menu = semComentarios(ler("src/components/layout/navegacao.js"));
     assert.doesNotMatch(
-      sidebar,
+      menu,
       /honorarios\/[^"'`\s]*\$\{|honorarios\/detalhe/,
       "a página do honorário não vira entrada de menu"
     );

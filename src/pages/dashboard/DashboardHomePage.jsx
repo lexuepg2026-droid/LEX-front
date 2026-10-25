@@ -84,7 +84,7 @@ const CARDS_DO_MES = [
     label: (mes) => `Recebido em ${mes}`,
     Icon: CalendarCheck,
     color: 'success',
-    vazio: 'nenhum recebimento no mês',
+    vazio: 'nenhum pagamento no mês',
   },
 ];
 
@@ -182,7 +182,7 @@ function DashboardHomePage() {
 
         setUpcoming(urgent);
       })
-      .catch(err => toast.error(getApiErrorMessage(err, 'Não foi possível carregar cobranças urgentes.')));
+      .catch(err => toast.error(getApiErrorMessage(err, 'Não foi possível carregar as parcelas urgentes.')));
   }, []);
 
   // Falha aqui não derruba o painel: os cartões de contagem e os gráficos

@@ -4,7 +4,7 @@ import authService from '../../api/authService';
 import { getApiErrorMessage, getApiErrorCode } from '../../utils/apiError';
 import './LoginPage.css';
 import './AuthEmail.css';
-import LogoLex from '../../components/ui/LogoLex.jsx';
+import LayoutAutenticacao from '../../components/layout/LayoutAutenticacao.jsx';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ESCOLHER A NOVA SENHA (A-2, DEC-064) — o destino do link do e-mail
@@ -73,70 +73,75 @@ function ResetPasswordPage() {
 
   if (concluido) {
     return (
-      <div className="login-page">
-        <LogoLex className="logo" />
-        <h1 className="auth-titulo">Senha redefinida</h1>
-        <p className="auth-mensagem" role="status">
-          Sua senha foi alterada. Por segurança, todos os aparelhos conectados à sua conta foram desconectados.
-        </p>
-        <button type="button" className="btn-primary" onClick={() => navigate('/login', { replace: true })}>
-          Entrar
-        </button>
-      </div>
+      <LayoutAutenticacao voltarPara="/login">
+        <div className="login-page">
+          <h1 className="auth-titulo">Senha redefinida</h1>
+          <p className="auth-mensagem" role="status">
+            Sua senha foi alterada. Por segurança, todos os aparelhos conectados à sua conta foram desconectados.
+          </p>
+          <button type="button" className="btn-primary" onClick={() => navigate('/login', { replace: true })}>
+            Entrar
+          </button>
+        </div>
+      </LayoutAutenticacao>
     );
   }
 
   if (!token || linkMorto) {
     return (
-      <div className="login-page">
-        <LogoLex className="logo" />
-        <h1 className="auth-titulo">Link inválido</h1>
-        <p className="auth-mensagem auth-mensagem--erro" role="alert">
-          {linkMorto && erro ? erro : 'Este link é inválido ou já foi utilizado.'}
-        </p>
-        <div className="login-links">
-          <Link to="/esqueci-senha">Pedir um novo link</Link>
-          <Link to="/login">Voltar ao login</Link>
+      <LayoutAutenticacao voltarPara="/login">
+        <div className="login-page">
+          <h1 className="auth-titulo">Link inválido</h1>
+          <p className="auth-mensagem auth-mensagem--erro" role="alert">
+            {linkMorto && erro ? erro : 'Este link é inválido ou já foi utilizado.'}
+          </p>
+          <div className="login-links">
+            <Link to="/esqueci-senha">Pedir um novo link</Link>
+            <Link to="/login">Voltar ao login</Link>
+          </div>
         </div>
-      </div>
+      </LayoutAutenticacao>
     );
   }
 
   return (
-    <div className="login-page">
-      <LogoLex className="logo" />
-      <h1 className="auth-titulo">Escolha uma nova senha</h1>
+    <LayoutAutenticacao voltarPara="/login">
+      <div className="login-page">
+        <h1 className="auth-titulo">Escolha uma nova senha</h1>
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <input
-            type="password"
-            placeholder="Nova senha (mín. 8, com letra e número)"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            autoComplete="new-password"
-            required
-          />
-        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="nova-senha">Nova senha (mín. 8, com letra e número)</label>
+            <input
+              id="nova-senha"
+              type="password"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              autoComplete="new-password"
+              required
+            />
+          </div>
 
-        <div className="form-group">
-          <input
-            type="password"
-            placeholder="Confirmar nova senha"
-            value={confirmacao}
-            onChange={(e) => setConfirmacao(e.target.value)}
-            autoComplete="new-password"
-            required
-          />
-        </div>
+          <div className="form-group">
+            <label htmlFor="confirmar-senha">Confirmar nova senha</label>
+            <input
+              id="confirmar-senha"
+              type="password"
+              value={confirmacao}
+              onChange={(e) => setConfirmacao(e.target.value)}
+              autoComplete="new-password"
+              required
+            />
+          </div>
 
-        {erro && <p className="error-message" role="alert">{erro}</p>}
+          {erro && <p className="error-message" role="alert">{erro}</p>}
 
-        <button type="submit" disabled={loading} className="btn-primary">
-          {loading ? 'Salvando...' : 'Redefinir senha'}
-        </button>
-      </form>
-    </div>
+          <button type="submit" disabled={loading} className="btn-primary">
+            {loading ? 'Salvando...' : 'Redefinir senha'}
+          </button>
+        </form>
+      </div>
+    </LayoutAutenticacao>
   );
 }
 

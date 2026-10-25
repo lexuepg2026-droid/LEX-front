@@ -1,18 +1,196 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   O CABEÇALHO HORIZONTAL (Fase 2a, DEC-078/079)
+
+   A barra é a marca: #174034 e bege, IGUAIS nos dois modos (`--color-marca-*`,
+   medidos em `tests/css/contrastePares.js`). Por isso nada aqui usa os tokens
+   de texto do tema sobre a barra — o `--color-text-secondary` do claro
+   (#2E4A41) sumiria no verde. Os painéis que abrem dela (submenus, sino)
+   voltam ao tema: são superfície, não marca.
+
+   A barra NÃO define `color` para os filhos herdarem: se definisse, o texto
+   dos painéis do sino e dos submenus herdaria o bege e sumiria no claro. Cada
+   peça da barra declara a própria cor.
+   ═══════════════════════════════════════════════════════════════════════════ */
 .app-header {
-  height: var(--header-height);
-  background-color: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--space-6);
   flex-shrink: 0;
 }
 
+.app-header__barra {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  height: var(--header-height);
+  padding: 0 var(--space-6);
+  background-color: var(--color-marca-fundo);
+}
+
+/* O anel de foco na barra é bege: o `--color-focus` do claro é o próprio
+   #174034, e desapareceria aqui. Os painéis voltam ao anel do tema
+   (`MenuSuspenso.css`). */
+.app-header__barra :is(a, button):focus-visible {
+  outline-color: var(--color-marca-foco);
+}
+
+/* O painel do sino também é superfície do tema. */
+.app-header__barra .sino__painel :is(a, button):focus-visible {
+  outline-color: var(--color-focus);
+}
+
+.app-header__logo {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-marca-texto);
+  border-radius: var(--radius-sm);
+}
+
+.app-header__logo-img {
+  display: block;
+  width: 80px;
+  height: auto;
+}
+
+/* ── Os links ────────────────────────────────────────────────────────────── */
+.nav-principal {
+  flex: 1;
+  min-width: 0;
+}
+
+.nav-principal__lista {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Links e botões de grupo têm a MESMA forma: lado a lado na barra, um link e
+   um "Financeiro ▾" com aparências diferentes pareceriam de duas famílias. */
+.nav-principal__link,
+.nav-principal__grupo .menu-suspenso__botao {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 40px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-marca-texto-suave);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nav-principal__link:hover,
+.nav-principal__grupo .menu-suspenso__botao:hover {
+  background-color: var(--color-marca-realce);
+  color: var(--color-marca-texto);
+  text-decoration: none;
+}
+
+/* O ativo: bege pleno e o sublinhado da Figura 17. O traço acende por
+   opacidade e escala; com movimento reduzido, só aparece. */
+.nav-principal__link::after,
+.nav-principal__grupo .menu-suspenso__botao::after {
+  content: '';
+  position: absolute;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: 4px;
+  height: 2px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-marca-texto);
+  opacity: 0;
+  transform: scaleX(0.4);
+  transition: opacity var(--transition-normal), transform var(--transition-normal);
+}
+
+.nav-principal__link--ativo,
+.nav-principal__grupo.menu-suspenso--ativo .menu-suspenso__botao {
+  color: var(--color-marca-texto);
+}
+
+.nav-principal__link--ativo::after,
+.nav-principal__grupo.menu-suspenso--ativo .menu-suspenso__botao::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.menu-suspenso__seta {
+  transition: transform var(--transition-fast);
+}
+
+.menu-suspenso__botao[aria-expanded='true'] .menu-suspenso__seta {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-principal__link::after,
+  .nav-principal__grupo .menu-suspenso__botao::after,
+  .menu-suspenso__seta {
+    transition: none;
+  }
+}
+
+/* ── À direita: fila, sino, usuário ─────────────────────────────────────── */
+.app-header__acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* O sino e o contador da fila foram escritos para a surface do tema. Sobre a
+   marca, só o GATILHO de cada um muda de cor; o painel do sino continua no
+   tema. A lógica dos dois não foi tocada. */
+.app-header__barra .sino__botao {
+  color: var(--color-marca-texto);
+}
+
+.app-header__barra .sino__botao:hover {
+  background: var(--color-marca-realce);
+  color: var(--color-marca-texto);
+}
+
+.app-header__barra .fila-badge,
+.app-header__barra .fila-badge svg {
+  color: var(--color-marca-texto);
+}
+
+.app-header__barra .fila-badge {
+  background-color: var(--color-marca-realce);
+  border-color: var(--color-marca-texto-suave);
+}
+
+.app-header__barra .fila-badge--falha {
+  border-color: var(--color-marca-erro);
+}
+
+.app-header__barra .fila-badge--falha svg {
+  color: var(--color-marca-erro);
+}
+
+/* ── A trilha, no tema da tela ──────────────────────────────────────────── */
+.app-header__trilha {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  /* Mesmo recuo do conteúdo (`.main-content`), para a trilha alinhar com o
+     balão em telas largas. */
+  padding: var(--space-2) max(var(--space-6), calc((100% - var(--largura-conteudo)) / 2));
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
 /* `min-width: 0` e `overflow: hidden` (Fase 4.3): "LEX › Biblioteca de Seções
-   › Editar" não cabe num cabeçalho de 360 px, e sem isto a trilha empurrava o
-   bloco do usuário para fora da tela — o cabeçalho inteiro rolava. Agora quem
-   cede é o último segmento, com reticências. */
+   › Editar" não cabe em 360 px, e quem cede é o último segmento, com
+   reticências. */
 .breadcrumb {
   display: flex;
   align-items: center;
@@ -36,55 +214,23 @@
   text-overflow: ellipsis;
 }
 
-.header-user {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.header-greeting {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  background-color: var(--color-accent-muted);
-  border: 1px solid var(--color-accent);
-  color: var(--color-accent);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-}
-
-@media (max-width: 767px) {
-  .app-header { padding: 0 var(--space-3); }
-  .header-greeting { display: none; }
-}
-
-/* ── O rótulo do registro na trilha (F-1b) ────────────────────────────────
-   Em telas de detalhe o último segmento passou a ser o NOME do registro
-   ("LEX › Honorários › Assessoria tributária — processo administrativo"), que
-   é texto livre digitado pela advogada e pode ser longo.
-
-   O teto existe para o nome não empurrar o bloco do usuário para fora da tela
-   em 360 px. `.breadcrumb-current` já corta com reticências desde a 4.3; o que
-   faltava era um limite de largura para o corte acontecer antes de a linha
-   estourar. O `title` no elemento não é necessário: a página inteira mostra a
-   descrição por extenso logo abaixo. */
-@media (max-width: 480px) {
-  .breadcrumb-current {
-    max-width: 180px;
+/* ── Abaixo de 1024 px: a barra compacta (DEC-079) ──────────────────────── */
+@media (max-width: 1023px) {
+  .nav-principal { display: none; }
+  .app-header__barra {
+    gap: var(--space-3);
+    padding: 0 var(--space-3);
   }
+  .app-header__logo-img { width: 64px; }
+  .app-header__trilha { padding: var(--space-2) var(--space-4); }
+}
+
+/* O rótulo do registro na trilha (F-1b) pode ser longo; o teto existe para o
+   corte com reticências acontecer antes de a linha estourar. */
+@media (max-width: 480px) {
+  .breadcrumb-current { max-width: 180px; }
 }
 
 @media (min-width: 481px) and (max-width: 767px) {
-  .breadcrumb-current {
-    max-width: 260px;
-  }
+  .breadcrumb-current { max-width: 260px; }
 }

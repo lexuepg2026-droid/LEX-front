@@ -77,8 +77,10 @@ describe("A-2 — as três telas que o e-mail abre", () => {
     }
   });
 
-  test("o login tem o link 'Esqueci minha senha'", () => {
-    assert.match(login, /<Link to="\/esqueci-senha">Esqueci minha senha<\/Link>/);
+  // O texto passou a ser o da Figura 16 na Fase 2a (DEC-081); o que se trava
+  // continua sendo o que importa — o login leva à recuperação.
+  test("o login tem o link 'Esqueceu sua senha?'", () => {
+    assert.match(login, /<Link to="\/esqueci-senha">Esqueceu sua senha\?<\/Link>/);
   });
 });
 

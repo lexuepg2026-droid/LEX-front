@@ -18,7 +18,9 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
-import { lerModos, medirPar, parseCor, razao } from "../helpers/contraste.js";
+import { readFileSync } from "node:fs";
+
+import { CAMINHO_VARIAVEIS, lerModos, medirPar, parseCor, razao } from "../helpers/contraste.js";
 import { PARES } from "./contrastePares.js";
 
 describe("a fórmula", () => {
@@ -41,9 +43,20 @@ describe("a fórmula", () => {
 
 const modos = lerModos();
 
+describe("a marca fixa (DEC-078)", () => {
+  test("nenhum --color-marca-* é redefinido no modo claro", () => {
+    // O cabeçalho e a autenticação têm a mesma cor nos dois modos. Um token
+    // da marca redefinido em `body.light-mode` mudaria uma delas sozinha.
+    const css = readFileSync(CAMINHO_VARIAVEIS, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    const claro = css.slice(css.indexOf("body.light-mode"));
+    assert.doesNotMatch(claro, /--color-(?:on-)?marca-/);
+    assert.equal(modos.escuro["--color-marca-fundo"], modos.claro["--color-marca-fundo"]);
+  });
+});
+
 for (const [modo, tokens] of Object.entries(modos)) {
   describe(`contraste — modo ${modo}`, () => {
-    for (const par of PARES) {
+    for (const par of PARES.filter((p) => !p.modos || p.modos.includes(modo))) {
       test(`${par.nome} ≥ ${par.limite}:1`, () => {
         const { razao: r, frente, fundo } = medirPar(tokens, par);
         assert.ok(

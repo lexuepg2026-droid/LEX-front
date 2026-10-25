@@ -32,6 +32,8 @@ import CalendarPage from '../pages/calendar/CalendarPage';
 import EventFormPage from '../pages/calendar/EventFormPage';
 import ProfilePage from '../pages/profile/ProfilePage';
 import PendenciasPage from '../pages/pendencias/PendenciasPage';
+import NotFoundPage from '../pages/public/NotFoundPage';
+import InicioPublico from '../pages/public/InicioPublico';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PORTAL DO CLIENTE — mesmo app, chunk próprio
@@ -65,7 +67,11 @@ const PortalProcessPage = lazy(() => import('../pages/portal/PortalProcessPage')
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<LoginPage />} />
+      {/* DEC-082: `/` é a página inicial pública; o login fica em `/login`.
+          Todo lugar que manda alguém entrar (portão de rota, logout, sessão
+          expirada, fim da redefinição de senha, confirmação de e-mail) já
+          apontava para `/login` — conferido na Fase 2a. */}
+      <Route path="/" element={<InicioPublico />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registrar" element={<RegisterPage />} />
 
@@ -181,8 +187,19 @@ function AppRoutes() {
           <Route path="pendencias" element={<PendenciasPage />} />
 
           <Route path="perfil" element={<ProfilePage />} />
+
+          {/* Endereço inexistente DENTRO da área da advogada: a página de
+              "não encontrada" com o cabeçalho em volta, para a saída ser a
+              navegação de sempre (Fase 2a). */}
+          <Route path="*" element={<NotFoundPage dentroDoLayout />} />
         </Route>
       </Route>
+
+      {/* Rota coringa de todo o resto — inclusive `/portal/…` inexistente, que
+          o ramo do portal não casa. Fica FORA do `ProtectedRoute`: quem não
+          tem sessão também erra endereço, e não pode ser mandado ao login por
+          isso. */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

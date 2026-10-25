@@ -18,8 +18,12 @@
 .ui-btn--md  { padding: var(--space-2) var(--space-5); font-size: var(--font-size-base); }
 
 /* Variantes */
+/* A borda só existe no escuro (`--color-btn-primario-borda`, Fase 2a): lá o
+   #174034 mede 1,5:1 contra a surface e o botão "afundava" no fundo. No claro
+   o token é transparente e nada muda. */
 .ui-btn--primary {
   background-color: var(--color-primary);
+  border-color: var(--color-btn-primario-borda);
   color: var(--color-on-primary);
 }
 .ui-btn--primary:hover:not(:disabled) {

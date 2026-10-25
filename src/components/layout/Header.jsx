@@ -1,9 +1,13 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { Link, useLocation } from 'react-router-dom';
+import { ChevronDown } from 'lucide-react';
 import { useBreadcrumbLabel } from '../../contexts/BreadcrumbContext';
+import LogoLex from '../ui/LogoLex.jsx';
 import NotificationBell from './NotificationBell';
 import PendingUploads from './PendingUploads';
+import MenuSuspenso from './MenuSuspenso.jsx';
+import MenuUsuario from './MenuUsuario.jsx';
+import { GRUPOS, LINKS_PRINCIPAIS, grupoAtivo, itemAtivo } from './navegacao.js';
 import './Header.css';
 
 const BREADCRUMB_MAP = {
@@ -64,55 +68,107 @@ function buildBreadcrumb(pathname, rotuloDaPagina = null) {
   return ['LEX'];
 }
 
-function getInitials(name) {
-  if (!name) return '?';
-  return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-}
-
-function Header() {
+// ═══════════════════════════════════════════════════════════════════════════
+// O CABEÇALHO HORIZONTAL (Fase 2a, DEC-079)
+//
+// Substitui a Sidebar. Duas faixas:
+//
+//   1. a BARRA da marca — #174034 fixo nos dois modos (DEC-078): logo, os
+//      links (≥ 1024 px), e à direita o contador da fila, o sino e o menu do
+//      usuário. Abaixo de 1024 px os links saem e a navegação vai para a barra
+//      de baixo com "Mais" (`BottomNav`); a barra fica compacta.
+//   2. a TRILHA, logo abaixo, no tema da tela. A lógica é a mesma de antes —
+//      `buildBreadcrumb` e o rótulo publicado pela página (F-1b). Trocar a
+//      trilha por "Voltar" ou pelo cabeçalho de contexto é decisão da Fase 2b.
+//
+// O cabeçalho fica SEMPRE visível: o desenho dela o escondia ao rolar, e a
+// navegação que some é a que a advogada procura no meio de uma tabela longa.
+// Ele não precisa de `position: sticky` — quem rola é `.main-content`, abaixo
+// dele (ver `AppLayout.css`).
+// ═══════════════════════════════════════════════════════════════════════════
+function Header({ theme, toggleTheme, onLogout }) {
   const location = useLocation();
-  // O nome vem do contexto, não de um GET /me próprio: assim a tela de Perfil
-  // reflete aqui na hora, via updateUser, sem recarregar a página.
-  const { user } = useAuth();
-
   const rotuloDaPagina = useBreadcrumbLabel(location.pathname);
   const breadcrumb = buildBreadcrumb(location.pathname, rotuloDaPagina);
 
-  const nomeCompleto = user?.nomeCompleto || '';
-  const firstName = nomeCompleto.split(' ')[0] || '';
-
   return (
     <header className="app-header">
-      <nav className="breadcrumb" aria-label="breadcrumb">
-        {breadcrumb.map((segment, i) => (
-          <React.Fragment key={i}>
-            {i > 0 && <span className="breadcrumb-sep">›</span>}
-            {/* `breadcrumb-item` saiu: nunca teve regra em CSS nenhum. Os
-                segmentos não-atuais já herdam a cor de `.breadcrumb`, e só o
-                último se distingue, por `.breadcrumb-current`. */}
-            <span className={i === breadcrumb.length - 1 ? 'breadcrumb-current' : undefined}>
-              {segment}
-            </span>
-          </React.Fragment>
-        ))}
-      </nav>
+      <div className="app-header__barra">
+        <Link to="/dashboard" className="app-header__logo" aria-label="LEX — Início">
+          <LogoLex className="app-header__logo-img" />
+        </Link>
 
-      <div className="header-user">
-        {/* O sino fica no cabeçalho, e não na Sidebar: ele precisa estar
-            visível nas duas larguras, e em 360 px a Sidebar não existe. */}
-        {/* O contador da FILA vem antes do sino: o que não saiu do aparelho
-            é mais urgente do que o que o mundo cobra — e ele só aparece quando
-            existe (F-5b). */}
-        <PendingUploads />
-        <NotificationBell />
-        {nomeCompleto && (
-          <>
-            <span className="header-greeting">Olá, {firstName}</span>
-            <div className="avatar" title={nomeCompleto}>
-              {getInitials(nomeCompleto)}
-            </div>
-          </>
-        )}
+        <nav className="nav-principal" aria-label="Navegação principal">
+          <ul className="nav-principal__lista">
+            {LINKS_PRINCIPAIS.map((item) => {
+              const ativo = itemAtivo(item, location);
+              return (
+                <li key={item.to}>
+                  <Link
+                    to={item.to}
+                    className={`nav-principal__link${ativo ? ' nav-principal__link--ativo' : ''}`}
+                    aria-current={ativo ? 'page' : undefined}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
+            {GRUPOS.map((grupo) => (
+              <li key={grupo.id}>
+                <MenuSuspenso
+                  className="nav-principal__grupo"
+                  ativo={grupoAtivo(grupo, location)}
+                  conteudoDoBotao={(
+                    <>
+                      {grupo.label}
+                      <ChevronDown size={16} aria-hidden="true" className="menu-suspenso__seta" />
+                    </>
+                  )}
+                >
+                  <ul className="menu-suspenso__lista">
+                    {grupo.itens.map((item) => {
+                      const ativo = itemAtivo(item, location);
+                      return (
+                        <li key={item.to}>
+                          <Link
+                            to={item.to}
+                            className={`menu-suspenso__item${ativo ? ' menu-suspenso__item--ativo' : ''}`}
+                            aria-current={ativo ? 'page' : undefined}
+                          >
+                            {item.label}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </MenuSuspenso>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="app-header__acoes">
+          {/* O contador da FILA vem antes do sino: o que não saiu do aparelho
+              é mais urgente do que o que o mundo cobra — e ele só aparece
+              quando existe (F-5b). */}
+          <PendingUploads />
+          <NotificationBell />
+          <MenuUsuario theme={theme} toggleTheme={toggleTheme} onLogout={onLogout} />
+        </div>
+      </div>
+
+      <div className="app-header__trilha">
+        <nav className="breadcrumb" aria-label="breadcrumb">
+          {breadcrumb.map((segment, i) => (
+            <React.Fragment key={i}>
+              {i > 0 && <span className="breadcrumb-sep">›</span>}
+              <span className={i === breadcrumb.length - 1 ? 'breadcrumb-current' : undefined}>
+                {segment}
+              </span>
+            </React.Fragment>
+          ))}
+        </nav>
       </div>
     </header>
   );

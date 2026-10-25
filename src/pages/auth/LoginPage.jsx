@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { emailValido, MENSAGEM_EMAIL_INVALIDO } from '../../utils/email';
 import './LoginPage.css';
-import LogoLex from '../../components/ui/LogoLex.jsx';
+import LayoutAutenticacao from '../../components/layout/LayoutAutenticacao.jsx';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -50,43 +50,53 @@ function LoginPage() {
     }
   };
 
+  // Fase 2a (DEC-081): o layout da Figura 16 — título, rótulos VISÍVEIS acima
+  // dos campos (os dela eram só placeholder, que some ao digitar), o botão
+  // preenchido, o "Esqueceu sua senha?" e o "Criar conta" contornado. A lógica
+  // acima não mudou.
   return (
-    <div className="login-page">
-      <LogoLex className="logo" />
-      
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <input 
-            type="email" 
-            placeholder="Email" 
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+    <LayoutAutenticacao voltarPara="/">
+      <div className="login-page">
+        <h1 className="auth-titulo">Fazer login</h1>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="login-email">E-mail</label>
+            <input
+              id="login-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="login-senha">Senha</label>
+            <input
+              id="login-senha"
+              type="password"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              autoComplete="current-password"
+              required
+            />
+          </div>
+
+          {error && <p className="error-message" role="alert">{error}</p>}
+
+          <button type="submit" disabled={loading} className="btn-primary">
+            {loading ? 'Entrando...' : 'Fazer login'}
+          </button>
+        </form>
+
+        <div className="login-links">
+          <Link to="/esqueci-senha">Esqueceu sua senha?</Link>
+          <Link to="/registrar" className="btn-contornado">Criar conta</Link>
         </div>
-        
-        <div className="form-group">
-          <input 
-            type="password" 
-            placeholder="Senha"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            required
-          />
-        </div>
-
-        {error && <p className="error-message">{error}</p>}
-
-        <button type="submit" disabled={loading} className="btn-primary">
-          {loading ? 'Entrando...' : 'Entrar'}
-        </button>
-      </form>
-
-      <div className="login-links">
-        <Link to="/esqueci-senha">Esqueci minha senha</Link>
-        <Link to="/registrar">Criar nova conta</Link>
       </div>
-    </div>
+    </LayoutAutenticacao>
   );
 }
 

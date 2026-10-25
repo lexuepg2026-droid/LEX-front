@@ -58,6 +58,14 @@
   }
 }
 
+/* A barra de baixo existe até 1023 px desde a Fase 2a (DEC-079): o toast sobe
+   acima dela em toda essa faixa, e não só no celular. */
+@media (max-width: 1023px) {
+  .toast-container {
+    bottom: calc(var(--bottom-nav-height) + var(--space-3));
+  }
+}
+
 @media (max-width: 767px) {
   .toast-container {
     bottom: calc(var(--bottom-nav-height) + var(--space-3));

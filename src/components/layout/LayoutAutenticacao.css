@@ -1,0 +1,197 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYOUT DE AUTENTICAÇÃO (Fase 2a, DEC-081)
+
+   Tudo aqui é marca fixa (`--color-marca-*`, DEC-078), e tudo é escopado por
+   `.auth-layout`: os nomes de classe das telas (`.login-page`, `.btn-primary`,
+   `.form-group`) também existem nos formulários da área da advogada, e uma
+   regra solta aqui os pegaria de carona.
+
+   Os pares de cor estão em `tests/css/contrastePares.js` ("marca: …").
+   ═══════════════════════════════════════════════════════════════════════════ */
+.auth-layout {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--color-marca-fundo);
+  color: var(--color-marca-texto);
+}
+
+.auth-layout :is(a, button, input, select):focus-visible {
+  outline-color: var(--color-marca-foco);
+}
+
+/* O painel da logo: cantos arredondados só do lado de dentro, como na
+   Figura 14. */
+.auth-layout__marca {
+  flex: 0 0 42%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  background-color: var(--color-marca-escuro);
+  border-radius: 0 3rem 3rem 0;
+  box-shadow: 0 0 15px 8px rgba(0, 0, 0, 0.1);
+}
+
+.auth-layout__logo {
+  width: min(20rem, 70%);
+  height: auto;
+  color: var(--color-marca-texto);
+}
+
+.auth-layout__conteudo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: var(--space-12) var(--space-6);
+}
+
+/* ── O "Voltar" (Figura 16) ─────────────────────────────────────────────── */
+.auth-layout__voltar {
+  position: absolute;
+  top: var(--space-5);
+  left: var(--space-5);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+  border-radius: var(--radius-full);
+  color: var(--color-marca-texto);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+}
+
+.auth-layout__voltar:hover {
+  background-color: var(--color-marca-realce);
+  text-decoration: none;
+}
+
+.auth-layout__voltar:focus-visible {
+  border-radius: var(--radius-full);
+}
+
+.auth-layout__voltar-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-marca-texto);
+  border-radius: var(--radius-full);
+}
+
+/* ── O conteúdo das telas, na pele da marca ─────────────────────────────── */
+.auth-layout h1,
+.auth-layout h2 {
+  color: var(--color-marca-texto);
+}
+
+.auth-layout .form-group label {
+  color: var(--color-marca-texto);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Campos em pílula com borda bege (Figura 16). O fundo é o da própria marca,
+   para o texto digitado ser o bege medido contra ela. */
+.auth-layout .form-group input,
+.auth-layout .form-group select {
+  border: 1px solid var(--color-marca-borda-campo);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-marca-fundo);
+  color: var(--color-marca-texto);
+}
+
+.auth-layout .form-group input:focus-visible,
+.auth-layout .form-group select:focus-visible {
+  border-radius: var(--radius-pill);
+}
+
+.auth-layout .form-group input::placeholder {
+  color: var(--color-marca-texto-suave);
+  opacity: 1;
+}
+
+.auth-layout .form-group select option {
+  background-color: var(--color-marca-escuro);
+  color: var(--color-marca-texto);
+}
+
+/* O botão preenchido: o verde-acinzentado claro com texto #01261F. */
+.auth-layout .btn-primary {
+  border: 0;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-marca-botao);
+  color: var(--color-on-marca-botao);
+  font-weight: var(--font-weight-semibold);
+}
+
+.auth-layout .btn-primary:hover:not(:disabled) {
+  background-color: var(--color-marca-botao-hover);
+  opacity: 1;
+}
+
+/* O botão contornado: borda e texto bege. */
+.auth-layout .btn-contornado,
+.auth-layout .btn-cancel {
+  border: 1px solid var(--color-marca-texto);
+  border-radius: var(--radius-pill);
+  background-color: transparent;
+  color: var(--color-marca-texto);
+  font-weight: var(--font-weight-semibold);
+}
+
+.auth-layout .btn-contornado:hover,
+.auth-layout .btn-cancel:hover {
+  background-color: var(--color-marca-realce);
+  text-decoration: none;
+}
+
+.auth-layout .error-message {
+  color: var(--color-marca-erro);
+}
+
+.auth-layout a {
+  color: var(--color-marca-texto);
+}
+
+/* As caixas de mensagem das telas de e-mail (A-2). */
+.auth-layout .auth-mensagem {
+  border-color: var(--color-marca-texto-suave);
+  background-color: var(--color-marca-realce);
+  color: var(--color-marca-texto);
+}
+
+.auth-layout .auth-mensagem--erro {
+  border-color: var(--color-marca-erro);
+}
+
+/* ── Abaixo de 768 px: uma coluna só ─────────────────────────────────────── */
+@media (max-width: 767px) {
+  .auth-layout {
+    flex-direction: column;
+  }
+  .auth-layout__marca {
+    flex: 0 0 auto;
+    /* 72 px no topo: o "Voltar" fica sozinho na primeira linha, sem
+       encostar na logo. */
+    padding: calc(var(--space-12) + var(--space-6)) var(--space-4) var(--space-6);
+    border-radius: 0 0 2rem 2rem;
+  }
+  .auth-layout__logo {
+    width: 140px;
+  }
+  .auth-layout__conteudo {
+    align-items: flex-start;
+    padding: var(--space-6) var(--space-4) var(--space-10);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-layout * { transition: none; }
+}

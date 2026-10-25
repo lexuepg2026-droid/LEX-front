@@ -381,9 +381,9 @@ function FeeFormPage() {
                 Cancelar este honorário
               </label>
               <span className="form-hint">
-                A cobrança fica registrada e sai do total contratado do processo.
+                O honorário fica registrado e sai do total contratado do processo.
                 Pagamentos já recebidos não são apagados, e o cancelamento não é
-                desfeito por um recebimento posterior.
+                desfeito por um pagamento posterior.
               </span>
             </div>
           </div>

@@ -5,7 +5,7 @@ import { getApiErrorMessage } from '../../utils/apiError';
 import { emailValido, MENSAGEM_EMAIL_INVALIDO } from '../../utils/email';
 import './LoginPage.css';
 import './AuthEmail.css';
-import LogoLex from '../../components/ui/LogoLex.jsx';
+import LayoutAutenticacao from '../../components/layout/LayoutAutenticacao.jsx';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PEDIR A RECUPERAÇÃO DA SENHA (A-2, DEC-064)
@@ -50,46 +50,48 @@ function ForgotPasswordPage() {
   };
 
   return (
-    <div className="login-page">
-      <LogoLex className="logo" />
-      <h1 className="auth-titulo">Esqueci minha senha</h1>
+    <LayoutAutenticacao voltarPara="/login">
+      <div className="login-page">
+        <h1 className="auth-titulo">Esqueci minha senha</h1>
 
-      {enviado ? (
-        <>
-          <p className="auth-mensagem" role="status">{MENSAGEM_ENVIADO}</p>
-          <p className="auth-texto">
-            Confira também a caixa de spam. O link vale por 60 minutos e só pode ser usado uma vez.
-          </p>
-        </>
-      ) : (
-        <form onSubmit={handleSubmit}>
-          <p className="auth-texto">
-            Informe o e-mail da sua conta. Se ela existir, você receberá um link para escolher uma nova senha.
-          </p>
+        {enviado ? (
+          <>
+            <p className="auth-mensagem" role="status">{MENSAGEM_ENVIADO}</p>
+            <p className="auth-texto">
+              Confira também a caixa de spam. O link vale por 60 minutos e só pode ser usado uma vez.
+            </p>
+          </>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <p className="auth-texto">
+              Informe o e-mail da sua conta. Se ela existir, você receberá um link para escolher uma nova senha.
+            </p>
 
-          <div className="form-group">
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              required
-            />
-          </div>
+            <div className="form-group">
+              <label htmlFor="esqueci-email">E-mail</label>
+              <input
+                id="esqueci-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+              />
+            </div>
 
-          {erro && <p className="error-message" role="alert">{erro}</p>}
+            {erro && <p className="error-message" role="alert">{erro}</p>}
 
-          <button type="submit" disabled={loading} className="btn-primary">
-            {loading ? 'Enviando...' : 'Enviar link de recuperação'}
-          </button>
-        </form>
-      )}
+            <button type="submit" disabled={loading} className="btn-primary">
+              {loading ? 'Enviando...' : 'Enviar link de recuperação'}
+            </button>
+          </form>
+        )}
 
-      <div className="login-links">
-        <Link to="/login">Voltar ao login</Link>
+        <div className="login-links">
+          <Link to="/login">Voltar ao login</Link>
+        </div>
       </div>
-    </div>
+    </LayoutAutenticacao>
   );
 }
 

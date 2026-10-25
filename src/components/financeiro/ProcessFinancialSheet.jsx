@@ -137,7 +137,7 @@ function ProcessFinancialSheet({ processoId }) {
       {honorarios.length === 0 ? (
         <EmptyState
           title="Nenhum honorário neste processo"
-          description="Cadastre um honorário para começar a controlar cobranças e recebimentos."
+          description="Cadastre um honorário para começar a controlar parcelas e pagamentos."
         />
       ) : (
         <ul className="ficha-honorarios">
