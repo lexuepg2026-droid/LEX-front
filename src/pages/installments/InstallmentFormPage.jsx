@@ -17,6 +17,7 @@ import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
 import { usePublicarContexto } from '../../contexts/ContextoContext';
 import { idDoProcesso } from '../../components/layout/contexto.js';
+import { destinoDepoisDeSalvar } from '../../components/layout/contexto.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORMULÁRIO DE PARCELA
@@ -55,6 +56,9 @@ function InstallmentFormPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
+  // Fase 2b (DEC-087): aberto pelo "+ Parcela" da ficha do processo, o
+  // formulário volta para o processo — no Salvar e no Cancelar.
+  const saida = destinoDepoisDeSalvar(searchParams.get('voltar'), '/dashboard/parcelas');
   const isEditing = Boolean(id);
 
   // Fase 2b (DEC-086): o honorário pode chegar PRÉ-SELECIONADO por
@@ -172,7 +176,7 @@ function InstallmentFormPage() {
         await installmentService.createInstallment(payload);
       }
       toast.success(isEditing ? 'Parcela atualizada com sucesso.' : 'Parcela cadastrada com sucesso.');
-      navigate('/dashboard/parcelas');
+      navigate(saida);
     } catch (err) {
       // Dois erros chegam aqui com forma diferente: o 409 de número de parcela
       // duplicado traz `campo: "numeroParcela"` e destaca o input; o 400 de
@@ -297,7 +301,7 @@ function InstallmentFormPage() {
         {error && <p className="error-message">{error}</p>}
 
         <div className="form-actions">
-          <button type="button" onClick={() => navigate('/dashboard/parcelas')} className="btn-cancel">
+          <button type="button" onClick={() => navigate(saida)} className="btn-cancel">
             Cancelar
           </button>
           <button type="submit"

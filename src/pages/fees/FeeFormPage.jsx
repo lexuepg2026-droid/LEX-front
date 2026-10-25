@@ -22,6 +22,7 @@ import '../clients/ClientPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
 import { usePublicarContexto } from '../../contexts/ContextoContext';
+import { destinoDepoisDeSalvar } from '../../components/layout/contexto.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORMULÁRIO DE HONORÁRIO — o campo `tipo` comanda a tela (DEC-027)
@@ -71,6 +72,9 @@ function FeeFormPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
+  // Fase 2b (DEC-087): aberto pelo "+ Honorário" da ficha do processo, o
+  // formulário volta para o processo — no Salvar e no Cancelar.
+  const saida = destinoDepoisDeSalvar(searchParams.get('voltar'), '/dashboard/honorarios');
   // Fase 2b (DEC-085): publica para a faixa de contexto o processo — assim que escolhido no seletor.
   usePublicarContexto({ processoId: formData.processoId });
   const isEditing = Boolean(id);
@@ -197,7 +201,7 @@ function FeeFormPage() {
         await feeService.createFee(payload);
       }
       toast.success(isEditing ? 'Honorário atualizado com sucesso.' : 'Honorário cadastrado com sucesso.');
-      navigate('/dashboard/honorarios');
+      navigate(saida);
     } catch (err) {
       setError(getFinancialErrorMessage(err, 'Erro ao salvar honorário.'));
       // O backend informa qual campo causou o erro; destacamos o input em vez
@@ -420,7 +424,7 @@ function FeeFormPage() {
         {error && <p className="error-message">{error}</p>}
 
         <div className="form-actions">
-          <button type="button" onClick={() => navigate('/dashboard/honorarios')} className="btn-cancel">
+          <button type="button" onClick={() => navigate(saida)} className="btn-cancel">
             Cancelar
           </button>
           <button type="submit"

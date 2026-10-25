@@ -23,6 +23,8 @@ import '../../styles/modules.css';
 import './ProcessFinancialSheet.css';
 import { rotuloNaLista } from './installmentLabel';
 import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { comVoltar } from '../layout/contexto.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FICHA FINANCEIRA DO PROCESSO — GET /api/financeiro/processos/:processoId
@@ -48,7 +50,27 @@ import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 // devido um valor que ela mesma cancelou; escondê-lo apagaria o histórico.
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ── Os botões de lançamento (Fase 2b, DEC-087) ────────────────────────────
+// "+ Honorário", e em cada honorário "+ Parcela" e "+ Pagamento". É o que a
+// Raniele resolveu com modais, mantendo aqui as ROTAS dos formulários: eles
+// abrem com o vínculo pré-preenchido (`?processoId=`, `?honorarioId=`) e com
+// `?voltar=` para o processo, que o Salvar e o Cancelar respeitam.
+//
+// Sem sinal, a regra é a mesma do "Editar Processo" desta tela: o link vira
+// botão anunciado como desabilitado — o financeiro está fora da fila offline
+// (DEC-059), e o formulário recusaria o envio de qualquer forma.
+function BotaoDeLancamento({ to, online, children }) {
+  if (online) return <Link to={to} className="ficha-lancar">{children}</Link>;
+  return (
+    <button type="button" className="ficha-lancar" aria-disabled="true" onClick={(e) => e.preventDefault()}>
+      {children}
+    </button>
+  );
+}
+
 function ProcessFinancialSheet({ processoId }) {
+  const online = useOnlineStatus();
+  const voltar = `/dashboard/processos/detalhe/${processoId}`;
   const [ficha, setFicha] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -93,6 +115,15 @@ function ProcessFinancialSheet({ processoId }) {
 
   return (
     <div className="ficha-financeira">
+      <div className="ficha-acoes">
+        <BotaoDeLancamento
+          online={online}
+          to={comVoltar(`/dashboard/honorarios/novo?processoId=${processoId}`, voltar)}
+        >
+          + Honorário
+        </BotaoDeLancamento>
+      </div>
+
       {/* ── Totais do processo ──────────────────────────────────────────────
           Os três números que a advogada abre esta aba para ver. Vale a
           invariante do backend: contratado − pago = em aberto. */}
@@ -189,10 +220,27 @@ function ProcessFinancialSheet({ processoId }) {
                   <span>Em aberto: <strong>{formatCurrency(h.totais.emAberto)}</strong></span>
                 </div>
 
-                {cancelado && (
+                {cancelado ? (
                   <p className="ficha-aviso">
                     Honorário cancelado — fora do total contratado do processo.
                   </p>
+                ) : (
+                  // Cancelado não recebe parcela nem pagamento: o backend
+                  // responde 409, e oferecer o botão seria convidar ao erro.
+                  <div className="ficha-acoes ficha-acoes--honorario">
+                    <BotaoDeLancamento
+                      online={online}
+                      to={comVoltar(`/dashboard/parcelas/novo?honorarioId=${h._id}`, voltar)}
+                    >
+                      + Parcela
+                    </BotaoDeLancamento>
+                    <BotaoDeLancamento
+                      online={online}
+                      to={comVoltar(`/dashboard/pagamentos/novo?honorarioId=${h._id}`, voltar)}
+                    >
+                      + Pagamento
+                    </BotaoDeLancamento>
+                  </div>
                 )}
 
                 {/* ── Parcelas ────────────────────────────────────────────── */}

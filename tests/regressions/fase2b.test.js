@@ -518,3 +518,62 @@ describe("Fase 2b · item 4 — o honorário no seletor diz o processo (DEC-086)
     assert.doesNotMatch(fonte, /\{f\.descricao\} — \{f\.valor/, "o rótulo antigo saiu");
   });
 });
+
+// ── Item 5 — DEC-087 ──────────────────────────────────────────────────────
+import { comVoltar, destinoDepoisDeSalvar } from "../../src/components/layout/contexto.js";
+
+describe("Fase 2b · item 5 — os botões de lançamento da ficha (DEC-087)", () => {
+  const ficha = semComentarios(ler("src/components/financeiro/ProcessFinancialSheet.jsx"));
+
+  test("+ Honorário, + Parcela e + Pagamento com o vínculo e o caminho de volta", () => {
+    assert.match(ficha, /comVoltar\(`\/dashboard\/honorarios\/novo\?processoId=\$\{processoId\}`, voltar\)/);
+    assert.match(ficha, /comVoltar\(`\/dashboard\/parcelas\/novo\?honorarioId=\$\{h\._id\}`, voltar\)/);
+    assert.match(ficha, /comVoltar\(`\/dashboard\/pagamentos\/novo\?honorarioId=\$\{h\._id\}`, voltar\)/);
+    assert.match(ficha, /const voltar = `\/dashboard\/processos\/detalhe\/\$\{processoId\}`/);
+  });
+
+  test("honorário cancelado não oferece + Parcela nem + Pagamento", () => {
+    const i = ficha.indexOf("{cancelado ? (");
+    const parcela = ficha.indexOf("+ Parcela");
+    const fimDoRamo = ficha.indexOf(") : (", i);
+    assert.ok(i > 0 && fimDoRamo > i && parcela > fimDoRamo, "os dois botões só no ramo do não cancelado");
+  });
+
+  test("sem sinal, o botão é anunciado como desabilitado, como o Editar Processo", () => {
+    assert.match(ficha, /if \(online\) return <Link to=\{to\} className="ficha-lancar">/);
+    assert.match(ficha, /aria-disabled="true" onClick=\{\(e\) => e\.preventDefault\(\)\}/);
+  });
+
+  test("comVoltar acrescenta o parâmetro codificado, e recusa destino externo", () => {
+    assert.equal(
+      comVoltar("/dashboard/parcelas/novo?honorarioId=h1", "/dashboard/processos/detalhe/p1"),
+      "/dashboard/parcelas/novo?honorarioId=h1&voltar=%2Fdashboard%2Fprocessos%2Fdetalhe%2Fp1"
+    );
+    assert.equal(comVoltar("/dashboard/honorarios/novo", "https://evil.example"), "/dashboard/honorarios/novo");
+  });
+
+  test("depois de salvar: o voltar válido, ou o destino de sempre", () => {
+    assert.equal(destinoDepoisDeSalvar("/dashboard/processos/detalhe/p1", "/dashboard/parcelas"), "/dashboard/processos/detalhe/p1");
+    assert.equal(destinoDepoisDeSalvar("//evil.example", "/dashboard/parcelas"), "/dashboard/parcelas");
+    assert.equal(destinoDepoisDeSalvar(null, "/dashboard/parcelas"), "/dashboard/parcelas");
+  });
+
+  for (const [arquivo, padrao] of [
+    ["src/pages/fees/FeeFormPage.jsx", "/dashboard/honorarios"],
+    ["src/pages/installments/InstallmentFormPage.jsx", "/dashboard/parcelas"],
+  ]) {
+    test(`${arquivo.split("/").pop()} volta pelo ?voltar= validado no Salvar e no Cancelar`, () => {
+      const fonte = semComentarios(ler(arquivo));
+      assert.match(fonte, new RegExp(`destinoDepoisDeSalvar\\(searchParams\\.get\\('voltar'\\), '${padrao.replace(/\//g, "\\/")}'\\)`));
+      assert.equal((fonte.match(/navigate\(saida\)/g) || []).length, 2);
+      assert.doesNotMatch(fonte, new RegExp(`navigate\\('${padrao.replace(/\//g, "\\/")}'\\)`));
+    });
+  }
+
+  test("o pagamento não sai sozinho (F-1b) e oferece Voltar ao processo", () => {
+    const fonte = semComentarios(ler("src/pages/payments/PaymentFormPage.jsx"));
+    assert.match(fonte, /setRealizado\(res\.data\);\s*return;/, "a regra da F-1b continua");
+    assert.match(fonte, /<Link to=\{voltarAoProcesso\} className="btn-primary">\s*Voltar ao processo/);
+    assert.match(fonte, /const voltarAoProcesso = voltarValido\(searchParams\.get\('voltar'\)\)/);
+  });
+});

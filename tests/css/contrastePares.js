@@ -49,6 +49,7 @@ export const PARES = [
   // A faixa de contexto (Fase 2b, DEC-085): o "Voltar" sobre o realce de
   // hover. O link, o rótulo e o texto da faixa já são pares de cima (link,
   // texto primário e secundário sobre a surface).
+  { nome: "ficha: botão de lançamento / --color-surface-raised (hover)", texto: "--color-link", fundo: "--color-surface-raised", limite: TEXTO },
   { nome: "faixa de contexto: Voltar / --color-surface-raised (hover)", texto: "--color-text-primary", fundo: "--color-surface-raised", limite: TEXTO },
 
   // Toasts sólidos (texto branco, como os dela).

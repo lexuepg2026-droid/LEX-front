@@ -25,7 +25,7 @@ import '../clients/ClientPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
 import { usePublicarContexto } from '../../contexts/ContextoContext';
-import { idDoProcesso } from '../../components/layout/contexto.js';
+import { idDoProcesso, destinoDepoisDeSalvar, voltarValido } from '../../components/layout/contexto.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORMULÁRIO DE PAGAMENTO — reescrito na Fase F-1a
@@ -96,6 +96,12 @@ function PaymentFormPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
+  // Fase 2b (DEC-087): aberto pelo "+ Pagamento" da ficha do processo. O
+  // Cancelar volta ao processo; depois de gravar a tela NÃO sai sozinha (a
+  // regra da F-1b, para comparar previsto e realizado), e a saída para o
+  // processo vira o botão principal.
+  const voltarAoProcesso = voltarValido(searchParams.get('voltar'));
+  const saida = destinoDepoisDeSalvar(searchParams.get('voltar'), '/dashboard/pagamentos');
   const isEditing = Boolean(id);
 
   // ── Preview e realizado ─────────────────────────────────────────────────
@@ -296,7 +302,7 @@ function PaymentFormPage() {
         setRealizado(res.data);
         return;
       }
-      navigate('/dashboard/pagamentos');
+      navigate(saida);
     } catch (err) {
       setError(getFinancialErrorMessage(err, 'Erro ao salvar pagamento.'));
       setCampoComErro(getApiErrorField(err));
@@ -538,15 +544,20 @@ function PaymentFormPage() {
             {realizado.pagamento?.honorarioId && (
               <Link
                 to={`/dashboard/honorarios/${realizado.pagamento.honorarioId._id ?? realizado.pagamento.honorarioId}`}
-                className="btn-primary"
+                className={voltarAoProcesso ? 'btn-cancel' : 'btn-primary'}
               >
                 Abrir o honorário
+              </Link>
+            )}
+            {voltarAoProcesso && (
+              <Link to={voltarAoProcesso} className="btn-primary">
+                Voltar ao processo
               </Link>
             )}
           </div>
         ) : (
           <div className="form-actions">
-            <button type="button" onClick={() => navigate('/dashboard/pagamentos')} className="btn-cancel">
+            <button type="button" onClick={() => navigate(saida)} className="btn-cancel">
               Cancelar
             </button>
             <button type="submit"

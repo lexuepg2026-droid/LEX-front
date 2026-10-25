@@ -162,3 +162,19 @@ export function idsPublicadosPara(publicado, pathname) {
   if (!publicado || publicado.pathname !== pathname) return VAZIO;
   return { processoId: publicado.processoId ?? null, clienteId: publicado.clienteId ?? null };
 }
+
+// ── O link que leva o caminho de volta ────────────────────────────────────
+// Os botões de lançamento da ficha financeira (item 5) abrem formulários que
+// devem voltar ao processo depois de salvar. O destino viaja na URL, validado
+// na ida e na volta por `voltarValido`.
+export function comVoltar(destino, voltar) {
+  const valido = voltarValido(voltar);
+  if (!valido) return destino;
+  const sep = destino.includes('?') ? '&' : '?';
+  return `${destino}${sep}voltar=${encodeURIComponent(valido)}`;
+}
+
+// Para onde o formulário vai depois de salvar (e no Cancelar): o `?voltar=`
+// válido, ou o destino de sempre da tela. Recebe o VALOR cru do parâmetro
+// (`searchParams.get('voltar')`), que é o que as telas já têm na mão.
+export const destinoDepoisDeSalvar = (voltar, padrao) => voltarValido(voltar) ?? padrao;

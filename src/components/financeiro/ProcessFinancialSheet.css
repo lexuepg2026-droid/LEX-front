@@ -10,6 +10,49 @@
   gap: var(--space-4);
 }
 
+/* ── Os botões de lançamento (Fase 2b, DEC-087) ─────────────────────────────
+   Contorno, e não o verde sólido do botão primário: são atalhos ao lado da
+   informação, e três botões cheios por honorário disputariam o olho com os
+   números que a ficha existe para mostrar. */
+.ficha-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.ficha-acoes--honorario {
+  justify-content: flex-start;
+}
+
+.ficha-lancar {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  color: var(--color-link);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ficha-lancar:hover {
+  background-color: var(--color-surface-raised);
+}
+
+.ficha-lancar[aria-disabled="true"] {
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+.ficha-lancar[aria-disabled="true"]:hover {
+  background-color: transparent;
+}
+
 /* ── Totais do processo ─────────────────────────────────────────────────── */
 
 .ficha-totais {
