@@ -81,7 +81,7 @@
 }
 
 .toast__fechar:hover {
-  background-color: rgba(255, 255, 255, 0.16);
+  background-color: var(--color-toast-fechar-hover);
 }
 
 .toast__fechar:focus-visible {

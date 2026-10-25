@@ -83,6 +83,10 @@
   --color-danger-solid:   #B40000;
   --color-info-solid:     #1F5A96;
   --color-on-solid:       #FFFFFF;
+  /* O realce do × do toast ao passar o mouse (Fase 2b, DEC-083): ESCURECE o
+     fundo sólido, e não clareia — clarear o verde do sucesso derrubava o
+     branco para baixo de 4,5:1. Medido nos três tons. */
+  --color-toast-fechar-hover: rgba(0, 0, 0, 0.22);
   /* ═════════════════════════════════════════════════════════════════════
      A MARCA FIXA — cabeçalho e telas de autenticação (Fase 2a, DEC-078)
 
