@@ -299,12 +299,15 @@ pelos donuts do dashboard.
 
 ```
 status → { label, tom }        tom → var(--color-…)
-                               success → --color-success
-                               warning → --color-warning
-                               danger  → --color-danger
-                               info    → --color-info
+                               success → --color-success-text
+                               warning → --color-warning-text
+                               danger  → --color-danger-text
+                               info    → --color-info-text
                                neutral → --color-text-secondary
 ```
+
+> Desde a Fase 1 (DEC-075) o badge pinta o texto com `--color-*-text`, e o mapa
+> acompanhou: a regra "a fatia é o texto do badge" continua valendo.
 
 **Havia dois mapas escritos à mão, e eles já tinham divergido:** `ativo` era
 `success` (verde) no badge e `--color-accent` (dourado) no donut; `parcial` era
@@ -542,8 +545,11 @@ a linha existe, não que ela decide.
 ## Foco visível (Fase 4.5)
 
 `:focus-visible` global em `styles/global.css`, com `--color-focus` declarado
-nos dois temas — dourado da marca no escuro (o padrão do app), `#7A6528` no
-claro, onde o dourado perde contraste contra o branco.
+nos dois temas. Desde a Fase 1 (DEC-074/076) o dourado saiu: o anel é o bege
+`#EDE3CF` no escuro (14,7:1 sobre o fundo) e o verde `#174034` no claro
+(10,4:1), medidos por `tests/css/contraste.test.js`. A regra global troca o
+raio do elemento por 4 px no foco; campo e botão em pílula têm regra própria
+que preserva o raio deles.
 
 Havia **seis** `outline: none`, e **dois estavam dentro de regras
 `:focus-visible`**: a regra escrita para desenhar o foco era a que o apagava.
@@ -4118,6 +4124,108 @@ a lista de documentos mostraria, sem sinal, o nome do processo vindo do espelho
 sem dizer de quando — e ela passou a exibir o `OfflineNotice` do chip.
 
 Testes em `tests/regressions/fase0.test.js` (bloco do item 5).
+
+---
+
+## DEC-073 (frontend) — o modo claro continua, com paleta própria (Fase 1)
+
+**Decisão do Daniel.** O front da Raniele só tem modo escuro; o nosso tem os
+dois desde a Fase 2, com o alternador na Sidebar. O claro **fica**, e deixa de
+ser a inversão do escuro: tem paleta própria, derivada da identidade dela.
+
+| Plano | Escuro | Claro |
+|---|---|---|
+| fundo | `#121212` | `#F7F3EA` (bege bem claro) |
+| surface | `#222222` | `#FFFDF9` |
+| texto primário | `#D3CAB9` (bege87 composto) | `#01261F` |
+| marca | `#174034` / `#01261F` | os mesmos |
+
+**Por que paleta própria, e não inverter.** O inventário de 24/10/2026 mediu o
+claro falhando onde o escuro passava: badges de sucesso e aviso em 2,0:1, link
+dourado em 2,6:1, borda de campo em 1,3:1. A causa era uma só — os tons
+semânticos tinham sido escolhidos para fundo escuro e o claro **não os
+redefinia**. Inverter não resolve: um pastel que passa sobre `#222222` some
+sobre branco. Cada token de texto tem valor medido **em cada modo**.
+
+---
+
+## DEC-074 (frontend) — a identidade passa a ser a dela (Fase 1)
+
+Verde-escuro `#01261F`, verde `#174034`, bege `#EDE3CF`, cinzas
+`#121212`/`#222222` no escuro, e a logo vetorial `LEX_horizontal.svg`. **O
+verde `#2E7D32` e o dourado `#B89D4B` saem como cores de marca.** O verde
+sobrevive só como fundo sólido do toast de sucesso, que é o dela.
+
+**A tipografia continua a nossa** (Inter e a escala de `variables.css`): ela
+não tem tokens de tipografia — a dela é a do sistema, pelo preflight do
+Tailwind, que **não** entra. Da estrutura de CSS dela não vem nada: nem
+`@import "tailwindcss"`, nem regra global de elemento, nem classe de página.
+Vêm **valores** (cores, raios, formas) e **arquivos** (logo e 12 ícones).
+
+**`--color-primary` é FUNDO, não texto.** `#174034` mede 1,5:1 sobre
+`#222222`: serve para o botão primário (com texto bege, 9,1:1), não para
+borda de seleção nem para letra. Para verde em texto, marca de seleção e
+`accent-color`, use **`--color-primary-light`** (`#8CC7AC` no escuro,
+`#1E5A47` no claro). Foi um defeito real desta fase: a borda da opção ativa da
+geração de documento sumia no escuro.
+
+**`--color-accent` deixou de ser dourado.** No escuro é o bege; no claro, o
+verde da marca. O nome ficou porque o significado não mudou ("destaque") e
+porque ele aparece em 54 regras.
+
+**A logo é componente** (`components/ui/LogoLex.jsx`), e não `<img>`: o SVG
+dela é bege fixo e some no claro, e `currentColor` só atravessa para SVG que
+está no documento. `assets/LEX_horizontal.svg` é a fonte, com `currentColor`;
+`tests/css/logo.test.js` confere que o componente tem os mesmos traços.
+
+---
+
+## DEC-075 (frontend) — três tokens por semântica, e `--color-text-muted` não é texto (Fase 1)
+
+| Token | Para quê |
+|---|---|
+| `--color-X` | cor plena: borda, marcador, barra |
+| `--color-X-bg` | fundo esmaecido de badge e aviso (translúcido) |
+| `--color-X-text` | **o texto do tom** — o único que passa 4,5:1 |
+
+Para `success`, `warning`, `danger` e `info`, com valores próprios em cada
+modo. No escuro, os do `StatusBadge` dela. **Toda regra `color:` de tom usa
+`-text`** — 69 foram trocadas nesta fase —, e o mapa de `statusVisual.js`
+também, para a fatia do donut continuar sendo o texto do badge.
+
+**Fundos sólidos com texto branco** têm tokens à parte e **iguais nos dois
+modos**: `--color-success-solid`, `--color-danger-solid`,
+`--color-info-solid`, com `--color-on-solid`. São os do toast e do botão de
+perigo — com fundo sólido, o contraste não depende do tema (DEC-066).
+
+**`--color-text-muted` NÃO é cor de texto.** Media 2,6:1 no escuro e 3,6:1 no
+claro e aparecia como `color:` em 47 regras. O texto discreto é
+**`--color-text-discreto`** (bege60 composto no escuro, 5,8:1; `#4A5E55` no
+claro, 6,8:1). O token antigo fica para o que não é texto — ícone decorativo,
+ícone de campo de busca, controle `:disabled` — e o `variables.css` diz isso
+ao lado dele.
+
+---
+
+## DEC-076 (frontend) — contraste mínimo, garantido por teste (Fase 1)
+
+**4,5:1 para texto; 3:1 para texto grande, borda de campo, anel de foco e
+elemento não textual — nos dois modos.**
+
+`tests/css/contraste.test.js` lê `variables.css`, resolve `:root` e
+`body.light-mode` (o claro herda o que não redefine), **compõe o alfa sobre o
+fundo real** e confere os pares de `tests/css/contrastePares.js`. A fórmula
+(`tests/helpers/contraste.js`) é a do inventário: luminância relativa do WCAG
+2.x, e a suíte confere três valores da tabela 2.3 dele.
+
+**O que ela não alcança: cor escrita fora de `variables.css`.** É por isso que
+texto, fundo e borda que dependem do tema usam token. Os literais que ficaram
+são a folha A4 (papel, branca nos dois modos), sombras, as sobreposições de
+modal e o canvas de imagem — todos iguais nos dois modos por decisão.
+
+**Quem acrescentar um par de cor novo acrescenta o par à lista.** Uma cor que
+só existe numa folha de página volta a ser medida à mão, e medida à mão
+envelhece na primeira troca de token — foi assim que o claro chegou a 2,0:1.
 
 ---
 
