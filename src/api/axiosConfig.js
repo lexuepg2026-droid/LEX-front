@@ -2,6 +2,7 @@ import axios from 'axios';
 import { toast } from '../utils/toast';
 import { BASE_URL } from './baseURL';
 import { ehSessaoPerdida, haviaSessao, registrarSessao } from './sessionLoss';
+import { deveExibirToastGlobal, mensagemDoToastGlobal, marcarAvisado } from './toastGlobal';
 import { lerOnline } from '../offline/online';
 import { shouldBlockWrite, offlineWriteError, offlineQueuedError } from '../offline/writeGuard';
 import { identificarOperacao } from '../offline/outboxOperations';
@@ -138,6 +139,15 @@ api.interceptors.response.use(
       registrarSessao(false);
       toast.error('Sessão expirada. Faça login novamente.');
       window.location.href = '/login';
+    }
+
+    // Fase 2b (DEC-084): o toast do que nenhuma tela sabe explicar — servidor
+    // fora, 5xx, 429. A política inteira mora em `api/toastGlobal.js`; aqui,
+    // como na sessão, só a fiação. A marca no erro é o que deixa a tela saber
+    // que o aviso já saiu e não repeti-lo no `catch`.
+    if (deveExibirToastGlobal(error, error.config, lerOnline())) {
+      toast.error(mensagemDoToastGlobal(error));
+      marcarAvisado(error);
     }
     return Promise.reject(error);
   }

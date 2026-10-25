@@ -32,7 +32,11 @@ import '../../styles/modules.css';
 import '../../components/ui/Button.css';
 import './DashboardPage.css';
 import { rotuloDaParcela } from '../../components/financeiro/installmentLabel';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
+// Fase 2b (DEC-084): com o servidor fora, os GETs em paralelo desta tela
+// falham juntos. O toast global sai UMA vez (deduplicação da DEC-083), e os
+// `catch` abaixo só falam do que ele não cobre — um 404, por exemplo.
 const DashboardCharts = lazy(() => import('./DashboardCharts'));
 
 // ── Cartões de contagem ────────────────────────────────────────────────────
@@ -182,7 +186,7 @@ function DashboardHomePage() {
 
         setUpcoming(urgent);
       })
-      .catch(err => toast.error(getApiErrorMessage(err, 'Não foi possível carregar as parcelas urgentes.')));
+      .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar as parcelas urgentes.')); });
   }, []);
 
   // Falha aqui não derruba o painel: os cartões de contagem e os gráficos
@@ -190,26 +194,26 @@ function DashboardHomePage() {
   useEffect(() => {
     financeiroService.getResumo()
       .then(res => setResumoFinanceiro(res.data))
-      .catch(err => toast.error(getApiErrorMessage(err, 'Não foi possível carregar os totais financeiros.')));
+      .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar os totais financeiros.')); });
   }, []);
 
   // Falhar aqui não derruba o painel: o bloco de atenção some, o resto fica.
   useEffect(() => {
     calendarService.getAvisos()
       .then(res => setAvisos(res.data))
-      .catch(err => toast.error(getApiErrorMessage(err, 'Não foi possível carregar os avisos.')));
+      .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar os avisos.')); });
   }, []);
 
   useEffect(() => {
     dashboardService.getStatusCounts()
       .then(res => setStatusData(res.data))
-      .catch(err => toast.error(getApiErrorMessage(err, 'Não foi possível carregar estatísticas do dashboard.')));
+      .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar estatísticas do dashboard.')); });
   }, []);
 
   useEffect(() => {
     dashboardService.getFeesByMonth()
       .then(res => setFeesByMonth(res.data))
-      .catch(err => toast.error(getApiErrorMessage(err, 'Não foi possível carregar gráfico financeiro.')));
+      .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar gráfico financeiro.')); });
   }, []);
 
   const mesRotulo = formatMonthKey(resumoFinanceiro?.mesReferencia);

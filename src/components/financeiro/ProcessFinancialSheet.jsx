@@ -22,6 +22,7 @@ import { toast } from '../../utils/toast';
 import '../../styles/modules.css';
 import './ProcessFinancialSheet.css';
 import { rotuloNaLista } from './installmentLabel';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FICHA FINANCEIRA DO PROCESSO — GET /api/financeiro/processos/:processoId
@@ -78,7 +79,7 @@ function ProcessFinancialSheet({ processoId }) {
       const { nome } = await paymentService.baixarEsalvarRecibo(pagamentoId);
       toast.success(`Recibo baixado: ${nome}`);
     } catch (err) {
-      toast.error(getFinancialErrorMessage(err, 'Não foi possível gerar o recibo.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getFinancialErrorMessage(err, 'Não foi possível gerar o recibo.'));
     } finally {
       setReciboEmCurso(null);
     }

@@ -29,6 +29,7 @@ import { FORMA_PAGAMENTO_OPTIONS, labelDe } from '../../utils/enums';
 import { rotuloDasParcelas, temEstorno, estornadoIntegralmente } from './paymentRow.js';
 import ReversalModal from '../../components/financeiro/ReversalModal';
 import '../../styles/modules.css';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 const POR_PAGINA = 20;
 
@@ -122,7 +123,7 @@ function PaymentListPage({ embedded = false }) {
       // 404 quando o pagamento (ou a parcela, o honorário, o processo) está
       // desativado. Recibo de pagamento estornado é justamente o papel que não
       // pode existir.
-      toast.error(getFinancialErrorMessage(err, 'Não foi possível gerar o recibo.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getFinancialErrorMessage(err, 'Não foi possível gerar o recibo.'));
     } finally {
       setReciboEmCurso(null);
     }

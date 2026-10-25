@@ -54,7 +54,10 @@ const createReversal = (id, data) => api.post(`/payments/${id}/reversals`, data)
 // Preview de alocação: o que ACONTECERIA se este pagamento fosse registrado.
 // Não grava nada, e usa a MESMA função de planejamento que a criação — é o que
 // impede o preview de mentir. A tela que o consome é da F-1b.
-const preverAlocacao = (data) => api.post('/payments/preview', data);
+// `semToastGlobal`: o preview é disparado pela digitação (debounce de 350 ms)
+// e a tela já diz em linha quando ele falha. Um toast por pausa na digitação
+// seria barulho em cima do formulário (Fase 2b, DEC-084).
+const preverAlocacao = (data) => api.post('/payments/preview', data, { semToastGlobal: true });
 
 // ── Recibo de pagamento (Fase 4.1 no backend, Fase 4.2 na tela) ────────────
 //

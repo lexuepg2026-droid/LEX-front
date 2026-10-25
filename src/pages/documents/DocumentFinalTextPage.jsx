@@ -28,6 +28,7 @@ import '../../components/ui/Button.css';
 import './DocumentFinalTextPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // EDITOR DE TEXTO FINAL
@@ -137,7 +138,7 @@ function DocumentFinalTextPage() {
       setLacunas(Array.isArray(res.data?.lacunas) ? res.data.lacunas : []);
       toast.success('Texto final salvo.');
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Não foi possível salvar o texto.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível salvar o texto.'));
     } finally {
       setSalvando(false);
     }
@@ -151,7 +152,7 @@ function DocumentFinalTextPage() {
         const kb = tamanho ? ` (${Math.round(tamanho / 1024)} kB)` : '';
         toast.success(`${nome}${kb}`);
       } catch (err) {
-        toast.error(getApiErrorMessage(err, `Não foi possível baixar em ${formato.toUpperCase()}.`));
+        if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, `Não foi possível baixar em ${formato.toUpperCase()}.`));
       } finally {
         setBaixando('');
       }
@@ -171,7 +172,7 @@ function DocumentFinalTextPage() {
           : 'Documento oculto do portal do cliente.'
       );
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Não foi possível alterar a visibilidade.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível alterar a visibilidade.'));
     } finally {
       setAlternandoPortal(false);
     }
@@ -228,7 +229,7 @@ function DocumentFinalTextPage() {
             return;
           }
         }
-        toast.error(getApiErrorMessage(err, 'Não foi possível regerar o documento.'));
+        if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível regerar o documento.'));
       } finally {
         setRegerando(false);
       }

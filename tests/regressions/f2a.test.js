@@ -88,8 +88,14 @@ describe("DEC-050 (frontend) — o interceptor de sessão perdida", () => {
         codigo, /window\.location\.pathname/,
         `${arquivo}: voltou a decisão por caminho da página`
       );
+      // Fase 2b: o interceptor passou a ENTREGAR `error.config` à política do
+      // toast global (`api/toastGlobal.js`), que lê só `semToastGlobal`. O que
+      // esta asserção sempre proibiu é olhar a URL — e isso continua proibido,
+      // agora com a URL nomeada na expressão em vez de qualquer acesso ao
+      // `config`. A política tem teste próprio que prova que ela não recebe
+      // rota nenhuma.
       assert.doesNotMatch(
-        codigo, /error\.config|config\?\./,
+        codigo, /error\.config\??\.url|config\?\.url/,
         `${arquivo}: voltou a olhar a URL da requisição`
       );
     }

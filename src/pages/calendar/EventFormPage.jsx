@@ -17,6 +17,7 @@ import '../../components/ui/Button.css';
 import '../clients/ClientPage.css';
 import OfflineQueueNotice from '../../components/ui/OfflineQueueNotice';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORMULÁRIO DO EVENTO
@@ -213,7 +214,7 @@ function EventFormPage() {
         toast.info(err.message);
         return;
       }
-      toast.error(getApiErrorMessage(err, 'Erro ao mudar a conclusão.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Erro ao mudar a conclusão.'));
     }
   };
 

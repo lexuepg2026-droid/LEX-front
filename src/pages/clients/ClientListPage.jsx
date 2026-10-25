@@ -19,6 +19,7 @@ import {
   mensagemReativarCliente
 } from '../../utils/activationMessages';
 import '../../styles/modules.css';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 // 20 por página, o mesmo das listagens financeiras. Não é número escolhido
 // aqui: é o que `POR_PAGINA` já significa nas outras telas, e um valor
@@ -104,7 +105,7 @@ function ClienteListPage() {
       // filtro de situação, e adivinhar isso aqui duplicaria a regra do filtro.
       reload();
     } catch (err) {
-      toast.error(getApiErrorMessage(
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(
         err,
         acao === 'desativar' ? 'Erro ao desativar cliente.' : 'Erro ao reativar cliente.'
       ));

@@ -25,6 +25,7 @@ import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { STATUS_PARCELA_OPTIONS, labelDe } from '../../utils/enums';
 import '../../styles/modules.css';
 import { rotuloDaParcela } from '../../components/financeiro/installmentLabel';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 const POR_PAGINA = 20;
 
@@ -109,7 +110,7 @@ function InstallmentListPage({ embedded = false }) {
       // 409 de integridade: a parcela tem pagamentos ativos. A mensagem diz
       // QUANTOS, de `dependencia` + `quantidade`, e não destaca campo nenhum —
       // o conflito é entre registros gravados, não num input.
-      toast.error(getFinancialErrorMessage(err, 'Erro ao remover parcela.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getFinancialErrorMessage(err, 'Erro ao remover parcela.'));
     }
   };
 
