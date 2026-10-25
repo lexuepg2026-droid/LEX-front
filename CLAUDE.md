@@ -4449,6 +4449,12 @@ genérico e o 502/503 do proxy, que chega sem corpo nosso.
 aviso preventivo de compatibilidade do documento. O contador da fila lê o
 IndexedDB e não faz requisição.
 
+**E nas três telas que já mostram o erro em linha** — login, "esqueci a senha"
+e o reenvio da confirmação de e-mail (`api/authService.js`, `SO_A_TELA_AVISA`),
+por decisão do Daniel ao revisar a fase: o 429 e o 502 sairiam no toast e na
+frase da tela. No reenvio pelo menu do usuário, que fecha ao clicar, é o
+próprio menu quem mostra o toast.
+
 **A marca no erro.** O interceptor marca o erro avisado
 (`avisadoPeloToastGlobal`), e toda tela que fazia `toast.error(...)` no
 `catch` pergunta `jaAvisadoPeloToastGlobal(err)` antes. Sem isso o mesmo 500

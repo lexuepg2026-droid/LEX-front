@@ -194,6 +194,14 @@ describe("Fase 2b · item 2 — a política do toast global (DEC-084)", () => {
       /preview', data, \{ semToastGlobal: true \}/, "o preview da digitação");
     assert.match(semComentarios(ler("src/api/documentService.js")),
       /compatibilidade`, \{ params: \{ clienteId \}, semToastGlobal: true \}/, "o aviso preventivo");
+    // As três telas que já mostram o erro em linha (login, esqueci a senha e
+    // reenvio da confirmação): o 429 e o 502 não saem duas vezes.
+    const auth = semComentarios(ler("src/api/authService.js"));
+    assert.match(auth, /const SO_A_TELA_AVISA = \{ semToastGlobal: true \}/);
+    assert.match(auth, /api\.post\('\/auth\/login', \{ email, senha \}, SO_A_TELA_AVISA\)/);
+    assert.match(auth, /api\.post\('\/auth\/forgot-password', \{ email \}, SO_A_TELA_AVISA\)/);
+    assert.match(auth, /api\.post\('\/auth\/resend-confirmation', undefined, SO_A_TELA_AVISA\)/);
+    assert.equal((auth.match(/SO_A_TELA_AVISA\)/g) || []).length, 3, "só as três; o resto da autenticação segue a política");
     assert.match(semComentarios(ler("src/api/calendarService.js")),
       /getAvisos = \(opcoes = \{\}\) => api\.get\('\/calendar\/avisos', opcoes\)/);
   });

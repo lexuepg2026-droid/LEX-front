@@ -52,8 +52,10 @@ const arquivosDeSrc = (dir = join(RAIZ, "src"), acc = []) => {
 describe("A-2 — a API chamada pela tela", () => {
   test("as quatro chamadas são POST nas rotas do backend", () => {
     assert.match(authService, /confirmEmail = \(token\) => api\.post\('\/auth\/confirm-email', \{ token \}\)/);
-    assert.match(authService, /resendConfirmation = \(\) => api\.post\('\/auth\/resend-confirmation'\)/);
-    assert.match(authService, /forgotPassword = \(email\) => api\.post\('\/auth\/forgot-password', \{ email \}\)/);
+    // Desde a Fase 2b as duas levam `SO_A_TELA_AVISA` (`semToastGlobal`): a
+    // tela mostra o erro em linha, e o toast global repetiria (DEC-084).
+    assert.match(authService, /resendConfirmation = \(\) => api\.post\('\/auth\/resend-confirmation', undefined, SO_A_TELA_AVISA\)/);
+    assert.match(authService, /forgotPassword = \(email\) => api\.post\('\/auth\/forgot-password', \{ email \}, SO_A_TELA_AVISA\)/);
     assert.match(authService, /resetPassword = \(token, novaSenha\) =>\s*api\.post\('\/auth\/reset-password', \{ token, novaSenha \}\)/);
   });
 
