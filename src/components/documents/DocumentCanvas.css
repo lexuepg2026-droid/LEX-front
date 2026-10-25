@@ -76,7 +76,9 @@
 
 .canvas-timbrado--vazio p {
   font-size: 9pt;
-  color: #777777;
+  /* Papel é branco nos dois modos, então a cor fica literal — mas medida:
+     #777 dava 4,48:1, #6B6B6B dá 5,3:1 (Fase 1). */
+  color: #6b6b6b;
   margin: 0;
 }
 
@@ -131,7 +133,8 @@
 
 .canvas-bloco__punho {
   display: flex;
-  color: #aaaaaa;
+  /* Alça de arrastar: não é texto, pede 3:1. #aaa dava 2,3:1. */
+  color: #8a8a8a;
   cursor: grab;
 }
 
@@ -271,7 +274,8 @@
   border-top: 1px solid #eeeeee;
   text-align: center;
   font-size: 8pt;
-  color: #999999;
+  /* #999 dava 2,8:1 sobre o papel. */
+  color: #6b6b6b;
 }
 
 /* Abaixo da largura da folha, deixa a folha encolher em vez de forçar rolagem
