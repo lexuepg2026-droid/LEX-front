@@ -38,6 +38,7 @@ export const PARES = [
   // Botões sólidos.
   { nome: "botão primário", texto: "--color-on-primary", fundo: "--color-primary", limite: TEXTO },
   { nome: "botão de perigo", texto: "--color-on-solid", fundo: "--color-danger-solid", limite: TEXTO },
+  { nome: "selo do sino (texto sobre o amarelo pleno)", texto: "--color-on-warning", fundo: "--color-warning", limite: TEXTO },
 
   // Link.
   { nome: "link / --color-surface", texto: "--color-link", fundo: "--color-surface", limite: TEXTO },

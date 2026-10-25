@@ -421,9 +421,9 @@
   font-family: var(--font-family);
 }
 
-.btn-edit   { background-color: var(--color-primary); color: #fff; }
-.btn-view   { background-color: #5c6bc0;              color: #fff; }
-.btn-delete { background-color: var(--color-danger);  color: #fff; }
+.btn-edit   { background-color: var(--color-primary);      color: var(--color-on-primary); }
+.btn-view   { background-color: var(--color-info-solid);   color: var(--color-on-solid); }
+.btn-delete { background-color: var(--color-danger-solid); color: var(--color-on-solid); }
 
 .error-message {
   color: var(--color-danger-text);

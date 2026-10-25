@@ -3,7 +3,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(184, 157, 75, 0.2);
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 20px;
   margin-bottom: 20px;
 }
@@ -32,7 +32,7 @@
 }
 
 .processo-detalhe-secao {
-  border: 1px solid rgba(184, 157, 75, 0.2);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 20px;
   margin-top: 20px;
@@ -40,7 +40,7 @@
 }
 .processo-detalhe-secao h3 {
   margin-top: 0;
-  border-bottom: 1px solid rgba(184, 157, 75, 0.2);
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 10px;
 }
 .processo-detalhe-secao p { margin: 8px 0; }

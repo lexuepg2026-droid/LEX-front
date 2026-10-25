@@ -6,7 +6,7 @@
 .page-title {
   color: var(--text-color);
   font-weight: 500;
-  border-bottom: 1px solid rgba(184, 157, 75, 0.2);
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 15px;
   margin-top: 0;
 }
@@ -14,7 +14,7 @@
 .actions-cell { display: flex; gap: 10px; }
 .btn-action { padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 14px; cursor: pointer; border: none; }
 .btn-edit { background-color: var(--bg-button); color: var(--text-button); }
-.btn-delete { background-color: #ff6b6b; color: white; }
+.btn-delete { background-color: var(--color-danger-solid); color: var(--color-on-solid); }
 
 /* Formulário (copiado de ClientePage.css) */
 .data-form { margin-top: 20px; }
@@ -49,11 +49,11 @@
   resize: vertical;
 }
 
-.form-actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; border-top: 1px solid rgba(184, 157, 75, 0.2); padding-top: 20px; }
+.form-actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; border-top: 1px solid var(--color-border); padding-top: 20px; }
 .btn-primary, .btn-cancel { padding: 10px 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; }
 .btn-primary { background-color: var(--bg-button); color: var(--text-button); }
 .btn-cancel { background-color: transparent; border: 1px solid var(--text-color); color: var(--text-color); }
-.error-message { color: #ff6b6b; }
+.error-message { color: var(--color-danger-text); }
 
 .page-header {
   display: flex;
@@ -185,8 +185,10 @@
    Mesma regra de ClientPage.css — esta tela não importa aquele arquivo. */
 .form-group input.input-erro,
 .form-group select.input-erro {
-  border-color: #ff6b6b;
-  outline: 1px solid rgba(255, 107, 107, 0.35);
+  border-color: var(--color-danger);
+  /* Era `outline`, e o seletor ganhava do `:focus-visible` global: o campo com
+     erro perdia o anel de foco. A segunda linha da borda virou sombra (Fase 1). */
+  box-shadow: 0 0 0 1px var(--color-danger);
 }
 
 /* ── Portal do cliente na ficha do processo (Fase 3.2) ────────────────────

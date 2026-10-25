@@ -129,7 +129,7 @@
 
 .cal-vista--ativa {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 /* ── Legenda ──────────────────────────────────────────────────────────── */
@@ -237,7 +237,7 @@
 
 .cal-celula__numero:hover {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .cal-celula--hoje .cal-celula__numero {
@@ -450,7 +450,7 @@
   cursor: pointer;
 }
 
-.cal-agenda__novo:hover { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.cal-agenda__novo:hover { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
 
 .cal-agenda__itens {
   display: flex;

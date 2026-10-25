@@ -57,7 +57,7 @@
 }
 
 .login-page .error-message {
-  color: #ff6b6b;
+  color: var(--color-danger-text);
   text-align: center;
   margin-bottom: 15px;
 }

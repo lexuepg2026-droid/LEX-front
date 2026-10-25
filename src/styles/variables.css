@@ -77,6 +77,8 @@
   --color-danger-solid:   #B40000;
   --color-info-solid:     #1F5A96;
   --color-on-solid:       #FFFFFF;
+  /* Texto sobre o amarelo pleno (selo do sino). Escuro nos dois modos. */
+  --color-on-warning:     #1A1A18;
 
   /* Tipografia */
   --font-family:          'Inter', 'Segoe UI', system-ui, sans-serif;

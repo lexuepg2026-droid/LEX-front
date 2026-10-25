@@ -61,8 +61,8 @@
   min-width: 1.5rem;
   padding: 0 var(--space-2);
   border-radius: var(--radius-pill, 999px);
-  background-color: var(--color-danger);
-  color: var(--color-on-danger, #fff);
+  background-color: var(--color-danger-solid);
+  color: var(--color-on-solid);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   line-height: 1.5rem;

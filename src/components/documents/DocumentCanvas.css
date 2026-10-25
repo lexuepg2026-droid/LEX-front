@@ -250,7 +250,7 @@
   padding: 0 var(--space-3);
   border: 1px dashed var(--color-primary);
   border-radius: var(--radius-full);
-  background: rgba(46, 125, 50, 0.08);
+  background: rgba(23, 64, 52, 0.08);
   color: var(--color-primary-dark);
   font-family: var(--font-family);
   font-size: 8.5pt;
@@ -260,7 +260,7 @@
 }
 
 .canvas-slot__botao:hover {
-  background: rgba(46, 125, 50, 0.18);
+  background: rgba(23, 64, 52, 0.18);
 }
 
 /* ── Rodapé ─────────────────────────────────────────────────────────────── */

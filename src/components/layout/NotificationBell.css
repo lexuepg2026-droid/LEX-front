@@ -32,7 +32,7 @@
   padding: 0 4px;
   border-radius: var(--radius-full);
   background: var(--color-warning);
-  color: #1A1A18;
+  color: var(--color-on-warning);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   line-height: 18px;
