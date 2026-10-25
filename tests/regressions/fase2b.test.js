@@ -223,3 +223,216 @@ describe("Fase 2b · item 2 — a política não conhece rota (DEC-050 continua)
     assert.doesNotMatch(fonte, /\/auth\//);
   });
 });
+
+// ── Item 3 — DEC-085 ──────────────────────────────────────────────────────
+import {
+  paiDaRota, destinoDoVoltar, voltarValido, lerVoltar,
+  contextoDoProcesso, contextoDoCliente, textoDoContexto, idDoProcesso, idsPublicadosPara
+} from "../../src/components/layout/contexto.js";
+
+describe("Fase 2b · item 3 — o pai de cada rota (DEC-085)", () => {
+  const MAPA = [
+    ["/dashboard/clientes/novo", "/dashboard/clientes"],
+    ["/dashboard/clientes/detalhe/c1", "/dashboard/clientes"],
+    ["/dashboard/clientes/editar/c1", "/dashboard/clientes/detalhe/c1"],
+    ["/dashboard/processos/novo", "/dashboard/processos"],
+    ["/dashboard/processos/detalhe/p1", "/dashboard/processos"],
+    ["/dashboard/processos/editar/p1", "/dashboard/processos/detalhe/p1"],
+    ["/dashboard/honorarios/novo", "/dashboard/honorarios"],
+    ["/dashboard/honorarios/h1", "/dashboard/honorarios"],
+    ["/dashboard/honorarios/editar/h1", "/dashboard/honorarios/h1"],
+    ["/dashboard/honorarios/h1/reparcelar", "/dashboard/honorarios/h1"],
+    ["/dashboard/parcelas/novo", "/dashboard/parcelas"],
+    ["/dashboard/parcelas/editar/i1", "/dashboard/parcelas"],
+    ["/dashboard/pagamentos/novo", "/dashboard/pagamentos"],
+    ["/dashboard/pagamentos/editar/g1", "/dashboard/pagamentos"],
+    ["/dashboard/documentos/montar", "/dashboard/documentos"],
+    ["/dashboard/documentos/montar/d1", "/dashboard/documentos"],
+    ["/dashboard/documentos/d1/texto", "/dashboard/documentos"],
+    ["/dashboard/secoes/nova", "/dashboard/secoes"],
+    ["/dashboard/secoes/editar/s1", "/dashboard/secoes"],
+    ["/dashboard/agenda/novo", "/dashboard/agenda"],
+    ["/dashboard/agenda/editar/e1", "/dashboard/agenda"],
+  ];
+
+  for (const [tela, pai] of MAPA) {
+    test(`${tela} → ${pai}`, () => assert.equal(paiDaRota(tela), pai));
+  }
+
+  test("o Início, as listas e as telas de topo não têm faixa", () => {
+    for (const tela of [
+      "/dashboard", "/dashboard/clientes", "/dashboard/processos", "/dashboard/honorarios",
+      "/dashboard/parcelas", "/dashboard/pagamentos", "/dashboard/documentos", "/dashboard/secoes",
+      "/dashboard/agenda", "/dashboard/financeiro", "/dashboard/perfil", "/dashboard/pendencias",
+    ]) {
+      assert.equal(paiDaRota(tela, ""), null, tela);
+    }
+  });
+
+  test("as quatro listas filtradas por processo voltam para o processo", () => {
+    for (const lista of ["honorarios", "parcelas", "pagamentos", "documentos"]) {
+      assert.equal(paiDaRota(`/dashboard/${lista}`, "?processoId=p9"), "/dashboard/processos/detalhe/p9");
+    }
+    // Clientes e processos não filtram por processo: sem faixa.
+    assert.equal(paiDaRota("/dashboard/clientes", "?processoId=p9"), null);
+  });
+
+  test("todo destino do mapa é uma rota que existe", () => {
+    const rotas = semComentarios(ler("src/routes/AppRoutes.jsx"));
+    for (const [, pai] of MAPA) {
+      const padrao = pai.replace("/dashboard/", "").replace(/\/[a-z]\d$/, "/:id");
+      const caminho = padrao.replace(/^honorarios\/:id$/, "honorarios/:id");
+      assert.match(rotas, new RegExp(`path="${caminho.replace(/[/:]/g, (c) => `\\${c}`)}"`), pai);
+    }
+  });
+});
+
+describe("Fase 2b · item 3 — o destino do Voltar (DEC-085)", () => {
+  test("é o pai, e não o histórico", () => {
+    assert.equal(destinoDoVoltar({ pathname: "/dashboard/honorarios/h1", search: "" }), "/dashboard/honorarios");
+  });
+
+  test("preserva a query que o pai tinha da última visita", () => {
+    const memoria = new Map([["/dashboard/parcelas", "?processoId=p9"]]);
+    assert.equal(
+      destinoDoVoltar({ pathname: "/dashboard/parcelas/editar/i1", search: "" }, memoria),
+      "/dashboard/parcelas?processoId=p9"
+    );
+    // A visita pelo menu (sem query) sobrescreve, e o Voltar volta à lista inteira.
+    memoria.set("/dashboard/parcelas", "");
+    assert.equal(
+      destinoDoVoltar({ pathname: "/dashboard/parcelas/editar/i1", search: "" }, memoria),
+      "/dashboard/parcelas"
+    );
+  });
+
+  test("um ?voltar= válido manda", () => {
+    assert.equal(
+      destinoDoVoltar({ pathname: "/dashboard/parcelas/novo", search: "?honorarioId=h1&voltar=%2Fdashboard%2Fprocessos%2Fdetalhe%2Fp1" }),
+      "/dashboard/processos/detalhe/p1"
+    );
+  });
+
+  test("?voltar= só aceita caminho interno da área da advogada", () => {
+    assert.equal(voltarValido("/dashboard/processos/detalhe/p1"), "/dashboard/processos/detalhe/p1");
+    assert.equal(voltarValido("/dashboard"), "/dashboard");
+    for (const ruim of [
+      "https://evil.example/dashboard/", "//evil.example/dashboard", "/\\evil.example",
+      "javascript:alert(1)", "/login", "/portal/processo", "/dashboard//evil.example",
+      "/dashboard/../login", "/dashboard/%2F%2Fevil", "/dashboard/\nx", "/dashboard/a b", null, 42, "",
+      "/dashboardx", "/dashboard/" + "a".repeat(600),
+    ]) {
+      assert.equal(voltarValido(ruim), null, String(ruim));
+    }
+    assert.equal(lerVoltar("?voltar=https%3A%2F%2Fevil.example"), null);
+  });
+});
+
+describe("Fase 2b · item 3 — o texto do contexto (DEC-085)", () => {
+  const processo = {
+    _id: "p1",
+    titulo: "Ação de cobrança",
+    numeroProcesso: "0001234-56.2024.8.16.0001",
+    clientePrincipalId: { _id: "c1", tipoPessoa: "fisica", nomeCompleto: "Fulano de Tal" },
+    participantes: [
+      { clienteId: { _id: "c1", tipoPessoa: "fisica", nomeCompleto: "Fulano de Tal" }, principal: true },
+      { clienteId: { _id: "c2", tipoPessoa: "fisica", nomeCompleto: "Beltrano" }, principal: false },
+      { clienteId: { _id: "c3", tipoPessoa: "juridica", razaoSocial: "ACME Ltda" }, principal: false },
+    ],
+  };
+
+  test("Cliente: Fulano (+2) · Processo: número — título", () => {
+    const ctx = contextoDoProcesso(processo);
+    assert.deepEqual(ctx.cliente, { id: "c1", nome: "Fulano de Tal", outros: 2 });
+    assert.deepEqual(ctx.processo, { id: "p1", rotulo: "0001234-56.2024.8.16.0001 — Ação de cobrança" });
+    assert.equal(textoDoContexto(ctx),
+      "Cliente: Fulano de Tal (+2) · Processo: 0001234-56.2024.8.16.0001 — Ação de cobrança");
+  });
+
+  test("sem outros participantes, sem (+N); PJ pelo nome da empresa", () => {
+    const so = { ...processo, participantes: [processo.participantes[2]], clientePrincipalId: processo.participantes[2].clienteId };
+    so.participantes = [{ ...so.participantes[0], principal: true }];
+    assert.equal(textoDoContexto(contextoDoProcesso(so)),
+      "Cliente: ACME Ltda · Processo: 0001234-56.2024.8.16.0001 — Ação de cobrança");
+  });
+
+  test("só cliente nas telas de cliente; nada quando não há dado", () => {
+    assert.equal(textoDoContexto(contextoDoCliente({ _id: "c1", tipoPessoa: "fisica", nomeCompleto: "Fulano" })),
+      "Cliente: Fulano");
+    assert.equal(contextoDoProcesso(null), null);
+    assert.equal(textoDoContexto(null), "");
+  });
+
+  test("idDoProcesso lê o populado e o cru", () => {
+    assert.equal(idDoProcesso({ _id: "p1", titulo: "x" }), "p1");
+    assert.equal(idDoProcesso("p1"), "p1");
+    assert.equal(idDoProcesso(null), null);
+    assert.equal(idDoProcesso(undefined), null);
+    assert.equal(idDoProcesso(""), null);
+  });
+});
+
+describe("Fase 2b · item 3 — o contexto casa com o caminho (DEC-085)", () => {
+  test("o publicado só vale para o caminho em que foi publicado", () => {
+    const publicado = { pathname: "/dashboard/honorarios/h1", processoId: "p1", clienteId: null };
+    assert.deepEqual(idsPublicadosPara(publicado, "/dashboard/honorarios/h1"), { processoId: "p1", clienteId: null });
+    assert.deepEqual(idsPublicadosPara(publicado, "/dashboard/parcelas/novo"), { processoId: null, clienteId: null },
+      "a tela nova não herda o processo da anterior");
+    assert.deepEqual(idsPublicadosPara(null, "/x"), { processoId: null, clienteId: null });
+  });
+
+  test("o contexto usa a regra pura, e limpa ao sair", () => {
+    const fonte = semComentarios(ler("src/contexts/ContextoContext.jsx"));
+    assert.match(fonte, /idsPublicadosPara\(ctx\?\.publicado, pathname\)/);
+    assert.match(fonte, /return \(\) => definir\(pathname, null\)/);
+  });
+
+  test("a resolução usa as MESMAS chaves de espelho do detalhe", () => {
+    const hook = semComentarios(ler("src/hooks/useContextoResolvido.js"));
+    assert.match(hook, /resource: 'process',\s*params: \{ id: processoId \}/);
+    assert.match(hook, /resource: 'client',\s*params: \{ id: clienteId \}/);
+    const detalhe = semComentarios(ler("src/pages/processes/ProcessDetailPage.jsx"));
+    assert.match(detalhe, /resource: 'process',\s*params: \{ id \}/);
+    const cliente = semComentarios(ler("src/pages/clients/ClientDetailPage.jsx"));
+    assert.match(cliente, /resource: 'client',\s*params: \{ id \}/);
+  });
+
+  test("a faixa mostra o aviso de idade e o Voltar é link, não navigate(-1)", () => {
+    const faixa = semComentarios(ler("src/components/layout/FaixaContexto.jsx"));
+    assert.match(faixa, /fromCache && <OfflineNotice atualizadoEm=\{updatedAt\}/);
+    assert.match(faixa, /<Link to=\{destino\} className="faixa-contexto__voltar">/);
+    assert.doesNotMatch(faixa, /navigate\(-1\)|history\.back/);
+  });
+
+  test("a trilha saiu do Header, e o BreadcrumbContext com ela", () => {
+    const header = semComentarios(ler("src/components/layout/Header.jsx"));
+    assert.doesNotMatch(header, /breadcrumb|trilha/i);
+    const layout = semComentarios(ler("src/components/layout/AppLayout.jsx"));
+    assert.match(layout, /<FaixaContexto \/>/);
+    assert.match(layout, /<ContextoProvider>/);
+    const usos = arquivos(SRC, [".jsx", ".js"])
+      .filter((c) => /BreadcrumbContext|usePublicarBreadcrumb|useBreadcrumbLabel/.test(semComentarios(readFileSync(c, "utf8"))));
+    assert.deepEqual(usos.map((c) => relative(SRC, c)), []);
+  });
+
+  // Quem publica, e de onde vem o id (tabela 3.4 do prompt da fase).
+  const PUBLICAM = [
+    ["src/pages/processes/ProcessDetailPage.jsx", /usePublicarContexto\(\{ processoId: id \}\)/],
+    ["src/pages/processes/ProcessFormPage.jsx", /usePublicarContexto\(\{ processoId: id \}\)/],
+    ["src/pages/fees/FeeDetailPage.jsx", /usePublicarContexto\(\{ processoId: idDoProcesso\(honorario\?\.processoId\) \}\)/],
+    ["src/pages/fees/FeeRenegotiationPage.jsx", /usePublicarContexto\(\{ processoId: idDoProcesso\(honorario\?\.processoId\) \}\)/],
+    ["src/pages/fees/FeeFormPage.jsx", /usePublicarContexto\(\{ processoId: formData\.processoId \}\)/],
+    ["src/pages/installments/InstallmentFormPage.jsx", /usePublicarContexto\(\{ processoId: idDoProcesso\(fees\.find\(\(f\) => f\._id === formData\.honorarioId\)\?\.processoId\) \}\)/],
+    ["src/pages/payments/PaymentFormPage.jsx", /usePublicarContexto\(\{ processoId: idDoProcesso\(fees\.find\(\(f\) => f\._id === formData\.honorarioId\)\?\.processoId\) \}\)/],
+    ["src/hooks/useProcessoFiltrado.js", /usePublicarContexto\(\{ processoId \}\)/],
+    ["src/components/documents/GenerationPanel.jsx", /usePublicarContexto\(\{ processoId \}\)/],
+    ["src/pages/calendar/EventFormPage.jsx", /usePublicarContexto\(\{ processoId: formData\.processoId \}\)/],
+    ["src/pages/clients/ClientDetailPage.jsx", /usePublicarContexto\(\{ clienteId: id \}\)/],
+    ["src/pages/clients/ClientFormPage.jsx", /usePublicarContexto\(\{ clienteId: id \}\)/],
+  ];
+  for (const [arquivo, padrao] of PUBLICAM) {
+    test(`${arquivo.split("/").pop()} publica o contexto`, () => {
+      assert.match(semComentarios(ler(arquivo)), padrao);
+    });
+  }
+});

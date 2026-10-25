@@ -22,6 +22,8 @@ import './PaymentFormPage.css';
 import '../clients/ClientPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
+import { idDoProcesso } from '../../components/layout/contexto.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORMULÁRIO DE PAGAMENTO — reescrito na Fase F-1a
@@ -91,6 +93,8 @@ function PaymentFormPage() {
 
   const navigate = useNavigate();
   const { id } = useParams();
+  // Fase 2b (DEC-085): a faixa de contexto diz de qual processo — o do honorário escolhido esta tela é.
+  usePublicarContexto({ processoId: idDoProcesso(fees.find((f) => f._id === formData.honorarioId)?.processoId) });
   const [searchParams] = useSearchParams();
   const isEditing = Boolean(id);
 

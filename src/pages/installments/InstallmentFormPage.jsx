@@ -13,6 +13,8 @@ import { LIMITE_DO_SELETOR, avisoDeSeletorLimitado } from '../../utils/seletorLi
 import '../clients/ClientPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
+import { idDoProcesso } from '../../components/layout/contexto.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORMULÁRIO DE PARCELA
@@ -49,6 +51,8 @@ function InstallmentFormPage() {
 
   const navigate = useNavigate();
   const { id } = useParams();
+  // Fase 2b (DEC-085): a faixa de contexto diz de qual processo — o do honorário escolhido esta tela é.
+  usePublicarContexto({ processoId: idDoProcesso(fees.find((f) => f._id === formData.honorarioId)?.processoId) });
   const isEditing = Boolean(id);
   // ── Carregamento da leitura em modo edição (Fase F-0) ────────────────────
   //

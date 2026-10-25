@@ -10,15 +10,23 @@ import './ProcessFilterChip.css';
 //
 // O × é um `<button>` com rótulo próprio: "×" lido por leitor de tela é
 // "multiplicação". Estilo mínimo de propósito — o visual vem na Fase 1.
+//
+// ── Fase 2b (DEC-085): o chip diz o RECORTE, a faixa diz o processo ──────
+// Desde a Fase 2b a lista filtrada tem a faixa de contexto em cima, com
+// "Cliente: … · Processo: 0001234… — Título" e o Voltar para o processo.
+// Repetir o número e o título aqui seria a mesma informação duas vezes, a
+// quatro centímetros uma da outra. O chip passa a dizer o que só ele diz —
+// que a lista está RECORTADA — e continua sendo o único jeito de desfazer o
+// recorte. O rótulo do processo fica no `title`, para quem passar o mouse.
 // ═══════════════════════════════════════════════════════════════════════════
 
 export default function ProcessFilterChip({ rotulo, carregando = false, onRemover }) {
-  const texto = rotulo || (carregando ? 'carregando…' : 'processo selecionado');
+  const dica = rotulo || (carregando ? 'carregando…' : 'processo selecionado');
 
   return (
-    <p className="filtro-processo" role="status">
-      <span className="filtro-processo__rotulo">Processo:</span>{' '}
-      <span className="filtro-processo__valor">{texto}</span>
+    <p className="filtro-processo" role="status" title={`Processo: ${dica}`}>
+      <span className="filtro-processo__rotulo">Filtro:</span>{' '}
+      <span className="filtro-processo__valor">só este processo</span>
       <button
         type="button"
         className="filtro-processo__remover"

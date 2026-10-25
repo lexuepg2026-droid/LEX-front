@@ -27,6 +27,7 @@ import './ProcessPage.css';
 import './ProcessTabs.css';
 import ProcessoTabs from './ProcessTabs';
 import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
 
 // Data e hora no fuso do escritório. `ultimoAcessoPortal` e `dataHora` da
 // confirmação são carimbos que a advogada pode precisar citar — deixá-los ao
@@ -77,6 +78,8 @@ function ProcessoDetalhePage() {
   const [salvandoFase, setSalvandoFase] = useState(false);
 
   const { id } = useParams();
+  // Fase 2b (DEC-085): a faixa de contexto diz de qual processo esta tela é.
+  usePublicarContexto({ processoId: id });
   const online = useOnlineStatus();
   const { entradas } = useOutbox();
   // Só a pendência DESTE processo: a fila é do aparelho inteiro, e avisar aqui

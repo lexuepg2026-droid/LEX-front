@@ -505,13 +505,17 @@ describe("F-1b — o nome do honorário leva à página dele", () => {
     );
   });
 
-  test("a trilha do cabeçalho mostra a descrição, não \"Detalhe\"", () => {
-    const header = semComentarios(ler("src/components/layout/Header.jsx"));
-    assert.match(header, /useBreadcrumbLabel/, "o cabeçalho lê o rótulo publicado");
-    assert.match(header, /rotuloDaPagina \|\| action/, "e ele substitui o genérico");
-
+  test("a página do honorário diz o nome dele, e de qual processo é", () => {
+    // Até a Fase 2a era a trilha ("LEX › Honorários › «descrição»"), com o
+    // rótulo publicado pela página. A trilha saiu na Fase 2b (DEC-085): o nome
+    // é o TÍTULO da página, e a faixa de cima diz o processo e o cliente — a
+    // mesma pergunta ("de qual cobrança se está falando?"), respondida com
+    // mais, e não com menos.
     const pagina = semComentarios(ler("src/pages/fees/FeeDetailPage.jsx"));
-    assert.match(pagina, /usePublicarBreadcrumb/, "a página publica o próprio nome");
+    assert.match(pagina, /<h1 className="page-title">\{honorario\.descricao\}<\/h1>/, "o nome é o título");
+    assert.match(pagina, /usePublicarContexto\(\{ processoId: idDoProcesso\(honorario\?\.processoId\) \}\)/,
+      "a página publica o processo do honorário");
+    assert.doesNotMatch(pagina, /Detalhe/, "nenhum rótulo genérico no lugar do nome");
   });
 });
 

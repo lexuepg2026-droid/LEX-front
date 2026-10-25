@@ -46,11 +46,21 @@ export const PARES = [
   // Link.
   { nome: "link / --color-surface", texto: "--color-link", fundo: "--color-surface", limite: TEXTO },
   { nome: "link / --color-bg", texto: "--color-link", fundo: "--color-bg", limite: TEXTO },
+  // A faixa de contexto (Fase 2b, DEC-085): o "Voltar" sobre o realce de
+  // hover. O link, o rótulo e o texto da faixa já são pares de cima (link,
+  // texto primário e secundário sobre a surface).
+  { nome: "faixa de contexto: Voltar / --color-surface-raised (hover)", texto: "--color-text-primary", fundo: "--color-surface-raised", limite: TEXTO },
 
   // Toasts sólidos (texto branco, como os dela).
   { nome: "toast success", texto: "--color-on-solid", fundo: "--color-success-solid", limite: TEXTO },
   { nome: "toast error", texto: "--color-on-solid", fundo: "--color-danger-solid", limite: TEXTO },
   { nome: "toast info", texto: "--color-on-solid", fundo: "--color-info-solid", limite: TEXTO },
+  // O × dos toasts (Fase 2b, DEC-083): o branco sobre o realce de hover, que
+  // pousa no fundo sólido de cada tom, e o anel de foco branco (não texto).
+  ...["success", "danger", "info"].flatMap((tom) => [
+    { nome: `toast ${tom}: × sobre o realce`, texto: "--color-on-solid", fundo: "--color-toast-fechar-hover", sobre: [`--color-${tom}-solid`], limite: TEXTO },
+    { nome: `toast ${tom}: anel de foco do ×`, texto: "--color-on-solid", fundo: `--color-${tom}-solid`, limite: NAO_TEXTO },
+  ]),
 
   // Cartão de resumo do Início (item 2 da banca): valor, rótulo e nota.
   ...["--color-text-primary", "--color-text-secondary", "--color-text-discreto", "--color-accent",

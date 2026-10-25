@@ -29,6 +29,8 @@ import './DocumentFinalTextPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
 import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
+import { idDoProcesso } from '../../components/layout/contexto.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // EDITOR DE TEXTO FINAL
@@ -51,6 +53,8 @@ function DocumentFinalTextPage() {
   const navigate = useNavigate();
 
   const [documento, setDocumento] = useState(null);
+  // Fase 2b (DEC-085): a faixa de contexto diz de qual processo — o do documento esta tela é.
+  usePublicarContexto({ processoId: idDoProcesso(documento?.processoId) });
   const [vinculos, setVinculos] = useState([]);
   const [texto, setTexto] = useState('');
   const [textoSalvo, setTextoSalvo] = useState('');

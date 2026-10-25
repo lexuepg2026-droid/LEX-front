@@ -9,7 +9,8 @@ import { formatCurrency, formatDate, formatPercent } from '../../utils/formatter
 import { TIPO_HONORARIO_OPTIONS, labelDe } from '../../utils/enums';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { toast } from '../../utils/toast';
-import { usePublicarBreadcrumb } from '../../contexts/BreadcrumbContext';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
+import { idDoProcesso } from '../../components/layout/contexto.js';
 import '../../styles/modules.css';
 import './FeeDetailPage.css';
 import { rotuloNaLista } from '../../components/financeiro/installmentLabel';
@@ -62,10 +63,10 @@ function FeeDetailPage() {
   // Muda para forçar o extrato a recarregar depois de um estorno.
   const [versaoDoExtrato, setVersaoDoExtrato] = useState(0);
 
-  // A trilha do cabeçalho passa a dizer o NOME da cobrança:
-  // "LEX › Honorários › Assessoria tributária". Enquanto o GET não volta, o
-  // "Detalhe" genérico continua no lugar — nunca um rótulo em branco.
-  usePublicarBreadcrumb(honorario?.descricao ?? null);
+  // Fase 2b (DEC-085): a trilha saiu, e com ela o rótulo que esta tela
+  // publicava — o nome da cobrança já é o título da página. O que a faixa de
+  // cima precisa saber é de QUAL processo (e cliente) ela é.
+  usePublicarContexto({ processoId: idDoProcesso(honorario?.processoId) });
 
   const carregar = useCallback(async () => {
     setError('');

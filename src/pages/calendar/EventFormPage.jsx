@@ -18,6 +18,7 @@ import '../clients/ClientPage.css';
 import OfflineQueueNotice from '../../components/ui/OfflineQueueNotice';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
 import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORMULÁRIO DO EVENTO
@@ -63,6 +64,8 @@ function EventFormPage() {
 
   const navigate = useNavigate();
   const { id } = useParams();
+  // Fase 2b (DEC-085): a faixa de contexto diz de qual processo — o vinculado, se houver esta tela é.
+  usePublicarContexto({ processoId: formData.processoId });
   const [searchParams] = useSearchParams();
   const isEditing = Boolean(id);
 

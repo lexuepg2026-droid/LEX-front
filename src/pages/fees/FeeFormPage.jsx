@@ -20,6 +20,7 @@ import {
 import '../clients/ClientPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORMULÁRIO DE HONORÁRIO — o campo `tipo` comanda a tela (DEC-027)
@@ -67,6 +68,8 @@ function FeeFormPage() {
 
   const navigate = useNavigate();
   const { id } = useParams();
+  // Fase 2b (DEC-085): a faixa de contexto diz de qual processo — assim que escolhido no seletor esta tela é.
+  usePublicarContexto({ processoId: formData.processoId });
   const isEditing = Boolean(id);
   // ── Carregamento da leitura em modo edição (Fase F-0) ────────────────────
   //

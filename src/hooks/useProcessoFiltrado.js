@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import processService from '../api/processService';
 import useCachedResource from './useCachedResource';
 import { rotuloDoProcessoFiltrado } from '../utils/processoFiltrado';
+import { usePublicarContexto } from '../contexts/ContextoContext';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // O FILTRO DE PROCESSO QUE VEM DA URL — Fase 0 (DEC-070)
@@ -31,6 +32,11 @@ export default function useProcessoFiltrado() {
   // Tira SÓ o `processoId` da URL. A consulta da lista depende dele, então a
   // lista se refaz sozinha — sem recarregar a página nem perder os outros
   // filtros, que vivem no estado da tela.
+  // Fase 2b (DEC-085): a lista filtrada publica o processo para a faixa de
+  // contexto — as quatro de uma vez, por aqui, que é onde as quatro já leem o
+  // parâmetro. Removido o filtro, o id some e a faixa some junto.
+  usePublicarContexto({ processoId });
+
   const remover = useCallback(() => {
     setSearchParams((atual) => {
       const proximo = new URLSearchParams(atual);
