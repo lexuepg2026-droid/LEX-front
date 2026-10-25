@@ -37,6 +37,9 @@
   --color-surface:        #222222;
   --color-surface-raised: #2C2C2C;
   --color-surface-input:  #1A1A1A;
+  /* Cartão de resumo do Início: o bege10 dela sobre #222222 é #363533; um
+     tom abaixo (#323130) para a nota do cartão passar 4,5:1. */
+  --color-surface-card:   #323130;
 
   /* Texto: bege87, bege70 e bege60 dela, compostos sobre #222222. */
   --color-text-primary:   #D3CAB9;
@@ -151,6 +154,7 @@ body.light-mode {
   --color-surface:        #FFFDF9;
   --color-surface-raised: #F0EADC;
   --color-surface-input:  #FFFFFF;
+  --color-surface-card:   #F3EEE3;
 
   --color-text-primary:   #01261F;
   --color-text-secondary: #2E4A41;

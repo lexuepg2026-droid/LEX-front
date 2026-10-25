@@ -49,6 +49,12 @@ export const PARES = [
   { nome: "toast error", texto: "--color-on-solid", fundo: "--color-danger-solid", limite: TEXTO },
   { nome: "toast info", texto: "--color-on-solid", fundo: "--color-info-solid", limite: TEXTO },
 
+  // Cartão de resumo do Início (item 2 da banca): valor, rótulo e nota.
+  ...["--color-text-primary", "--color-text-secondary", "--color-text-discreto", "--color-accent",
+    ...SEMANTICAS.map((x) => `--color-${x}-text`)].map((texto) => (
+    { nome: `${texto} / --color-surface-card (cartão)`, texto, fundo: "--color-surface-card", limite: TEXTO }
+  )),
+
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
   { nome: "borda de campo / --color-surface", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },
