@@ -1,9 +1,6 @@
 import React, { lazy, Suspense, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import {
-  Scale, Users, FileText, AlertCircle, FolderOpen, BellRing,
-  HandCoins, Wallet, CalendarClock, CalendarCheck,
-} from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { AlertCircle, ChevronLeft, ChevronRight, HandCoins } from 'lucide-react';
 import dashboardService from '../../api/dashboardService';
 import financeiroService from '../../api/financeiroService';
 import installmentService from '../../api/installmentService';
@@ -17,11 +14,29 @@ import {
 } from '../../utils/painel';
 import StatusBadge from '../../components/ui/StatusBadge';
 import EmptyState from '../../components/ui/EmptyState';
+import Icone from '../../components/ui/Icone';
+import OfflineNotice from '../../components/ui/OfflineNotice';
 import Loading from '../../components/common/Loading';
-import { formatCurrency, formatDate, formatMonthKey } from '../../utils/formatters';
+import useCachedResource from '../../hooks/useCachedResource';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { MENSAGEM_ESCRITA_OFFLINE, MENSAGEM_LEITURA_SEM_CACHE } from '../../offline/offlineMessages';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 import { destinoDoItem } from '../../utils/calendarLabels';
 import { toast } from '../../utils/toast';
 import { getApiErrorMessage } from '../../utils/apiError';
+import {
+  chaveDoMes,
+  mesCorrente,
+  lerMesDaUrl,
+  mesesIguais,
+  mesVizinhoNaFaixa,
+  paramsDoMes,
+  rotuloDoMes,
+  seloDaData,
+  datasProximas,
+  janelaDasDatas,
+  TIPOS_DE_DATA,
+} from './inicio.js';
 // `link-interno` (F-1b) mora em `styles/modules.css`, junto das demais
 // classes compartilhadas das telas de módulo.
 import '../../styles/modules.css';
@@ -39,6 +54,39 @@ import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 // `catch` abaixo só falam do que ele não cobre — um 404, por exemplo.
 const DashboardCharts = lazy(() => import('./DashboardCharts'));
 
+// O `BlocoDoPainel` recebe um COMPONENTE de ícone (`size`, `className`), no
+// formato do lucide. Este adaptador põe os ícones da Raniele no mesmo formato,
+// sem mexer no bloco. Lucide só onde ela não tem equivalente (o alerta).
+const doIcone = (nome) => {
+  const IconeDoBloco = ({ size, className }) => (
+    <Icone nome={nome} tamanho={size} className={className} />
+  );
+  return IconeDoBloco;
+};
+const ICONE_CALENDARIO = doIcone('calendario');
+const ICONE_DINHEIRO = doIcone('dinheiro');
+const ICONE_FOLDER = doIcone('folder');
+const ICONE_DOCUMENTO = doIcone('documento');
+
+// O ícone ao lado do rótulo do cartão: o da Raniele pelo nome, ou o lucide
+// quando ela não tem equivalente.
+const IconeDoCartao = ({ icone, Icon }) => (
+  <span className="card-icon">
+    {icone ? <Icone nome={icone} tamanho={16} /> : <Icon size={16} aria-hidden="true" />}
+  </span>
+);
+
+// ── Ações rápidas (Fase 3.1) ───────────────────────────────────────────────
+//
+// "Nova parcela" leva ao formulário de parcela, e não ao Financeiro como no
+// Início da Raniele: a ação diz "nova parcela", e quem clica espera o
+// formulário, não uma lista onde ainda precisa achar o botão (DEC-099).
+const ACOES_RAPIDAS = [
+  { rotulo: 'Novo cliente',  para: '/dashboard/clientes/novo',  icone: 'pessoa' },
+  { rotulo: 'Novo processo', para: '/dashboard/processos/novo', icone: 'folder' },
+  { rotulo: 'Nova parcela',  para: '/dashboard/parcelas/novo',  icone: 'dinheiro' },
+];
+
 // ── Cartões de contagem ────────────────────────────────────────────────────
 //
 // Dois saíram desta lista na Fase 4.3, e nos dois casos porque o mesmo número
@@ -53,24 +101,22 @@ const DashboardCharts = lazy(() => import('./DashboardCharts'));
 //   o VALOR e a contagem juntos. Manter os dois deixaria dois números do mesmo
 //   assunto lado a lado, vindos de rotas diferentes e livres para divergir.
 const CARDS = [
-  { key: 'processosAtivos',        label: 'Processos Ativos',       Icon: Scale,      color: 'primary' },
-  { key: 'clientesCadastrados',    label: 'Clientes Cadastrados',   Icon: Users,      color: 'primary' },
+  { key: 'processosAtivos',        label: 'Processos Ativos',       icone: 'folder',    color: 'primary' },
+  { key: 'clientesCadastrados',    label: 'Clientes Cadastrados',   icone: 'pessoa',    color: 'primary' },
   // "Em aberto" (Fase 0, DEC-069): o backend passou a contar `pendente` E
   // `parcialmente_pago`. "A receber" contava só os que nunca receberam nada.
   // A chave continua `honorariosAReceber` — é o nome do campo na API.
-  { key: 'honorariosAReceber',     label: 'Honorários em aberto',   Icon: FileText,   color: 'warning' },
-  { key: 'documentosCadastrados',  label: 'Documentos Cadastrados', Icon: FolderOpen, color: 'neutral' },
+  { key: 'honorariosAReceber',     label: 'Honorários em aberto',   icone: 'dinheiro',  color: 'warning' },
+  { key: 'documentosCadastrados',  label: 'Documentos Cadastrados', icone: 'documento', color: 'neutral' },
   // `info` e não `success`: é coisa a fazer, não resultado alcançado. E não é
   // `warning`: confirmação chegando é o sistema funcionando, nada está errado.
-  { key: 'confirmacoesNaoVistas',  label: 'Confirmações Novas',     Icon: BellRing,   color: 'info'    },
+  { key: 'confirmacoesNaoVistas',  label: 'Confirmações Novas',     icone: 'sino',      color: 'info'    },
 ];
 
 // ── Indicadores em dinheiro ────────────────────────────────────────────────
 //
-// Todos de `GET /api/financeiro/resumo`. A Fase 4.2 registrou que o backend
-// não expunha recorte mensal nem valor de vencido, e rotulou o que tinha com
-// honestidade ("Em Aberto (total)"). A Fase 4.3 cumpriu a DEC-028(d) no
-// backend, e os rótulos agora podem dizer o que a advogada perguntou.
+// Todos de `GET /api/financeiro/resumo`. Desde a Fase 3.1 (DEC-098) a rota
+// aceita `?mes=AAAA-MM`, e SÓ estes dois campos seguem o mês escolhido.
 //
 // **O mês do rótulo vem do servidor** (`mesReferencia`), e não de
 // `new Date()` aqui. Os dois quase sempre concordam — e no dia em que não
@@ -79,24 +125,27 @@ const CARDS_DO_MES = [
   {
     key: 'aReceberNoMes',
     label: (mes) => `A receber em ${mes}`,
-    Icon: CalendarClock,
+    icone: 'calendario',
     color: 'warning',
     vazio: 'nada a vencer no mês',
   },
   {
     key: 'recebidoNoMes',
     label: (mes) => `Recebido em ${mes}`,
-    Icon: CalendarCheck,
+    icone: 'dinheiro',
     color: 'success',
     vazio: 'nenhum pagamento no mês',
   },
 ];
 
 const CARDS_ACUMULADOS = [
-  { key: 'valorContratado', label: 'Valor Contratado (total)', Icon: FileText,  color: 'primary' },
-  { key: 'recebido',        label: 'Recebido (total)',         Icon: HandCoins, color: 'success' },
-  { key: 'pendente',        label: 'Em Aberto (total)',        Icon: Wallet,    color: 'warning' },
+  { key: 'valorContratado', label: 'Valor Contratado (total)', icone: 'documento', color: 'primary' },
+  { key: 'recebido',        label: 'Recebido (total)',         icone: 'dinheiro',  color: 'success' },
+  { key: 'pendente',        label: 'Em Aberto (total)',        icone: 'relogio',   color: 'warning' },
 ];
+
+// Os blocos de estatística, que nascem fechados.
+const PADRAO_FECHADO = new Set(['acumulado', 'resumo', 'graficos']);
 
 const formatCurrentDate = () =>
   new Date().toLocaleDateString('pt-BR', {
@@ -124,13 +173,37 @@ const emAbertoDaParcela = (inst) =>
 const pluralParcelas = (n) => (n === 1 ? '1 parcela vencida' : `${n} parcelas vencidas`);
 
 function DashboardHomePage() {
+  const online = useOnlineStatus();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [upcoming, setUpcoming] = useState([]);
   const [statusData, setStatusData] = useState(null);
   const [feesByMonth, setFeesByMonth] = useState([]);
-  const [resumoFinanceiro, setResumoFinanceiro] = useState(null);
+  const [agenda, setAgenda] = useState(null);
+  const [agendaFalhou, setAgendaFalhou] = useState(false);
+
+  // ── O mês escolhido mora na URL (Fase 3.1, DEC-098) ─────────────────────
+  //
+  // Como a Agenda faz com `?mes=`: o "voltar" do navegador desfaz a troca, e o
+  // link copiado abre no mesmo mês. Sem `?mes=` (ou com um inválido) é o mês
+  // corrente — e aí a chamada vai SEM o parâmetro, a mesma de antes da fase.
+  //
+  // Trocar `?mes=` não rola a página: `VoltarAoTopo` só reage ao `pathname`.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const mesDaUrl = lerMesDaUrl(searchParams.get('mes'));
+  const corrente = mesCorrente();
+  const mesEscolhido = mesDaUrl ?? corrente;
+  const chaveEscolhida = chaveDoMes(mesEscolhido);
+  const noMesCorrente = mesesIguais(mesEscolhido, corrente);
+  const mesParaApi = mesDaUrl ? chaveEscolhida : undefined;
+  const anterior = mesVizinhoNaFaixa(mesEscolhido, -1);
+  const proximo = mesVizinhoNaFaixa(mesEscolhido, 1);
+
+  // `null` volta ao mês corrente, e o mês corrente se escreve SEM `?mes=`:
+  // uma URL só para cada mês, e a do mês de hoje é a de sempre.
+  const irParaMes = (destino) =>
+    setSearchParams(paramsDoMes(searchParams, destino, corrente), { replace: false, preventScrollReset: true });
 
   // ── DEC-057 / Parte 5 — o painel lê o vencido DA MESMA FONTE que o sino ──
   // `GET /api/calendar/avisos` é a requisição que o sino já faz. O painel não
@@ -144,11 +217,16 @@ function DashboardHomePage() {
   // estatística responde outra.
   const [fechados, setFechados] = useState(lerBlocosFechados);
 
+  // Alternar parte do estado À VISTA, e não do gravado: sem preferência
+  // gravada, `!prev[chave]` dava `true` ("fechado") para um bloco que já nasce
+  // fechado, e o primeiro clique não abria nada (achado da Fase 3.1, no
+  // navegador). `PADRAO_FECHADO` é a mesma lista do segundo argumento de
+  // `estaAberto` abaixo.
   const alternarBloco = (chave) => {
     setFechados((prev) => {
-      const proximo = { ...prev, [chave]: !prev[chave] };
-      gravarBlocosFechados(proximo);
-      return proximo;
+      const proximoEstado = { ...prev, [chave]: !(prev[chave] ?? PADRAO_FECHADO.has(chave)) };
+      gravarBlocosFechados(proximoEstado);
+      return proximoEstado;
     });
   };
 
@@ -157,6 +235,36 @@ function DashboardHomePage() {
   // deliberada de abrir, e `||` a descartaria.
   const estaAberto = (chave, padraoFechado = false) =>
     !(fechados[chave] ?? padraoFechado);
+
+  // ── O resumo financeiro, com espelho por mês (F-5a + Fase 3.1) ──────────
+  //
+  // O mês entra na CHAVE do espelho: cada mês visitado tem a sua entrada, e um
+  // mês nunca aberto com sinal diz isso (a frase da F-5a) em vez de mostrar o
+  // número de outro mês. Sem `?mes=` a chave é a mesma da tela do Financeiro —
+  // é a mesma resposta.
+  //
+  // Sem `toast` aqui: o hook põe o erro no bloco, e o toast global (DEC-084)
+  // já fala do servidor fora.
+  const {
+    data: resumoFinanceiro,
+    loading: carregandoResumo,
+    error: erroResumo,
+    updatedAt,
+    fromCache,
+  } = useCachedResource({
+    resource: 'financeSummary',
+    params: mesParaApi ? { mes: mesParaApi } : undefined,
+    fetcher: () => financeiroService.getResumo(mesParaApi).then((res) => res.data),
+    fallbackError: 'Não foi possível carregar os totais financeiros.',
+  });
+
+  // Os campos que NÃO seguem o mês (vencido, acumulado, próximos vencimentos)
+  // ficam com a última resposta boa: sem sinal, abrir um mês nunca visitado
+  // apaga os cartões do mês — que de fato não se sabe —, e não o acumulado,
+  // que se sabe e não mudou.
+  const [ultimoResumo, setUltimoResumo] = useState(null);
+  if (resumoFinanceiro && resumoFinanceiro !== ultimoResumo) setUltimoResumo(resumoFinanceiro);
+  const resumoFixo = resumoFinanceiro ?? ultimoResumo;
 
   useEffect(() => {
     dashboardService.getDashboardSummary()
@@ -189,12 +297,15 @@ function DashboardHomePage() {
       .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar as parcelas urgentes.')); });
   }, []);
 
-  // Falha aqui não derruba o painel: os cartões de contagem e os gráficos
-  // continuam legíveis, e o que se perde é a faixa em dinheiro.
+  // Os compromissos das Datas próximas: `GET /calendar`, a rota da Agenda, sem
+  // rota nova. Falha aqui não derruba o bloco — os vencimentos continuam.
   useEffect(() => {
-    financeiroService.getResumo()
-      .then(res => setResumoFinanceiro(res.data))
-      .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar os totais financeiros.')); });
+    calendarService.getCalendar(janelaDasDatas())
+      .then(res => setAgenda(res.data))
+      .catch(err => {
+        setAgendaFalhou(true);
+        if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar os compromissos.'));
+      });
   }, []);
 
   // Falhar aqui não derruba o painel: o bloco de atenção some, o resto fica.
@@ -210,144 +321,281 @@ function DashboardHomePage() {
       .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar estatísticas do dashboard.')); });
   }, []);
 
+  // A série mensal TERMINA no mês escolhido (DEC-098), então é refeita quando
+  // ele muda. `ativo` descarta a resposta de um mês que já ficou para trás —
+  // duas setas rápidas não podem pintar o gráfico do mês do meio.
   useEffect(() => {
-    dashboardService.getFeesByMonth()
-      .then(res => setFeesByMonth(res.data))
+    let ativo = true;
+    dashboardService.getFeesByMonth(mesParaApi)
+      .then(res => { if (ativo) setFeesByMonth(res.data); })
       .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar gráfico financeiro.')); });
-  }, []);
+    return () => { ativo = false; };
+  }, [mesParaApi]);
 
-  const mesRotulo = formatMonthKey(resumoFinanceiro?.mesReferencia);
-  const proximos = resumoFinanceiro?.proximosVencimentos ?? [];
+  const rotuloMes = rotuloDoMes(chaveEscolhida);
+  const rotuloMesDoServidor = resumoFinanceiro?.mesReferencia
+    ? rotuloDoMes(resumoFinanceiro.mesReferencia)
+    : rotuloMes;
   // Do sino, não do resumo financeiro — uma fonte só para este número.
   const vencidas = contarParcelasVencidas(avisos);
   const parcelasVencidas = parcelasVencidasDoAviso(avisos);
+  const temAtencao = vencidas + upcoming.length > 0;
+
+  const datas = datasProximas({
+    vencimentos: resumoFixo?.proximosVencimentos ?? [],
+    eventos: agenda?.itens ?? [],
+    hoje: agenda?.hoje ?? null,
+  });
 
   // ── A ordem dos blocos, e por que ela é esta ────────────────────────────
-  // Atenção primeiro, estatística depois. Os três primeiros nascem abertos
-  // porque respondem "o que eu preciso fazer hoje"; os três últimos nascem
-  // fechados porque respondem "como está o escritório" — que é uma pergunta
-  // boa, só não é a da primeira olhada do dia.
+  // Ações rápidas e atenção primeiro, estatística depois. Os três primeiros
+  // blocos nascem abertos porque respondem "o que eu preciso fazer hoje"; os
+  // três últimos nascem fechados porque respondem "como está o escritório" —
+  // uma pergunta boa, só não é a da primeira olhada do dia.
   return (
     <div>
       <div className="dashboard-header">
-        <h1 className="dashboard-title">Dashboard</h1>
-        <p className="dashboard-date">{formatCurrentDate()}</p>
+        <div className="dashboard-header__titulo">
+          <h1 className="dashboard-title">Início</h1>
+          <p className="dashboard-date">{formatCurrentDate()}</p>
+        </div>
+
+        {/* O seletor do mês. Só os blocos que dizem o mês no título o seguem —
+            ver a tabela da DEC-098. */}
+        <div className="inicio-mes" role="group" aria-label="Mês do Início">
+          <button
+            type="button"
+            className="inicio-mes__seta"
+            aria-label="Mês anterior"
+            disabled={!anterior}
+            onClick={() => irParaMes(anterior)}
+          >
+            <ChevronLeft size={18} aria-hidden="true" />
+          </button>
+          <span className="inicio-mes__rotulo" aria-live="polite">{rotuloMes}</span>
+          <button
+            type="button"
+            className="inicio-mes__seta"
+            aria-label="Próximo mês"
+            disabled={!proximo}
+            onClick={() => irParaMes(proximo)}
+          >
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
+          {!noMesCorrente && (
+            <button type="button" className="inicio-mes__atual" onClick={() => irParaMes(null)}>
+              Mês atual
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* ══ 1. PRECISA DE ATENÇÃO ═══════════════════════════════════════════
+      {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
+
+      {/* ══ AÇÕES RÁPIDAS ════════════════════════════════════════════════════
+          Sem sinal, as três ficam desabilitadas com o motivo: criar cliente,
+          processo ou parcela não está na fila offline (F-5b), e o padrão é o da
+          DEC-053 — botão desabilitado com explicação, e não ausente. */}
+      <section className="inicio-acoes" aria-labelledby="inicio-acoes-titulo">
+        <h2 id="inicio-acoes-titulo" className="inicio-acoes__titulo">Ações rápidas</h2>
+        <ul className="inicio-acoes__lista">
+          {ACOES_RAPIDAS.map((acao) => (
+            <li key={acao.para}>
+              {online ? (
+                <Link to={acao.para} className="inicio-acao">
+                  <Icone nome={acao.icone} tamanho={24} />
+                  <span className="inicio-acao__rotulo">{acao.rotulo}</span>
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  className="inicio-acao"
+                  aria-disabled="true"
+                  aria-describedby="inicio-acoes-motivo"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  <Icone nome={acao.icone} tamanho={24} />
+                  <span className="inicio-acao__rotulo">{acao.rotulo}</span>
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+        {!online && (
+          <p id="inicio-acoes-motivo" className="inicio-acoes__motivo">{MENSAGEM_ESCRITA_OFFLINE}</p>
+        )}
+      </section>
+
+      {/* ══ 1. PRECISA DE ATENÇÃO — só quando há algo ═══════════════════════
           As vencidas vêm do sino (`/calendar/avisos`), e é a MESMA fonte que
           o badge do cabeçalho conta. Os dois números da mesma coisa na mesma
           tela não podem divergir — ver `utils/painel.js`. */}
-      <BlocoDoPainel
-        chave="atencao"
-        titulo="Precisa de atenção"
-        Icone={AlertCircle}
-        contagem={vencidas + upcoming.length}
-        aberto={estaAberto('atencao')}
-        aoAlternar={alternarBloco}
-        acao={
-          <Link to="/dashboard/pagamentos/novo" className="ui-btn ui-btn--primary ui-btn--sm">
-            <HandCoins size={16} aria-hidden="true" />
-            Registrar pagamento
-          </Link>
-        }
-      >
-        {vencidas === 0 && upcoming.length === 0 ? (
-          <EmptyState
-            title="Nada vencido nem vencendo."
-            description="Nenhuma parcela vencida, e nenhuma vence nos próximos 7 dias."
-          />
-        ) : (
-          <>
-            {vencidas > 0 && (
-              <>
-                <h3 className="bloco__subtitulo">{pluralParcelas(vencidas)}</h3>
-                <ul className="upcoming-list">
-                  {parcelasVencidas.map((item) => {
-                    const destino = destinoDoItem(item);
-                    return (
-                      <li key={`vencida-${item._id}`} className="upcoming-item">
-                        <div className="upcoming-info">
-                          <span className="upcoming-desc">
-                            {destino ? (
-                              <Link to={destino} className="link-interno">{item.titulo}</Link>
-                            ) : (
-                              item.titulo
-                            )}
-                          </span>
-                          <span className="upcoming-due">{formatDate(item.data)}</span>
-                        </div>
-                        <div className="upcoming-right">
-                          {item.valor != null && (
-                            <span className="upcoming-value">{formatCurrency(item.valor)}</span>
-                          )}
-                          <StatusBadge status="vencido" />
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </>
-            )}
-
-            {upcoming.length > 0 && (
-              <>
-                <h3 className="bloco__subtitulo">Vencem nos próximos 7 dias</h3>
-                <ul className="upcoming-list">
-                  {upcoming.map(inst => (
-                    <li key={inst._id} className="upcoming-item">
-                      <div className="upcoming-info">
-                        {/* O nome leva à cobrança, "Parcela N" leva à parcela. */}
-                        <span className="upcoming-desc">
-                          {inst.feeId?._id ? (
-                            <Link to={`/dashboard/honorarios/${inst.feeId._id}`} className="link-interno">
-                              {inst.feeId.descricao || 'Honorário'}
-                            </Link>
-                          ) : (
-                            inst.feeId?.descricao || 'Honorário'
-                          )}
-                          {' — '}
-                          <Link to={`/dashboard/parcelas/editar/${inst._id}`} className="upcoming-link">
-                            {rotuloDaParcela({ numeroParcela: inst.numeroParcela, totalParcelas: inst.totalParcelas ?? null })}
-                          </Link>
-                        </span>
-                        <span className="upcoming-due">{daysUntilLabel(inst.dataVencimento)}</span>
-                      </div>
-                      <div className="upcoming-right">
-                        <span className="upcoming-value">{formatCurrency(emAbertoDaParcela(inst))}</span>
-                        <StatusBadge status={inst.status} />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </>
-        )}
-      </BlocoDoPainel>
-
-      {/* ══ 2. NO MÊS ═══════════════════════════════════════════════════════ */}
-      {resumoFinanceiro && (
+      {temAtencao && (
         <BlocoDoPainel
-          chave="mes"
-          titulo={mesRotulo === '—' ? 'No mês' : `No mês — ${mesRotulo}`}
-          Icone={CalendarClock}
-          aberto={estaAberto('mes')}
+          chave="atencao"
+          titulo="Precisa de atenção"
+          Icone={AlertCircle}
+          contagem={vencidas + upcoming.length}
+          aberto={estaAberto('atencao')}
           aoAlternar={alternarBloco}
           acao={
-            <Link to="/dashboard/parcelas/novo" className="ui-btn ui-btn--secondary ui-btn--sm">
-              Nova parcela
+            <Link to="/dashboard/pagamentos/novo" className="ui-btn ui-btn--primary ui-btn--sm">
+              <HandCoins size={16} aria-hidden="true" />
+              Registrar pagamento
             </Link>
           }
         >
+          {vencidas > 0 && (
+            <>
+              <h3 className="bloco__subtitulo">{pluralParcelas(vencidas)}</h3>
+              <ul className="upcoming-list">
+                {parcelasVencidas.map((item) => {
+                  const destino = destinoDoItem(item);
+                  return (
+                    <li key={`vencida-${item._id}`} className="upcoming-item">
+                      <div className="upcoming-info">
+                        <span className="upcoming-desc">
+                          {destino ? (
+                            <Link to={destino} className="link-interno">{item.titulo}</Link>
+                          ) : (
+                            item.titulo
+                          )}
+                        </span>
+                        <span className="upcoming-due">{formatDate(item.data)}</span>
+                      </div>
+                      <div className="upcoming-right">
+                        {item.valor != null && (
+                          <span className="upcoming-value">{formatCurrency(item.valor)}</span>
+                        )}
+                        <StatusBadge status="vencido" />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+
+          {upcoming.length > 0 && (
+            <>
+              <h3 className="bloco__subtitulo">Vencem nos próximos 7 dias</h3>
+              <ul className="upcoming-list">
+                {upcoming.map(inst => (
+                  <li key={inst._id} className="upcoming-item">
+                    <div className="upcoming-info">
+                      {/* O nome leva à cobrança, "Parcela N" leva à parcela. */}
+                      <span className="upcoming-desc">
+                        {inst.feeId?._id ? (
+                          <Link to={`/dashboard/honorarios/${inst.feeId._id}`} className="link-interno">
+                            {inst.feeId.descricao || 'Honorário'}
+                          </Link>
+                        ) : (
+                          inst.feeId?.descricao || 'Honorário'
+                        )}
+                        {' — '}
+                        <Link to={`/dashboard/parcelas/editar/${inst._id}`} className="upcoming-link">
+                          {rotuloDaParcela({ numeroParcela: inst.numeroParcela, totalParcelas: inst.totalParcelas ?? null })}
+                        </Link>
+                      </span>
+                      <span className="upcoming-due">{daysUntilLabel(inst.dataVencimento)}</span>
+                    </div>
+                    <div className="upcoming-right">
+                      <span className="upcoming-value">{formatCurrency(emAbertoDaParcela(inst))}</span>
+                      <StatusBadge status={inst.status} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </BlocoDoPainel>
+      )}
+
+      {/* ══ 2. DATAS PRÓXIMAS ═══════════════════════════════════════════════
+          Vencimentos (`proximosVencimentos`) e compromissos (`GET /calendar`)
+          numa lista só, por data. NÃO segue o mês escolhido: "próximo" é a
+          partir de hoje. A linha inteira leva à origem, como na Agenda. */}
+      <BlocoDoPainel
+        chave="proximos"
+        titulo="Datas próximas"
+        Icone={ICONE_CALENDARIO}
+        aberto={estaAberto('proximos')}
+        aoAlternar={alternarBloco}
+        acao={
+          <Link to="/dashboard/agenda" className="ui-btn ui-btn--secondary ui-btn--sm">
+            Ver agenda completa
+          </Link>
+        }
+      >
+        {!resumoFixo && !agenda && (carregandoResumo || !agendaFalhou) ? (
+          <Loading />
+        ) : !resumoFixo && !agenda ? (
+          <p className="error-message">{erroResumo || 'Não foi possível carregar as datas próximas.'}</p>
+        ) : datas.length === 0 ? (
+          <EmptyState
+            title="Nada nos próximos dias."
+            description="Nenhum vencimento em aberto nem compromisso de hoje em diante."
+          />
+        ) : (
+          <ul className="datas-lista">
+            {datas.map((item) => {
+              const selo = seloDaData(item.data);
+              const conteudo = (
+                <>
+                  <span className="datas-item__selo">
+                    <span className="datas-item__dia">{selo.dia}</span>
+                    <span className="datas-item__mes">{selo.mes}</span>
+                  </span>
+                  <span className="datas-item__texto">
+                    <span className="datas-item__titulo">{item.titulo}</span>
+                    {item.subtitulo && <span className="datas-item__subtitulo">{item.subtitulo}</span>}
+                    {item.contexto && <span className="datas-item__contexto">{item.contexto}</span>}
+                  </span>
+                  <span className={`datas-item__pilula datas-item__pilula--${item.tipo}`}>
+                    {TIPOS_DE_DATA[item.tipo].rotulo}
+                  </span>
+                </>
+              );
+              return (
+                <li key={item.chave}>
+                  {item.destino ? (
+                    <Link to={item.destino} className="datas-item">{conteudo}</Link>
+                  ) : (
+                    <div className="datas-item">{conteudo}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {agendaFalhou && resumoFixo && (
+          <p className="error-message">Os compromissos não carregaram; a lista mostra só os vencimentos.</p>
+        )}
+      </BlocoDoPainel>
+
+      {/* ══ 3. NO MÊS — segue o mês escolhido ════════════════════════════════ */}
+      <BlocoDoPainel
+        chave="mes"
+        titulo={`Em ${rotuloMes}`}
+        Icone={ICONE_DINHEIRO}
+        aberto={estaAberto('mes')}
+        aoAlternar={alternarBloco}
+      >
+        {carregandoResumo && !resumoFinanceiro ? (
+          <Loading />
+        ) : erroResumo === MENSAGEM_LEITURA_SEM_CACHE ? (
+          <EmptyState title="Sem dados guardados deste mês." description={erroResumo} />
+        ) : erroResumo ? (
+          <p className="error-message">{erroResumo}</p>
+        ) : resumoFinanceiro && (
           <div className="summary-grid">
-            {CARDS_DO_MES.map(({ key, label, Icon, color, vazio }) => {
+            {CARDS_DO_MES.map(({ key, label, icone, color, vazio }) => {
               const valor = resumoFinanceiro[key] ?? 0;
               return (
                 <div key={key} className={`summary-card summary-card--${color}`}>
                   <p className="card-label">
-                    <span className="card-icon"><Icon size={16} /></span>
-                    {label(mesRotulo)}
+                    <IconeDoCartao icone={icone} />
+                    {label(rotuloMesDoServidor)}
                   </p>
                   <p className="card-value">{formatCurrency(valor)}</p>
                   {/* Zero REAL diz por extenso que é zero. */}
@@ -358,11 +606,12 @@ function DashboardHomePage() {
 
             {/* Valor e contagem no MESMO cartão. O valor vem do resumo
                 financeiro (o sino não expõe dinheiro); a CONTAGEM vem do sino,
-                que é a fonte única deste número. */}
+                que é a fonte única deste número. É de HOJE, e não do mês
+                escolhido — o rótulo diz isso. */}
             <div className="summary-card summary-card--danger">
               <p className="card-label">
-                <span className="card-icon"><AlertCircle size={16} /></span>
-                Total vencido
+                <IconeDoCartao Icon={AlertCircle} />
+                Total vencido hoje
               </p>
               <p className="card-value">{formatCurrency(resumoFinanceiro.valorVencido ?? 0)}</p>
               <p className="card-note">
@@ -370,80 +619,26 @@ function DashboardHomePage() {
               </p>
             </div>
           </div>
-        </BlocoDoPainel>
-      )}
+        )}
+      </BlocoDoPainel>
 
-      {/* ══ 3. PRÓXIMOS VENCIMENTOS ═════════════════════════════════════════ */}
-      {resumoFinanceiro && (
-        <BlocoDoPainel
-          chave="proximos"
-          titulo="Próximos vencimentos"
-          Icone={CalendarCheck}
-          aberto={estaAberto('proximos')}
-          aoAlternar={alternarBloco}
-          acao={
-            <Link to="/dashboard/honorarios" className="ui-btn ui-btn--secondary ui-btn--sm">
-              Ver honorários
-            </Link>
-          }
-        >
-          {proximos.length === 0 ? (
-            <EmptyState
-              title="Nenhum vencimento à frente."
-              description="Não há parcela em aberto com vencimento de hoje em diante."
-            />
-          ) : (
-            <ul className="upcoming-list">
-              {proximos.map(parcela => (
-                <li key={parcela._id} className="upcoming-item">
-                  <div className="upcoming-info">
-                    <span className="upcoming-desc">
-                      {parcela.honorarioId ? (
-                        <Link to={`/dashboard/honorarios/${parcela.honorarioId}`} className="link-interno">
-                          {parcela.descricaoHonorario || 'Honorário'}
-                        </Link>
-                      ) : (
-                        parcela.descricaoHonorario || 'Honorário'
-                      )}
-                      {' — '}
-                      <Link to={`/dashboard/parcelas/editar/${parcela._id}`} className="upcoming-link">
-                        {rotuloDaParcela({ numeroParcela: parcela.numeroParcela, totalParcelas: parcela.totalParcelas ?? null })}
-                      </Link>
-                    </span>
-                    <span className="upcoming-due">
-                      {formatDate(parcela.dataVencimento)}
-                      {parcela.numeroProcesso ? ` · ${parcela.numeroProcesso}` : ''}
-                    </span>
-                  </div>
-                  <div className="upcoming-right">
-                    {/* O EM ABERTO, e não o valor da parcela. */}
-                    <span className="upcoming-value">{formatCurrency(parcela.emAberto)}</span>
-                    <StatusBadge status={parcela.status} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </BlocoDoPainel>
-      )}
-
-      {/* ══ 4. ACUMULADO — estatística, nasce FECHADO ═══════════════════════ */}
-      {resumoFinanceiro && (
+      {/* ══ 4. ACUMULADO — estatística, nasce FECHADO; não segue o mês ═══════ */}
+      {resumoFixo && (
         <BlocoDoPainel
           chave="acumulado"
           titulo="Acumulado do escritório"
-          Icone={Wallet}
+          Icone={ICONE_DINHEIRO}
           aberto={estaAberto('acumulado', true)}
           aoAlternar={alternarBloco}
         >
           <div className="summary-grid">
-            {CARDS_ACUMULADOS.map(({ key, label, Icon, color }) => (
+            {CARDS_ACUMULADOS.map(({ key, label, icone, color }) => (
               <div key={key} className={`summary-card summary-card--${color}`}>
                 <p className="card-label">
-                  <span className="card-icon"><Icon size={16} /></span>
+                  <IconeDoCartao icone={icone} />
                   {label}
                 </p>
-                <p className="card-value">{formatCurrency(resumoFinanceiro[key] ?? 0)}</p>
+                <p className="card-value">{formatCurrency(resumoFixo[key] ?? 0)}</p>
               </div>
             ))}
           </div>
@@ -451,9 +646,9 @@ function DashboardHomePage() {
           {/* O terceiro termo, dito em uma linha (F-1a): `pendente` é
               `contratado − recebido − saldoAdiantado`. Sem esta nota a
               subtração dos dois cartões de cima não chega ao terceiro. */}
-          {(resumoFinanceiro.saldoAdiantado ?? 0) > 0 && (
+          {(resumoFixo.saldoAdiantado ?? 0) > 0 && (
             <p className="summary-nota">
-              Inclui {formatCurrency(resumoFinanceiro.saldoAdiantado)} recebidos
+              Inclui {formatCurrency(resumoFixo.saldoAdiantado)} recebidos
               como adiantamento, ainda sem parcela correspondente. Esse valor já
               está abatido do total em aberto.
             </p>
@@ -465,7 +660,7 @@ function DashboardHomePage() {
       <BlocoDoPainel
         chave="resumo"
         titulo="Resumo Geral"
-        Icone={Scale}
+        Icone={ICONE_FOLDER}
         aberto={estaAberto('resumo', true)}
         aoAlternar={alternarBloco}
         acao={
@@ -479,10 +674,10 @@ function DashboardHomePage() {
 
         {summary && (
           <div className="summary-grid">
-            {CARDS.map(({ key, label, Icon, color }) => (
+            {CARDS.map(({ key, label, icone, color }) => (
               <div key={key} className={`summary-card summary-card--${color}`}>
                 <p className="card-label">
-                  <span className="card-icon"><Icon size={16} /></span>
+                  <IconeDoCartao icone={icone} />
                   {label}
                 </p>
                 <p className="card-value">
@@ -497,16 +692,20 @@ function DashboardHomePage() {
       {/* ══ 6. GRÁFICOS — estatística, nasce FECHADO ════════════════════════
           Fechado por padrão também poupa o chunk: `DashboardCharts` é `lazy` e
           o bloco desmonta o conteúdo, então quem não abre não baixa os 386 KB
-          do recharts. */}
+          do recharts. A barra segue o mês; os donuts são a situação de hoje. */}
       <BlocoDoPainel
         chave="graficos"
-        titulo="Distribuição por Status"
-        Icone={FileText}
+        titulo="Gráficos"
+        Icone={ICONE_DOCUMENTO}
         aberto={estaAberto('graficos', true)}
         aoAlternar={alternarBloco}
       >
         <Suspense fallback={<Loading />}>
-          <DashboardCharts statusData={statusData} feesByMonth={feesByMonth} />
+          <DashboardCharts
+            statusData={statusData}
+            feesByMonth={feesByMonth}
+            mesReferencia={chaveEscolhida}
+          />
         </Suspense>
       </BlocoDoPainel>
     </div>

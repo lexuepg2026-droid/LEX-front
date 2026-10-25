@@ -134,7 +134,10 @@ describe("atenção primeiro, estatística depois", () => {
 
   test("os seis blocos aparecem na ordem que a pergunta do dia pede", () => {
     const ordem = [...painel().matchAll(/chave="([a-z]+)"/g)].map((m) => m[1]);
-    assert.deepEqual(ordem, ["atencao", "mes", "proximos", "acumulado", "resumo", "graficos"]);
+    // Fase 3.1: as Datas próximas (chave `proximos`, a mesma de antes, para a
+    // preferência gravada continuar valendo) sobem para antes do mês — "o que
+    // vem por aí" é pergunta do dia; o mês escolhido é consulta.
+    assert.deepEqual(ordem, ["atencao", "proximos", "mes", "acumulado", "resumo", "graficos"]);
   });
 
   test("o que exige atenção nasce ABERTO; a estatística nasce FECHADA", () => {
@@ -157,12 +160,23 @@ describe("atenção primeiro, estatística depois", () => {
     const t = painel();
     for (const [rotulo, destino] of [
       ["Registrar pagamento", "/dashboard/pagamentos/novo"],
-      ["Nova parcela", "/dashboard/parcelas/novo"],
-      ["Ver honorários", "/dashboard/honorarios"],
+      ["Ver agenda completa", "/dashboard/agenda"],
       ["Ver processos", "/dashboard/processos"],
     ]) {
       assert.ok(t.includes(rotulo), `falta a ação "${rotulo}"`);
       assert.ok(t.includes(`to="${destino}"`), `a ação "${rotulo}" precisa levar a ${destino}`);
+    }
+  });
+
+  test("as três ações rápidas, com os destinos da Fase 3.1 (DEC-099)", () => {
+    const t = painel();
+    for (const [rotulo, destino] of [
+      ["Novo cliente", "/dashboard/clientes/novo"],
+      ["Novo processo", "/dashboard/processos/novo"],
+      // A dela levava ao Financeiro; a nossa leva ao formulário.
+      ["Nova parcela", "/dashboard/parcelas/novo"],
+    ]) {
+      assert.match(t, new RegExp(`rotulo: '${rotulo}',\\s*para: '${destino}'`), `"${rotulo}" → ${destino}`);
     }
   });
 

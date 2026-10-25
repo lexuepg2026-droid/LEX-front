@@ -4679,6 +4679,86 @@ continuam levando a `/portal`.
 
 ---
 
+## DEC-098 (frontend) — o filtro de mês do Início (Fase 3.1)
+
+> O contrato é a DEC-098 do `CLAUDE.md` do backend: `?mes=AAAA-MM` em
+> `GET /financeiro/resumo` e `GET /dashboard/honorarios-por-mes`.
+
+- **O mês mora na URL** (`/dashboard?mes=AAAA-MM`), como a Agenda faz:
+  `setSearchParams(..., { replace: false })`, então o "voltar" do navegador
+  desfaz a troca e o link copiado abre no mesmo mês. O mês **corrente se
+  escreve SEM `?mes=`** (`paramsDoMes`): uma URL só para cada mês, e a chamada
+  sem mês continua sendo a de antes. `?mes=` inválido, ou fora de 2000–2100,
+  abre no mês corrente. Trocar o mês não rola a página (`VoltarAoTopo` só reage
+  ao `pathname`).
+- **O seletor** fica ao lado do título "Início": setas, "outubro de 2026" e
+  "Mês atual" só quando outro mês está escolhido. O mês corrente é o de **UTC**,
+  o mesmo relógio do backend.
+- **O que segue o mês, bloco a bloco:**
+
+  | Bloco | Segue o mês? | Por quê |
+  |---|---|---|
+  | Ações rápidas | não | são atalhos |
+  | Precisa de atenção | não | vencido é de hoje |
+  | Datas próximas | não | "próximo" é a partir de hoje |
+  | Em {mês} — A receber / Recebido | **sim** | é a pergunta do filtro |
+  | Em {mês} — Total vencido **hoje** | não | o rótulo diz "hoje" |
+  | Acumulado do escritório | não | é o total, sem recorte |
+  | Resumo Geral | não | contagens de hoje |
+  | Gráficos — donuts "Situação atual (geral)" | não | o sistema não guarda status de meses passados |
+  | Gráficos — barras "6 meses até {mês}" | **sim** | a série termina no mês escolhido |
+
+- **O espelho offline tem uma entrada por mês:** `useCachedResource` com
+  `params: { mes }` (sem `mes`, a chave é a mesma do Financeiro — é a mesma
+  resposta). Sem sinal, um mês visitado vem do espelho com o aviso de idade; um
+  mês nunca visitado mostra "Sem dados guardados deste mês." com a frase da
+  F-5a. Os blocos que não seguem o mês ficam com a última resposta boa, para não
+  sumirem só porque o mês escolhido não tem espelho.
+- As funções puras estão em `pages/dashboard/inicio.js`, com teste em
+  `tests/regressions/fase31.test.js`.
+
+## DEC-099 (frontend) — as ações rápidas, e a busca dela fica de fora (Fase 3.1)
+
+- **Três ações rápidas**, como links: "Novo cliente" → `/dashboard/clientes/novo`,
+  "Novo processo" → `/dashboard/processos/novo`, **"Nova parcela" →
+  `/dashboard/parcelas/novo`** (na dela ia ao Financeiro; quem clica em "nova
+  parcela" espera o formulário). Ícone da Raniele em cima, rótulo embaixo.
+- **Sem sinal ficam desabilitadas** (`aria-disabled`, com a frase
+  `MENSAGEM_ESCRITA_OFFLINE` ao lado): criar cliente, processo ou parcela não
+  está na fila offline da F-5b.
+- **A busca do Início dela não entra.** No `Home.jsx` dela o campo não faz nada;
+  uma busca de verdade é outra funcionalidade, com rota e escopo próprios.
+
+## DEC-100 (frontend) — o Início na pele nova, com o NOSSO conteúdo (Fase 3.1)
+
+- **Título "Início"**, e a ordem: ações rápidas, Precisa de atenção (só quando
+  há algo), Datas próximas, Em {mês}, Acumulado, Resumo Geral, Gráficos. Os
+  blocos são balões `--color-surface` com cantos de 24 px; os cartões continuam
+  na `--color-surface-card`, com o valor em cima (alinhamento da Fase 1).
+- **O conteúdo é o nosso, nunca o dela.** O "Recebido este mês" dela é o
+  `pagamentosRecebidosMes` bruto de `GET /dashboard`, recortado em fuso local e
+  sem estorno; o nosso é `recebidoNoMes` do resumo (líquido, em UTC). O
+  `pagamentosRecebidosMes` continua sem consumidor.
+- **Datas próximas** substitui "Próximos vencimentos": junta
+  `proximosVencimentos` (até 5) e os compromissos não concluídos de
+  `GET /calendar` (de ontem a +30 dias, cortados pelo `hoje` do servidor) — sem
+  rota nova. As derivadas do calendário ficam de fora (seriam os vencimentos em
+  dobro). Até 8, por data e hora. Selo com o dia e o mês abreviado
+  (`--color-on-primary` sobre `--color-primary`), título, subtítulo, processo e
+  a pílula "Vencimento" (âmbar) ou "Compromisso" (azul) com os pares de badge do
+  tema — não o branco sobre `#42A5F5` dela. A linha inteira é link, pelo
+  `destinoDoItem` da Agenda. Vazio: "Nada nos próximos dias."
+- **Ícones pelo `Icone`** nos cartões, nas ações, nos blocos (por um adaptador,
+  sem mexer no `BlocoDoPainel`) e no sino. Lucide só sem equivalente: o alerta,
+  as setas, o "Registrar pagamento".
+- **360 px:** ações em três colunas que encolhem, cartões numa coluna, pílula
+  embaixo do título.
+- **Achado no navegador, corrigido:** sem preferência gravada, o primeiro
+  clique num bloco que nasce fechado gravava "fechado" e não abria nada.
+  `alternarBloco` agora parte do estado à vista (`PADRAO_FECHADO`).
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:
