@@ -181,3 +181,90 @@ describe("Fase 2a · página não encontrada e volta ao topo", () => {
     assert.match(ler("src/components/layout/AppLayout.css"), /\.main-content \{[^}]*overflow-y: auto/);
   });
 });
+
+// ── Item 9 — DEC-081 e DEC-082 ────────────────────────────────────────────
+describe("Fase 2a · layout de autenticação e página inicial pública", () => {
+  const login = semComentarios(ler("src/pages/auth/LoginPage.jsx"));
+
+  test("`/` é a página inicial pública; o login fica em `/login`", () => {
+    const rotas = semComentarios(ler("src/routes/AppRoutes.jsx"));
+    assert.match(rotas, /<Route path="\/" element=\{<InicioPublico \/>\} \/>/);
+    assert.match(rotas, /<Route path="\/login" element=\{<LoginPage \/>\} \/>/);
+    assert.doesNotMatch(rotas, /path="\/" element=\{<LoginPage/);
+  });
+
+  test("ninguém manda para `/` esperando o login", () => {
+    // Portão de rota, logout, sessão expirada e as telas de e-mail.
+    assert.match(semComentarios(ler("src/components/common/ProtectedRoute.jsx")), /<Navigate to="\/login" replace \/>/);
+    assert.match(semComentarios(ler("src/contexts/AuthContext.jsx")), /navigate\('\/login'\)/);
+    assert.match(semComentarios(ler("src/api/axiosConfig.js")), /window\.location\.href = '\/login'/);
+    const culpados = [];
+    for (const caminho of arquivos(SRC, [".jsx", ".js"])) {
+      const codigo = semComentarios(readFileSync(caminho, "utf8"));
+      if (/navigate\(\s*['"`]\/['"`]|to=["']\/["']|href\s*=\s*['"`]\/['"`]/.test(codigo)) culpados.push(relative(SRC, caminho));
+    }
+    // A única saída legítima para `/` é a da página não encontrada sem sessão,
+    // que monta o destino por função (e não por literal).
+    assert.deepEqual(culpados, []);
+  });
+
+  test("a página inicial tem as três portas e redireciona quem tem sessão", () => {
+    const inicio = semComentarios(ler("src/pages/public/InicioPublico.jsx"));
+    assert.match(inicio, /<Link to="\/login"[^>]*>Fazer login<\/Link>/);
+    assert.match(inicio, /<Link to="\/registrar"[^>]*>Criar nova conta<\/Link>/);
+    assert.match(inicio, /<Link to="\/portal"[^>]*>Acompanhe seu processo<\/Link>/);
+    assert.match(inicio, /if \(isAuthenticated\) return <Navigate to="\/dashboard" replace \/>/);
+    // Sem chamada nova à API: a pergunta é a do ProtectedRoute.
+    assert.doesNotMatch(inicio, /api\/|Service|checkAuth/);
+    // O portal continua em lazy(): a página pública não o importa.
+    assert.doesNotMatch(inicio, /portal\//i);
+  });
+
+  test("o login tem título, rótulos visíveis ligados aos campos e as duas saídas", () => {
+    assert.match(login, /<LayoutAutenticacao voltarPara="\/">/);
+    assert.match(login, /<h1 className="auth-titulo">Fazer login<\/h1>/);
+    assert.match(login, /<label htmlFor="login-email">E-mail<\/label>\s*<input\s+id="login-email"/);
+    assert.match(login, /<label htmlFor="login-senha">Senha<\/label>\s*<input\s+id="login-senha"/);
+    assert.match(login, /<Link to="\/registrar" className="btn-contornado">Criar conta<\/Link>/);
+    assert.doesNotMatch(login, /placeholder=/, "o rótulo é visível; placeholder não substitui rótulo");
+  });
+
+  test("a lógica das telas de autenticação ficou onde estava", () => {
+    const cadastro = semComentarios(ler("src/pages/auth/RegisterPage.jsx"));
+    assert.match(cadastro, /<LayoutAutenticacao voltarPara="\/">/);
+    assert.match(cadastro, /Etapa \{step\} de 2/);
+    assert.match(cadastro, /if \(campo === 'email'\) setStep\(1\)|setStep\(1\)/);
+    const redefinir = semComentarios(ler("src/pages/auth/ResetPasswordPage.jsx"));
+    assert.match(redefinir, /codigo === 'tokenExpirado'/);
+    assert.match(redefinir, /navigate\('\/redefinir-senha', \{ replace: true \}\)/);
+    const confirmar = semComentarios(ler("src/pages/auth/ConfirmEmailPage.jsx"));
+    assert.match(confirmar, /await checkAuth\(\)/);
+    assert.match(confirmar, /navigate\('\/confirmar-email', \{ replace: true \}\)/);
+    for (const tela of ["LoginPage", "RegisterPage", "ForgotPasswordPage", "ResetPasswordPage", "ConfirmEmailPage"]) {
+      assert.match(semComentarios(ler(`src/pages/auth/${tela}.jsx`)), /<LayoutAutenticacao/, tela);
+    }
+  });
+
+  test("o CSS do layout não tem regra global de elemento", () => {
+    // A dela tinha `a { width: 24rem }`, que depois do bundle valia para todo
+    // `<a>` do app. Aqui toda regra começa pela classe do layout.
+    const css = ler("src/components/layout/LayoutAutenticacao.css").replace(/\/\*[\s\S]*?\*\//g, "");
+    const seletores = [...css.matchAll(/(?:^|\})\s*([^{}@]+?)\s*\{/g)]
+      .map((m) => m[1].trim())
+      .filter((sel) => !/^(from|to|\d+%)$/.test(sel));
+    // Vírgula de primeiro nível separa seletores; a de dentro de `:is()` não.
+    const partes = (sel) => {
+      const out = [];
+      let nivel = 0, atual = "";
+      for (const c of sel) {
+        if (c === "(") nivel++;
+        if (c === ")") nivel--;
+        if (c === "," && nivel === 0) { out.push(atual.trim()); atual = ""; } else atual += c;
+      }
+      return [...out, atual.trim()];
+    };
+    const soltos = seletores.flatMap(partes).filter((p) => !p.startsWith(".auth-layout"));
+    assert.deepEqual(soltos, []);
+    assert.doesNotMatch(css, /@import/);
+  });
+});

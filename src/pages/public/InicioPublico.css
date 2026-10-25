@@ -1,0 +1,33 @@
+/* Os três botões da Figura 14: pílulas claras, empilhadas e centralizadas. A
+   cor vem de `.auth-layout .btn-primary` (`LayoutAutenticacao.css`). */
+.inicio-publico {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 24rem;
+}
+
+.inicio-publico .btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  padding: 0 var(--space-6);
+  font-size: var(--font-size-md);
+  text-decoration: none;
+}
+
+/* O título existe para o leitor de tela (a página precisa de um h1); na tela,
+   quem diz o que é o LEX é a logo do painel. */
+.inicio-publico .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

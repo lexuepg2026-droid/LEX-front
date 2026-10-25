@@ -33,6 +33,7 @@ import EventFormPage from '../pages/calendar/EventFormPage';
 import ProfilePage from '../pages/profile/ProfilePage';
 import PendenciasPage from '../pages/pendencias/PendenciasPage';
 import NotFoundPage from '../pages/public/NotFoundPage';
+import InicioPublico from '../pages/public/InicioPublico';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PORTAL DO CLIENTE — mesmo app, chunk próprio
@@ -66,7 +67,11 @@ const PortalProcessPage = lazy(() => import('../pages/portal/PortalProcessPage')
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<LoginPage />} />
+      {/* DEC-082: `/` é a página inicial pública; o login fica em `/login`.
+          Todo lugar que manda alguém entrar (portão de rota, logout, sessão
+          expirada, fim da redefinição de senha, confirmação de e-mail) já
+          apontava para `/login` — conferido na Fase 2a. */}
+      <Route path="/" element={<InicioPublico />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registrar" element={<RegisterPage />} />
 

@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getApiErrorMessage } from '../../utils/apiError';
 import './LoginPage.css';
 import './AuthEmail.css';
-import LogoLex from '../../components/ui/LogoLex.jsx';
+import LayoutAutenticacao from '../../components/layout/LayoutAutenticacao.jsx';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONFIRMAR O E-MAIL (A-2, DEC-064) — o destino do link do e-mail de cadastro
@@ -64,41 +64,42 @@ function ConfirmEmailPage() {
   }, [navigate, checkAuth]);
 
   return (
-    <div className="login-page">
-      <LogoLex className="logo" />
+    <LayoutAutenticacao>
+      <div className="login-page">
 
-      {estado === 'carregando' && (
-        <p className="auth-texto" role="status">Confirmando seu e-mail…</p>
-      )}
+        {estado === 'carregando' && (
+          <p className="auth-texto" role="status">Confirmando seu e-mail…</p>
+        )}
 
-      {estado === 'ok' && (
-        <>
-          <h1 className="auth-titulo">E-mail confirmado</h1>
-          <p className="auth-mensagem" role="status">Obrigado! Seu e-mail foi confirmado.</p>
-          <div className="login-links">
-            <Link to={isAuthenticated ? '/dashboard' : '/login'}>
-              {isAuthenticated ? 'Ir para o sistema' : 'Entrar'}
-            </Link>
-          </div>
-        </>
-      )}
+        {estado === 'ok' && (
+          <>
+            <h1 className="auth-titulo">E-mail confirmado</h1>
+            <p className="auth-mensagem" role="status">Obrigado! Seu e-mail foi confirmado.</p>
+            <div className="login-links">
+              <Link to={isAuthenticated ? '/dashboard' : '/login'}>
+                {isAuthenticated ? 'Ir para o sistema' : 'Entrar'}
+              </Link>
+            </div>
+          </>
+        )}
 
-      {estado === 'erro' && (
-        <>
-          <h1 className="auth-titulo">Não foi possível confirmar</h1>
-          <p className="auth-mensagem auth-mensagem--erro" role="alert">{mensagem}</p>
-          <p className="auth-texto">
-            Entre no sistema: enquanto o e-mail não estiver confirmado, um aviso no topo da tela
-            permite pedir um novo link.
-          </p>
-          <div className="login-links">
-            <Link to={isAuthenticated ? '/dashboard' : '/login'}>
-              {isAuthenticated ? 'Ir para o sistema' : 'Entrar'}
-            </Link>
-          </div>
-        </>
-      )}
-    </div>
+        {estado === 'erro' && (
+          <>
+            <h1 className="auth-titulo">Não foi possível confirmar</h1>
+            <p className="auth-mensagem auth-mensagem--erro" role="alert">{mensagem}</p>
+            <p className="auth-texto">
+              Entre no sistema: enquanto o e-mail não estiver confirmado, um aviso no topo da tela
+              permite pedir um novo link.
+            </p>
+            <div className="login-links">
+              <Link to={isAuthenticated ? '/dashboard' : '/login'}>
+                {isAuthenticated ? 'Ir para o sistema' : 'Entrar'}
+              </Link>
+            </div>
+          </>
+        )}
+      </div>
+    </LayoutAutenticacao>
   );
 }
 

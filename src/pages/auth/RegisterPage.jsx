@@ -8,7 +8,7 @@ import { buscarEnderecoPorCEP } from '../../utils/viacep';
 import { UFS } from '../../utils/enums';
 import { toast } from '../../utils/toast';
 import './RegisterPage.css';
-import LogoLex from '../../components/ui/LogoLex.jsx';
+import LayoutAutenticacao from '../../components/layout/LayoutAutenticacao.jsx';
 
 // A expressão de e-mail que vivia AQUI saiu na A-1 (DEC-063). Ela era uma
 // cópia da que estava em `validations/authValidation.js`, no backend, e as
@@ -154,140 +154,143 @@ function RegisterPage() {
     }
   };
 
+  // Fase 2a (DEC-081): o layout de autenticação em volta. O assistente de
+  // duas etapas e a volta à etapa do campo com erro não mudaram.
   return (
-    <div className="register-page register-wizard">
-      <LogoLex className="logo" />
-      <h2>Criar Nova Conta</h2>
-      <p className="wizard-progress">Etapa {step} de 2 — {step === 1 ? 'Acesso' : 'Dados profissionais'}</p>
+    <LayoutAutenticacao voltarPara="/">
+      <div className="register-page register-wizard">
+        <h2>Criar Nova Conta</h2>
+        <p className="wizard-progress">Etapa {step} de 2 — {step === 1 ? 'Acesso' : 'Dados profissionais'}</p>
 
-      {/* `wizard-step` saiu das duas etapas: nunca teve regra em CSS nenhum. O
-          que estiliza cada etapa é `wizard-step-narrow` (1) e `wizard-grid`
-          (2), e a largura comum vem de `.register-page form`. */}
-      {step === 1 && (
-        <form onSubmit={handleContinue} className="wizard-step-narrow">
-          <div className="form-group">
-            <label>Nome completo*</label>
-            <input type="text" name="nomeCompleto" value={form.nomeCompleto} onChange={handleChange} required />
-          </div>
-          <div className="form-group">
-            <label>E-mail*</label>
-            <input type="email" name="email" value={form.email} onChange={handleChange} required />
-          </div>
-          <div className="form-group">
-            <label>Senha* (mín. 8, com letra e número)</label>
-            <input type="password" name="senha" value={form.senha} onChange={handleChange} required />
-          </div>
-          <div className="form-group">
-            <label>Confirmar senha*</label>
-            <input type="password" name="confirmarSenha" value={form.confirmarSenha} onChange={handleChange} required />
-          </div>
+        {/* `wizard-step` saiu das duas etapas: nunca teve regra em CSS nenhum. O
+            que estiliza cada etapa é `wizard-step-narrow` (1) e `wizard-grid`
+            (2), e a largura comum vem de `.register-page form`. */}
+        {step === 1 && (
+          <form onSubmit={handleContinue} className="wizard-step-narrow">
+            <div className="form-group">
+              <label>Nome completo*</label>
+              <input type="text" name="nomeCompleto" value={form.nomeCompleto} onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label>E-mail*</label>
+              <input type="email" name="email" value={form.email} onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label>Senha* (mín. 8, com letra e número)</label>
+              <input type="password" name="senha" value={form.senha} onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label>Confirmar senha*</label>
+              <input type="password" name="confirmarSenha" value={form.confirmarSenha} onChange={handleChange} required />
+            </div>
 
-          {error && <p className="error-message">{error}</p>}
+            {error && <p className="error-message">{error}</p>}
 
-          <button type="submit" className="btn-primary">Continuar</button>
-        </form>
-      )}
+            <button type="submit" className="btn-primary">Continuar</button>
+          </form>
+        )}
 
-      {step === 2 && (
-        <form onSubmit={handleSubmit} className="wizard-grid">
-          <h3 className="wizard-section-title">Dados profissionais</h3>
+        {step === 2 && (
+          <form onSubmit={handleSubmit} className="wizard-grid">
+            <h3 className="wizard-section-title">Dados profissionais</h3>
 
-          <div className="form-group span-1">
-            <label>CPF*</label>
-            <input type="text" name="cpf" value={form.cpf} onChange={handleMaskedChange(maskCPF)}
-                   placeholder="000.000.000-00" inputMode="numeric" required />
-          </div>
-          <div className="form-group span-1">
-            <label>Telefone</label>
-            <input type="tel" name="telefone" value={form.telefone} onChange={handleMaskedChange(maskPhone)}
-                   placeholder="(00) 00000-0000" inputMode="numeric" />
-          </div>
+            <div className="form-group span-1">
+              <label>CPF*</label>
+              <input type="text" name="cpf" value={form.cpf} onChange={handleMaskedChange(maskCPF)}
+                     placeholder="000.000.000-00" inputMode="numeric" required />
+            </div>
+            <div className="form-group span-1">
+              <label>Telefone</label>
+              <input type="tel" name="telefone" value={form.telefone} onChange={handleMaskedChange(maskPhone)}
+                     placeholder="(00) 00000-0000" inputMode="numeric" />
+            </div>
 
-          <div className="form-group span-1">
-            <label>Número da OAB*</label>
-            <input type="text" name="oabNumero" value={form.oabNumero}
-                   onChange={(e) => setField('oabNumero', unmask(e.target.value).slice(0, 6))}
-                   inputMode="numeric" required />
-          </div>
-          <div className="form-group span-1">
-            <label>UF da OAB*</label>
-            <select name="oabEstado" value={form.oabEstado} onChange={handleChange} required>
-              <option value="">Selecione…</option>
-              {UFS.map((uf) => <option key={uf.value} value={uf.value}>{uf.label}</option>)}
-            </select>
-          </div>
+            <div className="form-group span-1">
+              <label>Número da OAB*</label>
+              <input type="text" name="oabNumero" value={form.oabNumero}
+                     onChange={(e) => setField('oabNumero', unmask(e.target.value).slice(0, 6))}
+                     inputMode="numeric" required />
+            </div>
+            <div className="form-group span-1">
+              <label>UF da OAB*</label>
+              <select name="oabEstado" value={form.oabEstado} onChange={handleChange} required>
+                <option value="">Selecione…</option>
+                {UFS.map((uf) => <option key={uf.value} value={uf.value}>{uf.label}</option>)}
+              </select>
+            </div>
 
-          <div className="form-group span-2">
-            <label>Nome da advocacia*</label>
-            <input type="text" name="advNome" value={form.advNome} onChange={handleChange} maxLength={100} required />
-          </div>
-          <div className="form-group span-1">
-            <label>Chave PIX</label>
-            <input type="text" name="advChavePix" value={form.advChavePix} onChange={handleChange} maxLength={120} />
-          </div>
-          <div className="form-group span-1">
-            <label>Instagram</label>
-            <input type="text" name="advInstagram" value={form.advInstagram} onChange={handleChange} maxLength={50} />
-          </div>
-          <div className="form-group span-1">
-            <label>Site</label>
-            <input type="text" name="advSite" value={form.advSite} onChange={handleChange} maxLength={200} />
-          </div>
+            <div className="form-group span-2">
+              <label>Nome da advocacia*</label>
+              <input type="text" name="advNome" value={form.advNome} onChange={handleChange} maxLength={100} required />
+            </div>
+            <div className="form-group span-1">
+              <label>Chave PIX</label>
+              <input type="text" name="advChavePix" value={form.advChavePix} onChange={handleChange} maxLength={120} />
+            </div>
+            <div className="form-group span-1">
+              <label>Instagram</label>
+              <input type="text" name="advInstagram" value={form.advInstagram} onChange={handleChange} maxLength={50} />
+            </div>
+            <div className="form-group span-1">
+              <label>Site</label>
+              <input type="text" name="advSite" value={form.advSite} onChange={handleChange} maxLength={200} />
+            </div>
 
-          <h3 className="wizard-section-title">Endereço</h3>
+            <h3 className="wizard-section-title">Endereço</h3>
 
-          <div className="form-group span-1">
-            <label>CEP {cepLoading && <span className="cep-hint">buscando…</span>}</label>
-            <input type="text" name="cep" value={form.cep} onChange={handleCepChange}
-                   placeholder="00000-000" inputMode="numeric" />
-          </div>
-          <div className="form-group span-2">
-            <label>Logradouro</label>
-            <input type="text" name="logradouro" value={form.logradouro} onChange={handleChange} />
-          </div>
-          <div className="form-group span-1">
-            <label>Número</label>
-            <input type="text" name="numero" value={form.numero} onChange={handleChange} />
-          </div>
-          <div className="form-group span-1">
-            <label>Complemento</label>
-            <input type="text" name="complemento" value={form.complemento} onChange={handleChange} />
-          </div>
-          <div className="form-group span-1">
-            <label>Bairro</label>
-            <input type="text" name="bairro" value={form.bairro} onChange={handleChange} />
-          </div>
-          <div className="form-group span-1">
-            <label>Cidade</label>
-            <input type="text" name="cidade" value={form.cidade} onChange={handleChange} />
-          </div>
-          <div className="form-group span-1">
-            <label>UF</label>
-            <select name="estado" value={form.estado} onChange={handleChange}>
-              <option value="">Selecione…</option>
-              {UFS.map((uf) => <option key={uf.value} value={uf.value}>{uf.label}</option>)}
-            </select>
-          </div>
-          <div className="form-group span-1">
-            <label>País</label>
-            <input type="text" name="pais" value={form.pais} onChange={handleChange} />
-          </div>
+            <div className="form-group span-1">
+              <label>CEP {cepLoading && <span className="cep-hint">buscando…</span>}</label>
+              <input type="text" name="cep" value={form.cep} onChange={handleCepChange}
+                     placeholder="00000-000" inputMode="numeric" />
+            </div>
+            <div className="form-group span-2">
+              <label>Logradouro</label>
+              <input type="text" name="logradouro" value={form.logradouro} onChange={handleChange} />
+            </div>
+            <div className="form-group span-1">
+              <label>Número</label>
+              <input type="text" name="numero" value={form.numero} onChange={handleChange} />
+            </div>
+            <div className="form-group span-1">
+              <label>Complemento</label>
+              <input type="text" name="complemento" value={form.complemento} onChange={handleChange} />
+            </div>
+            <div className="form-group span-1">
+              <label>Bairro</label>
+              <input type="text" name="bairro" value={form.bairro} onChange={handleChange} />
+            </div>
+            <div className="form-group span-1">
+              <label>Cidade</label>
+              <input type="text" name="cidade" value={form.cidade} onChange={handleChange} />
+            </div>
+            <div className="form-group span-1">
+              <label>UF</label>
+              <select name="estado" value={form.estado} onChange={handleChange}>
+                <option value="">Selecione…</option>
+                {UFS.map((uf) => <option key={uf.value} value={uf.value}>{uf.label}</option>)}
+              </select>
+            </div>
+            <div className="form-group span-1">
+              <label>País</label>
+              <input type="text" name="pais" value={form.pais} onChange={handleChange} />
+            </div>
 
-          {error && <p className="error-message span-full">{error}</p>}
+            {error && <p className="error-message span-full">{error}</p>}
 
-          <div className="wizard-actions span-full">
-            <button type="button" onClick={handleBack} className="btn-cancel">Voltar</button>
-            <button type="submit" disabled={loading} className="btn-primary">
-              {loading ? 'Criando…' : 'Criar conta'}
-            </button>
-          </div>
-        </form>
-      )}
+            <div className="wizard-actions span-full">
+              <button type="button" onClick={handleBack} className="btn-cancel">Voltar</button>
+              <button type="submit" disabled={loading} className="btn-primary">
+                {loading ? 'Criando…' : 'Criar conta'}
+              </button>
+            </div>
+          </form>
+        )}
 
-      <div className="register-links">
-        <Link to="/login">Já tem uma conta? Faça o login</Link>
+        <div className="register-links">
+          <Link to="/login">Já tem uma conta? Faça o login</Link>
+        </div>
       </div>
-    </div>
+    </LayoutAutenticacao>
   );
 }
 

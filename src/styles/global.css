@@ -22,6 +22,16 @@ body {
   min-height: 100vh;
 }
 
+/* O `body` é flex centralizado desde o login antigo, e o `#root` — item
+   desse flex — encolhia até o conteúdo. A área da advogada escapava por
+   `width: 100vw`, e o portal por `width: 100%` + `align-self: stretch`; o
+   layout de autenticação (Fase 2a) precisa da tela inteira, e a regra certa é
+   uma só, aqui. */
+#root {
+  width: 100%;
+  align-self: stretch;
+}
+
 h1, h2, h3, h4, h5, h6 {
   margin: 0;
   font-weight: var(--font-weight-semibold);
