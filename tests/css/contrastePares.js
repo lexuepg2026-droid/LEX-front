@@ -37,6 +37,9 @@ export const PARES = [
 
   // Botões sólidos.
   { nome: "botão primário", texto: "--color-on-primary", fundo: "--color-primary", limite: TEXTO },
+  // Só no escuro: no claro o token é transparente e não há borda a medir.
+  { nome: "borda do botão primário / --color-surface", texto: "--color-btn-primario-borda", fundo: "--color-surface", limite: NAO_TEXTO, modos: ["escuro"] },
+  { nome: "borda do botão primário / --color-bg", texto: "--color-btn-primario-borda", fundo: "--color-bg", limite: NAO_TEXTO, modos: ["escuro"] },
   { nome: "botão de perigo", texto: "--color-on-solid", fundo: "--color-danger-solid", limite: TEXTO },
   { nome: "selo do sino (texto sobre o amarelo pleno)", texto: "--color-on-warning", fundo: "--color-warning", limite: TEXTO },
 
@@ -54,6 +57,21 @@ export const PARES = [
     ...SEMANTICAS.map((x) => `--color-${x}-text`)].map((texto) => (
     { nome: `${texto} / --color-surface-card (cartão)`, texto, fundo: "--color-surface-card", limite: TEXTO }
   )),
+
+  // A marca fixa (Fase 2a, DEC-078): cabeçalho e autenticação. Os tokens são
+  // os mesmos nos dois modos, e os pares rodam nos dois do mesmo jeito.
+  { nome: "marca: texto / --color-marca-fundo", texto: "--color-marca-texto", fundo: "--color-marca-fundo", limite: TEXTO },
+  { nome: "marca: texto / --color-marca-escuro", texto: "--color-marca-texto", fundo: "--color-marca-escuro", limite: TEXTO },
+  { nome: "marca: link não ativo / --color-marca-fundo", texto: "--color-marca-texto-suave", fundo: "--color-marca-fundo", limite: TEXTO },
+  { nome: "marca: texto / realce de hover", texto: "--color-marca-texto", fundo: "--color-marca-realce", sobre: ["--color-marca-fundo"], limite: TEXTO },
+  { nome: "marca: botão claro", texto: "--color-on-marca-botao", fundo: "--color-marca-botao", limite: TEXTO },
+  { nome: "marca: botão claro em hover", texto: "--color-on-marca-botao", fundo: "--color-marca-botao-hover", limite: TEXTO },
+  { nome: "marca: erro / --color-marca-fundo", texto: "--color-marca-erro", fundo: "--color-marca-fundo", limite: TEXTO },
+  { nome: "marca: erro / --color-marca-escuro", texto: "--color-marca-erro", fundo: "--color-marca-escuro", limite: TEXTO },
+  { nome: "marca: borda de campo / --color-marca-fundo", texto: "--color-marca-borda-campo", fundo: "--color-marca-fundo", limite: NAO_TEXTO },
+  { nome: "marca: anel de foco / --color-marca-fundo", texto: "--color-marca-foco", fundo: "--color-marca-fundo", limite: NAO_TEXTO },
+  { nome: "marca: anel de foco / --color-marca-escuro", texto: "--color-marca-foco", fundo: "--color-marca-escuro", limite: NAO_TEXTO },
+  { nome: "marca: avatar (iniciais bege) / --color-marca-fundo", texto: "--color-marca-texto", fundo: "--color-marca-fundo", limite: TEXTO },
 
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },

@@ -17,6 +17,9 @@
   --color-primary-light:  #8CC7AC;
   --color-primary-dark:   #01261F;
   --color-on-primary:     #EDE3CF;
+  /* Borda do botão primário: só no escuro, onde o #174034 mede 1,5:1 contra a
+     surface (Fase 2a). No claro é transparente. */
+  --color-btn-primario-borda: var(--color-primary-light);
 
   /* Destaque. Era o dourado #B89D4B, que saiu como cor de marca (DEC-074). No
      escuro o destaque é o bege dela; no claro, o verde da marca. */
@@ -80,6 +83,34 @@
   --color-danger-solid:   #B40000;
   --color-info-solid:     #1F5A96;
   --color-on-solid:       #FFFFFF;
+  /* ═════════════════════════════════════════════════════════════════════
+     A MARCA FIXA — cabeçalho e telas de autenticação (Fase 2a, DEC-078)
+
+     As duas superfícies verdes do desenho dela (o cabeçalho #174034 e o
+     painel #01261F) têm a MESMA cor nos dois modos, como os sólidos acima.
+     Por isso estes tokens moram só no `:root` e NÃO são redefinidos em
+     `body.light-mode` — há teste travando (`contraste.test.js`).
+
+     Quem monta algo SOBRE a marca usa estes tokens, e não os do tema: um
+     `--color-text-secondary` do claro (#2E4A41) sobre #174034 some.
+     ═════════════════════════════════════════════════════════════════════ */
+  --color-marca-fundo:        #174034;
+  --color-marca-escuro:       #01261F;
+  --color-marca-texto:        #EDE3CF;
+  /* bege87 dela composto sobre #174034: link não ativo do cabeçalho. */
+  --color-marca-texto-suave:  #D1CEBB;
+  --color-marca-realce:       rgba(237, 227, 207, 0.10);
+  /* O botão claro da Figura 14: bege70 composto sobre #174034 (≈ #A9B09F). */
+  --color-marca-botao:        #ADB2A0;
+  --color-marca-botao-hover:  #D1CEBB;
+  --color-on-marca-botao:     #01261F;
+  --color-marca-borda-campo:  #ADB2A0;
+  /* Erro sobre o verde: o vermelho do tema mede menos de 3:1 aqui. */
+  --color-marca-erro:         #FFB4AB;
+  /* O anel de foco sobre a marca: o `--color-focus` do claro é o próprio
+     #174034, e sumiria no cabeçalho. */
+  --color-marca-foco:         #EDE3CF;
+
   /* Texto sobre o amarelo pleno (selo do sino). Escuro nos dois modos. */
   --color-on-warning:     #1A1A18;
 
@@ -162,6 +193,7 @@ body.light-mode {
   --color-text-muted:     #8C978F;
 
   --color-primary-light:  #1E5A47;
+  --color-btn-primario-borda: transparent;
   --color-accent:         #174034;
   --color-accent-muted:   rgba(23, 64, 52, 0.08);
 

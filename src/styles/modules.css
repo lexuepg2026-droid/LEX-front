@@ -428,7 +428,7 @@
   font-family: var(--font-family);
 }
 
-.btn-edit   { background-color: var(--color-primary);      color: var(--color-on-primary); }
+.btn-edit   { background-color: var(--color-primary);      color: var(--color-on-primary); border: 1px solid var(--color-btn-primario-borda); }
 .btn-view   { background-color: var(--color-info-solid);   color: var(--color-on-solid); }
 .btn-delete { background-color: var(--color-danger-solid); color: var(--color-on-solid); }
 

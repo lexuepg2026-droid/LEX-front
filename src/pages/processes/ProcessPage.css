@@ -13,7 +13,7 @@
 
 .actions-cell { display: flex; gap: 10px; }
 .btn-action { padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 14px; cursor: pointer; border: none; }
-.btn-edit { background-color: var(--bg-button); color: var(--text-button); }
+.btn-edit { background-color: var(--bg-button); color: var(--text-button); border: 1px solid var(--color-btn-primario-borda); }
 .btn-delete { background-color: var(--color-danger-solid); color: var(--color-on-solid); }
 
 /* Formulário (copiado de ClientePage.css) */
@@ -51,7 +51,7 @@
 
 .form-actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; border-top: 1px solid var(--color-border); padding-top: 20px; }
 .btn-primary, .btn-cancel { padding: 10px 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; }
-.btn-primary { background-color: var(--bg-button); color: var(--text-button); }
+.btn-primary { background-color: var(--bg-button); color: var(--text-button); border: 1px solid var(--color-btn-primario-borda); }
 .btn-cancel { background-color: transparent; border: 1px solid var(--text-color); color: var(--text-color); }
 .error-message { color: var(--color-danger-text); }
 
