@@ -27,7 +27,7 @@
 }
 
 .montagem__cabecalho--documento {
-  border-left-color: var(--color-primary);
+  border-left-color: var(--color-primary-light);
 }
 
 .montagem__identidade {
@@ -233,7 +233,7 @@
 }
 
 .inicio-modelo:hover {
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-light);
   background: var(--color-surface-input);
 }
 

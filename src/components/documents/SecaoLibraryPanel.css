@@ -126,8 +126,8 @@
 }
 
 .miniatura--armada {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary);
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 1px var(--color-primary-light);
 }
 
 /* Já no documento: fica visível mas claramente indisponível. O índice único do

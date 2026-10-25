@@ -63,8 +63,8 @@
   border-color: var(--color-border-strong);
 }
 .geracao__opcao--ativa {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary);
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 1px var(--color-primary-light);
 }
 .geracao__opcao-texto {
   display: flex;

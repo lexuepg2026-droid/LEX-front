@@ -26,7 +26,7 @@
 }
 
 .filter-toggle input[type="checkbox"] {
-  accent-color: var(--color-primary);
+  accent-color: var(--color-primary-light);
   cursor: pointer;
   width: 15px;
   height: 15px;
