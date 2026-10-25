@@ -149,3 +149,35 @@ describe("Fase 2a · o que abre e fecha funciona por teclado", () => {
     assert.match(pagina, /<AppLayout theme=\{theme\} toggleTheme=\{toggleTheme\} onLogout=\{handleLogout\} \/>/);
   });
 });
+
+// ── Item 5 ────────────────────────────────────────────────────────────────
+import { destinoDeVolta } from "../../src/pages/public/naoEncontrada.js";
+
+describe("Fase 2a · página não encontrada e volta ao topo", () => {
+  test("o link da página não encontrada leva ao lugar certo", () => {
+    assert.equal(destinoDeVolta("/qualquer", false).to, "/");
+    assert.equal(destinoDeVolta("/qualquer", true).to, "/dashboard");
+    assert.equal(destinoDeVolta("/dashboard/inexistente", true).to, "/dashboard");
+    // O portal ganha do estado da sessão: cliente não vai para a área da advogada.
+    assert.equal(destinoDeVolta("/portal/xyz", true).to, "/portal");
+    assert.equal(destinoDeVolta("/portal/xyz", false).to, "/portal");
+    assert.equal(destinoDeVolta("/portalzinho", false).to, "/");
+  });
+
+  test("há rota coringa no ramo da advogada e fora de tudo", () => {
+    const rotas = semComentarios(ler("src/routes/AppRoutes.jsx"));
+    assert.match(rotas, /<Route path="\*" element=\{<NotFoundPage dentroDoLayout \/>\} \/>/);
+    assert.match(rotas, /<Route path="\*" element=\{<NotFoundPage \/>\} \/>\s*<\/Routes>/);
+  });
+
+  test("a volta ao topo dispara só no pathname, e rola quem rola", () => {
+    const comp = semComentarios(ler("src/components/layout/VoltarAoTopo.jsx"));
+    assert.match(comp, /\[pathname, seletor\]/);
+    assert.doesNotMatch(comp, /search|location\.key/, "trocar a query (filtro, mês) não pode rolar");
+    assert.doesNotMatch(comp, /behavior: 'smooth'/, "sem animação: prefers-reduced-motion");
+    assert.match(semComentarios(ler("src/components/layout/AppLayout.jsx")), /<VoltarAoTopo seletor="\.main-content" \/>/);
+    assert.match(semComentarios(ler("src/App.jsx")), /<VoltarAoTopo \/>/);
+    // O seletor aponta para o elemento que de fato rola.
+    assert.match(ler("src/components/layout/AppLayout.css"), /\.main-content \{[^}]*overflow-y: auto/);
+  });
+});

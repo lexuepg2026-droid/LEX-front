@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import BottomNav from './BottomNav';
 import EmailConfirmationBanner from './EmailConfirmationBanner';
+import VoltarAoTopo from './VoltarAoTopo.jsx';
 // A trilha do cabeçalho precisa, em telas de detalhe, de um rótulo que só a
 // página conhece. O provider envolve Header e Outlet — os dois lados da
 // conversa. Ver `contexts/BreadcrumbContext.jsx`.
@@ -23,6 +24,8 @@ function AppLayout({ theme, toggleTheme, onLogout }) {
         <main className="main-content">
           <Outlet />
         </main>
+        {/* Quem rola aqui é `.main-content`, não o `window`. */}
+        <VoltarAoTopo seletor=".main-content" />
         <BottomNav theme={theme} toggleTheme={toggleTheme} onLogout={onLogout} />
       </div>
     </BreadcrumbProvider>

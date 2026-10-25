@@ -1,0 +1,49 @@
+/* "Página não encontrada" (Fase 2a). Balão no tema da tela, como os dela. */
+.nao-encontrada {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: var(--space-4);
+  background-color: var(--color-bg);
+}
+
+.nao-encontrada--no-layout {
+  min-height: 0;
+  padding: var(--space-10) 0;
+  background: transparent;
+}
+
+.nao-encontrada__balao {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 480px;
+  padding: var(--space-8);
+  border-radius: var(--space-6);
+  background-color: var(--color-surface);
+}
+
+.nao-encontrada__logo {
+  width: 96px;
+  height: auto;
+  color: var(--color-accent);
+}
+
+.nao-encontrada__titulo {
+  font-size: var(--font-size-xl);
+  color: var(--color-text-primary);
+}
+
+.nao-encontrada__texto {
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.nao-encontrada__texto code {
+  color: var(--color-text-primary);
+}

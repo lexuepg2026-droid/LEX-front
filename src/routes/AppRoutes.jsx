@@ -32,6 +32,7 @@ import CalendarPage from '../pages/calendar/CalendarPage';
 import EventFormPage from '../pages/calendar/EventFormPage';
 import ProfilePage from '../pages/profile/ProfilePage';
 import PendenciasPage from '../pages/pendencias/PendenciasPage';
+import NotFoundPage from '../pages/public/NotFoundPage';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PORTAL DO CLIENTE — mesmo app, chunk próprio
@@ -181,8 +182,19 @@ function AppRoutes() {
           <Route path="pendencias" element={<PendenciasPage />} />
 
           <Route path="perfil" element={<ProfilePage />} />
+
+          {/* Endereço inexistente DENTRO da área da advogada: a página de
+              "não encontrada" com o cabeçalho em volta, para a saída ser a
+              navegação de sempre (Fase 2a). */}
+          <Route path="*" element={<NotFoundPage dentroDoLayout />} />
         </Route>
       </Route>
+
+      {/* Rota coringa de todo o resto — inclusive `/portal/…` inexistente, que
+          o ramo do portal não casa. Fica FORA do `ProtectedRoute`: quem não
+          tem sessão também erra endereço, e não pode ser mandado ao login por
+          isso. */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
