@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell } from 'lucide-react';
 
 import calendarService from '../../api/calendarService';
+import Icone from '../ui/Icone';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { destinoDoItem } from '../../utils/calendarLabels';
 import { parcelasVencidasDoAviso } from '../../utils/painel';
@@ -119,7 +119,7 @@ function NotificationBell() {
         // três coisas pendentes ou nenhuma.
         aria-label={total > 0 ? `Avisos: ${total} item(ns) exigem atenção` : 'Avisos: nada pendente'}
       >
-        <Bell size={18} />
+        <Icone nome="sino" tamanho={18} />
         {/* Zero não aparece — nem como "0". */}
         {total > 0 && (
           <span className="sino__badge" aria-hidden="true">
