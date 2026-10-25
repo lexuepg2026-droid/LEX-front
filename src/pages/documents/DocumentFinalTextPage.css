@@ -64,7 +64,7 @@
 
 .final__selo--substituido {
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .final__acoes-topo {
@@ -92,7 +92,7 @@
   margin: 0;
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .final__lacunas-ajuda {
@@ -198,7 +198,7 @@
 
 .final__sujo {
   font-size: var(--font-size-xs);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 /* Editor de texto simples, de propósito: o documento é texto corrido, e um
@@ -277,7 +277,7 @@
 .final__cartao-aviso svg {
   flex-shrink: 0;
   margin-top: 2px;
-  color: var(--color-info);
+  color: var(--color-info-text);
 }
 
 /* ── Regerar (Fase 4.4) ──────────────────────────────────────────────────── */
@@ -309,7 +309,7 @@
 }
 
 .final__cartao-aviso--risco svg {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .final__portal {
@@ -333,7 +333,7 @@
 .final__portal--ligado {
   background: var(--color-success-bg);
   border-color: var(--color-success);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .final__portal:disabled {

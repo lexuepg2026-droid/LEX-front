@@ -90,17 +90,17 @@
 
 .montagem__estado-item--salvando {
   background: var(--color-info-bg);
-  color: var(--color-info);
+  color: var(--color-info-text);
 }
 
 .montagem__estado-item--salvo {
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .montagem__estado-item--erro {
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .montagem__estado-item--ocioso {

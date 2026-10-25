@@ -102,12 +102,12 @@
    um fundo cheio: um item vermelho sólido no meio da lista se lê como o item
    selecionado. */
 .action-menu__item--destrutivo {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .action-menu__item--destrutivo:hover:not(:disabled) {
   background-color: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 /* ── DEC-053: o item que explica por que não dá ──────────────────────────

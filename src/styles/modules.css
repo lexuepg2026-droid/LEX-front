@@ -283,7 +283,7 @@
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   background-color: var(--color-warning-bg);
   white-space: nowrap;
 }
@@ -426,7 +426,7 @@
 .btn-delete { background-color: var(--color-danger);  color: #fff; }
 
 .error-message {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-size-sm);
   margin: var(--space-2) 0;
 }
@@ -468,7 +468,7 @@
    que houve estorno sem precisar de uma coluna a mais. Cor de aviso, e não de
    perigo: um estorno é um fato registrado, não um erro. */
 .data-table .valor-estornado {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-weight: 600;
 }
 
@@ -526,7 +526,7 @@
 }
 
 .link-interno:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }

@@ -15,7 +15,7 @@
    quebra, e um ícone achatado é o que sobra de um `flex` sem esta linha. */
 .offline-notice svg {
   flex-shrink: 0;
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 /* O motivo do botão bloqueado, quando ele não cabe dentro do próprio botão.
@@ -45,6 +45,6 @@
 }
 
 .offline-queue-notice svg {
-  color: var(--color-info);
+  color: var(--color-info-text);
   flex-shrink: 0;
 }

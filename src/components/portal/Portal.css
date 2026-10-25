@@ -162,7 +162,7 @@
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   background-color: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   border: 1px solid var(--color-danger);
   font-size: var(--font-size-base);
   margin-bottom: var(--space-4);
@@ -174,7 +174,7 @@
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   background-color: var(--color-warning-bg);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   border: 1px solid var(--color-warning);
   font-size: var(--font-size-base);
   margin-bottom: var(--space-4);
@@ -184,7 +184,7 @@
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   background-color: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
   border: 1px solid var(--color-success);
   font-size: var(--font-size-base);
   margin-bottom: var(--space-4);
@@ -240,7 +240,7 @@
 
 .form-erro-campo {
   font-size: var(--font-size-sm);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 /* ── Botões ────────────────────────────────────────────────────────────── */
@@ -410,7 +410,7 @@
 
 .portal-recibo__rotulo {
   font-size: var(--font-size-sm);
-  color: var(--color-success);
+  color: var(--color-success-text);
   margin-bottom: var(--space-1);
 }
 

@@ -53,11 +53,11 @@
 }
 
 .summary-card--primary .card-icon  { color: var(--color-accent); }
-.summary-card--warning .card-icon  { color: var(--color-warning); }
-.summary-card--danger  .card-icon  { color: var(--color-danger); }
-.summary-card--success .card-icon  { color: var(--color-success); }
+.summary-card--warning .card-icon  { color: var(--color-warning-text); }
+.summary-card--danger  .card-icon  { color: var(--color-danger-text); }
+.summary-card--success .card-icon  { color: var(--color-success-text); }
 .summary-card--neutral .card-icon  { color: var(--color-text-muted); }
-.summary-card--info    .card-icon  { color: var(--color-info); }
+.summary-card--info    .card-icon  { color: var(--color-info-text); }
 
 .card-label {
   font-size: var(--font-size-xs);
@@ -74,10 +74,10 @@
   margin: 0;
 }
 
-.summary-card--danger  .card-value { color: var(--color-danger); }
-.summary-card--warning .card-value { color: var(--color-warning); }
-.summary-card--success .card-value { color: var(--color-success); }
-.summary-card--info    .card-value { color: var(--color-info); }
+.summary-card--danger  .card-value { color: var(--color-danger-text); }
+.summary-card--warning .card-value { color: var(--color-warning-text); }
+.summary-card--success .card-value { color: var(--color-success-text); }
+.summary-card--info    .card-value { color: var(--color-info-text); }
 
 /* Texto secundário do cartão (Fase 4.3): a contagem de parcelas vencidas ao
    lado do valor, e a frase que explica um zero real ("nenhum recebimento no
@@ -149,7 +149,7 @@
 
 .upcoming-due {
   font-size: var(--font-size-xs);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .upcoming-right {
@@ -167,7 +167,7 @@
 
 /* --- Error --- */
 .error-message {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-size-sm);
   margin: var(--space-2) 0;
 }

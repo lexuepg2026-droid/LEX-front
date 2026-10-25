@@ -105,7 +105,7 @@
 }
 
 .var-selector__status--erro {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .var-group {

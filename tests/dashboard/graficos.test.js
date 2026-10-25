@@ -144,10 +144,12 @@ describe("legenda do donut", () => {
     assert.deepEqual(
       legenda.map((l) => l.cor),
       [
-        "var(--color-warning)",
-        "var(--color-success)",
-        "var(--color-danger)",
-        "var(--color-info)",
+        // `-text` desde a Fase 1 (DEC-075): o badge passou a pintar o texto
+        // com o tom de texto de cada modo, e a fatia acompanha o badge.
+        "var(--color-warning-text)",
+        "var(--color-success-text)",
+        "var(--color-danger-text)",
+        "var(--color-info-text)",
       ],
       "as cores da legenda deixaram de ser as dos badges"
     );

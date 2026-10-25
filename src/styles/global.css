@@ -33,7 +33,7 @@ p {
 }
 
 a {
-  color: var(--color-primary-light);
+  color: var(--color-link);
   text-decoration: none;
 }
 

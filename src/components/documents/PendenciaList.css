@@ -93,7 +93,7 @@
   margin: 0;
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 .geracao__pendencias-ajuda {
   margin: 0;
@@ -174,5 +174,5 @@
 }
 
 .geracao__pendencias-titulo--bloqueio {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }

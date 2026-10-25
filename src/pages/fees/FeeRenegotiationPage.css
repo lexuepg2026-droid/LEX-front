@@ -251,11 +251,11 @@
 }
 
 .reparcelar-soma--fecha .reparcelar-soma__veredito {
-  color: var(--color-success, var(--color-primary));
+  color: var(--color-success-text, var(--color-primary));
 }
 
 .reparcelar-soma--diverge .reparcelar-soma__veredito {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 /* ── Aviso do saldo adiantado e ações ──────────────────────────────────── */
