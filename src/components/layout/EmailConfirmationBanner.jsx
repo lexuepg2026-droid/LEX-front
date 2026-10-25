@@ -49,8 +49,13 @@ function EmailConfirmationBanner() {
   return (
     <div className="email-banner" role="status">
       <p className="email-banner__texto">
-        <strong>Confirme seu e-mail.</strong> Enviamos um link para <strong>{user.email}</strong>.
-        Sem confirmar, você não conseguirá recuperar a senha por e-mail caso esqueça.
+        {/* Fase 0: a frase anterior dizia que, sem confirmar, não seria possível
+            recuperar a senha — e o backend não verifica isso (`forgotPassword`
+            envia o link para qualquer conta). O aviso não promete consequência
+            que o sistema não aplica. */}
+        <strong>Confirme seu e-mail</strong> para garantir que os avisos e o link de
+        recuperação de senha cheguem até você. Enviamos um link para{' '}
+        <strong>{user.email}</strong>.
       </p>
 
       <div className="email-banner__acoes">

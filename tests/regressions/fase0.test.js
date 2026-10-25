@@ -196,3 +196,23 @@ describe("Fase 0 · item 5 — o filtro de processo da URL é visível", () => {
     assert.match(chip, /import '\.\/ProcessFilterChip\.css'/);
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 7 — o aviso de e-mail não promete o que o backend não aplica
+// ═══════════════════════════════════════════════════════════════════════════
+describe("Fase 0 · item 7 — o texto do aviso de e-mail é verdadeiro", () => {
+  const aviso = semComentarios(ler("src/components/layout/EmailConfirmationBanner.jsx"));
+  // O JSX quebra a frase em linhas; a comparação é sobre o texto corrido.
+  const corrido = aviso.replace(/\s+/g, " ");
+
+  test("a frase falsa sobre a recuperação de senha saiu", () => {
+    assert.doesNotMatch(corrido, /não conseguirá recuperar a senha/);
+  });
+
+  test("a frase nova está lá", () => {
+    assert.match(
+      corrido,
+      /<strong>Confirme seu e-mail<\/strong> para garantir que os avisos e o link de recuperação de senha cheguem até você\./
+    );
+  });
+});
