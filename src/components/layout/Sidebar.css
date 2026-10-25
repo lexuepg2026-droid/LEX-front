@@ -16,9 +16,15 @@
   padding: var(--space-2) 0 var(--space-6);
 }
 
+/* A logo dela é horizontal (624 × 181) e herda a cor por `currentColor`:
+   bege no escuro, verde da marca no claro (`--color-accent`, 12,5:1 e 11,4:1
+   sobre a surface). */
 .sidebar-logo {
-  width: 90px;
-  filter: var(--logo-filter);
+  display: block;
+  width: 120px;
+  height: auto;
+  margin: 0 auto;
+  color: var(--color-accent);
 }
 
 .sidebar-nav {
@@ -105,7 +111,7 @@
     min-width: 180px;
     padding: var(--space-4) var(--space-3);
   }
-  .sidebar-logo { width: 70px; }
+  .sidebar-logo { width: 96px; }
 }
 
 @media (max-width: 767px) {

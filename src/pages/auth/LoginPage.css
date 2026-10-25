@@ -8,10 +8,10 @@
 }
 
 .logo {
-  width: 150px;
+  width: 180px;
   height: auto;
   margin-bottom: 30px;
-  filter: var(--logo-filter);
+  color: var(--color-accent);
 }
 
 .login-page form {

@@ -14,10 +14,10 @@
 }
 
 .register-page .logo {
-  width: 150px;
+  width: 180px;
   height: auto;
   margin-bottom: 20px;
-  filter: var(--logo-filter);
+  color: var(--color-accent);
 }
 
 .register-page h2 {

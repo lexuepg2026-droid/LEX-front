@@ -139,7 +139,6 @@
   --bg-button:   var(--color-primary);
   --text-button: var(--color-on-primary);
   --bg-input:    var(--color-surface-input);
-  --logo-filter: invert(72%) sepia(37%) saturate(632%) hue-rotate(10deg) brightness(84%) contrast(89%);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -196,5 +195,4 @@ body.light-mode {
   --bg-button:   var(--color-primary);
   --text-button: var(--color-on-primary);
   --bg-input:    var(--color-surface-input);
-  --logo-filter: none;
 }

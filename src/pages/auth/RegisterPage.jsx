@@ -8,7 +8,7 @@ import { buscarEnderecoPorCEP } from '../../utils/viacep';
 import { UFS } from '../../utils/enums';
 import { toast } from '../../utils/toast';
 import './RegisterPage.css';
-import logo from '../../assets/logo-lex.jpeg';
+import LogoLex from '../../components/ui/LogoLex.jsx';
 
 // A expressão de e-mail que vivia AQUI saiu na A-1 (DEC-063). Ela era uma
 // cópia da que estava em `validations/authValidation.js`, no backend, e as
@@ -156,7 +156,7 @@ function RegisterPage() {
 
   return (
     <div className="register-page register-wizard">
-      <img src={logo} alt="Logo LEX" className="logo" />
+      <LogoLex className="logo" />
       <h2>Criar Nova Conta</h2>
       <p className="wizard-progress">Etapa {step} de 2 — {step === 1 ? 'Acesso' : 'Dados profissionais'}</p>
 

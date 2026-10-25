@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getApiErrorMessage } from '../../utils/apiError';
 import './LoginPage.css';
 import './AuthEmail.css';
-import logo from '../../assets/logo-lex.jpeg';
+import LogoLex from '../../components/ui/LogoLex.jsx';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONFIRMAR O E-MAIL (A-2, DEC-064) — o destino do link do e-mail de cadastro
@@ -65,7 +65,7 @@ function ConfirmEmailPage() {
 
   return (
     <div className="login-page">
-      <img src={logo} alt="Logo LEX" className="logo" />
+      <LogoLex className="logo" />
 
       {estado === 'carregando' && (
         <p className="auth-texto" role="status">Confirmando seu e-mail…</p>
