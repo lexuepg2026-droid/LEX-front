@@ -4062,6 +4062,18 @@ exibição. Some junto com o `<select>` na fase 3.
 
 ---
 
+## DEC-069 (frontend) — o cartão se chama "Honorários em aberto" (Fase 0)
+
+O backend passou a contar `pendente` **e** `parcialmente_pago` (ver a DEC-069 no
+CLAUDE.md do backend). O rótulo "Honorários a Receber" descrevia a conta antiga
+— só os honorários que nunca receberam nada — e trocou para **"Honorários em
+aberto"**, que é o que o número passou a ser.
+
+**A chave continua `honorariosAReceber`**, porque é o nome do campo na API; o
+que muda é só o texto do cartão. Teste em `tests/regressions/fase0.test.js`.
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:

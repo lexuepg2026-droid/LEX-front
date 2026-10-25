@@ -109,3 +109,14 @@ describe("Fase 0 · item 2 — o seletor pede o teto do backend e diz quando cor
     });
   }
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 4 — DEC-069: o cartão conta pendente E parcialmente pago, e diz isso
+// ═══════════════════════════════════════════════════════════════════════════
+describe("Fase 0 · item 4 — o cartão se chama \"Honorários em aberto\"", () => {
+  test("a chave da API é a mesma e o rótulo mudou", () => {
+    const codigo = semComentarios(ler("src/pages/dashboard/DashboardHomePage.jsx"));
+    assert.match(codigo, /key: 'honorariosAReceber',\s*label: 'Honorários em aberto'/);
+    assert.doesNotMatch(codigo, /Honorários a Receber/);
+  });
+});

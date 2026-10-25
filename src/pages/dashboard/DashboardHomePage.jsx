@@ -51,7 +51,10 @@ const DashboardCharts = lazy(() => import('./DashboardCharts'));
 const CARDS = [
   { key: 'processosAtivos',        label: 'Processos Ativos',       Icon: Scale,      color: 'primary' },
   { key: 'clientesCadastrados',    label: 'Clientes Cadastrados',   Icon: Users,      color: 'primary' },
-  { key: 'honorariosAReceber',     label: 'Honorários a Receber',   Icon: FileText,   color: 'warning' },
+  // "Em aberto" (Fase 0, DEC-069): o backend passou a contar `pendente` E
+  // `parcialmente_pago`. "A receber" contava só os que nunca receberam nada.
+  // A chave continua `honorariosAReceber` — é o nome do campo na API.
+  { key: 'honorariosAReceber',     label: 'Honorários em aberto',   Icon: FileText,   color: 'warning' },
   { key: 'documentosCadastrados',  label: 'Documentos Cadastrados', Icon: FolderOpen, color: 'neutral' },
   // `info` e não `success`: é coisa a fazer, não resultado alcançado. E não é
   // `warning`: confirmação chegando é o sistema funcionando, nada está errado.
