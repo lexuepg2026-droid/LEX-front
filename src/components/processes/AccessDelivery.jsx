@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import processService from '../../api/processService';
 import { toast } from '../../utils/toast';
 import { getApiErrorMessage } from '../../utils/apiError';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ENTREGA DO ACESSO — código de um participante
@@ -18,6 +19,12 @@ import { getApiErrorMessage } from '../../utils/apiError';
 // proteção real aqui, e ela só funciona se a interface não oferecer o
 // contrário por conveniência. A recomendação está escrita na tela.
 //
+// ── Fase 2.5 (DEC-093, DEC-097): o código é o PESSOAL ─────────────────────
+// Um código e uma senha por pessoa abrem todos os processos LIBERADOS para
+// ela. Por isso a entrega diz duas coisas além do código: se ESTE processo
+// está liberado (e oferece liberar ali mesmo, se não estiver), e se o cliente
+// já tem senha — sem senha não há código, e o caminho é o cadastro do cliente.
+//
 // ── Tamanho da fonte do código ────────────────────────────────────────────
 // A advogada dita este código por telefone. `LEX-N28J-2EWG` tem caracteres que
 // se confundem em corpo pequeno, e ditar errado custa uma ligação a mais.
@@ -26,7 +33,7 @@ import { getApiErrorMessage } from '../../utils/apiError';
 const ENDERECO_PORTAL = `${window.location.origin}/portal`;
 
 const montarMensagem = (codigo, nomeProcesso) => (
-  `Olá! Você pode acompanhar o seu processo${nomeProcesso ? ` (${nomeProcesso})` : ''} ` +
+  `Olá! Você pode acompanhar os seus processos${nomeProcesso ? ` — entre eles, ${nomeProcesso} —` : ''} ` +
   `pelo portal do escritório.\n\n` +
   `Endereço: ${ENDERECO_PORTAL}\n` +
   `Código de acesso: ${codigo}\n\n` +
@@ -35,8 +42,10 @@ const montarMensagem = (codigo, nomeProcesso) => (
   `que só você conheça — isso é obrigatório e leva menos de um minuto.`
 );
 
-function AccessDelivery({ processoId, clienteId, nomeCliente, nomeProcesso, onFechar }) {
+function AccessDelivery({ processoId, clienteId, nomeCliente, nomeProcesso, online = true, onLiberado, onFechar }) {
   const [codigo, setCodigo] = useState('');
+  const [acesso, setAcesso] = useState(null); // { liberadoNoPortal, temSenhaPortal, senhaPortalProvisoria }
+  const [liberando, setLiberando] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
 
@@ -45,7 +54,13 @@ function AccessDelivery({ processoId, clienteId, nomeCliente, nomeProcesso, onFe
     processService
       .getProcessClienteCodigoAcesso(processoId, clienteId)
       .then((res) => {
-        if (ativo) setCodigo(res.data.codigoAcesso);
+        if (!ativo) return;
+        setCodigo(res.data.codigoAcesso ?? '');
+        setAcesso({
+          liberadoNoPortal: res.data.liberadoNoPortal === true,
+          temSenhaPortal: res.data.temSenhaPortal === true,
+          senhaPortalProvisoria: res.data.senhaPortalProvisoria === true,
+        });
       })
       .catch((err) => {
         if (ativo) setErro(getApiErrorMessage(err, 'Não foi possível obter o código de acesso.'));
@@ -62,6 +77,21 @@ function AccessDelivery({ processoId, clienteId, nomeCliente, nomeProcesso, onFe
   // permissão negada). Quando estiver, o valor continua visível na tela e é
   // isso que a mensagem de erro precisa dizer — "falhou" sem mais nada faria a
   // advogada achar que o código não veio.
+  const liberar = async () => {
+    if (!online || liberando) return;
+    setLiberando(true);
+    try {
+      await processService.setLiberacaoNoPortal(processoId, clienteId, true);
+      setAcesso((a) => ({ ...a, liberadoNoPortal: true }));
+      onLiberado?.();
+      toast.success(`Processo liberado no portal para ${nomeCliente}.`);
+    } catch (err) {
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível liberar o processo.'));
+    } finally {
+      setLiberando(false);
+    }
+  };
+
   const copiar = async (texto, oQue) => {
     try {
       await navigator.clipboard.writeText(texto);
@@ -83,9 +113,41 @@ function AccessDelivery({ processoId, clienteId, nomeCliente, nomeProcesso, onFe
       {carregando && <p>Buscando o código…</p>}
       {erro && <p className="error-message">{erro}</p>}
 
+      {acesso && !acesso.temSenhaPortal && (
+        <p className="entrega-acesso__aviso">
+          <strong>{nomeCliente} ainda não tem acesso ao portal.</strong> Defina uma
+          senha provisória no cadastro do cliente: o código pessoal é criado junto
+          com ela.
+        </p>
+      )}
+
+      {acesso?.temSenhaPortal && (
+        <p className="entrega-acesso__aviso">
+          {acesso.liberadoNoPortal ? (
+            <>Este processo <strong>está liberado</strong> no portal para {nomeCliente}.</>
+          ) : (
+            <>
+              Este processo <strong>ainda não está liberado</strong> no portal: com o
+              código abaixo, {nomeCliente} entra e não o vê.{' '}
+              <button
+                type="button"
+                className="btn-primary"
+                aria-disabled={online && !liberando ? undefined : 'true'}
+                onClick={liberar}
+              >
+                {liberando ? 'Liberando…' : 'Liberar este processo'}
+              </button>
+            </>
+          )}
+          {acesso.senhaPortalProvisoria && (
+            <> A senha ainda é a <strong>provisória</strong>: no primeiro acesso o portal pede a troca.</>
+          )}
+        </p>
+      )}
+
       {codigo && (
         <>
-          <p className="entrega-acesso__rotulo">Código de acesso deste processo</p>
+          <p className="entrega-acesso__rotulo">Código de acesso pessoal de {nomeCliente}</p>
           <p className="entrega-acesso__codigo">{codigo}</p>
 
           <div className="entrega-acesso__acoes">

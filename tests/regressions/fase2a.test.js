@@ -204,8 +204,11 @@ describe("Fase 2a · layout de autenticação e página inicial pública", () =>
       if (/navigate\(\s*['"`]\/['"`]|to=["']\/["']|href\s*=\s*['"`]\/['"`]/.test(codigo)) culpados.push(relative(SRC, caminho));
     }
     // A única saída legítima para `/` é a da página não encontrada sem sessão,
-    // que monta o destino por função (e não por literal).
-    assert.deepEqual(culpados, []);
+    // que monta o destino por função (e não por literal) — e, desde a Fase 2.5,
+    // o "Voltar" do LOGIN DO PORTAL, que a fase pede: leva à página inicial
+    // pública, como o `voltarPara="/"` do login da advogada, e não espera
+    // login nenhum lá. Exceção NOMEADA, e só ela.
+    assert.deepEqual(culpados, [join("pages", "portal", "PortalLoginPage.jsx")]);
   });
 
   test("a página inicial tem as três portas e redireciona quem tem sessão", () => {

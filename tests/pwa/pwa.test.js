@@ -224,7 +224,7 @@ describe('PWA — o service worker, executado', () => {
       '/api/clients?page=1',
       '/api/financeiro/resumo',
       '/api/documents/123/download?formato=pdf',
-      '/api/portal/processo'
+      '/api/portal/processos'
     ];
 
     for (const rota of rotas) {

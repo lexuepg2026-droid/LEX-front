@@ -19,8 +19,8 @@ import { registrarPerdaDeSessao } from '../api/portalAxios';
 const PortalAuthContext = createContext(null);
 
 export function PortalAuthProvider({ children }) {
-  // `null` = sem sessão. O objeto traz `{ senhaPortalProvisoria, papel,
-  // processoId }`, que é exatamente o que a rota devolve.
+  // `null` = sem sessão. O objeto traz `{ senhaPortalProvisoria, cliente }`
+  // (Fase 2.5), que é exatamente o que a rota devolve.
   const [sessao, setSessao] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const navigate = useNavigate();
@@ -95,8 +95,10 @@ export function PortalAuthProvider({ children }) {
         carregando,
         autenticado,
         senhaProvisoria,
-        papel: sessao?.papel ?? null,
-        processoId: sessao?.processoId ?? null,
+        // Fase 2.5 (DEC-089): a sessão é da PESSOA. Ela diz quem entrou — o
+        // nome do "Olá" — e não mais um processo e um papel: os processos vêm
+        // de `GET /portal/processos`, cada um com o papel dela nele.
+        cliente: sessao?.cliente ?? null,
         entrar,
         trocarSenha,
         sair,

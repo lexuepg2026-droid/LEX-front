@@ -8,6 +8,7 @@ import OfflineNotice from '../../components/ui/OfflineNotice';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useCachedResource from '../../hooks/useCachedResource';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import AcessoPortalResumo from '../../components/clients/AcessoPortalResumo';
 import './ClientPage.css';
 import { usePublicarContexto } from '../../contexts/ContextoContext';
 
@@ -124,6 +125,10 @@ function ClientDetailPage() {
           {endereco.pais && <p><strong>País:</strong> {endereco.pais}</p>}
         </div>
       )}
+
+      {/* Fase 2.5 (DEC-097): o código pessoal, a senha e "N de M processos
+          liberados". Só com sinal — ver o componente. */}
+      <AcessoPortalResumo clienteId={id} />
 
       {observacoes && (
         <div className="detail-section">

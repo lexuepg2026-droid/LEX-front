@@ -63,6 +63,7 @@ const PortalProtectedRoute = lazy(() => import('../components/portal/PortalProte
 const PortalLoginPage = lazy(() => import('../pages/portal/PortalLoginPage'));
 const PortalPasswordPage = lazy(() => import('../pages/portal/PortalPasswordPage'));
 const PortalProcessPage = lazy(() => import('../pages/portal/PortalProcessPage'));
+const PortalProcessListPage = lazy(() => import('../pages/portal/PortalProcessListPage'));
 
 function AppRoutes() {
   return (
@@ -104,9 +105,14 @@ function AppRoutes() {
           <Route path="senha" element={<PortalPasswordPage />} />
         </Route>
 
-        {/* Dado do processo: exige sessão E senha própria. */}
+        {/* Dado do processo: exige sessão E senha própria. Desde a Fase 2.5
+            (DEC-096) o login é da pessoa: primeiro a lista dos processos
+            LIBERADOS, depois cada um pelo id. A liberação é conferida pelo
+            servidor a cada requisição — a URL direta de um processo não
+            liberado responde 404. */}
         <Route element={<PortalProtectedRoute />}>
-          <Route path="processo" element={<PortalProcessPage />} />
+          <Route path="processos" element={<PortalProcessListPage />} />
+          <Route path="processos/:processoId" element={<PortalProcessPage />} />
         </Route>
       </Route>
 

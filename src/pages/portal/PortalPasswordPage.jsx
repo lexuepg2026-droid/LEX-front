@@ -59,7 +59,7 @@ function PortalPasswordPage() {
     setEnviando(true);
     try {
       await trocarSenha(senhaAtual, novaSenha);
-      navigate('/portal/processo', { replace: true });
+      navigate('/portal/processos', { replace: true });
     } catch (err) {
       // O backend diz QUAL campo está errado (`senhaAtual` ou `novaSenha`) e
       // devolve a mensagem específica — senha fraca, senha igual ao CPF, senha

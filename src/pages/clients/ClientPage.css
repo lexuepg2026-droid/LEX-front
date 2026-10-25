@@ -133,6 +133,20 @@
 }
 .detail-section p { margin: 8px 0; }
 
+/* "Acesso ao portal" (Fase 2.5): o código em corpo maior e espaçado, porque a
+   advogada o dita por telefone — a mesma regra da entrega no processo. */
+.acesso-portal__codigo {
+  font-family: var(--font-family-mono, monospace);
+  font-size: var(--font-size-lg);
+  letter-spacing: 0.08em;
+  color: var(--color-text-primary);
+}
+
+.acesso-portal__nota {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
 
 /* Aviso da troca de tipo na edição (F-6.2): o que a gravação vai remover. */
 .tipo-pessoa-aviso {

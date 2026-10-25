@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { usePortalAuth } from '../../contexts/PortalAuthContext';
 import { getApiErrorMessage } from '../../utils/apiError';
 // A folha do portal é importada por CADA página, e não só pelo layout. O
@@ -7,6 +8,7 @@ import { getApiErrorMessage } from '../../utils/apiError';
 // pela árvore de rotas não é alcançável por análise estática — a varredura de
 // classe CSS acusaria todas as classes daqui como sem regra, e teria razão:
 // nada no arquivo diz de onde vem o estilo. O import é idempotente no bundle.
+import LogoLex from '../../components/ui/LogoLex.jsx';
 import '../../components/portal/Portal.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -62,8 +64,9 @@ function PortalLoginPage() {
       const sessao = await entrar(codigoAcesso, senha);
       // Senha ainda provisória vai para a troca; o portão de rota faria isso de
       // qualquer forma, mas navegar daqui evita um quadro intermediário em que
-      // a tela do processo pisca antes de ser substituída.
-      navigate(sessao?.senhaPortalProvisoria === true ? '/portal/senha' : '/portal/processo', {
+      // a tela do processo pisca antes de ser substituída. Desde a Fase 2.5 o
+      // destino é a LISTA, que segue sozinha para o processo quando só há um.
+      navigate(sessao?.senhaPortalProvisoria === true ? '/portal/senha' : '/portal/processos', {
         replace: true,
       });
     } catch (err) {
@@ -87,81 +90,100 @@ function PortalLoginPage() {
     }
   };
 
+  // ── A pele da Figura 15 (Fase 2.5, DEC-096) ────────────────────────────
+  // "Voltar" para a página inicial pública, o título sobre o verde, o cartão
+  // escuro com os rótulos ACIMA dos campos, e a logo pequena embaixo.
   return (
-    <div className="portal-cartao">
-      <h1 className="portal-titulo">Acompanhe o seu processo</h1>
-      <p className="portal-texto">
-        Entre com o código de acesso e a senha que a advogada entregou a você.
-      </p>
+    <div className="portal-login">
+      <Link to="/" className="portal-voltar">
+        <ArrowLeft size={18} aria-hidden="true" />
+        Voltar
+      </Link>
 
-      {excessoDeTentativas && (
-        <p className="portal-aviso" role="alert">
-          <strong>Muitas tentativas seguidas.</strong> Por segurança, o acesso
-          ficou bloqueado por alguns minutos. Aguarde e tente de novo — tentar
-          agora só estende o bloqueio. Se você não lembra a senha, fale com a
-          advogada: ela pode cadastrar uma nova.
+      <h1 className="portal-login__titulo">Acompanhe seu processo</h1>
+
+      <div className="portal-cartao">
+        <p className="portal-texto">
+          Entre com o código de acesso e a senha que a advogada entregou a você.
+          Um código só abre todos os processos que ela liberou para você.
         </p>
-      )}
 
-      {erro && (
-        <p className="portal-erro" role="alert">
-          {erro}
+        {excessoDeTentativas && (
+          <p className="portal-aviso" role="alert">
+            <strong>Muitas tentativas seguidas.</strong> Por segurança, o acesso
+            ficou bloqueado por alguns minutos. Aguarde e tente de novo — tentar
+            agora só estende o bloqueio. Se você não lembra a senha, fale com a
+            advogada: ela pode cadastrar uma nova.
+          </p>
+        )}
+
+        {erro && (
+          <p className="portal-erro" role="alert">
+            {erro}
+          </p>
+        )}
+
+        <form onSubmit={enviar} noValidate>
+          {/* `.form-group` é obrigatório: o destaque de erro depende do seletor
+              `.form-group input.input-erro`. Ver Portal.css. */}
+          <div className="form-group">
+            <label htmlFor="portal-codigo">Código de acesso</label>
+            <input
+              id="portal-codigo"
+              name="codigoAcesso"
+              type="text"
+              value={codigoAcesso}
+              onChange={(e) => setCodigoAcesso(e.target.value)}
+              /* `autoCapitalize="off"` evita o teclado do celular mandar a
+                 primeira letra maiúscula — não porque o backend recusaria (ele
+                 não recusa), mas porque o campo fica mais previsível. */
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck="false"
+              autoComplete="username"
+              inputMode="text"
+              placeholder="LEX-0000-0000"
+              disabled={enviando}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="portal-senha">Senha</label>
+            <input
+              id="portal-senha"
+              name="senha"
+              type="password"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              autoComplete="current-password"
+              disabled={enviando}
+            />
+          </div>
+
+          <button type="submit" className="portal-btn portal-btn--principal" disabled={enviando}>
+            {enviando ? 'Entrando…' : 'Entrar'}
+          </button>
+        </form>
+
+        {/* No lugar do "Esqueceu a senha?" do desenho dela, que levava a uma
+            tela simulada: não é link, porque não há para onde ir. Quem
+            redefine a senha do portal é a advogada (DEC-029). */}
+        <p className="portal-login__esqueceu">Esqueceu a senha? Fale com seu advogado.</p>
+
+        {/* Para quem chegou aqui sem saber o que é isto. O código circula por
+            telefone e por papel, e alguém vai abrir a página sem ter recebido
+            nada — dizer de onde vem o código é mais útil que qualquer
+            instrução de formato. */}
+        <p className="portal-ajuda">
+          O código de acesso tem o formato <strong>LEX-0000-0000</strong> e foi
+          entregue a você pela advogada, por mensagem, por telefone ou impresso.
+          Pode digitar com letras maiúsculas ou minúsculas — tanto faz.
         </p>
-      )}
+      </div>
 
-      <form onSubmit={enviar} noValidate>
-        {/* `.form-group` é obrigatório: o destaque de erro depende do seletor
-            `.form-group input.input-erro`. Ver PortalLayout.css. */}
-        <div className="form-group">
-          <label htmlFor="portal-codigo">Código de acesso</label>
-          <input
-            id="portal-codigo"
-            name="codigoAcesso"
-            type="text"
-            value={codigoAcesso}
-            onChange={(e) => setCodigoAcesso(e.target.value)}
-            /* `autoCapitalize="off"` evita o teclado do celular mandar a
-               primeira letra maiúscula — não porque o backend recusaria (ele
-               não recusa), mas porque o campo fica mais previsível. */
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck="false"
-            autoComplete="username"
-            inputMode="text"
-            placeholder="LEX-0000-0000"
-            disabled={enviando}
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="portal-senha">Senha</label>
-          <input
-            id="portal-senha"
-            name="senha"
-            type="password"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            autoComplete="current-password"
-            disabled={enviando}
-          />
-        </div>
-
-        <button type="submit" className="portal-btn portal-btn--principal" disabled={enviando}>
-          {enviando ? 'Entrando…' : 'Entrar'}
-        </button>
-      </form>
-
-      {/* Para quem chegou aqui sem saber o que é isto. O código circula por
-          telefone e por papel, e alguém vai abrir a página sem ter recebido
-          nada — dizer de onde vem o código é mais útil que qualquer
-          instrução de formato. */}
-      <p className="portal-ajuda">
-        O código de acesso tem o formato <strong>LEX-0000-0000</strong> e foi
-        entregue a você pela advogada, por mensagem, por telefone ou impresso.
-        Pode digitar com letras maiúsculas ou minúsculas — tanto faz. Se você
-        não tem um código ou não lembra a senha, entre em contato com o
-        escritório.
-      </p>
+      <div className="portal-login__logo">
+        <LogoLex />
+      </div>
     </div>
   );
 }

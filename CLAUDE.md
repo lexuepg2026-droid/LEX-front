@@ -4601,6 +4601,84 @@ efêmero). Este desenho atende às duas leituras e se reverte tirando o ×.
 
 ---
 
+## DEC-096 (frontend) — o portal por pessoa, na pele da Figura 15 (Fase 2.5)
+
+> O contrato é das DEC-089 a DEC-095, no `CLAUDE.md` do backend: login pelo
+> código PESSOAL, sessão da pessoa, e cada processo liberado pela advogada,
+> conferido pelo servidor a cada requisição.
+
+**As rotas do portal:**
+
+| Rota | Tela |
+|---|---|
+| `/portal` | login |
+| `/portal/senha` | troca obrigatória da senha provisória (só a pele mudou) |
+| `/portal/processos` | **"Seus processos"** (nova) |
+| `/portal/processos/:processoId` | o processo |
+
+`/portal/processo` (singular) saiu; o coringa da 2a responde a ela.
+
+**"Seus processos"** (`pages/portal/PortalProcessListPage.jsx`): "Olá, {nome}"
+e um cartão-link por processo, com título, número, fase, papel, trânsito e os
+selos "N documentos novos" e "Confirmação de leitura pendente".
+- **Um processo só → vai direto para ele** (`<Navigate replace>`): uma tela de
+  escolha com uma opção é um clique a mais para ninguém. O login, a troca de
+  senha e o portão levam sempre à lista; quem decide é ela.
+- **Nenhum → "Nenhum processo liberado para você no momento. Fale com seu
+  advogado."** Não é erro: é o estado de quem ainda não teve processo liberado.
+- A tela não filtra nada: o que entra na lista é do servidor.
+
+**O processo** recebe o `:processoId` da URL e o passa à lista de documentos e à
+confirmação. Mantém fase e trânsito em julgado, e ganha "Voltar aos seus
+processos" quando há mais de um. O 404 (não existe, não liberado, ou desligado
+no meio da sessão) aparece como erro com o caminho de volta à lista. O recibo da
+confirmação diz o processo.
+
+**A pele:** `components/portal/Portal.css` usa **só** os tokens fixos da marca
+(`--color-marca-*`, DEC-078) — cartão `#01261F` sobre o verde `#174034`, texto
+bege, botão claro em pílula. O portal não muda com o tema da advogada, e há
+teste proibindo token do tema na folha. Dois tokens novos: `--color-marca-sucesso`
+(o "confirmado" sobre o escuro) e `--color-marca-escuro-hover`. As regras de
+formulário ficaram escopadas por `.portal` (`.form-group` existe nos
+formulários da advogada). Todos os pares em `tests/css/contrastePares.js`
+("portal: …").
+
+**O login:** "Voltar" para `/` (exceção nomeada na varredura da 2a — leva à
+página pública, não espera login), título sobre o verde, cartão escuro com
+rótulos **acima** dos campos ("Código de acesso", "Senha"), botão "Entrar", e
+no lugar do "Esqueceu a senha?" simulado do desenho dela um texto que **não é
+link**: "Esqueceu a senha? Fale com seu advogado." A logo pequena embaixo. A
+barra com logo e "Sair" só aparece com sessão.
+
+**`PortalAuthContext`** guarda `{ senhaPortalProvisoria, cliente }`; `papel` e
+`processoId` saíram (eram do vínculo da sessão antiga). Sair e sessão perdida
+continuam levando a `/portal`.
+
+---
+
+## DEC-097 (frontend) — o lado da advogada: liberar processo a processo (Fase 2.5)
+
+- **"Liberado no portal"** (`components/processes/LiberacaoPortal.jsx`), por
+  participante, no detalhe do processo — só para quem tem portal
+  (`temAcessoPortal`). É um `role="switch"` com `aria-checked`; o estado está na
+  palavra ("sim"/"não") e na posição, não só na cor. **Ligar é direto;
+  desligar confirma em linha**, com o foco em "Desligar", Escape cancelando e o
+  foco de volta ao interruptor. Sem sinal, `aria-disabled`, como toda ação que
+  exige rede nesta tela.
+- **A entrega** (`AccessDelivery`) mostra o código **pessoal** ("Código de acesso
+  pessoal de {nome}"), diz se ESTE processo está liberado e, se não estiver,
+  oferece "Liberar este processo" ali mesmo. Sem senha de portal, diz o caminho:
+  definir a senha provisória no cadastro do cliente, que cria o código.
+- **O detalhe do cliente** ganhou o bloco "Acesso ao portal"
+  (`components/clients/AcessoPortalResumo.jsx`): o código pessoal, a situação da
+  senha e "N de M processos liberados", concordando com M. Sem espelho local —
+  é metade de uma credencial. A lista completa por processo, com os controles,
+  é da subfase 3.5; a revogação continua no formulário do cliente.
+- **A faixa de contexto** (`contextoDoProcesso`) não mudou: `participantes` só
+  ganhou campos, e o teste dela continua passando.
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:
