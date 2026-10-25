@@ -73,9 +73,14 @@
   min-width: 800px;
 }
 
+/* A aparência das tabelas dela (Fase 1): sem bordas verticais, uma linha
+   discreta separando as linhas. O padding NÃO mudou — as larguras de
+   `col-money`, `col-parcela` e `col-acoes-menu`, mais abaixo, são contas
+   feitas com ele. */
 .data-table th,
 .data-table td {
-  border: 1px solid var(--color-border);
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
   padding: var(--space-3);
   text-align: left;
   white-space: nowrap;
@@ -361,8 +366,10 @@
   color: var(--color-text-secondary);
 }
 
-.data-table tr:nth-child(even) {
-  background-color: rgba(255, 255, 255, 0.02);
+/* O zebrado era branco a 2%, que some no modo claro. No lugar, o hover de
+   linha: ajuda a seguir a linha com o olho até o menu ⋮ do fim. */
+.data-table tbody tr:hover {
+  background-color: var(--color-accent-muted);
 }
 
 /* Registro desfeito que continua na lista — hoje, o honorário cancelado
