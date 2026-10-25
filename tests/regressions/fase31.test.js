@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// FASE 3.1 — o Início (DEC-098 a DEC-101)
+// FASE 3.1 — o Início (DEC-098 a DEC-100)
 //
 // O que a suíte sem DOM consegue provar: as funções puras do mês e das Datas
 // próximas, o mês na chave do espelho, as chamadas com e sem `?mes=`, e as
