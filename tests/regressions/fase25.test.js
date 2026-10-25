@@ -114,3 +114,45 @@ describe("Fase 2.5 · a pele da Figura 15", () => {
     assert.doesNotMatch(css, /^\.form-group\b/m, ".form-group solto pegaria os formulários da advogada");
   });
 });
+
+describe("Fase 2.5 · o lado da advogada (DEC-097)", () => {
+  test("o serviço tem a liberação e o acesso do cliente", () => {
+    assert.match(semComentarios(ler("src/api/processService.js")),
+      /api\.patch\(`\/processes\/\$\{id\}\/clientes\/\$\{clienteId\}\/liberacao`, \{ liberadoNoPortal \}\)/);
+    assert.match(semComentarios(ler("src/api/clientService.js")), /api\.get\(`\/clients\/\$\{id\}\/acesso-portal`\)/);
+  });
+
+  test("o interruptor é um switch acessível, e desligar pede confirmação com Escape", () => {
+    const c = semComentarios(ler("src/components/processes/LiberacaoPortal.jsx"));
+    assert.match(c, /role="switch"/);
+    assert.match(c, /aria-checked=\{liberado\}/);
+    assert.match(c, /if \(liberado\) setConfirmando\(true\);\s*else gravar\(true\);/, "ligar é direto, desligar confirma");
+    assert.match(c, /e\.key === 'Escape'/);
+    assert.match(c, /botaoDesligar\.current\?\.focus\(\)/, "o foco vai para Desligar");
+    assert.match(c, /controle\.current\?\.focus\(\)/, "e volta ao interruptor");
+    assert.match(c, /aria-disabled=\{online && !enviando \? undefined : 'true'\}/, "sem sinal, anunciado desabilitado");
+  });
+
+  test("o detalhe do processo mostra o interruptor só para quem tem portal", () => {
+    const pagina = semComentarios(ler("src/pages/processes/ProcessDetailPage.jsx"));
+    assert.match(pagina, /\{noPortal\?\.temAcessoPortal && \(\s*<LiberacaoPortal/);
+  });
+
+  test("a entrega mostra o código PESSOAL, diz se o processo está liberado e oferece liberar", () => {
+    const c = semComentarios(ler("src/components/processes/AccessDelivery.jsx"));
+    assert.match(c, /Código de acesso pessoal de \{nomeCliente\}/);
+    assert.match(c, /ainda não está liberado/);
+    assert.match(c, /Liberar este processo/);
+    assert.match(c, /processService\.setLiberacaoNoPortal\(processoId, clienteId, true\)/);
+    assert.match(c, /ainda não tem acesso ao portal/, "sem senha, diz o caminho");
+  });
+
+  test("o detalhe do cliente tem o bloco Acesso ao portal, sem a senha", () => {
+    const pagina = semComentarios(ler("src/pages/clients/ClientDetailPage.jsx"));
+    assert.match(pagina, /<AcessoPortalResumo clienteId=\{id\} \/>/);
+    const bloco = semComentarios(ler("src/components/clients/AcessoPortalResumo.jsx"));
+    assert.match(bloco, /acesso\.codigoAcessoPessoal/);
+    assert.match(bloco, /acesso\.processosLiberados\} de \{acesso\.processosAtivos\}/);
+    assert.doesNotMatch(bloco, /senhaPortalHash/);
+  });
+});

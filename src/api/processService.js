@@ -74,8 +74,18 @@ const removeProcessCliente = (id, clienteId) =>
 // Endpoint próprio, e não campo da listagem: o código de acesso não vem junto
 // com os participantes de propósito, para não vazar em log nem em print de
 // tela. Só é buscado quando a advogada pede o de um participante específico.
+//
+// Fase 2.5 (DEC-093): a rota é a mesma, e o código que ela devolve é o
+// PESSOAL do cliente — o único que autentica —, junto com `liberadoNoPortal`
+// deste processo e a situação da senha.
 const getProcessClienteCodigoAcesso = (id, clienteId) =>
   api.get(`/processes/${id}/clientes/${clienteId}/codigo-acesso`);
+
+// Fase 2.5 (DEC-091): liberar ou desligar ESTE processo no portal deste
+// cliente. O cliente desligado é recusado já na próxima tela do portal — o
+// servidor confere a liberação a cada requisição.
+const setLiberacaoNoPortal = (id, clienteId, liberadoNoPortal) =>
+  api.patch(`/processes/${id}/clientes/${clienteId}/liberacao`, { liberadoNoPortal });
 
 // ── Confirmações de visualização (Fase 3.1, consumidas na 3.2) ─────────────
 //
@@ -112,6 +122,7 @@ export default {
   setProcessClientePrincipal,
   removeProcessCliente,
   getProcessClienteCodigoAcesso,
+  setLiberacaoNoPortal,
   listProcessConfirmacoes,
   marcarConfirmacoesVistas,
 };

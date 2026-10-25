@@ -42,7 +42,12 @@ const reactivateClient = (id) => api.patch(`/clients/${id}/reactivate`);
 // descuido no meio de um formulário grande.
 const revogarSenhaPortal = (id) => api.delete(`/clients/${id}/senha-portal`);
 
+// Fase 2.5: o código pessoal, a situação da senha e "N de M processos
+// liberados" — o bloco "Acesso ao portal" do detalhe do cliente.
+const getAcessoPortal = (id) => api.get(`/clients/${id}/acesso-portal`);
+
 export default {
+  getAcessoPortal,
   getAllClients,
   getClientById,
   createClient,

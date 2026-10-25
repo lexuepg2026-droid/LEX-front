@@ -13,6 +13,7 @@ import {
 import { getApiErrorMessage } from '../../utils/apiError';
 import StatusBadge from '../../components/ui/StatusBadge';
 import AccessDelivery from '../../components/processes/AccessDelivery';
+import LiberacaoPortal from '../../components/processes/LiberacaoPortal';
 import ProcessFinancialSheet from '../../components/financeiro/ProcessFinancialSheet';
 import ProcessTimeline from '../../components/processes/ProcessTimeline';
 import Loading from '../../components/common/Loading';
@@ -212,6 +213,15 @@ function ProcessoDetalhePage() {
   const participantes = processo.participantes ?? [];
   const principal = participantes.find(p => p.principal);
 
+  // Fase 2.5: a liberação mudou (pelo interruptor ou pela entrega). A lista
+  // de participantes acompanha sem recarregar — o servidor já confirmou.
+  const marcarLiberacao = (clienteId, valor) =>
+    setParticipantesPortal((atual) =>
+      atual.map((v) =>
+        String(v.clienteId?._id ?? v.clienteId) === clienteId ? { ...v, liberadoNoPortal: valor } : v
+      )
+    );
+
   // Estado de portal por clienteId, para casar com a lista já renderizada.
   const portalPorCliente = new Map(
     participantesPortal.map((v) => [
@@ -307,6 +317,21 @@ function ProcessoDetalhePage() {
                     </span>
                   )}
 
+                  {/* Fase 2.5 (DEC-097): quem TEM portal (senha definida) ganha
+                      o controle "Liberado no portal" deste processo. Quem não
+                      tem não vê o controle — liberar sem senha não abriria
+                      nada, e a entrega abaixo diz o que falta. */}
+                  {noPortal?.temAcessoPortal && (
+                    <LiberacaoPortal
+                      processoId={id}
+                      clienteId={clienteId}
+                      nomeCliente={nomeDoCliente(cliente)}
+                      liberado={noPortal.liberadoNoPortal === true}
+                      online={online}
+                      onAlterado={(valor) => marcarLiberacao(clienteId, valor)}
+                    />
+                  )}
+
                   {/* A entrega de acesso GRAVA (gera código e senha
                       provisória): sem sinal ela fica anunciada como
                       desabilitada, e o motivo aparece uma vez, acima, para não
@@ -329,6 +354,8 @@ function ProcessoDetalhePage() {
                       clienteId={clienteId}
                       nomeCliente={nomeDoCliente(cliente)}
                       nomeProcesso={processo.titulo}
+                      online={online}
+                      onLiberado={() => marcarLiberacao(clienteId, true)}
                       onFechar={() => setEntregaAberta(null)}
                     />
                   )}

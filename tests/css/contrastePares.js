@@ -112,6 +112,15 @@ export const PARES = [
   { nome: "menu: Confirmar e-mail / --color-surface", texto: "--color-warning-text", fundo: "--color-surface", limite: TEXTO },
   { nome: "menu: Confirmar e-mail / --color-accent-muted (hover)", texto: "--color-warning-text", fundo: "--color-accent-muted", sobre: ["--color-surface"], limite: TEXTO },
 
+  // "Liberado no portal" (Fase 2.5, DEC-097): o trilho ligado e o desligado
+  // contra a superfície (não texto), o botão branco sobre o trilho ligado, e
+  // o texto do aviso de desligamento.
+  { nome: "liberação: trilho ligado / --color-surface", texto: "--color-success-solid", fundo: "--color-surface", limite: NAO_TEXTO },
+  { nome: "liberação: botão / trilho ligado", texto: "--color-on-solid", fundo: "--color-success-solid", limite: NAO_TEXTO },
+  { nome: "liberação: botão desligado / --color-surface", texto: "--color-text-secondary", fundo: "--color-surface", limite: NAO_TEXTO },
+  { nome: "liberação: aviso de desligar / --color-surface", texto: "--color-warning-text", fundo: "--color-surface", limite: TEXTO },
+  { nome: "liberação: Desligar / --color-surface", texto: "--color-danger-text", fundo: "--color-surface", limite: TEXTO },
+
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
   { nome: "borda de campo / --color-surface", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },
