@@ -17,7 +17,8 @@
 
 import { test, describe, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { runInNewContext } from 'node:vm';
 
 const raiz = new URL('../../', import.meta.url).pathname;
@@ -135,6 +136,36 @@ describe('PWA — manifest', () => {
       variaveis.toLowerCase().includes(manifest.theme_color.toLowerCase()),
       'theme_color precisa ser uma cor do tema, senão a barra do sistema destoa do app'
     );
+  });
+
+  // Fase 2a (DEC-077): a identidade nova. A barra do sistema tem a cor do
+  // cabeçalho, e a tela de abertura a do fundo do app — as duas declaradas em
+  // variables.css, e a mesma cor no manifest e no index.html.
+  test('as cores são as da marca nova, iguais no manifest e no index.html', () => {
+    assert.equal(manifest.theme_color.toUpperCase(), '#174034');
+    assert.equal(manifest.background_color.toUpperCase(), '#121212');
+    assert.ok(ler('src/styles/variables.css').toUpperCase().includes(manifest.background_color.toUpperCase()),
+      'background_color precisa ser o fundo do app');
+    const html = ler('index.html').replace(/<!--[\s\S]*?-->/g, '');
+    const meta = html.match(/name="theme-color"\s+content="([^"]+)"/);
+    assert.ok(meta, 'meta theme-color');
+    assert.equal(meta[1].toUpperCase(), manifest.theme_color.toUpperCase());
+  });
+
+  test('os dois tamanhos também são maskable, e os arquivos existem', () => {
+    // O conteúdo dos PNGs fica dentro dos 80% centrais (a área segura): o
+    // Android pode recortar o ícone em círculo sem cortar a logo.
+    for (const tamanho of ['192x192', '512x512']) {
+      assert.ok(manifest.icons.some((i) => i.sizes === tamanho && /\bmaskable\b/.test(i.purpose ?? '')),
+        `${tamanho} maskable`);
+    }
+    for (const icone of manifest.icons) {
+      assert.ok(existsSync(join(raiz, 'public', icone.src)), `${icone.src} existe em public/`);
+    }
+    const html = ler('index.html').replace(/<!--[\s\S]*?-->/g, '');
+    for (const [, href] of html.matchAll(/rel="(?:icon|apple-touch-icon)"[^>]*href="([^"]+)"/g)) {
+      assert.ok(existsSync(join(raiz, 'public', href)), `favicon/apple-touch-icon ${href} existe`);
+    }
   });
 
   test('start_url aponta para uma rota que existe', () => {
