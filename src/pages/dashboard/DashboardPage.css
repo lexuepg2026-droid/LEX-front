@@ -560,7 +560,7 @@ a.datas-item:hover {
 }
 
 /* A pílula com os pares de badge do tema, e não o branco sobre #42A5F5 dela
-   (2,4:1). Vencimento é dinheiro a receber: âmbar. Compromisso: azul. */
+   (2,65:1). Vencimento é dinheiro a receber: âmbar. Compromisso: azul. */
 .datas-item__pilula {
   justify-self: end;
   padding: 2px var(--space-3);
