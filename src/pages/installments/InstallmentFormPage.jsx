@@ -9,6 +9,7 @@ import { toast } from '../../utils/toast';
 import { getApiErrorField } from '../../utils/apiError';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { formatCurrency } from '../../utils/formatters';
+import { LIMITE_DO_SELETOR, avisoDeSeletorLimitado } from '../../utils/seletorLimitado';
 import '../clients/ClientPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
@@ -36,6 +37,8 @@ const EMPTY_FORM = {
 function InstallmentFormPage() {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [fees, setFees] = useState([]);
+  // O total do envelope, para dizer quando o seletor foi cortado (DEC-067).
+  const [totalHonorarios, setTotalHonorarios] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [campoComErro, setCampoComErro] = useState(null);
@@ -61,8 +64,14 @@ function InstallmentFormPage() {
 
 
   useEffect(() => {
-    feeService.listFees()
-      .then(res => setFees(res.data.data ?? res.data))
+    // Sem `limit` vinham os 20 do padrão do backend, e um honorário mais
+    // antigo simplesmente não existia no seletor (DEC-067). O teto é
+    // paliativo: a busca no servidor é da fase 3.
+    feeService.listFees({ page: 1, limit: LIMITE_DO_SELETOR })
+      .then(res => {
+        setFees(res.data.data ?? res.data);
+        setTotalHonorarios(typeof res.data?.total === 'number' ? res.data.total : null);
+      })
       .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar honorários.')));
 
     if (isEditing) {
@@ -166,6 +175,9 @@ function InstallmentFormPage() {
                 </option>
               ))}
             </select>
+            {avisoDeSeletorLimitado(fees.length, totalHonorarios) && (
+              <p className="form-hint">{avisoDeSeletorLimitado(fees.length, totalHonorarios)}</p>
+            )}
           </div>
 
           <div className="form-group span-1">

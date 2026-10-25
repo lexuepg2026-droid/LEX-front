@@ -16,6 +16,7 @@ import { join } from "node:path";
 // é do `axiosConfig.js`, que importa `'../utils/toast'` SEM extensão — não deste
 // módulo.
 import { toast, subscribe } from "../../src/utils/toast.js";
+import { LIMITE_DO_SELETOR, avisoDeSeletorLimitado } from "../../src/utils/seletorLimitado.js";
 
 const RAIZ = fileURLToPath(new URL("../../", import.meta.url));
 const ler = (caminho) => readFileSync(join(RAIZ, caminho), "utf8");
@@ -73,4 +74,38 @@ describe("Fase 0 · item 1 — o toast tem os três tons que as telas chamam", (
     assert.match(regra[1], /background-color:\s*#1D4ED8/i);
     assert.match(regra[1], /color:\s*#FFFFFF/i);
   });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 2 — DEC-067: os seletores pediam 20 e calavam o resto
+// ═══════════════════════════════════════════════════════════════════════════
+describe("Fase 0 · item 2 — o seletor pede o teto do backend e diz quando corta", () => {
+  test("o teto é o mesmo `Math.min(100, …)` dos controllers", () => {
+    assert.equal(LIMITE_DO_SELETOR, 100);
+  });
+
+  test("a frase só aparece quando o total passa do que veio", () => {
+    assert.equal(avisoDeSeletorLimitado(100, 137), "Mostrando os 100 mais recentes de 137.");
+    assert.equal(avisoDeSeletorLimitado(100, 100), null);
+    assert.equal(avisoDeSeletorLimitado(12, 12), null);
+    // Envelope sem `total` (resposta antiga): não se inventa um corte.
+    assert.equal(avisoDeSeletorLimitado(20, null), null);
+    assert.equal(avisoDeSeletorLimitado(20, undefined), null);
+  });
+
+  const FORMULARIOS = [
+    ["src/pages/fees/FeeFormPage.jsx", /processService\.listProcesses\(\{ page: 1, limit: LIMITE_DO_SELETOR \}\)/],
+    ["src/pages/installments/InstallmentFormPage.jsx", /feeService\.listFees\(\{ page: 1, limit: LIMITE_DO_SELETOR \}\)/],
+  ];
+
+  for (const [arquivo, chamada] of FORMULARIOS) {
+    test(`${arquivo.split("/").pop()} pede o teto e mostra o aviso`, () => {
+      const codigo = semComentarios(ler(arquivo));
+      assert.match(codigo, chamada);
+      // A chamada sem argumento é o defeito: voltaria aos 20 do padrão.
+      assert.doesNotMatch(codigo, /\.(listProcesses|listFees)\(\)/);
+      assert.match(codigo, /avisoDeSeletorLimitado\(/);
+      assert.match(codigo, /className="form-hint"/);
+    });
+  }
 });

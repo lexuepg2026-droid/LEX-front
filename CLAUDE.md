@@ -4030,6 +4030,38 @@ suíte o **carrega e executa** — o impedimento de `tests/offline/estatica.test
 
 ---
 
+## DEC-067 (frontend) — o seletor pede o teto e diz quando corta; a busca é da fase 3 (Fase 0)
+
+**O defeito.** O seletor de processo do formulário de honorário
+(`processService.listProcesses()`) e o seletor de honorário do formulário de
+parcela (`feeService.listFees()`) eram chamados **sem `limit`**. O backend
+devolvia os 20 do padrão, e a tela os mostrava como se fossem todos: com 21
+processos, o mais antigo **não existia** no seletor, e não havia como lançar
+honorário para ele por aquela tela.
+
+**O paliativo.** Os dois pedem `limit: 100` — o teto que as rotas aceitam
+(`Math.min(100, …)` em `processController.js` e `feeController.js`; não há
+utilitário compartilhado no backend, então o número mora em
+`utils/seletorLimitado.js` com a referência). Quando o `total` do envelope é
+maior, aparece abaixo do seletor: **"Mostrando os 100 mais recentes de 137."**
+("mais recentes" porque as duas listagens ordenam por `createdAt` decrescente).
+
+**O que NÃO se fez, e por quê:** baixar todas as páginas. Seria trocar um teto
+silencioso por um download que cresce com o escritório, num seletor nativo que
+fica inutilizável muito antes de 500 opções.
+
+**O conserto de verdade fica para a fase 3:** trocar os dois `<select>` por
+`CampoComSugestoes` com busca no servidor (`/fees` e `/processes` já aceitam
+`busca`), o que acaba com o teto e permite mostrar processo e cliente na opção
+— que é o item 4 da 3ª banca.
+
+**Limite conhecido do paliativo:** na **edição**, se o registro aponta para um
+processo ou honorário fora dos 100 mais recentes, o `<select>` não tem a opção e
+aparece vazio. O valor continua no `formData` e vai no payload; o que falta é a
+exibição. Some junto com o `<select>` na fase 3.
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:
