@@ -345,6 +345,11 @@
   align-items: stretch;
 }
 
+/* O parágrafo de abertura do cartão não pode encostar no primeiro rótulo. */
+.portal-login .portal-cartao > .portal-texto {
+  margin-bottom: var(--space-5);
+}
+
 .portal-login__titulo {
   font-size: var(--font-size-2xl, 1.75rem);
   color: var(--color-marca-texto);
