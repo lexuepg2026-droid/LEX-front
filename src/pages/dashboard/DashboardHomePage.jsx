@@ -144,6 +144,9 @@ const CARDS_ACUMULADOS = [
   { key: 'pendente',        label: 'Em Aberto (total)',        icone: 'relogio',   color: 'warning' },
 ];
 
+// Os blocos de estatística, que nascem fechados.
+const PADRAO_FECHADO = new Set(['acumulado', 'resumo', 'graficos']);
+
 const formatCurrentDate = () =>
   new Date().toLocaleDateString('pt-BR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -214,9 +217,14 @@ function DashboardHomePage() {
   // estatística responde outra.
   const [fechados, setFechados] = useState(lerBlocosFechados);
 
+  // Alternar parte do estado À VISTA, e não do gravado: sem preferência
+  // gravada, `!prev[chave]` dava `true` ("fechado") para um bloco que já nasce
+  // fechado, e o primeiro clique não abria nada (achado da Fase 3.1, no
+  // navegador). `PADRAO_FECHADO` é a mesma lista do segundo argumento de
+  // `estaAberto` abaixo.
   const alternarBloco = (chave) => {
     setFechados((prev) => {
-      const proximoEstado = { ...prev, [chave]: !prev[chave] };
+      const proximoEstado = { ...prev, [chave]: !(prev[chave] ?? PADRAO_FECHADO.has(chave)) };
       gravarBlocosFechados(proximoEstado);
       return proximoEstado;
     });

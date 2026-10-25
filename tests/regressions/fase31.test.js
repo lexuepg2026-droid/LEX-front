@@ -200,6 +200,14 @@ describe("Fase 3.1 · a página", () => {
     assert.match(tela, /titulo=\{`Em \$\{rotuloMes\}`\}/);
   });
 
+  test("o primeiro clique num bloco que nasce fechado o ABRE (achado no navegador)", () => {
+    assert.match(tela, /\[chave\]: !\(prev\[chave\] \?\? PADRAO_FECHADO\.has\(chave\)\)/);
+    assert.match(tela, /const PADRAO_FECHADO = new Set\(\['acumulado', 'resumo', 'graficos'\]\);/);
+    for (const chave of ["acumulado", "resumo", "graficos"]) {
+      assert.match(tela, new RegExp(`estaAberto\\('${chave}', true\\)`), `${chave} nasce fechado e está na lista`);
+    }
+  });
+
   test("'Precisa de atenção' só aparece quando há algo", () => {
     assert.match(tela, /\{temAtencao && \(\s*<BlocoDoPainel\s+chave="atencao"/);
   });
