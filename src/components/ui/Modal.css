@@ -23,10 +23,12 @@
   z-index: 200;
 }
 
+/* Superfície e raio dos balões dela (24 px). A borda fica discreta: no escuro
+   a surface já se destaca da sobreposição, e no claro a sombra faz o recorte. */
 .modal {
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  border-radius: var(--space-6);
   padding: var(--space-6);
   width: 100%;
   max-width: 420px;
@@ -40,11 +42,14 @@
   margin: 0 0 var(--space-3);
 }
 
+/* `pre-line`, como o dela: a mensagem que chega com quebra de linha (a lista
+   de efeitos de um estorno, por exemplo) sai em linhas, e não emendada. */
 .modal__message {
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
   margin: 0 0 var(--space-6);
   line-height: var(--line-height-normal);
+  white-space: pre-line;
 }
 
 .modal__actions {
