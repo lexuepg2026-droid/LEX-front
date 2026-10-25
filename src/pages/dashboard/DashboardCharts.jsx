@@ -71,14 +71,30 @@ function ChartLegend({ data }) {
   );
 }
 
-function DashboardCharts({ statusData, feesByMonth }) {
+// A data de referência da série: o dia 1 do mês escolhido, em UTC. Sem mês
+// (ou com um inválido), o relógio — como antes da Fase 3.1.
+const referenciaDoMes = (chave) => {
+  const partes = /^(\d{4})-(\d{2})$/.exec(chave ?? '');
+  return partes ? new Date(Date.UTC(Number(partes[1]), Number(partes[2]) - 1, 1)) : new Date();
+};
+
+// ── O que segue o mês, e o que não (Fase 3.1, DEC-098) ───────────────────
+// A BARRA é uma série de 6 meses que termina no mês escolhido no Início. Os
+// DONUTS são a situação de hoje: o sistema não guarda o status que um
+// processo ou uma parcela tinha num mês passado, então "o donut de março" não
+// existe — e o título diz "geral" para ninguém ler como se fosse de março.
+function DashboardCharts({ statusData, feesByMonth, mesReferencia }) {
   // A janela do gráfico é sempre de 6 meses, com os vazios zerados. Ver
   // `utils/chartSeries.js`.
-  const serieMensal = preencherMeses(feesByMonth);
+  const serieMensal = preencherMeses(feesByMonth, referenciaDoMes(mesReferencia));
+  const ultimoMes = serieMensal[serieMensal.length - 1]?.mes;
   const temHonorarioNoPeriodo = serieMensal.some((m) => m.total > 0);
 
   return (
     <>
+      {statusData && (
+        <h2 className="summary-title">Situação atual (geral)</h2>
+      )}
       {statusData && (
         <div className="charts-grid">
           {DONUTS.map(({ key, label }) => {
@@ -136,13 +152,13 @@ function DashboardCharts({ statusData, feesByMonth }) {
           do mês. Rotular "Honorários por mês" deixava a advogada livre para
           ler como faturamento. */}
       <h2 className="summary-title chart-sub-title">
-        Honorários contratados por mês de cadastro
+        Honorários contratados por mês de cadastro — 6 meses até {formatMonthKey(ultimoMes)}
       </h2>
 
       {!temHonorarioNoPeriodo ? (
         <EmptyState
           title="Sem dados no período."
-          description="Nenhum honorário contratado nos últimos 6 meses."
+          description={`Nenhum honorário contratado nos 6 meses até ${formatMonthKey(ultimoMes)}.`}
         />
       ) : (
         <div className="chart-bar-wrapper">

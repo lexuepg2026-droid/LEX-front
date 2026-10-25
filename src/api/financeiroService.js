@@ -1,6 +1,11 @@
 import api from './axiosConfig';
 
-const getResumo = () => api.get('/financeiro/resumo');
+// `mes` (Fase 3.1, DEC-098): `"AAAA-MM"` escolhe o mês dos campos do mês
+// (`aReceberNoMes`, `recebidoNoMes`, `mesReferencia`). Omitido, o backend usa o
+// mês corrente dele — e o parâmetro nem vai na URL, para a chamada sem mês
+// continuar sendo a mesma de antes.
+const getResumo = (mes) =>
+  api.get('/financeiro/resumo', mes ? { params: { mes } } : undefined);
 
 // Ficha financeira de UM processo (Fase 4.1). Responde FORA do envelope de
 // listagem — `{ processo, totais, honorarios, geradoEm }`, sem `data`, `page`
