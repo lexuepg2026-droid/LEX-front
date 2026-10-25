@@ -70,10 +70,10 @@
 }
 
 .biblioteca__filtros select {
-  padding: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   background: var(--color-surface-input);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-campo);
   color: var(--color-text-primary);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
@@ -126,8 +126,8 @@
 }
 
 .miniatura--armada {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary);
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 1px var(--color-primary-light);
 }
 
 /* Já no documento: fica visível mas claramente indisponível. O índice único do
@@ -225,7 +225,7 @@
   min-height: 34px;
   border-top: 1px solid var(--color-border);
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
 }

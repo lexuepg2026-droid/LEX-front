@@ -8,10 +8,10 @@
 }
 
 .logo {
-  width: 150px;
+  width: 180px;
   height: auto;
   margin-bottom: 30px;
-  filter: var(--logo-filter);
+  color: var(--color-accent);
 }
 
 .login-page form {
@@ -25,9 +25,9 @@
 
 .login-page .form-group input {
   width: 100%;
-  padding: 12px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--text-color);
+  padding: 12px 14px;
+  border-radius: var(--radius-campo);
+  border: 1px solid var(--color-border-input);
   background: var(--bg-input);
   color: var(--text-color);
   font-size: 16px;
@@ -57,7 +57,7 @@
 }
 
 .login-page .error-message {
-  color: #ff6b6b;
+  color: var(--color-danger-text);
   text-align: center;
   margin-bottom: 15px;
 }

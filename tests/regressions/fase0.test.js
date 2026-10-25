@@ -70,11 +70,20 @@ describe("Fase 0 · item 1 — o toast tem os três tons que as telas chamam", (
   });
 
   test("o tom info tem regra de CSS, com fundo sólido e texto branco", () => {
+    // Desde a Fase 1 a cor vem de token (`--color-info-solid`, #1F5A96), e o
+    // contraste é medido nos dois modos por `tests/css/contraste.test.js`. O que
+    // fica travado aqui é a decisão da DEC-066: fundo SÓLIDO e texto branco.
     const css = ler("src/styles/toast.css");
     const regra = css.match(/\.toast--info\s*\{([^}]*)\}/);
     assert.ok(regra, ".toast--info existe");
-    assert.match(regra[1], /background-color:\s*#1D4ED8/i);
-    assert.match(regra[1], /color:\s*#FFFFFF/i);
+    assert.match(regra[1], /background-color:\s*var\(--color-info-solid\)/);
+    assert.match(regra[1], /(^|[;\s])color:\s*var\(--color-on-solid\)/);
+
+    const variaveis = ler("src/styles/variables.css");
+    assert.match(variaveis, /--color-on-solid:\s*#FFFFFF;/i, "texto branco");
+    const solidos = [...variaveis.matchAll(/--color-info-solid:\s*([^;]+);/g)].map((m) => m[1].trim());
+    assert.ok(solidos.length > 0, "--color-info-solid declarado");
+    for (const v of solidos) assert.match(v, /^#[0-9a-f]{6}$/i, `fundo sólido, sem alfa: ${v}`);
   });
 });
 

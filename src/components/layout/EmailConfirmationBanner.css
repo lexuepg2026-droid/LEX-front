@@ -32,11 +32,11 @@
 }
 
 .email-banner__aviso--ok {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .email-banner__aviso--erro {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 /* Botão próprio: `.btn-secondary` só tem regra dentro de ProcessPage.css, e o

@@ -12,7 +12,7 @@
 
 .dashboard-date {
   font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   margin: 0;
   text-transform: capitalize;
 }
@@ -26,7 +26,7 @@
   font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   margin: 0 0 var(--space-4);
 }
 
@@ -36,57 +36,87 @@
   gap: var(--space-4);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   O CARTÃO DE RESUMO — valor em cima, rótulo embaixo (Fase 1, item 2 da banca)
+
+   O layout é o `.homeCartao` dela: alinhado à esquerda, fundo levemente
+   destacado da surface, valor grande primeiro. Antes o cartão era centralizado,
+   com o ícone em cima e o rótulo em caixa alta: numa linha da grade com um
+   rótulo de uma linha e outro de duas, os VALORES começavam em alturas
+   diferentes, e a banca leu os números como desalinhados.
+
+   ── Ordem visual × ordem de leitura ─────────────────────────────────────
+   No DOM o rótulo vem ANTES do valor, e o `order` do flex o põe embaixo. O
+   leitor de tela continua lendo "Total vencido, R$ 1.200,00", e não um número
+   solto seguido do que ele significa. Nada no cartão recebe foco, então a
+   troca não desalinha a ordem de Tab.
+
+   ── Por que os valores de uma linha começam na mesma altura ─────────────
+   O valor é o primeiro item e tem `line-height` fixo: todos os cartões de uma
+   linha da grade o desenham no mesmo topo. O rótulo tem `min-height` de duas
+   linhas, para a nota que vem depois também começar alinhada.
+   ═══════════════════════════════════════════════════════════════════════════ */
 .summary-card {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5) var(--space-4);
-  text-align: center;
-  background-color: var(--color-surface);
-}
-
-.card-icon {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: var(--space-3);
-  color: var(--color-text-muted);
-}
-
-.summary-card--primary .card-icon  { color: var(--color-accent); }
-.summary-card--warning .card-icon  { color: var(--color-warning); }
-.summary-card--danger  .card-icon  { color: var(--color-danger); }
-.summary-card--success .card-icon  { color: var(--color-success); }
-.summary-card--neutral .card-icon  { color: var(--color-text-muted); }
-.summary-card--info    .card-icon  { color: var(--color-info); }
-
-.card-label {
-  font-size: var(--font-size-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--color-text-muted);
-  margin: 0 0 var(--space-2);
+  flex-direction: column;
+  gap: var(--space-1);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  text-align: left;
+  background-color: var(--color-surface-card);
 }
 
 .card-value {
+  order: -1;
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 2.25rem;
   color: var(--color-text-primary);
   margin: 0;
 }
 
-.summary-card--danger  .card-value { color: var(--color-danger); }
-.summary-card--warning .card-value { color: var(--color-warning); }
-.summary-card--success .card-value { color: var(--color-success); }
-.summary-card--info    .card-value { color: var(--color-info); }
+/* Sem caixa alta e sem `letter-spacing`: o rótulo é frase ("Recebido em
+   outubro"), e caixa alta espaçada encompridava o texto até quebrar linha. */
+.card-label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-height: calc(2em * var(--line-height-tight));
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-tight);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Ícone pequeno AO LADO do rótulo, nunca acima do valor. Decorativo: o
+   lucide-react já o marca `aria-hidden`. */
+.card-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.summary-card--primary .card-icon  { color: var(--color-accent); }
+.summary-card--warning .card-icon  { color: var(--color-warning-text); }
+.summary-card--danger  .card-icon  { color: var(--color-danger-text); }
+.summary-card--success .card-icon  { color: var(--color-success-text); }
+.summary-card--neutral .card-icon  { color: var(--color-text-muted); }
+.summary-card--info    .card-icon  { color: var(--color-info-text); }
+
+.summary-card--danger  .card-value { color: var(--color-danger-text); }
+.summary-card--warning .card-value { color: var(--color-warning-text); }
+.summary-card--success .card-value { color: var(--color-success-text); }
+.summary-card--info    .card-value { color: var(--color-info-text); }
 
 /* Texto secundário do cartão (Fase 4.3): a contagem de parcelas vencidas ao
    lado do valor, e a frase que explica um zero real ("nenhum recebimento no
    mês"). Fica esmaecido de propósito — é a nota de rodapé do número, não um
    segundo número. */
 .card-note {
-  margin: var(--space-2) 0 0;
+  margin: 0;
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   line-height: var(--line-height-tight);
 }
 
@@ -149,7 +179,7 @@
 
 .upcoming-due {
   font-size: var(--font-size-xs);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .upcoming-right {
@@ -167,7 +197,7 @@
 
 /* --- Error --- */
 .error-message {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-size-sm);
   margin: var(--space-2) 0;
 }
@@ -208,7 +238,7 @@
 
 .chart-empty {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   margin: var(--space-6) 0;
   text-align: center;
 }

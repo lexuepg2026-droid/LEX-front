@@ -20,8 +20,9 @@
 // consulta ocasional. Quem se ajustou foi o gráfico.
 //
 // ── Por que a cor é o TEXTO do badge, e não o fundo ────────────────────────
-// O badge pinta fundo esmaecido (`--color-*-bg`, 10% de alpha) e texto em cor
-// plena. Numa fatia de donut, o fundo de 10% seria cinza para qualquer olho.
+// O badge pinta fundo esmaecido (`--color-*-bg`) e texto em `--color-*-text`,
+// o tom de texto de cada modo (Fase 1, DEC-075). Numa fatia de donut, o fundo
+// esmaecido seria cinza para qualquer olho.
 // A cor que a pessoa identifica como "a cor do Vencido" é a do texto — é essa
 // que a fatia usa.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -30,10 +31,10 @@
 // que não tem `--color-neutral`: o cinza legível do projeto é o do texto
 // secundário, e é ele que o badge neutro já usa.
 export const COR_DO_TOM = {
-  success: 'var(--color-success)',
-  warning: 'var(--color-warning)',
-  danger:  'var(--color-danger)',
-  info:    'var(--color-info)',
+  success: 'var(--color-success-text)',
+  warning: 'var(--color-warning-text)',
+  danger:  'var(--color-danger-text)',
+  info:    'var(--color-info-text)',
   neutral: 'var(--color-text-secondary)',
 };
 

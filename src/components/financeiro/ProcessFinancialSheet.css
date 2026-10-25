@@ -41,8 +41,8 @@
   color: var(--color-text-primary);
 }
 
-.ficha-total__valor--success { color: var(--color-success); }
-.ficha-total__valor--warning { color: var(--color-warning); }
+.ficha-total__valor--success { color: var(--color-success-text); }
+.ficha-total__valor--warning { color: var(--color-warning-text); }
 
 .ficha-total__nota {
   font-size: var(--font-size-sm);
@@ -128,7 +128,7 @@
 .ficha-aviso {
   margin: 0;
   font-size: var(--font-size-sm);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 /* ── Parcelas ───────────────────────────────────────────────────────────── */
@@ -188,7 +188,7 @@
   color: var(--color-text-secondary);
 }
 
-.ficha-pagamento strong { color: var(--color-success); }
+.ficha-pagamento strong { color: var(--color-success-text); }
 
 /* ── Documentos do honorário ────────────────────────────────────────────── */
 
@@ -204,7 +204,7 @@
   color: var(--color-text-primary);
 }
 
-.ficha-documentos__meta { color: var(--color-text-muted); }
+.ficha-documentos__meta { color: var(--color-text-discreto); }
 
 @media (max-width: 1023px) {
   .ficha-totais { grid-template-columns: repeat(2, 1fr); }
@@ -221,7 +221,7 @@
    explicação, não alarme. Só é renderizado quando existe (ver o JSX): uma
    linha "R$ 0,00" em todo honorário seria ruído em cima do que importa. */
 .ficha-saldo {
-  color: var(--color-info);
+  color: var(--color-info-text);
 }
 
 /* ── Parcela substituída por reparcelamento (F-1a.1) ───────────────────────

@@ -4,7 +4,7 @@ import authService from '../../api/authService';
 import { getApiErrorMessage, getApiErrorCode } from '../../utils/apiError';
 import './LoginPage.css';
 import './AuthEmail.css';
-import logo from '../../assets/logo-lex.jpeg';
+import LogoLex from '../../components/ui/LogoLex.jsx';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ESCOLHER A NOVA SENHA (A-2, DEC-064) — o destino do link do e-mail
@@ -74,7 +74,7 @@ function ResetPasswordPage() {
   if (concluido) {
     return (
       <div className="login-page">
-        <img src={logo} alt="Logo LEX" className="logo" />
+        <LogoLex className="logo" />
         <h1 className="auth-titulo">Senha redefinida</h1>
         <p className="auth-mensagem" role="status">
           Sua senha foi alterada. Por segurança, todos os aparelhos conectados à sua conta foram desconectados.
@@ -89,7 +89,7 @@ function ResetPasswordPage() {
   if (!token || linkMorto) {
     return (
       <div className="login-page">
-        <img src={logo} alt="Logo LEX" className="logo" />
+        <LogoLex className="logo" />
         <h1 className="auth-titulo">Link inválido</h1>
         <p className="auth-mensagem auth-mensagem--erro" role="alert">
           {linkMorto && erro ? erro : 'Este link é inválido ou já foi utilizado.'}
@@ -104,7 +104,7 @@ function ResetPasswordPage() {
 
   return (
     <div className="login-page">
-      <img src={logo} alt="Logo LEX" className="logo" />
+      <LogoLex className="logo" />
       <h1 className="auth-titulo">Escolha uma nova senha</h1>
 
       <form onSubmit={handleSubmit}>

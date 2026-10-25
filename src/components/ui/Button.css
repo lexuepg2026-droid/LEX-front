@@ -3,7 +3,8 @@
   align-items: center;
   gap: var(--space-2);
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  /* Pílula, a forma dos botões dela (Fase 1). */
+  border-radius: var(--radius-pill);
   font-family: var(--font-family);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
@@ -12,22 +13,24 @@
   transition: background-color var(--transition-fast), opacity var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
-/* Tamanhos */
-.ui-btn--sm  { padding: var(--space-1) var(--space-3); font-size: var(--font-size-sm); }
-.ui-btn--md  { padding: var(--space-2) var(--space-4); font-size: var(--font-size-base); }
+/* Tamanhos. A pílula pede mais respiro lateral que o retângulo de antes. */
+.ui-btn--sm  { padding: var(--space-1) var(--space-4); font-size: var(--font-size-sm); }
+.ui-btn--md  { padding: var(--space-2) var(--space-5); font-size: var(--font-size-base); }
 
 /* Variantes */
 .ui-btn--primary {
   background-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 .ui-btn--primary:hover:not(:disabled) {
   background-color: var(--color-primary-dark);
 }
 
+/* O *outlined* dela: a borda tem a cor do texto, e não a da linha discreta
+   — sem fundo, é a borda que diz que aquilo é um botão. */
 .ui-btn--secondary {
   background-color: transparent;
-  border-color: var(--color-border-strong);
+  border-color: currentColor;
   color: var(--color-text-primary);
 }
 .ui-btn--secondary:hover:not(:disabled) {
@@ -35,8 +38,8 @@
 }
 
 .ui-btn--danger {
-  background-color: var(--color-danger);
-  color: #fff;
+  background-color: var(--color-danger-solid);
+  color: var(--color-on-solid);
 }
 .ui-btn--danger:hover:not(:disabled) {
   opacity: 0.85;
@@ -55,4 +58,11 @@
 .ui-btn[aria-disabled='true'] {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+/* O anel é o global de `styles/global.css`; aqui só o raio acompanha a
+   pílula, senão o `border-radius: 4px` da regra global faria o anel quadrado
+   em volta de um botão redondo. */
+.ui-btn:focus-visible {
+  border-radius: var(--radius-pill);
 }

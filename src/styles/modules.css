@@ -26,7 +26,7 @@
 }
 
 .filter-toggle input[type="checkbox"] {
-  accent-color: var(--color-primary);
+  accent-color: var(--color-primary-light);
   cursor: pointer;
   width: 15px;
   height: 15px;
@@ -35,8 +35,8 @@
 .filter-bar input,
 .filter-bar select {
   background: var(--color-surface-input);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-campo);
   color: var(--color-text-primary);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
@@ -47,7 +47,7 @@
 
 .filter-bar input:focus,
 .filter-bar select:focus {
-  border-color: var(--color-border-strong);
+  border-color: var(--color-text-primary);
 }
 
 .filter-bar select option {
@@ -73,9 +73,14 @@
   min-width: 800px;
 }
 
+/* A aparência das tabelas dela (Fase 1): sem bordas verticais, uma linha
+   discreta separando as linhas. O padding NÃO mudou — as larguras de
+   `col-money`, `col-parcela` e `col-acoes-menu`, mais abaixo, são contas
+   feitas com ele. */
 .data-table th,
 .data-table td {
-  border: 1px solid var(--color-border);
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
   padding: var(--space-3);
   text-align: left;
   white-space: nowrap;
@@ -283,7 +288,7 @@
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   background-color: var(--color-warning-bg);
   white-space: nowrap;
 }
@@ -361,8 +366,10 @@
   color: var(--color-text-secondary);
 }
 
-.data-table tr:nth-child(even) {
-  background-color: rgba(255, 255, 255, 0.02);
+/* O zebrado era branco a 2%, que some no modo claro. No lugar, o hover de
+   linha: ajuda a seguir a linha com o olho até o menu ⋮ do fim. */
+.data-table tbody tr:hover {
+  background-color: var(--color-accent-muted);
 }
 
 /* Registro desfeito que continua na lista — hoje, o honorário cancelado
@@ -421,12 +428,12 @@
   font-family: var(--font-family);
 }
 
-.btn-edit   { background-color: var(--color-primary); color: #fff; }
-.btn-view   { background-color: #5c6bc0;              color: #fff; }
-.btn-delete { background-color: var(--color-danger);  color: #fff; }
+.btn-edit   { background-color: var(--color-primary);      color: var(--color-on-primary); }
+.btn-view   { background-color: var(--color-info-solid);   color: var(--color-on-solid); }
+.btn-delete { background-color: var(--color-danger-solid); color: var(--color-on-solid); }
 
 .error-message {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-size-sm);
   margin: var(--space-2) 0;
 }
@@ -468,7 +475,7 @@
    que houve estorno sem precisar de uma coluna a mais. Cor de aviso, e não de
    perigo: um estorno é um fato registrado, não um erro. */
 .data-table .valor-estornado {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-weight: 600;
 }
 
@@ -526,7 +533,7 @@
 }
 
 .link-interno:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }

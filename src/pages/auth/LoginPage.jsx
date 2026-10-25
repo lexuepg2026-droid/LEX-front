@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { emailValido, MENSAGEM_EMAIL_INVALIDO } from '../../utils/email';
 import './LoginPage.css';
-import logo from '../../assets/logo-lex.jpeg';
+import LogoLex from '../../components/ui/LogoLex.jsx';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -52,7 +52,7 @@ function LoginPage() {
 
   return (
     <div className="login-page">
-      <img src={logo} alt="Logo LEX" className="logo" />
+      <LogoLex className="logo" />
       
       <form onSubmit={handleSubmit}>
         <div className="form-group">

@@ -41,7 +41,7 @@
 }
 
 .bloco__seta {
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   flex-shrink: 0;
   transition: transform 0.15s ease;
 }
@@ -61,8 +61,8 @@
   min-width: 1.5rem;
   padding: 0 var(--space-2);
   border-radius: var(--radius-pill, 999px);
-  background-color: var(--color-danger);
-  color: var(--color-on-danger, #fff);
+  background-color: var(--color-danger-solid);
+  color: var(--color-on-solid);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   line-height: 1.5rem;
@@ -91,7 +91,7 @@
   font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 
 .bloco__conteudo > .bloco__subtitulo:first-child {

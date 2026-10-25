@@ -76,7 +76,7 @@
 /* O crédito é do honorário e não é dívida: cor de destaque, para não ser lido
    como "mais um valor a receber". */
 .honorario-total--credito .honorario-total__valor {
-  color: var(--color-info);
+  color: var(--color-info-text);
 }
 
 /* ── Blocos ─────────────────────────────────────────────────────────────── */

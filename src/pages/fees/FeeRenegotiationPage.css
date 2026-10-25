@@ -159,8 +159,8 @@
 .reparcelar-campo select,
 .reparcelar-campo textarea {
   background-color: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-campo);
   color: var(--color-text-primary);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
@@ -251,11 +251,11 @@
 }
 
 .reparcelar-soma--fecha .reparcelar-soma__veredito {
-  color: var(--color-success, var(--color-primary));
+  color: var(--color-success-text, var(--color-primary));
 }
 
 .reparcelar-soma--diverge .reparcelar-soma__veredito {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 /* ── Aviso do saldo adiantado e ações ──────────────────────────────────── */

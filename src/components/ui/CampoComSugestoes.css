@@ -40,15 +40,15 @@
    índice ativo, então `:hover` não precisa de regra própria — e assim o que a
    seta destaca e o que o mouse destaca não podem divergir. */
 .sugestoes__item--ativo {
-  background-color: var(--color-surface-alt, rgba(0, 0, 0, 0.06));
+  background-color: var(--color-accent-muted);
 }
 
 .sugestoes__aviso {
   margin: var(--space-1) 0 0;
   font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 
 .sugestoes__aviso--erro {
-  color: var(--color-warning, var(--color-text-muted));
+  color: var(--color-warning-text, var(--color-text-discreto));
 }

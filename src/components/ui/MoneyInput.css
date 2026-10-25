@@ -17,13 +17,13 @@
 
 .money-input__prefixo {
   position: absolute;
-  left: 10px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
   /* O clique atravessa o símbolo e cai no campo: quem mira o "R$" quer
      escrever, não selecionar duas letras. */
   pointer-events: none;
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
 }
@@ -32,7 +32,7 @@
    especificidade de `.money-input input`, e qual das duas venceria dependeria
    da ordem em que os CSS entram no bundle — que não é decisão de ninguém. */
 .money-input input[type="text"] {
-  padding-left: 38px;
+  padding-left: 42px;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }

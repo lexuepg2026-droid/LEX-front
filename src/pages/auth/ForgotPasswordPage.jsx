@@ -5,7 +5,7 @@ import { getApiErrorMessage } from '../../utils/apiError';
 import { emailValido, MENSAGEM_EMAIL_INVALIDO } from '../../utils/email';
 import './LoginPage.css';
 import './AuthEmail.css';
-import logo from '../../assets/logo-lex.jpeg';
+import LogoLex from '../../components/ui/LogoLex.jsx';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PEDIR A RECUPERAÇÃO DA SENHA (A-2, DEC-064)
@@ -51,7 +51,7 @@ function ForgotPasswordPage() {
 
   return (
     <div className="login-page">
-      <img src={logo} alt="Logo LEX" className="logo" />
+      <LogoLex className="logo" />
       <h1 className="auth-titulo">Esqueci minha senha</h1>
 
       {enviado ? (

@@ -22,9 +22,9 @@
 
 .doc-selo--portal {
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .doc-selo--neutro {
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }

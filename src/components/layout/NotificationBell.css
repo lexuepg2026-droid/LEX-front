@@ -32,7 +32,7 @@
   padding: 0 4px;
   border-radius: var(--radius-full);
   background: var(--color-warning);
-  color: #1A1A18;
+  color: var(--color-on-warning);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   line-height: 18px;
@@ -73,7 +73,7 @@
 
 .sino__vazio {
   margin: 0;
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   font-size: var(--font-size-sm);
 }
 
@@ -128,7 +128,7 @@
 
 .sino__item-meta {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 
 /* Em 360 px o painel encosta nas duas bordas do cabeçalho: um painel de 340 px

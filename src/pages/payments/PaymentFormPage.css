@@ -80,7 +80,7 @@
 }
 
 .plano__sobra {
-  color: var(--color-info);
+  color: var(--color-info-text);
 }
 
 .plano__aviso {
@@ -89,5 +89,5 @@
 }
 
 .plano__erro {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }

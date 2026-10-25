@@ -5,7 +5,7 @@ import {
   Banknote, Receipt, CalendarDays, CalendarClock, CreditCard,
   FolderOpen, LibraryBig, FileStack, FileText, UserCog, Sun, Moon, LogOut
 } from 'lucide-react';
-import logo from '../../assets/logo-lex.jpeg';
+import LogoLex from '../ui/LogoLex.jsx';
 import './Sidebar.css';
 
 // As duas PORTAS DE ENTRADA da tela de montagem são itens de menu distintos,
@@ -56,7 +56,7 @@ function Sidebar({ theme, toggleTheme, onLogout }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <img src={logo} alt="Logo LEX" className="sidebar-logo" />
+        <LogoLex className="sidebar-logo" />
       </div>
 
       <nav className="sidebar-nav">

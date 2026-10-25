@@ -37,7 +37,7 @@
   margin: 0;
   font-size: var(--font-size-xs);
   line-height: var(--line-height-normal);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 .geracao__opcoes {
   list-style: none;
@@ -63,8 +63,8 @@
   border-color: var(--color-border-strong);
 }
 .geracao__opcao--ativa {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary);
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 1px var(--color-primary-light);
 }
 .geracao__opcao-texto {
   display: flex;
@@ -75,7 +75,7 @@
 }
 .geracao__opcao-meta {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 .geracao__pendencias {
   padding: var(--space-3);
@@ -93,7 +93,7 @@
   margin: 0;
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 .geracao__pendencias-ajuda {
   margin: 0;
@@ -129,7 +129,7 @@
 .geracao__pendencia-chave {
   font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 
 /* ── Um item da lista ────────────────────────────────────────────────────── */
@@ -162,7 +162,7 @@
 }
 
 .pendencia__chave {
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   font-size: var(--font-size-xs);
   font-family: monospace;
 }
@@ -174,5 +174,5 @@
 }
 
 .geracao__pendencias-titulo--bloqueio {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }

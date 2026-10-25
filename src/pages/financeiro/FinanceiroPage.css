@@ -29,9 +29,9 @@
   margin: 0;
 }
 
-.financeiro-summary-card__value--success { color: var(--color-success); }
-.financeiro-summary-card__value--warning { color: var(--color-warning); }
-.financeiro-summary-card__value--danger  { color: var(--color-danger);  }
+.financeiro-summary-card__value--success { color: var(--color-success-text); }
+.financeiro-summary-card__value--warning { color: var(--color-warning-text); }
+.financeiro-summary-card__value--danger  { color: var(--color-danger-text);  }
 
 .financeiro-summary--unavailable {
   display: block;

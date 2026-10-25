@@ -76,7 +76,9 @@
 
 .canvas-timbrado--vazio p {
   font-size: 9pt;
-  color: #777777;
+  /* Papel é branco nos dois modos, então a cor fica literal — mas medida:
+     #777 dava 4,48:1, #6B6B6B dá 5,3:1 (Fase 1). */
+  color: #6b6b6b;
   margin: 0;
 }
 
@@ -131,7 +133,8 @@
 
 .canvas-bloco__punho {
   display: flex;
-  color: #aaaaaa;
+  /* Alça de arrastar: não é texto, pede 3:1. #aaa dava 2,3:1. */
+  color: #8a8a8a;
   cursor: grab;
 }
 
@@ -204,7 +207,7 @@
 
 .canvas-bloco__acao--remover:hover:not(:disabled) {
   border-color: var(--color-danger);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .canvas-bloco__texto {
@@ -250,7 +253,7 @@
   padding: 0 var(--space-3);
   border: 1px dashed var(--color-primary);
   border-radius: var(--radius-full);
-  background: rgba(46, 125, 50, 0.08);
+  background: rgba(23, 64, 52, 0.08);
   color: var(--color-primary-dark);
   font-family: var(--font-family);
   font-size: 8.5pt;
@@ -260,7 +263,7 @@
 }
 
 .canvas-slot__botao:hover {
-  background: rgba(46, 125, 50, 0.18);
+  background: rgba(23, 64, 52, 0.18);
 }
 
 /* ── Rodapé ─────────────────────────────────────────────────────────────── */
@@ -271,7 +274,8 @@
   border-top: 1px solid #eeeeee;
   text-align: center;
   font-size: 8pt;
-  color: #999999;
+  /* #999 dava 2,8:1 sobre o papel. */
+  color: #6b6b6b;
 }
 
 /* Abaixo da largura da folha, deixa a folha encolher em vez de forçar rolagem

@@ -1,27 +1,30 @@
+/* Fundo `--color-X-bg` e texto `--color-X-text`, os pares medidos nos dois
+   modos por `tests/css/contraste.test.js` (Fase 1, DEC-075). A forma é a dos
+   badges dela: pílula com um pouco mais de respiro e peso 600. */
 .status-badge {
   display: inline-block;
-  padding: 2px var(--space-2);
+  padding: 2px var(--space-3);
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
 }
 
 .status-badge--success {
   background-color: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 .status-badge--warning {
   background-color: var(--color-warning-bg);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 .status-badge--danger {
   background-color: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 .status-badge--info {
   background-color: var(--color-info-bg);
-  color: var(--color-info);
+  color: var(--color-info-text);
 }
 .status-badge--neutral {
   background-color: var(--color-surface-raised);

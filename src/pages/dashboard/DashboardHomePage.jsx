@@ -341,10 +341,10 @@ function DashboardHomePage() {
               const valor = resumoFinanceiro[key] ?? 0;
               return (
                 <div key={key} className={`summary-card summary-card--${color}`}>
-                  <div className="card-icon">
-                    <Icon size={22} />
-                  </div>
-                  <p className="card-label">{label(mesRotulo)}</p>
+                  <p className="card-label">
+                    <span className="card-icon"><Icon size={16} /></span>
+                    {label(mesRotulo)}
+                  </p>
                   <p className="card-value">{formatCurrency(valor)}</p>
                   {/* Zero REAL diz por extenso que é zero. */}
                   {valor === 0 && <p className="card-note">{vazio}</p>}
@@ -356,10 +356,10 @@ function DashboardHomePage() {
                 financeiro (o sino não expõe dinheiro); a CONTAGEM vem do sino,
                 que é a fonte única deste número. */}
             <div className="summary-card summary-card--danger">
-              <div className="card-icon">
-                <AlertCircle size={22} />
-              </div>
-              <p className="card-label">Total vencido</p>
+              <p className="card-label">
+                <span className="card-icon"><AlertCircle size={16} /></span>
+                Total vencido
+              </p>
               <p className="card-value">{formatCurrency(resumoFinanceiro.valorVencido ?? 0)}</p>
               <p className="card-note">
                 {vencidas > 0 ? pluralParcelas(vencidas) : 'nenhuma parcela vencida'}
@@ -435,10 +435,10 @@ function DashboardHomePage() {
           <div className="summary-grid">
             {CARDS_ACUMULADOS.map(({ key, label, Icon, color }) => (
               <div key={key} className={`summary-card summary-card--${color}`}>
-                <div className="card-icon">
-                  <Icon size={22} />
-                </div>
-                <p className="card-label">{label}</p>
+                <p className="card-label">
+                  <span className="card-icon"><Icon size={16} /></span>
+                  {label}
+                </p>
                 <p className="card-value">{formatCurrency(resumoFinanceiro[key] ?? 0)}</p>
               </div>
             ))}
@@ -477,10 +477,10 @@ function DashboardHomePage() {
           <div className="summary-grid">
             {CARDS.map(({ key, label, Icon, color }) => (
               <div key={key} className={`summary-card summary-card--${color}`}>
-                <div className="card-icon">
-                  <Icon size={22} />
-                </div>
-                <p className="card-label">{label}</p>
+                <p className="card-label">
+                  <span className="card-icon"><Icon size={16} /></span>
+                  {label}
+                </p>
                 <p className="card-value">
                   {summary[key] != null ? summary[key].toLocaleString('pt-BR') : '—'}
                 </p>

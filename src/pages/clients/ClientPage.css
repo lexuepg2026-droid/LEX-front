@@ -5,7 +5,7 @@
 .page-title {
   color: var(--text-color);
   font-weight: 500;
-  border-bottom: 1px solid rgba(184, 157, 75, 0.2);
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 15px;
   margin-top: 0;
 }
@@ -13,7 +13,7 @@
 .actions-cell { display: flex; gap: 10px; }
 .btn-action { padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 14px; cursor: pointer; border: none; }
 .btn-edit { background-color: var(--bg-button); color: var(--text-button); }
-.btn-delete { background-color: #ff6b6b; color: white; }
+.btn-delete { background-color: var(--color-danger-solid); color: var(--color-on-solid); }
 
 /* --- Formulário --- */
 .data-form { margin-top: 20px; }
@@ -38,7 +38,7 @@
 
 /* Seções do Formulário */
 .form-grid.section {
-  border: 1px solid rgba(184, 157, 75, 0.2);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 20px;
   margin-top: 20px;
@@ -50,7 +50,7 @@
   grid-column: span 3;
   color: var(--text-color);
   margin-top: 0;
-  border-bottom: 1px solid rgba(184, 157, 75, 0.2);
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 10px;
 }
 
@@ -63,9 +63,9 @@
 .form-group label { color: var(--text-color); margin-bottom: 5px; font-size: 14px; }
 .form-group input, .form-group select, .form-group textarea {
   width: 100%;
-  padding: 10px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--text-color);
+  padding: 10px 14px;
+  border-radius: var(--radius-campo);
+  border: 1px solid var(--color-border-input);
   background: var(--bg-input);
   color: var(--text-color);
   font-size: 16px;
@@ -84,7 +84,7 @@
 
 /* Agrupamento interno (ex.: representante legal da pessoa jurídica) */
 .form-fieldset {
-  border: 1px solid rgba(184, 157, 75, 0.2);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 15px 20px 20px;
   margin: 0;
@@ -104,11 +104,11 @@
 }
 
 /* Ações do Formulário */
-.form-actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; border-top: 1px solid rgba(184, 157, 75, 0.2); padding-top: 20px; }
+.form-actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; border-top: 1px solid var(--color-border); padding-top: 20px; }
 .btn-primary, .btn-cancel { padding: 10px 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; }
 .btn-primary { background-color: var(--bg-button); color: var(--text-button); }
 .btn-cancel { background-color: transparent; border: 1px solid var(--text-color); color: var(--text-color); }
-.error-message { color: #ff6b6b; }
+.error-message { color: var(--color-danger-text); }
 
 .page-header {
   display: flex;
@@ -117,10 +117,10 @@
 }
 .page-header .page-title { margin-bottom: 0; }
 
-.btn-view { background-color: #5c6bc0; color: white; }
+.btn-view { background-color: var(--color-info-solid); color: var(--color-on-solid); }
 
 .detail-section {
-  border: 1px solid rgba(184, 157, 75, 0.2);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 20px;
   margin-top: 20px;
@@ -128,7 +128,7 @@
 }
 .detail-section h3 {
   margin-top: 0;
-  border-bottom: 1px solid rgba(184, 157, 75, 0.2);
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 10px;
 }
 .detail-section p { margin: 8px 0; }
@@ -141,8 +141,8 @@
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-color);
-  background: rgba(184, 157, 75, 0.1);
-  border-left: 3px solid rgba(184, 157, 75, 0.8);
+  background: var(--color-accent-muted);
+  border-left: 3px solid var(--color-accent);
   border-radius: 4px;
 }
 
@@ -151,8 +151,8 @@
   display: flex;
   gap: 24px;
   flex-wrap: wrap;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(184, 157, 75, 0.2);
+  background: var(--color-accent-muted);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 12px 16px;
   grid-column: span 3;
@@ -179,11 +179,11 @@
   color: var(--text-color);
 }
 
-.form-info-value--danger { color: #ef4444; }
+.form-info-value--danger { color: var(--color-danger-text); }
 
 /* Resultado de uma conta que o sistema fez — o valor derivado do honorário
    percentual (Fase 4.2). Verde porque é resultado, não alerta. */
-.form-info-value--success { color: #22c55e; }
+.form-info-value--success { color: var(--color-success-text); }
 
 /* Texto de apoio abaixo de um campo. A regra já existia em ProfilePage.css,
    escopada àquele container; os formulários que carregam esta folha (honorário,
@@ -288,8 +288,10 @@
 /* Input apontado pelo backend como causa do conflito (409 com `campo`). */
 .form-group input.input-erro,
 .form-group select.input-erro {
-  border-color: #ff6b6b;
-  outline: 1px solid rgba(255, 107, 107, 0.35);
+  border-color: var(--color-danger);
+  /* Era `outline`, e o seletor ganhava do `:focus-visible` global: o campo com
+     erro perdia o anel de foco. A segunda linha da borda virou sombra (Fase 1). */
+  box-shadow: 0 0 0 1px var(--color-danger);
 }
 
 .cep-hint {
@@ -325,8 +327,8 @@
 }
 
 .btn-portal-revogar {
-  background-color: #ff6b6b;
-  color: #fff;
+  background-color: var(--color-danger-solid);
+  color: var(--color-on-solid);
   border: none;
 }
 

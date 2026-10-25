@@ -1,43 +1,87 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   PALETA — a identidade da Raniele, nos dois modos (Fase 1, DEC-074)
+
+   Verde-escuro #01261F, verde #174034, bege #EDE3CF e os cinzas #121212/#222222.
+   As opacidades dela (bege87, bege70, bege60) entram COMPOSTAS em valor sólido
+   sobre a surface: texto translúcido muda de contraste conforme o que está
+   atrás, e sólido mede o mesmo em qualquer lugar.
+
+   Todo par texto/fundo que importa está em `tests/css/contrastePares.js` e é
+   medido por `tests/css/contraste.test.js` a cada `npm test` (DEC-076). Quem
+   trocar um valor aqui roda a suíte antes de olhar a tela.
+   ═══════════════════════════════════════════════════════════════════════════ */
 :root {
-  /* Cor primária (verde — ação) */
-  --color-primary:        #2E7D32;
-  --color-primary-light:  #4CAF50;
-  --color-primary-dark:   #1B5E20;
+  /* Marca. `--color-primary` é FUNDO (botão, barra); para texto verde use
+     `--color-primary-light`, que muda de tom por modo. */
+  --color-primary:        #174034;
+  --color-primary-light:  #8CC7AC;
+  --color-primary-dark:   #01261F;
+  --color-on-primary:     #EDE3CF;
 
-  /* Cor de destaque / marca (dourado LEX) */
-  --color-accent:         #B89D4B;
-  --color-accent-muted:   rgba(184, 157, 75, 0.15);
+  /* Destaque. Era o dourado #B89D4B, que saiu como cor de marca (DEC-074). No
+     escuro o destaque é o bege dela; no claro, o verde da marca. */
+  --color-accent:         #EDE3CF;
+  --color-accent-muted:   rgba(237, 227, 207, 0.10);
 
-  /* Foco visível (Fase 4.5, achado #9). É o dourado da marca: o verde
-     primário se confunde com o fundo no tema escuro, que é o padrão do app. */
-  --color-focus:          #B89D4B;
+  /* Link. */
+  --color-link:           var(--color-primary-light);
+
+  /* Foco visível (Fase 4.5, achado #9). O dourado saiu com a marca: no escuro o
+     anel é o bege (14,7:1 sobre o fundo), no claro o verde da marca. */
+  --color-focus:          #EDE3CF;
   --focus-ring-width:     2px;
   --focus-ring-offset:    2px;
 
   /* Backgrounds — dark mode */
-  --color-bg:             #111A12;
-  --color-surface:        #1A2B1B;
-  --color-surface-raised: #223023;
-  --color-surface-input:  #1E2A1F;
+  --color-bg:             #121212;
+  --color-surface:        #222222;
+  --color-surface-raised: #2C2C2C;
+  --color-surface-input:  #1A1A1A;
+  /* Cartão de resumo do Início: o bege10 dela sobre #222222 é #363533; um
+     tom abaixo (#323130) para a nota do cartão passar 4,5:1. */
+  --color-surface-card:   #323130;
 
-  /* Texto */
-  --color-text-primary:   #F0EAD6;
-  --color-text-secondary: #A8A090;
-  --color-text-muted:     #6B6560;
+  /* Texto: bege87, bege70 e bege60 dela, compostos sobre #222222. */
+  --color-text-primary:   #D3CAB9;
+  --color-text-secondary: #B0A99B;
+  --color-text-discreto:  #A19B8F;
+  /* NÃO USE COMO COR DE TEXTO (DEC-075). Mede 3:1 — serve para ícone
+     decorativo, borda e placeholder. Texto discreto é `--color-text-discreto`. */
+  --color-text-muted:     #6F6B64;
 
-  /* Bordas */
-  --color-border:         rgba(184, 157, 75, 0.20);
-  --color-border-strong:  rgba(184, 157, 75, 0.45);
+  /* Bordas. `--color-border` é a linha discreta entre blocos e linhas de
+     tabela; a de campo precisa de 3:1 e tem token próprio. */
+  --color-border:         rgba(237, 227, 207, 0.12);
+  --color-border-strong:  rgba(237, 227, 207, 0.30);
+  --color-border-input:   rgba(237, 227, 207, 0.70);
 
-  /* Semânticas */
-  --color-success:        #22C55E;
-  --color-success-bg:     rgba(34, 197, 94, 0.10);
-  --color-warning:        #F59E0B;
-  --color-warning-bg:     rgba(245, 158, 11, 0.10);
-  --color-danger:         #EF4444;
-  --color-danger-bg:      rgba(239, 68, 68, 0.10);
-  --color-info:           #3B82F6;
-  --color-info-bg:        rgba(59, 130, 246, 0.10);
+  /* Semânticas. Três tokens por tom (DEC-075):
+       --color-X       cor plena: borda, marcador, barra
+       --color-X-bg    fundo esmaecido (badge, aviso), translúcido
+       --color-X-text  TEXTO do tom — o único que passa 4,5:1
+     No escuro os valores são os badges dela (StatusBadge.css). */
+  --color-success:        #4CAF50;
+  --color-success-bg:     rgba(76, 175, 80, 0.20);
+  --color-success-text:   #7BD389;
+  --color-warning:        #FFC107;
+  --color-warning-bg:     rgba(255, 193, 7, 0.20);
+  --color-warning-text:   #FFD466;
+  --color-danger:         #F44336;
+  --color-danger-bg:      rgba(244, 67, 54, 0.20);
+  --color-danger-text:    #FF8A80;
+  --color-info:           #2196F3;
+  --color-info-bg:        rgba(33, 150, 243, 0.20);
+  --color-info-text:      #82B1FF;
+
+  /* Fundos sólidos com texto branco: toast e botão de perigo. Iguais nos dois
+     modos, de propósito — o contraste não depende do tema nem do que estiver
+     atrás (DEC-066). */
+  --color-success-solid:  #2E7D32;
+  --color-danger-solid:   #B40000;
+  --color-info-solid:     #1F5A96;
+  --color-on-solid:       #FFFFFF;
+  /* Texto sobre o amarelo pleno (selo do sino). Escuro nos dois modos. */
+  --color-on-warning:     #1A1A18;
 
   /* Tipografia */
   --font-family:          'Inter', 'Segoe UI', system-ui, sans-serif;
@@ -70,6 +114,9 @@
   --radius-md:   8px;
   --radius-lg:   12px;
   --radius-xl:   16px;
+  --radius-pill: 2rem;
+  /* Campo de formulário: input, select e textarea (Fase 1, a forma dos dela). */
+  --radius-campo: 1rem;
   --radius-full: 9999px;
 
   /* Sombras */
@@ -88,34 +135,64 @@
 
   /* Legado — compatibilidade com CSS existente dos módulos */
   --bg-color:    var(--color-bg);
-  --text-color:  var(--color-accent);
+  --text-color:  var(--color-text-primary);
   --bg-button:   var(--color-primary);
-  --text-button: #fff;
+  --text-button: var(--color-on-primary);
   --bg-input:    var(--color-surface-input);
-  --logo-filter: invert(72%) sepia(37%) saturate(632%) hue-rotate(10deg) brightness(84%) contrast(89%);
 }
 
-/* Modo claro — fundo claro + texto escuro + contraste adequado */
-body.light-mode {
-  --color-bg:             #F5F4F0;
-  --color-surface:        #FFFFFF;
-  --color-surface-raised: #ECEAE4;
-  --color-surface-input:  #F0EEE8;
-  --color-text-primary:   #1A1A18;
-  --color-text-secondary: #4A4640;
-  --color-text-muted:     #8A8580;
-  --color-border:         rgba(0, 0, 0, 0.12);
-  --color-border-strong:  rgba(0, 0, 0, 0.25);
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODO CLARO — paleta própria, e não a inversão do escuro (DEC-073)
 
-  /* No tema claro o dourado da marca perde contraste contra o branco; o anel
-     escurece para continuar visível sem trocar de identidade. */
-  --color-focus:          #7A6528;
+   Fundo bege bem claro, surface quase branca, texto no verde-escuro dela.
+   Os tons semânticos do escuro (pastéis) somem sobre branco — por isso cada
+   `-text` tem valor próprio aqui, escurecido até passar 4,5:1 no badge.
+   ═══════════════════════════════════════════════════════════════════════════ */
+body.light-mode {
+  --color-bg:             #F7F3EA;
+  --color-surface:        #FFFDF9;
+  --color-surface-raised: #F0EADC;
+  --color-surface-input:  #FFFFFF;
+  --color-surface-card:   #F3EEE3;
+
+  --color-text-primary:   #01261F;
+  --color-text-secondary: #2E4A41;
+  --color-text-discreto:  #4A5E55;
+  /* NÃO USE COMO COR DE TEXTO (DEC-075). */
+  --color-text-muted:     #8C978F;
+
+  --color-primary-light:  #1E5A47;
+  --color-accent:         #174034;
+  --color-accent-muted:   rgba(23, 64, 52, 0.08);
+
+  --color-border:         rgba(1, 38, 31, 0.14);
+  --color-border-strong:  rgba(1, 38, 31, 0.32);
+  --color-border-input:   #6E7F77;
+
+  --color-focus:          #174034;
+
+  --color-success:        #2E7D32;
+  --color-success-bg:     rgba(46, 125, 50, 0.12);
+  --color-success-text:   #1B5E20;
+  --color-warning:        #B7791F;
+  --color-warning-bg:     rgba(183, 121, 31, 0.14);
+  --color-warning-text:   #7A4B00;
+  --color-danger:         #C62828;
+  --color-danger-bg:      rgba(198, 40, 40, 0.10);
+  --color-danger-text:    #A11A1A;
+  --color-info:           #1565C0;
+  --color-info-bg:        rgba(21, 101, 192, 0.10);
+  --color-info-text:      #154C8C;
+
+  /* Sombras mais leves: o preto a 50% do escuro vira mancha sobre bege. */
+  --shadow-sm: 0 1px 3px rgba(1, 38, 31, 0.12);
+  --shadow-md: 0 4px 12px rgba(1, 38, 31, 0.14);
+  --shadow-lg: 0 8px 24px rgba(1, 38, 31, 0.18);
 
   /* Legado */
   --bg-color:    var(--color-bg);
   --text-color:  var(--color-text-primary);
   --bg-button:   var(--color-primary);
-  --text-button: #fff;
+  --text-button: var(--color-on-primary);
   --bg-input:    var(--color-surface-input);
-  --logo-filter: none;
 }

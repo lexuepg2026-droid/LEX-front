@@ -18,7 +18,7 @@
 }
 
 .fila-badge svg {
-  color: var(--color-info);
+  color: var(--color-info-text);
   flex-shrink: 0;
 }
 
@@ -30,7 +30,7 @@
 }
 
 .fila-badge--falha svg {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .fila-badge__contagem {
