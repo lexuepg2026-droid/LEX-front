@@ -187,7 +187,7 @@ function InstallmentListPage({ embedded = false }) {
         <Loading />
       ) : installments.length === 0 ? (
         <EmptyState
-          title={verInativos ? 'Nenhuma parcela desativada' : 'Nenhuma cobrança encontrada'}
+          title={verInativos ? 'Nenhuma parcela desativada' : 'Nenhuma parcela encontrada'}
           description={
             verInativos
               // O modo continua existindo — a parcela ainda é excluível — mas

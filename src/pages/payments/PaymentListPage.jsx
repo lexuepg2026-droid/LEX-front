@@ -194,7 +194,7 @@ function PaymentListPage({ embedded = false }) {
         // recebimento encontrado" numa tela com três filtros ativos faz
         // procurar o pagamento em vez de olhar os controles.
         <EmptyState
-          title="Nenhum recebimento encontrado"
+          title="Nenhum pagamento encontrado"
           description={
             filtrado
               ? `Nenhum pagamento ${recorte}. Limpe os filtros para ver a lista inteira.`

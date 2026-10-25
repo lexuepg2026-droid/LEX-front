@@ -258,7 +258,7 @@ function InstallmentFormPage() {
             <p className="form-hint span-3">
               O status e o valor já recebido são calculados a partir dos
               pagamentos registrados nesta parcela. Para alterá-los, registre um
-              recebimento em Pagamentos.
+              pagamento em Pagamentos.
             </p>
           </div>
         )}

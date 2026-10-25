@@ -13,10 +13,14 @@ import financeiroService from '../../api/financeiroService';
 import { formatCurrency } from '../../utils/formatters';
 import './FinanceiroPage.css';
 
+// Vocabulário único do financeiro (Fase 2a, DEC-080): Honorários, Parcelas e
+// Pagamentos — os mesmos nomes do menu, das listagens e das rotas. "Cobranças
+// previstas" e "Recebimentos" eram os mesmos três objetos com outros nomes, e a
+// advogada procurava no menu uma "cobrança" que não existia.
 const SECTIONS = [
-  { title: 'Honorários (Contratos)', actionLabel: '+ Novo Honorário',      actionTo: '/dashboard/honorarios/novo', Component: FeeListPage         },
-  { title: 'Cobranças previstas',    actionLabel: '+ Nova Cobrança',        actionTo: '/dashboard/parcelas/novo',   Component: InstallmentListPage  },
-  { title: 'Recebimentos',           actionLabel: '+ Registrar Recebimento', actionTo: '/dashboard/pagamentos/novo', Component: PaymentListPage      },
+  { title: 'Honorários', actionLabel: '+ Novo honorário',      actionTo: '/dashboard/honorarios/novo', Component: FeeListPage         },
+  { title: 'Parcelas',   actionLabel: '+ Nova parcela',        actionTo: '/dashboard/parcelas/novo',   Component: InstallmentListPage  },
+  { title: 'Pagamentos', actionLabel: '+ Registrar pagamento', actionTo: '/dashboard/pagamentos/novo', Component: PaymentListPage      },
 ];
 
 function FinanceiroPage() {
@@ -84,7 +88,7 @@ function FinanceiroPage() {
             </p>
           </div>
           <div className="financeiro-summary-card">
-            <p className="financeiro-summary-card__label">Cobranças vencidas</p>
+            <p className="financeiro-summary-card__label">Parcelas vencidas</p>
             <p className={`financeiro-summary-card__value${summary.qtdVencidas > 0 ? ' financeiro-summary-card__value--danger' : ''}`}>
               {summary.qtdVencidas}
             </p>
