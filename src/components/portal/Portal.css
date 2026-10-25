@@ -10,16 +10,17 @@
    é a repetição que mantém as duas superfícies independentes. Há teste
    travando a ausência do import cruzado.
 
-   ── Tokens ────────────────────────────────────────────────────────────────
-   SÓ tokens que existem em `styles/variables.css`. Nenhum inventado — token
-   inexistente foi defeito real em fase anterior, e é invisível: o navegador
-   ignora a declaração e a regra some sem erro nenhum.
+   ── Tokens: a MARCA fixa, desde a Fase 2.5 (DEC-096) ─────────────────────
+   A pele é a da Figura 15: cartões verde-escuros (`--color-marca-escuro`)
+   sobre o verde (`--color-marca-fundo`), texto bege. São os tokens fixos da
+   DEC-078 — iguais nos dois modos, como o cabeçalho e as telas de entrada da
+   advogada. O cliente não escolhe tema, e o portal não muda de cor conforme
+   a preferência de quem montou o computador.
 
-   ── Distinção visual ──────────────────────────────────────────────────────
-   As telas da advogada são verdes (`--color-primary`, a cor de ação do
-   sistema). O portal se apoia no dourado da marca (`--color-accent`) e em
-   superfícies mais sóbrias: quem abre isto precisa perceber, sem ler, que
-   está num lugar diferente daquele em que a advogada trabalha.
+   Os tokens do TEMA (`--color-text-*`, `--color-surface`…) não aparecem
+   aqui: um `--color-text-secondary` do claro (#2E4A41) sobre o verde some.
+   Todo par de cor deste arquivo está medido em `tests/css/contrastePares.js`
+   ("portal: …" e "marca: …").
 
    ── Alvos de toque ────────────────────────────────────────────────────────
    Mínimo de 44px de altura em tudo que se clica. É o piso das diretrizes de
@@ -33,10 +34,18 @@
   width: 100%;
   align-self: stretch;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-bg);
-  color: var(--color-text-primary);
+  background-color: var(--color-marca-fundo);
+  color: var(--color-marca-texto);
+}
+
+/* O anel de foco sobre a marca: o `--color-focus` do claro é o próprio verde
+   da barra, e sumiria aqui. */
+.portal :is(a, button, input):focus-visible {
+  outline: 2px solid var(--color-marca-foco);
+  outline-offset: 2px;
 }
 
 /* ── Barra ─────────────────────────────────────────────────────────────── */
@@ -46,23 +55,25 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  background-color: var(--color-surface);
-  border-bottom: 1px solid var(--color-border-strong);
+  background-color: var(--color-marca-escuro);
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
 .portal__marca {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.08em;
-  color: var(--color-accent);
+  display: inline-flex;
+  color: var(--color-marca-texto);
+}
+
+.portal__logo {
+  width: 64px;
+  height: auto;
 }
 
 .portal__subtitulo {
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  color: var(--color-marca-texto-suave);
   /* Empurra o botão de sair para a borda oposta. */
   margin-right: auto;
 }
@@ -70,10 +81,10 @@
 .portal__sair {
   min-height: 44px;
   padding: 0 var(--space-4);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--color-marca-borda-campo);
+  border-radius: var(--radius-full);
   background-color: transparent;
-  color: var(--color-text-primary);
+  color: var(--color-marca-texto);
   font-family: var(--font-family);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
@@ -82,7 +93,7 @@
 }
 
 .portal__sair:hover {
-  background-color: var(--color-surface-raised);
+  background-color: var(--color-marca-realce);
 }
 
 /* ── Conteúdo ──────────────────────────────────────────────────────────── */
@@ -92,7 +103,7 @@
   width: 100%;
   /* Uma coluna. No celular ocupa tudo; no desktop para de crescer num
      comprimento de linha que ainda se lê. */
-  max-width: 720px;
+  max-width: 760px;
   margin: 0 auto;
   padding: var(--space-5) var(--space-4);
   box-sizing: border-box;
@@ -100,7 +111,6 @@
 
 .portal__rodape {
   padding: var(--space-5) var(--space-4);
-  border-top: 1px solid var(--color-border);
   text-align: center;
 }
 
@@ -108,62 +118,67 @@
   max-width: 720px;
   margin: 0 auto;
   font-size: var(--font-size-sm);
-  color: var(--color-text-discreto);
+  color: var(--color-marca-texto-suave);
 }
 
 .portal-carregando {
   padding: var(--space-10) var(--space-4);
   text-align: center;
-  color: var(--color-text-secondary);
+  color: var(--color-marca-texto-suave);
 }
 
 /* ── Blocos ────────────────────────────────────────────────────────────── */
 
+/* O cartão escuro da Figura 15. Cantos largos, como os dela (32px), mas um
+   pouco menores no celular para não comer a largura. */
 .portal-cartao {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
+  background-color: var(--color-marca-escuro);
+  border-radius: 1.5rem;
+  padding: var(--space-6) var(--space-5);
   margin-bottom: var(--space-5);
+  box-shadow: 0 0 15px 8px rgba(0, 0, 0, 0.1);
 }
 
 .portal-titulo {
   font-size: var(--font-size-xl);
-  color: var(--color-accent);
+  color: var(--color-marca-texto);
   margin-bottom: var(--space-2);
 }
 
 .portal-secao-titulo {
   font-size: var(--font-size-md);
-  color: var(--color-text-primary);
+  color: var(--color-marca-texto);
   margin-bottom: var(--space-3);
 }
 
 .portal-texto {
   font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
+  color: var(--color-marca-texto-suave);
   line-height: var(--line-height-normal);
 }
 
 .portal-texto--forte {
-  color: var(--color-text-primary);
+  color: var(--color-marca-texto);
 }
 
 .portal-ajuda {
   font-size: var(--font-size-sm);
-  color: var(--color-text-discreto);
+  color: var(--color-marca-texto-suave);
   line-height: var(--line-height-normal);
   margin-top: var(--space-3);
 }
 
 /* ── Mensagens ─────────────────────────────────────────────────────────── */
+/* Sobre o cartão escuro: o texto leva a cor, e o fundo é o realce bege
+   translúcido. As cores semânticas do tema não servem aqui — o vermelho e o
+   amarelo do claro medem menos de 4,5:1 sobre o verde-escuro. */
 
 .portal-erro {
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger-text);
-  border: 1px solid var(--color-danger);
+  background-color: var(--color-marca-realce);
+  color: var(--color-marca-erro);
+  border: 1px solid var(--color-marca-erro);
   font-size: var(--font-size-base);
   margin-bottom: var(--space-4);
 }
@@ -173,9 +188,9 @@
 .portal-aviso {
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning-text);
-  border: 1px solid var(--color-warning);
+  background-color: var(--color-marca-realce);
+  color: var(--color-marca-alerta);
+  border: 1px solid var(--color-marca-alerta);
   font-size: var(--font-size-base);
   margin-bottom: var(--space-4);
 }
@@ -183,9 +198,9 @@
 .portal-sucesso {
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
-  background-color: var(--color-success-bg);
-  color: var(--color-success-text);
-  border: 1px solid var(--color-success);
+  background-color: var(--color-marca-realce);
+  color: var(--color-marca-sucesso);
+  border: 1px solid var(--color-marca-sucesso);
   font-size: var(--font-size-base);
   margin-bottom: var(--space-4);
 }
@@ -198,28 +213,33 @@
    defeito da Fase 2E.1, e a varredura de CSS não o pega, porque a regra
    existe. Aqui o invólucro é obrigatório, e há teste checando que os
    formulários do portal o usam.
+
+   Escopo `.portal`: `.form-group` também existe nos formulários da
+   advogada, e uma regra solta daqui os pegaria de carona.
 */
 
-.form-group {
+.portal .form-group {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   margin-bottom: var(--space-4);
 }
 
-.form-group label {
+/* Rótulo ACIMA do campo, como pede a fase: o placeholder some ao digitar e
+   com o preenchimento automático. */
+.portal .form-group label {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
+  color: var(--color-marca-texto);
 }
 
-.form-group input {
+.portal .form-group input {
   min-height: 48px;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-campo);
-  background-color: var(--color-surface-input);
-  color: var(--color-text-primary);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-marca-borda-campo);
+  border-radius: var(--radius-full);
+  background-color: transparent;
+  color: var(--color-marca-texto);
   font-family: var(--font-family);
   /* 16px evita o zoom automático do Safari no iPhone ao focar o campo — o
      portal é usado no celular, e o zoom desloca a tela inteira. */
@@ -228,19 +248,19 @@
   box-sizing: border-box;
 }
 
-.form-group input:focus {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 1px;
+.portal .form-group input::placeholder {
+  color: var(--color-marca-texto-suave);
+  opacity: 0.7;
 }
 
-.form-group input.input-erro {
-  border-color: var(--color-danger);
-  outline: 1px solid var(--color-danger-bg);
+.portal .form-group input.input-erro {
+  border-color: var(--color-marca-erro);
+  outline: 1px solid var(--color-marca-erro);
 }
 
 .form-erro-campo {
   font-size: var(--font-size-sm);
-  color: var(--color-danger-text);
+  color: var(--color-marca-erro);
 }
 
 /* ── Botões ────────────────────────────────────────────────────────────── */
@@ -248,14 +268,14 @@
 .portal-btn {
   min-height: 48px;
   width: 100%;
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-md);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-full);
   border: 1px solid transparent;
   font-family: var(--font-family);
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: opacity var(--transition-fast);
+  transition: background-color var(--transition-fast), opacity var(--transition-fast);
 }
 
 .portal-btn:disabled {
@@ -263,15 +283,24 @@
   cursor: not-allowed;
 }
 
+/* O botão claro da Figura 14/15, o mesmo da autenticação (DEC-081). */
 .portal-btn--principal {
-  background-color: var(--color-accent);
-  color: var(--color-bg);
+  background-color: var(--color-marca-botao);
+  color: var(--color-on-marca-botao);
+}
+
+.portal-btn--principal:hover:not(:disabled) {
+  background-color: var(--color-marca-botao-hover);
 }
 
 .portal-btn--secundario {
   background-color: transparent;
-  border-color: var(--color-border-strong);
-  color: var(--color-text-primary);
+  border-color: var(--color-marca-borda-campo);
+  color: var(--color-marca-texto);
+}
+
+.portal-btn--secundario:hover:not(:disabled) {
+  background-color: var(--color-marca-realce);
 }
 
 /* Botão que cabe em linha, para os pares de download (PDF / DOCX). */
@@ -285,6 +314,135 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+/* ── O "Voltar" (Fase 2.5) ─────────────────────────────────────────────── */
+/* Para `/` no login e para a lista no processo, quando houver mais de um.
+   Link de verdade, com alvo de toque de 44px. */
+.portal-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  margin-bottom: var(--space-3);
+  padding: 0 var(--space-2);
+  margin-left: calc(-1 * var(--space-2));
+  border-radius: var(--radius-md);
+  color: var(--color-marca-texto);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+}
+
+.portal-voltar:hover {
+  background-color: var(--color-marca-realce);
+}
+
+/* ── Login (Fase 2.5, Figura 15) ───────────────────────────────────────── */
+
+.portal-login {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.portal-login__titulo {
+  font-size: var(--font-size-2xl, 1.75rem);
+  color: var(--color-marca-texto);
+  text-align: center;
+  margin: var(--space-4) 0 var(--space-5);
+}
+
+/* O texto que mora no lugar do "Esqueceu a senha?" simulado do desenho dela:
+   não é link — não há para onde ir; quem redefine a senha é a advogada. */
+.portal-login__esqueceu {
+  margin-top: var(--space-4);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-marca-texto-suave);
+}
+
+.portal-login__logo {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-6);
+  color: var(--color-marca-texto);
+}
+
+.portal-login__logo svg,
+.portal-login__logo img {
+  width: 88px;
+  height: auto;
+}
+
+/* ── "Seus processos" (Fase 2.5) ───────────────────────────────────────── */
+
+.portal-processos {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* O cartão inteiro é UM link: um alvo grande no celular, e um só Tab por
+   processo no teclado. */
+.portal-processo {
+  display: block;
+  padding: var(--space-4) var(--space-5);
+  border-radius: 1.25rem;
+  background-color: var(--color-marca-escuro);
+  color: var(--color-marca-texto);
+  text-decoration: none;
+  box-shadow: 0 0 15px 8px rgba(0, 0, 0, 0.08);
+  transition: background-color var(--transition-fast);
+}
+
+.portal-processo:hover {
+  background-color: var(--color-marca-escuro-hover);
+}
+
+.portal-processo__titulo {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-marca-texto);
+  margin: 0 0 var(--space-1);
+  overflow-wrap: anywhere;
+}
+
+.portal-processo__meta {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-marca-texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.portal-processo__indicadores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+/* O selo de "documento novo" e "confirmação pendente". A palavra, não só a
+   cor — e a cor é o amarelo de alerta da marca, que mede bem sobre o
+   verde-escuro. */
+.portal-selo {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid currentColor;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.portal-selo--alerta {
+  color: var(--color-marca-alerta);
+}
+
+.portal-selo--neutro {
+  color: var(--color-marca-texto-suave);
 }
 
 /* ── Lista de dados ────────────────────────────────────────────────────── */
@@ -301,47 +459,49 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
 }
 
 .portal-dado__rotulo {
   font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-text-discreto);
+  color: var(--color-marca-texto-suave);
 }
 
 .portal-dado__valor {
   font-size: var(--font-size-base);
-  color: var(--color-text-primary);
+  color: var(--color-marca-texto);
   font-weight: var(--font-weight-medium);
+  overflow-wrap: anywhere;
 }
 
 /* ── Documentos ────────────────────────────────────────────────────────── */
 
 .portal-doc {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   padding: var(--space-4);
   margin-bottom: var(--space-3);
-  background-color: var(--color-surface-raised);
+  background-color: var(--color-marca-realce);
 }
 
 .portal-doc__nome {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
+  color: var(--color-marca-texto);
   margin-bottom: var(--space-1);
+  overflow-wrap: anywhere;
 }
 
 .portal-doc__meta {
   font-size: var(--font-size-sm);
-  color: var(--color-text-discreto);
+  color: var(--color-marca-texto-suave);
   margin-bottom: var(--space-3);
 }
 
 .portal-doc__descricao {
   font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
+  color: var(--color-marca-texto-suave);
   margin-bottom: var(--space-3);
 }
 
@@ -356,19 +516,19 @@
 .portal-vazio {
   padding: var(--space-6) var(--space-4);
   text-align: center;
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-marca-borda-campo);
+  border-radius: var(--radius-lg);
 }
 
 .portal-vazio__titulo {
   font-size: var(--font-size-md);
-  color: var(--color-text-primary);
+  color: var(--color-marca-texto);
   margin-bottom: var(--space-2);
 }
 
 .portal-vazio__texto {
   font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
+  color: var(--color-marca-texto-suave);
 }
 
 /* ── Confirmação ───────────────────────────────────────────────────────── */
@@ -378,10 +538,10 @@
    isso que dá valor probatório ao registro. Um modal que exigisse confirmar
    para ver inverteria o sentido do recibo. */
 .portal-confirmacao {
-  border: 1px solid var(--color-accent);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  background-color: var(--color-accent-muted);
+  border: 1px solid var(--color-marca-borda-campo);
+  border-radius: 1.5rem;
+  padding: var(--space-6) var(--space-5);
+  background-color: var(--color-marca-escuro);
 }
 
 /* O texto da declaração, exibido LITERALMENTE como o backend o envia. O mesmo
@@ -392,39 +552,38 @@
   white-space: pre-wrap;
   font-size: var(--font-size-base);
   line-height: var(--line-height-normal);
-  color: var(--color-text-primary);
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  color: var(--color-marca-texto);
+  background-color: var(--color-marca-realce);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   margin-bottom: var(--space-4);
 }
 
 .portal-recibo {
-  border: 1px solid var(--color-success);
+  border: 1px solid var(--color-marca-sucesso);
   border-radius: var(--radius-md);
-  background-color: var(--color-success-bg);
+  background-color: var(--color-marca-realce);
   padding: var(--space-4);
   margin-bottom: var(--space-4);
 }
 
 .portal-recibo__rotulo {
   font-size: var(--font-size-sm);
-  color: var(--color-success-text);
+  color: var(--color-marca-sucesso);
   margin-bottom: var(--space-1);
 }
 
 .portal-recibo__data {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
+  color: var(--color-marca-texto);
 }
 
 .portal-historico-item {
   padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-marca-realce);
   font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
+  color: var(--color-marca-texto-suave);
 }
 
 .portal-historico-item:last-child {
@@ -445,7 +604,16 @@
     min-width: 200px;
   }
 
+  /* No login o botão continua da largura do cartão — é o único. */
+  .portal-login .portal-btn {
+    width: 100%;
+  }
+
   .portal__conteudo {
     padding: var(--space-8) var(--space-6);
+  }
+
+  .portal-cartao {
+    padding: var(--space-8) var(--space-8);
   }
 }

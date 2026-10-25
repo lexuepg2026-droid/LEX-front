@@ -83,6 +83,20 @@ export const PARES = [
   { nome: "marca: anel de foco / --color-marca-fundo", texto: "--color-marca-foco", fundo: "--color-marca-fundo", limite: NAO_TEXTO },
   { nome: "marca: anel de foco / --color-marca-escuro", texto: "--color-marca-foco", fundo: "--color-marca-escuro", limite: NAO_TEXTO },
   { nome: "marca: ponto de alerta do avatar / --color-marca-fundo", texto: "--color-marca-alerta", fundo: "--color-marca-fundo", limite: NAO_TEXTO },
+  // O portal na pele da Figura 15 (Fase 2.5, DEC-096): cartões escuros
+  // sobre o verde, o realce bege translúcido por cima do escuro, e as três
+  // mensagens (erro, alerta, sucesso) com a cor no texto.
+  { nome: "portal: texto suave / --color-marca-escuro", texto: "--color-marca-texto-suave", fundo: "--color-marca-escuro", limite: TEXTO },
+  { nome: "portal: texto / realce sobre o escuro", texto: "--color-marca-texto", fundo: "--color-marca-realce", sobre: ["--color-marca-escuro"], limite: TEXTO },
+  { nome: "portal: texto suave / realce sobre o escuro", texto: "--color-marca-texto-suave", fundo: "--color-marca-realce", sobre: ["--color-marca-escuro"], limite: TEXTO },
+  { nome: "portal: erro / realce sobre o escuro", texto: "--color-marca-erro", fundo: "--color-marca-realce", sobre: ["--color-marca-escuro"], limite: TEXTO },
+  { nome: "portal: alerta / realce sobre o escuro", texto: "--color-marca-alerta", fundo: "--color-marca-realce", sobre: ["--color-marca-escuro"], limite: TEXTO },
+  { nome: "portal: sucesso / realce sobre o escuro", texto: "--color-marca-sucesso", fundo: "--color-marca-realce", sobre: ["--color-marca-escuro"], limite: TEXTO },
+  { nome: "portal: selo de alerta / --color-marca-escuro", texto: "--color-marca-alerta", fundo: "--color-marca-escuro", limite: TEXTO },
+  { nome: "portal: cartão de processo em hover", texto: "--color-marca-texto", fundo: "--color-marca-escuro-hover", limite: TEXTO },
+  { nome: "portal: texto suave / cartão em hover", texto: "--color-marca-texto-suave", fundo: "--color-marca-escuro-hover", limite: TEXTO },
+  { nome: "portal: borda de campo / --color-marca-escuro", texto: "--color-marca-borda-campo", fundo: "--color-marca-escuro", limite: NAO_TEXTO },
+  { nome: "portal: botão secundário em hover", texto: "--color-marca-texto", fundo: "--color-marca-realce", sobre: ["--color-marca-escuro"], limite: TEXTO },
   { nome: "marca: avatar (iniciais bege) / --color-marca-fundo", texto: "--color-marca-texto", fundo: "--color-marca-fundo", limite: TEXTO },
 
   // O aviso de e-mail não confirmado (A-2; compacto desde a Fase 2b, DEC-088):

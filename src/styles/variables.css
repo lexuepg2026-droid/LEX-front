@@ -115,6 +115,10 @@
      amarelo do escuro, fixo — o `--color-warning` do claro (#B7791F) mede
      menos de 3:1 sobre o verde da barra. */
   --color-marca-alerta:       #FFC107;
+  /* O portal na pele da Figura 15 (Fase 2.5, DEC-096): o verde claro de
+     "confirmado" sobre o cartão escuro, e o hover do cartão de processo. */
+  --color-marca-sucesso:      #9BE3A8;
+  --color-marca-escuro-hover: #0A3329;
   /* O anel de foco sobre a marca: o `--color-focus` do claro é o próprio
      #174034, e sumiria no cabeçalho. */
   --color-marca-foco:         #EDE3CF;

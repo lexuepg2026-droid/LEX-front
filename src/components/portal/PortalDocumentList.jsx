@@ -6,7 +6,7 @@ import { formatarData, rotuloTipoDocumento } from '../../utils/portalLabels';
 // ═══════════════════════════════════════════════════════════════════════════
 // DOCUMENTOS LIBERADOS AO CLIENTE
 //
-// A lista vem de `GET /portal/documentos`, que só devolve o que tem
+// A lista vem de `GET /portal/processos/:processoId/documentos`, que só devolve o que tem
 // `visivelPortal && ativo && origem: "gerado"`. A tela não filtra nada: o que
 // chega é o que pode aparecer.
 //
@@ -21,7 +21,7 @@ const ROTULO_FORMATO = {
   docx: 'Baixar Word',
 };
 
-function PortalDocumentList({ documentos }) {
+function PortalDocumentList({ processoId, documentos }) {
   const [baixando, setBaixando] = useState('');
   const [erro, setErro] = useState('');
   const [aviso, setAviso] = useState('');
@@ -33,7 +33,7 @@ function PortalDocumentList({ documentos }) {
     setAviso('');
 
     try {
-      const { nome, tamanho } = await portalService.baixarEsalvar(documento.id, formato);
+      const { nome, tamanho } = await portalService.baixarEsalvar(processoId, documento.id, formato);
       const kb = tamanho ? ` (${Math.round(tamanho / 1024)} kB)` : '';
       // Confirmação na própria tela, e não por notificação flutuante: no
       // celular a notificação some antes de ser lida, e o cliente fica sem

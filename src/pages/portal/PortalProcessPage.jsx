@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import portalService from '../../api/portalService';
 import PortalDocumentList from '../../components/portal/PortalDocumentList';
 import PortalConfirmation from '../../components/portal/PortalConfirmation';
@@ -38,17 +40,28 @@ function PortalProcessPage() {
   const [documentos, setDocumentos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  // Fase 2.5 (DEC-096): o processo vem da URL. Quantos processos a pessoa tem
+  // decide se há "Voltar" para a lista — com um só, a lista nem aparece.
+  const { processoId } = useParams();
+  const [totalDeProcessos, setTotalDeProcessos] = useState(0);
 
   useEffect(() => {
     let ativo = true;
+    setCarregando(true);
+    setErro('');
 
-    Promise.all([portalService.obterProcesso(), portalService.listarDocumentos()])
-      .then(([resProcesso, resDocumentos]) => {
+    Promise.all([
+      portalService.obterProcesso(processoId),
+      portalService.listarDocumentos(processoId),
+      portalService.listarProcessos(),
+    ])
+      .then(([resProcesso, resDocumentos, resLista]) => {
         if (!ativo) return;
         setProcesso(resProcesso.data?.processo ?? null);
         setCliente(resProcesso.data?.cliente ?? null);
         setAcesso(resProcesso.data?.acesso ?? null);
         setDocumentos(resDocumentos.data?.data ?? []);
+        setTotalDeProcessos(resLista.data?.total ?? 0);
       })
       .catch((err) => {
         if (ativo) setErro(getApiErrorMessage(err, 'Não foi possível carregar o processo.'));
@@ -60,7 +73,7 @@ function PortalProcessPage() {
     return () => {
       ativo = false;
     };
-  }, []);
+  }, [processoId]);
 
   if (carregando) {
     return (
@@ -70,11 +83,20 @@ function PortalProcessPage() {
     );
   }
 
+  // O servidor responde 404 tanto para "não existe" quanto para "não está
+  // liberado para você" — inclusive quando a advogada desligou o processo no
+  // meio da sessão. A tela não distingue (não teria como), e oferece a lista.
   if (erro) {
     return (
-      <p className="portal-erro" role="alert">
-        {erro}
-      </p>
+      <>
+        <p className="portal-erro" role="alert">
+          {erro}
+        </p>
+        <Link to="/portal/processos" className="portal-voltar">
+          <ArrowLeft size={18} aria-hidden="true" />
+          Ver os seus processos
+        </Link>
+      </>
     );
   }
 
@@ -82,6 +104,13 @@ function PortalProcessPage() {
 
   return (
     <>
+      {totalDeProcessos > 1 && (
+        <Link to="/portal/processos" className="portal-voltar">
+          <ArrowLeft size={18} aria-hidden="true" />
+          Voltar aos seus processos
+        </Link>
+      )}
+
       <section className="portal-cartao">
         {/* O nome existe para o cliente conferir que entrou na conta certa —
             não é ficha cadastral. A projeção do backend manda só isto. */}
@@ -198,12 +227,12 @@ function PortalProcessPage() {
 
       <section className="portal-cartao">
         <h2 className="portal-secao-titulo">Documentos</h2>
-        <PortalDocumentList documentos={documentos} />
+        <PortalDocumentList processoId={processoId} documentos={documentos} />
       </section>
 
       {/* O bloco de confirmação vem DEPOIS do conteúdo, sempre. Ver
           `PortalConfirmation.jsx` para o motivo probatório. */}
-      <PortalConfirmation />
+      <PortalConfirmation processoId={processoId} />
 
       {acesso?.primeiroAcesso && (
         <p className="portal-ajuda" style={{ marginTop: 'var(--space-5)' }}>

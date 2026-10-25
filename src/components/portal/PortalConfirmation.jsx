@@ -33,7 +33,7 @@ import { formatarDataHora } from '../../utils/portalLabels';
 // primeira.
 // ═══════════════════════════════════════════════════════════════════════════
 
-function PortalConfirmation() {
+function PortalConfirmation({ processoId }) {
   const [texto, setTexto] = useState('');
   const [confirmacoes, setConfirmacoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -45,7 +45,7 @@ function PortalConfirmation() {
   useEffect(() => {
     let ativo = true;
 
-    Promise.all([portalService.textoConfirmacao(), portalService.listarConfirmacoes()])
+    Promise.all([portalService.textoConfirmacao(), portalService.listarConfirmacoes(processoId)])
       .then(([resTexto, resHistorico]) => {
         if (!ativo) return;
         setTexto(resTexto.data?.texto ?? '');
@@ -61,7 +61,7 @@ function PortalConfirmation() {
     return () => {
       ativo = false;
     };
-  }, []);
+  }, [processoId]);
 
   const confirmar = async () => {
     setEnviando(true);
@@ -69,7 +69,7 @@ function PortalConfirmation() {
     setBloqueadaPorSenha(false);
 
     try {
-      const res = await portalService.confirmar();
+      const res = await portalService.confirmar(processoId);
       // A nova entra no topo. O backend devolve o registro projetado, então
       // não é preciso recarregar a lista inteira.
       setConfirmacoes((atuais) => [res.data, ...atuais]);
@@ -108,6 +108,14 @@ function PortalConfirmation() {
             Você confirmou a leitura em
           </p>
           <p className="portal-recibo__data">{formatarDataHora(ultima.dataHora)}</p>
+          {/* Fase 2.5: uma sessão abre vários processos, e o recibo diz de
+              QUAL — "você confirmou em 12/09" sem o processo não diz o que
+              foi lido. */}
+          {ultima.processo && (
+            <p className="portal-ajuda">
+              Processo: {[ultima.processo.numeroProcesso, ultima.processo.titulo].filter(Boolean).join(' — ')}
+            </p>
+          )}
         </div>
       )}
 

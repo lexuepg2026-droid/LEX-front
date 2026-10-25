@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { usePortalAuth } from '../../contexts/PortalAuthContext';
+import LogoLex from '../ui/LogoLex.jsx';
 import './Portal.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -11,8 +12,12 @@ import './Portal.css';
 // Perfil. Nenhum daqueles destinos existe para o cliente, e exibir a moldura
 // de um sistema que ele não pode operar só sugere que há mais coisa atrás.
 //
-// O portal tem UMA barra, com o nome do escritório, o botão de sair, e nada
-// mais. Há teste travando a ausência dos dois imports.
+// O portal tem UMA barra, com a logo, o botão de sair, e nada mais. Há teste
+// travando a ausência dos dois imports.
+//
+// Fase 2.5 (DEC-096): a pele é a da Figura 15, com os tokens fixos da marca
+// (DEC-078). A barra só aparece com sessão: no login a logo fica embaixo do
+// cartão, como no desenho, e uma barra em cima a repetiria.
 //
 // Mobile-first: o cliente abre isto no celular, com um código que recebeu por
 // WhatsApp ou num papel. Uma coluna, alvo de toque grande, fonte legível.
@@ -23,19 +28,21 @@ function PortalLayout() {
 
   return (
     <div className="portal">
-      <header className="portal__barra">
-        <span className="portal__marca">LEX</span>
-        <span className="portal__subtitulo">Portal do cliente</span>
+      {autenticado && (
+        <header className="portal__barra">
+          <span className="portal__marca">
+            <LogoLex className="portal__logo" />
+          </span>
+          <span className="portal__subtitulo">Portal do cliente</span>
 
-        {/* Sair fica visível SEMPRE que há sessão, inclusive na tela de troca
-            de senha. O aparelho pode ser emprestado, e uma saída escondida
-            atrás de um menu é uma saída que ninguém usa. */}
-        {autenticado && (
+          {/* Sair fica visível SEMPRE que há sessão, inclusive na tela de troca
+              de senha. O aparelho pode ser emprestado, e uma saída escondida
+              atrás de um menu é uma saída que ninguém usa. */}
           <button type="button" className="portal__sair" onClick={sair}>
             Sair
           </button>
-        )}
-      </header>
+        </header>
+      )}
 
       <main className="portal__conteudo">
         <Outlet />
@@ -43,7 +50,7 @@ function PortalLayout() {
 
       <footer className="portal__rodape">
         <p className="portal__rodape-texto">
-          Esta área mostra apenas o seu processo e os documentos que a advogada
+          Esta área mostra apenas os processos e os documentos que a advogada
           liberou para você.
         </p>
       </footer>

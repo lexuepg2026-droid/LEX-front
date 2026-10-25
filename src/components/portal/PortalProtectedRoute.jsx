@@ -43,7 +43,7 @@ function PortalProtectedRoute({ permitirSenhaProvisoria = false }) {
   // obrigatoriamente, segue para o processo. A troca voluntária é outra coisa
   // e não existe nesta fase.
   if (!senhaProvisoria && permitirSenhaProvisoria) {
-    return <Navigate to="/portal/processo" replace />;
+    return <Navigate to="/portal/processos" replace />;
   }
 
   return <Outlet />;
