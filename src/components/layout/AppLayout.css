@@ -1,27 +1,40 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   O LAYOUT DA ADVOGADA (Fase 2a, DEC-079)
+
+   Coluna: cabeçalho, aviso de e-mail e o conteúdo. QUEM ROLA É `.main-content`,
+   e não o `window` — a página inteira tem a altura da tela e esconde o
+   excedente. É isso que mantém o cabeçalho sempre visível sem `sticky`, e é o
+   elemento que a volta ao topo rola (`VoltarAoTopo`) e que o menu ⋮ escuta
+   para se fechar (DEC-046).
+
+   Sem `transform`, `filter`, `contain` nem `perspective` aqui: qualquer um
+   deles faria o `position: fixed` do menu ⋮ se ancorar a este elemento em vez
+   do viewport (varredura em `tests/regressions/f1b31.test.js`).
+   ═══════════════════════════════════════════════════════════════════════════ */
 .app-layout {
   display: flex;
+  flex-direction: column;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background-color: var(--color-bg);
 }
 
-.main-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-}
-
+/* Sem a Sidebar o conteúdo ganhou a largura toda. Acima de
+   `--largura-conteudo` ele centraliza, com o recuo calculado no PADDING (e
+   não num invólucro com `max-width`): a barra de rolagem continua na borda da
+   tela, e a tabela larga continua rolando dentro do próprio `.table-wrapper`.
+   As larguras fixas de coluna (`col-money`, `col-parcela`) não dependem disto. */
 .main-content {
   flex: 1;
-  padding: var(--space-6);
+  min-height: 0;
+  padding: var(--space-6) max(var(--space-6), calc((100% - var(--largura-conteudo)) / 2));
   overflow-y: auto;
   box-sizing: border-box;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .main-content {
     padding: var(--space-4);
     padding-bottom: calc(var(--bottom-nav-height) + var(--space-4));

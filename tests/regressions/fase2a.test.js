@@ -42,3 +42,90 @@ describe("Fase 2a · vocabulário único no financeiro (DEC-080)", () => {
     assert.deepEqual(culpados, [], "use Honorários, Parcelas e Pagamentos (DEC-080)");
   });
 });
+
+// ── Itens 3 e 4 — DEC-079 ─────────────────────────────────────────────────
+import {
+  GRUPOS, LINKS_PRINCIPAIS, PERFIL, PENDENCIAS,
+  itemAtivo, grupoAtivo, maisAtivo, todosOsDestinos, iniciais, primeiroNome
+} from "../../src/components/layout/navegacao.js";
+
+describe("Fase 2a · os destinos da navegação (DEC-079)", () => {
+  test("os 13 destinos da Sidebar antiga continuam alcançáveis", () => {
+    // A lista de `Sidebar.jsx:16-37` em `main` antes da fase, na ordem.
+    const DA_SIDEBAR = [
+      "/dashboard", "/dashboard/clientes", "/dashboard/processos", "/dashboard/agenda",
+      "/dashboard/financeiro", "/dashboard/honorarios", "/dashboard/parcelas", "/dashboard/pagamentos",
+      "/dashboard/documentos", "/dashboard/documentos/montar?modo=documento",
+      "/dashboard/documentos/montar?modo=modelo", "/dashboard/secoes", "/dashboard/perfil",
+    ];
+    assert.deepEqual(todosOsDestinos(), DA_SIDEBAR);
+  });
+
+  test("links diretos e grupos são os da fase, com 'Agenda' e não 'Calendário'", () => {
+    assert.deepEqual(LINKS_PRINCIPAIS.map((l) => l.label), ["Início", "Clientes", "Processos", "Agenda"]);
+    assert.deepEqual(GRUPOS.map((g) => g.label), ["Financeiro", "Documentos"]);
+    assert.deepEqual(GRUPOS[0].itens.map((i) => i.label), ["Visão geral", "Honorários", "Parcelas", "Pagamentos"]);
+  });
+
+  test("Início só acende no Início; Clientes acende nas telas de dentro", () => {
+    const inicio = LINKS_PRINCIPAIS[0];
+    const clientes = LINKS_PRINCIPAIS[1];
+    assert.equal(itemAtivo(inicio, { pathname: "/dashboard" }), true);
+    assert.equal(itemAtivo(inicio, { pathname: "/dashboard/clientes" }), false);
+    assert.equal(itemAtivo(clientes, { pathname: "/dashboard/clientes/editar/42" }), true);
+    assert.equal(itemAtivo(clientes, { pathname: "/dashboard/clientesx" }), false);
+  });
+
+  test("as duas portas da montagem acendem pelo ?modo=, nunca juntas", () => {
+    const [, gerar, montar] = GRUPOS[1].itens;
+    const local = { pathname: "/dashboard/documentos/montar", search: "?modo=modelo" };
+    assert.equal(itemAtivo(montar, local), true);
+    assert.equal(itemAtivo(gerar, local), false);
+    // A LISTA de documentos não acende na montagem (é `end`), mas o grupo sim.
+    assert.equal(itemAtivo(GRUPOS[1].itens[0], local), false);
+    assert.equal(grupoAtivo(GRUPOS[1], local), true);
+  });
+
+  test("a página do honorário acende o grupo Financeiro", () => {
+    assert.equal(grupoAtivo(GRUPOS[0], { pathname: "/dashboard/honorarios/abc/reparcelar" }), true);
+    assert.equal(grupoAtivo(GRUPOS[0], { pathname: "/dashboard/clientes" }), false);
+  });
+
+  test("saudação e iniciais", () => {
+    assert.equal(primeiroNome("  Laís  Fernanda Souza "), "Laís");
+    assert.equal(iniciais("Laís Fernanda Souza"), "LF");
+    assert.equal(iniciais(""), "?");
+  });
+});
+
+describe("Fase 2a · o que abre e fecha funciona por teclado", () => {
+  const submenu = semComentarios(ler("src/components/layout/MenuSuspenso.jsx"));
+
+  test("o submenu é um <button> com aria-expanded e aria-controls", () => {
+    assert.match(submenu, /<button[\s\S]*?type="button"[\s\S]*?aria-expanded=\{aberto\}[\s\S]*?aria-controls=\{idPainel\}/);
+  });
+
+  test("o submenu fecha com Escape devolvendo o foco, com clique fora, com o foco saindo e ao navegar", () => {
+    assert.match(submenu, /e\.key === 'Escape'[\s\S]*?fechar\(\{ devolverFoco: true \}\)/);
+    assert.match(submenu, /botao\.current\?\.focus\(\)/);
+    assert.match(submenu, /addEventListener\('mousedown'/);
+    assert.match(submenu, /onBlur=\{aoPerderFoco\}/);
+    assert.match(submenu, /useEffect\(\(\) => \{ setAberto\(false\); \}, \[pathname, search\]\)/);
+  });
+
+  test("nenhuma div clicável no cabeçalho e na barra de baixo", () => {
+    // O menu do usuário dela abria por clique numa `div`, sem teclado.
+    for (const arquivo of ["Header.jsx", "MenuSuspenso.jsx", "MenuUsuario.jsx"]) {
+      const fonte = semComentarios(ler(`src/components/layout/${arquivo}`));
+      assert.doesNotMatch(fonte, /<(div|span|li)\b[^>]*\bonClick=/, arquivo);
+    }
+  });
+
+  test("Tema e Sair usam as funções do DashboardPage, sem reescrever", () => {
+    const layout = semComentarios(ler("src/components/layout/AppLayout.jsx"));
+    assert.match(layout, /<Header theme=\{theme\} toggleTheme=\{toggleTheme\} onLogout=\{onLogout\} \/>/);
+    assert.doesNotMatch(layout, /Sidebar/);
+    const pagina = semComentarios(ler("src/pages/dashboard/DashboardPage.jsx"));
+    assert.match(pagina, /<AppLayout theme=\{theme\} toggleTheme=\{toggleTheme\} onLogout=\{handleLogout\} \/>/);
+  });
+});

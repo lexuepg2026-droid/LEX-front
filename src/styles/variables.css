@@ -163,6 +163,9 @@
   --sidebar-width:          240px;
   --header-height:          56px;
   --bottom-nav-height:      60px;
+  /* Largura máxima de leitura do conteúdo (Fase 2a). Sem a Sidebar a tela
+     ganhou 240 px; acima disto o conteúdo centraliza em vez de esticar. */
+  --largura-conteudo:       1280px;
 
   /* Legado — compatibilidade com CSS existente dos módulos */
   --bg-color:    var(--color-bg);

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from './Sidebar';
 import Header from './Header';
 import BottomNav from './BottomNav';
 import EmailConfirmationBanner from './EmailConfirmationBanner';
@@ -10,20 +9,21 @@ import EmailConfirmationBanner from './EmailConfirmationBanner';
 import { BreadcrumbProvider } from '../../contexts/BreadcrumbContext';
 import './AppLayout.css';
 
+// Fase 2a (DEC-079): a Sidebar saiu. O cabeçalho horizontal ocupa o topo, e
+// abaixo de 1024 px a navegação vai para a barra de baixo com "Mais". Tema e
+// Sair continuam sendo as funções do `DashboardPage`, agora entregues ao menu
+// do usuário (no cabeçalho) e à folha do "Mais" (na barra de baixo).
 function AppLayout({ theme, toggleTheme, onLogout }) {
   return (
     <BreadcrumbProvider>
       <div className="app-layout">
-        <Sidebar theme={theme} toggleTheme={toggleTheme} onLogout={onLogout} />
-        <div className="main-wrapper">
-          <Header />
-          {/* A-2: aviso de e-mail não confirmado. Não bloqueia nada. */}
-          <EmailConfirmationBanner />
-          <main className="main-content">
-            <Outlet />
-          </main>
-        </div>
-        <BottomNav />
+        <Header theme={theme} toggleTheme={toggleTheme} onLogout={onLogout} />
+        {/* A-2: aviso de e-mail não confirmado. Não bloqueia nada. */}
+        <EmailConfirmationBanner />
+        <main className="main-content">
+          <Outlet />
+        </main>
+        <BottomNav theme={theme} toggleTheme={toggleTheme} onLogout={onLogout} />
       </div>
     </BreadcrumbProvider>
   );
