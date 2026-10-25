@@ -669,3 +669,23 @@ describe("Fase 2b · item 6 — o aviso de e-mail compacto e dispensável (DEC-0
     assert.match(hook, /getApiErrorMessage\(err, 'Não foi possível enviar o e-mail agora\.'\)/);
   });
 });
+
+// ── Achado da validação da fase: uma chave sobrando em Header.css ─────────
+describe("Fase 2b · toda folha de estilo tem as chaves balanceadas", () => {
+  test("nenhuma .css de src/ abre ou fecha chave a mais", () => {
+    // A remoção da trilha deixou um `}` sobrando no fim de `Header.css`. O
+    // navegador ignora, o minificador avisa e segue — nenhuma outra
+    // verificação pegava. Comentários fora, porque o texto deles não conta.
+    const desbalanceadas = arquivos(SRC, [".css"]).filter((c) => {
+      const css = readFileSync(c, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+      let nivel = 0;
+      for (const ch of css) {
+        if (ch === "{") nivel += 1;
+        if (ch === "}") nivel -= 1;
+        if (nivel < 0) return true;
+      }
+      return nivel !== 0;
+    }).map((c) => relative(SRC, c));
+    assert.deepEqual(desbalanceadas, []);
+  });
+});
