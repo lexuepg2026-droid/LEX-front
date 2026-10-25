@@ -3997,6 +3997,130 @@ provedor configurado.
 
 ---
 
+## DEC-066 (frontend) — `toast.info` existe, e com fundo sólido (Fase 0)
+
+**O defeito, em produção desde a F-3 (`55e3fe4`).** Cinco telas chamavam
+`toast.info(...)` e `utils/toast.js` só tinha `success` e `error`. O
+`TypeError` acontecia **antes** da linha seguinte:
+
+| Onde | O que deixava de acontecer |
+|---|---|
+| `CalendarPage.jsx` — clicar num vencimento | o `navigate` para a parcela ou honorário de origem |
+| `EventFormPage.jsx` — salvar e concluir sem sinal | sair do formulário depois de enfileirar |
+| `ProcessDetailPage.jsx` — mudar fase sem sinal | limpar o motivo; o erro escapava do `catch` |
+| `PendenciasPage.jsx` — "manter a minha versão" | a confirmação do reenvio |
+
+Nos ramos da fila a gravação **tinha** ido para a fila — o defeito era a tela
+não dizer isso e não sair do lugar, o que se lê como "não salvou".
+
+**A correção é o método que faltava**, com a mesma assinatura dos outros dois.
+Nenhum ponto de chamada mudou.
+
+**O tom `info` tem fundo SÓLIDO** (`#1D4ED8`, texto `#FFFFFF`, **6,70:1**), e não
+o `-bg` translúcido de `success` e `error`. Com fundo sólido o contraste não
+depende do tema nem do que estiver atrás do toast — o translúcido de erro mede
+4,34:1 no escuro e 3,01:1 no claro (inventário de 24/10/2026). A cor definitiva
+vem com a paleta da Fase 1; o que fica decidido aqui é **sólido**.
+
+**A varredura que teria pegado o defeito agora existe:**
+`tests/regressions/fase0.test.js` lista todo `toast.<método>(` de `src/` e falha
+se o módulo não tiver o método. `utils/toast.js` não importa nada, então a
+suíte o **carrega e executa** — o impedimento de `tests/offline/estatica.test.js`
+é do `axiosConfig.js`, que o importa sem extensão.
+
+---
+
+## DEC-067 (frontend) — o seletor pede o teto e diz quando corta; a busca é da fase 3 (Fase 0)
+
+**O defeito.** O seletor de processo do formulário de honorário
+(`processService.listProcesses()`) e o seletor de honorário do formulário de
+parcela (`feeService.listFees()`) eram chamados **sem `limit`**. O backend
+devolvia os 20 do padrão, e a tela os mostrava como se fossem todos: com 21
+processos, o mais antigo **não existia** no seletor, e não havia como lançar
+honorário para ele por aquela tela.
+
+**O paliativo.** Os dois pedem `limit: 100` — o teto que as rotas aceitam
+(`Math.min(100, …)` em `processController.js` e `feeController.js`; não há
+utilitário compartilhado no backend, então o número mora em
+`utils/seletorLimitado.js` com a referência). Quando o `total` do envelope é
+maior, aparece abaixo do seletor: **"Mostrando os 100 mais recentes de 137."**
+("mais recentes" porque as duas listagens ordenam por `createdAt` decrescente).
+
+**O que NÃO se fez, e por quê:** baixar todas as páginas. Seria trocar um teto
+silencioso por um download que cresce com o escritório, num seletor nativo que
+fica inutilizável muito antes de 500 opções.
+
+**O conserto de verdade fica para a fase 3:** trocar os dois `<select>` por
+`CampoComSugestoes` com busca no servidor (`/fees` e `/processes` já aceitam
+`busca`), o que acaba com o teto e permite mostrar processo e cliente na opção
+— que é o item 4 da 3ª banca.
+
+**Limite conhecido do paliativo:** na **edição**, se o registro aponta para um
+processo ou honorário fora dos 100 mais recentes, o `<select>` não tem a opção e
+aparece vazio. O valor continua no `formData` e vai no payload; o que falta é a
+exibição. Some junto com o `<select>` na fase 3.
+
+---
+
+## DEC-069 (frontend) — o cartão se chama "Honorários em aberto" (Fase 0)
+
+O backend passou a contar `pendente` **e** `parcialmente_pago` (ver a DEC-069 no
+CLAUDE.md do backend). O rótulo "Honorários a Receber" descrevia a conta antiga
+— só os honorários que nunca receberam nada — e trocou para **"Honorários em
+aberto"**, que é o que o número passou a ser.
+
+**A chave continua `honorariosAReceber`**, porque é o nome do campo na API; o
+que muda é só o texto do cartão. Teste em `tests/regressions/fase0.test.js`.
+
+---
+
+## DEC-070 (frontend) — o filtro `?processoId=` aparece, e sai com um clique (Fase 0)
+
+**O defeito, apontado pela 3ª banca.** As abas do processo
+(`pages/processes/ProcessTabs.jsx`) abrem honorários, parcelas, documentos e
+pagamentos com `?processoId=` na URL. As quatro listas filtravam por ele e
+**nenhuma dizia**: a frase do recorte não o citava, o "Limpar filtros" não o
+removia (ele vive na URL, não no estado do `useListFilters`), e a advogada lia
+uma lista curta como se fosse o escritório inteiro.
+
+**A correção, em três peças reutilizáveis:**
+
+| Peça | O que faz |
+|---|---|
+| `utils/processoFiltrado.js` | função pura: "número — título", e o trecho da frase |
+| `hooks/useProcessoFiltrado.js` | lê o parâmetro, busca o processo, remove **só** o `processoId` da URL |
+| `components/ui/ProcessFilterChip.jsx` | "Processo: {número} — {título} ×", com o × rotulado para leitor de tela |
+
+**O processo vem pelo MESMO recurso do detalhe** (`resource: 'process'`,
+`params: { id }`), que é a mesma chave do espelho local da DEC-058: quem abriu o
+processo com sinal vê o nome no chip sem sinal.
+
+**Nas três listas financeiras o processo é um filtro como os outros:**
+
+- entra em `descricaoDoRecorteFinanceiro` por um parâmetro próprio, `processo`,
+  logo depois da busca e antes do honorário (é o recorte mais largo dos dois);
+- conta como "filtrado" para a barra "Filtros aplicados" e para o estado vazio;
+- o "Limpar filtros" o remove junto. Sem isso a frase diria "do processo X" e o
+  botão deixaria o processo de pé.
+
+**Na lista de documentos** (que não tem barra de filtros) entra o chip, e o
+estado vazio diz "Nenhum documento deste processo." em vez de "Nenhum
+documento gerado ainda." — o segundo seria falso sobre o escritório.
+
+### A varredura de espelho passou a cobrar QUEM usa o hook
+
+`tests/offline/estatica.test.js` tratava todo arquivo que chama
+`useCachedResource` como tela obrigada a exibir o aviso de idade, e o hook novo
+entrou como "tela". **A saída não foi isentá-lo**, o que deixaria um hook futuro
+servir dado guardado sem aviso: hook em `src/hooks/` saiu da lista e **todo
+arquivo que o importa entrou nela**. A regra mais estrita pegou um caso real —
+a lista de documentos mostraria, sem sinal, o nome do processo vindo do espelho
+sem dizer de quando — e ela passou a exibir o `OfflineNotice` do chip.
+
+Testes em `tests/regressions/fase0.test.js` (bloco do item 5).
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:

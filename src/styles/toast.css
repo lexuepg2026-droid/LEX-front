@@ -33,6 +33,16 @@
   border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
+/* Fase 0 (DEC-066). Fundo SÓLIDO, e não o `-bg` translúcido dos outros dois:
+   com fundo sólido o contraste não depende do tema nem do que estiver atrás.
+   Branco sobre #1D4ED8 = 6,70:1 nos dois modos (WCAG AA pede 4,5:1). A cor
+   definitiva vem com a paleta da Fase 1. */
+.toast--info {
+  background-color: #1D4ED8;
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;

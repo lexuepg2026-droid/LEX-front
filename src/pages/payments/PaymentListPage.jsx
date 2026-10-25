@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import paymentService from '../../api/paymentService';
 import feeService from '../../api/feeService';
 import PageHeader from '../../components/ui/PageHeader';
@@ -10,6 +10,8 @@ import ActionMenu from '../../components/ui/ActionMenu';
 import FinancialFilters from '../../components/financeiro/FinancialFilters';
 import { descricaoDoRecorteFinanceiro } from '../../components/financeiro/filterSummary.js';
 import useListFilters from '../../hooks/useListFilters';
+import useProcessoFiltrado from '../../hooks/useProcessoFiltrado';
+import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import { rotuloCurtoDoHonorario } from '../../utils/feeLabel';
 import { toast } from '../../utils/toast';
@@ -31,8 +33,10 @@ import '../../styles/modules.css';
 const POR_PAGINA = 20;
 
 function PaymentListPage({ embedded = false }) {
-  const [searchParams] = useSearchParams();
-  const processoId = searchParams.get('processoId') || undefined;
+  // `?processoId=` vem das abas do processo. A lista filtrava por ele sem
+  // dizer; agora ele aparece num chip e na frase do recorte (DEC-070).
+  const filtroProcesso = useProcessoFiltrado();
+  const processoId = filtroProcesso.processoId || undefined;
   // Um recibo por vez, por id: sem isso o botão de TODAS as linhas ficaria em
   // "Baixando…" enquanto um só está sendo gerado.
   const [reciboEmCurso, setReciboEmCurso] = useState(null);
@@ -137,20 +141,37 @@ function PaymentListPage({ embedded = false }) {
       filtros.formaPagamento
         ? `pagos em ${labelDe(FORMA_PAGAMENTO_OPTIONS, filtros.formaPagamento).toLowerCase()}`
         : null
-    ]
+    ],
+    processo: processoId ? { rotulo: filtroProcesso.rotulo } : null
   });
+
+  // O processo da URL é um filtro como os outros: conta como "filtrado" para a
+  // barra e para o estado vazio, e o "Limpar filtros" o remove junto — senão a
+  // frase diria "do processo X" e o botão deixaria o processo de pé.
+  const filtrado = temFiltro || Boolean(processoId);
+  const limparTudo = () => {
+    limpar();
+    if (processoId) filtroProcesso.remover();
+  };
 
   const body = (
     <>
       {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
       {error && <p className="error-message">{error}</p>}
+      {processoId && (
+        <ProcessFilterChip
+          rotulo={filtroProcesso.rotulo}
+          carregando={filtroProcesso.carregando}
+          onRemover={filtroProcesso.remover}
+        />
+      )}
 
       <FinancialFilters
         filtros={filtros}
         definirFiltro={definirFiltro}
         aplicarPreset={aplicarPreset}
-        limpar={limpar}
-        temFiltro={temFiltro}
+        limpar={limparTudo}
+        temFiltro={filtrado}
         honorarios={honorarios}
         descricaoDoRecorte={recorte}
       >
@@ -175,7 +196,7 @@ function PaymentListPage({ embedded = false }) {
         <EmptyState
           title="Nenhum recebimento encontrado"
           description={
-            temFiltro
+            filtrado
               ? `Nenhum pagamento ${recorte}. Limpe os filtros para ver a lista inteira.`
               : 'Registre um novo pagamento para vê-lo aqui.'
           }

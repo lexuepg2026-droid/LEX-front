@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import installmentService from '../../api/installmentService';
 import feeService from '../../api/feeService';
 import PageHeader from '../../components/ui/PageHeader';
@@ -11,6 +11,8 @@ import ActionMenu from '../../components/ui/ActionMenu';
 import FinancialFilters from '../../components/financeiro/FinancialFilters';
 import { descricaoDoRecorteFinanceiro } from '../../components/financeiro/filterSummary.js';
 import useListFilters from '../../hooks/useListFilters';
+import useProcessoFiltrado from '../../hooks/useProcessoFiltrado';
+import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import { rotuloCurtoDoHonorario } from '../../utils/feeLabel';
 import { toast } from '../../utils/toast';
@@ -28,8 +30,10 @@ const POR_PAGINA = 20;
 
 function InstallmentListPage({ embedded = false }) {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
-  const [searchParams] = useSearchParams();
-  const processoId = searchParams.get('processoId') || undefined;
+  // `?processoId=` vem das abas do processo. A lista filtrava por ele sem
+  // dizer; agora ele aparece num chip e na frase do recorte (DEC-070).
+  const filtroProcesso = useProcessoFiltrado();
+  const processoId = filtroProcesso.processoId || undefined;
   // Modo "desativadas" (Fase 4.5) — ver a nota em PaymentListPage. Vive junto
   // dos demais filtros para que ligá-lo também volte à página 1.
   const [honorarios, setHonorarios] = useState([]);
@@ -123,20 +127,37 @@ function InstallmentListPage({ embedded = false }) {
     extras: [
       filtros.status ? `com status "${labelDe(STATUS_PARCELA_OPTIONS, filtros.status)}"` : null,
       verInativos ? 'entre as desativadas' : null
-    ]
+    ],
+    processo: processoId ? { rotulo: filtroProcesso.rotulo } : null
   });
+
+  // O processo da URL é um filtro como os outros: conta como "filtrado" para a
+  // barra e para o estado vazio, e o "Limpar filtros" o remove junto — senão a
+  // frase diria "do processo X" e o botão deixaria o processo de pé.
+  const filtrado = temFiltro || Boolean(processoId);
+  const limparTudo = () => {
+    limpar();
+    if (processoId) filtroProcesso.remover();
+  };
 
   const body = (
     <>
       {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
       {error && <p className="error-message">{error}</p>}
+      {processoId && (
+        <ProcessFilterChip
+          rotulo={filtroProcesso.rotulo}
+          carregando={filtroProcesso.carregando}
+          onRemover={filtroProcesso.remover}
+        />
+      )}
 
       <FinancialFilters
         filtros={filtros}
         definirFiltro={definirFiltro}
         aplicarPreset={aplicarPreset}
-        limpar={limpar}
-        temFiltro={temFiltro}
+        limpar={limparTudo}
+        temFiltro={filtrado}
         honorarios={honorarios}
         placeholderBusca="Buscar por honorário ou processo…"
         descricaoDoRecorte={recorte}
@@ -175,7 +196,7 @@ function InstallmentListPage({ embedded = false }) {
               // por "+ Nova Parcela", com o mesmo número, que continua
               // reservado enquanto a antiga existir.
               ? 'Parcelas excluídas aparecem aqui. Para voltar a cobrar, crie uma parcela nova.'
-              : temFiltro
+              : filtrado
                 // O estado vazio diz o RECORTE (F-1b.3): "nenhuma cobrança
                 // encontrada" com três controles preenchidos faz procurar a
                 // parcela em vez de olhar os filtros.

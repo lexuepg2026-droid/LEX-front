@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { FolderOpen } from 'lucide-react';
 import documentService from '../../api/documentService';
 import PageHeader from '../../components/ui/PageHeader';
@@ -14,6 +14,9 @@ import { toast } from '../../utils/toast';
 import '../../styles/modules.css';
 import './DocumentListPage.css';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import useProcessoFiltrado from '../../hooks/useProcessoFiltrado';
+import OfflineNotice from '../../components/ui/OfflineNotice';
+import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
 import { MENSAGEM_DOWNLOAD_OFFLINE, blockReason } from '../../offline/offlineMessages';
 
 // Só documentos GERADOS aparecem aqui. O caminho de upload segue dormente na
@@ -30,8 +33,12 @@ function DocumentListPage() {
   const [baixando, setBaixando] = useState('');
   const online = useOnlineStatus();
 
-  const [searchParams] = useSearchParams();
-  const processoId = searchParams.get('processoId');
+  // `?processoId=` vem da aba do processo; agora ele aparece num chip (DEC-070).
+  const filtroProcesso = useProcessoFiltrado();
+  const processoId = filtroProcesso.processoId || undefined;
+  // A lista de documentos não tem espelho próprio; o NOME do processo no chip
+  // tem. Sem sinal, a tela diz de quando é esse nome (DEC-058).
+  const { fromCache, updatedAt } = filtroProcesso;
 
   useEffect(() => {
     let ativo = true;
@@ -99,12 +106,22 @@ function DocumentListPage() {
         actionTo="/dashboard/documentos/montar?modo=documento"
       />
 
+      {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
       {error && <p className="error-message">{error}</p>}
+      {processoId && (
+        <ProcessFilterChip
+          rotulo={filtroProcesso.rotulo}
+          carregando={filtroProcesso.carregando}
+          onRemover={filtroProcesso.remover}
+        />
+      )}
 
       {documentos.length === 0 ? (
         <EmptyState
           icon={<FolderOpen size={32} />}
-          title="Nenhum documento gerado ainda."
+          // Com o filtro, "nenhum documento gerado ainda" seria falso sobre o
+          // escritório: é ESTE processo que não tem documento (DEC-070).
+          title={processoId ? 'Nenhum documento deste processo.' : 'Nenhum documento gerado ainda.'}
           description="Documento nasce de um modelo: monte o modelo com as seções, escolha o processo e o cliente, e gere. O arquivo em PDF e DOCX sai daqui."
           action={
             <Link

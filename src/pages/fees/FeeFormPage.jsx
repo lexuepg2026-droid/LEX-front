@@ -10,6 +10,7 @@ import { getApiErrorField } from '../../utils/apiError';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { formatCurrency, formatPercent } from '../../utils/formatters';
 import { TIPO_HONORARIO_OPTIONS, STATUS_CANCELADO } from '../../utils/enums';
+import { LIMITE_DO_SELETOR, avisoDeSeletorLimitado } from '../../utils/seletorLimitado';
 import {
   camposDoTipo,
   derivarValorHonorario,
@@ -58,6 +59,8 @@ const EMPTY_FORM = {
 function FeeFormPage() {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [processes, setProcesses] = useState([]);
+  // O total do envelope, para dizer quando o seletor foi cortado (DEC-067).
+  const [totalProcessos, setTotalProcessos] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [campoComErro, setCampoComErro] = useState(null);
@@ -79,8 +82,14 @@ function FeeFormPage() {
 
 
   useEffect(() => {
-    processService.listProcesses()
-      .then(res => setProcesses(res.data.data ?? res.data))
+    // Sem `limit` vinham os 20 do padrão do backend, e um processo mais antigo
+    // simplesmente não existia no seletor (DEC-067). O teto é paliativo: a
+    // busca no servidor é da fase 3.
+    processService.listProcesses({ page: 1, limit: LIMITE_DO_SELETOR })
+      .then(res => {
+        setProcesses(res.data.data ?? res.data);
+        setTotalProcessos(typeof res.data?.total === 'number' ? res.data.total : null);
+      })
       .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar processos.')));
 
     if (isEditing) {
@@ -202,6 +211,9 @@ function FeeFormPage() {
                 </option>
               ))}
             </select>
+            {avisoDeSeletorLimitado(processes.length, totalProcessos) && (
+              <p className="form-hint">{avisoDeSeletorLimitado(processes.length, totalProcessos)}</p>
+            )}
           </div>
 
           <div className="form-group span-3">
