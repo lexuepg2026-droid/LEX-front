@@ -4394,6 +4394,207 @@ caminhos do portal, `/dashboard` com sessão, `/` sem.
 
 ---
 
+## DEC-083 (frontend) — o toast por tipo: duração, região, fechar e deduplicação (Fase 2b)
+
+| Tipo | Duração | Região |
+|---|---|---|
+| sucesso | 3 s | `role="status"`, `aria-live="polite"` |
+| info | 4 s | `role="status"`, `aria-live="polite"` |
+| erro | 6 s | `role="alert"`, `aria-live="assertive"` |
+
+As regras moram em `utils/toast.js` como funções puras (`duracaoDe`,
+`regiaoDe`, `deveEmitir`) e o `ToastContainer` só as aplica — o módulo não
+importa nada, e a suíte o executa.
+
+- **As duas regiões ficam sempre montadas**, vazias quando não há aviso. Região
+  viva que nasce junto com o conteúdo não é anunciada por todo leitor de tela.
+- **Botão ×** em todos os tipos, `aria-label="Fechar aviso"`. O anel de foco
+  do × é branco (o bege do foco global não tem contraste garantido sobre os
+  três fundos sólidos); o realce de hover **escurece** o fundo
+  (`--color-toast-fechar-hover`), porque clarear o verde do sucesso derrubava o
+  branco para menos de 4,5:1.
+- **Pausa** enquanto o mouse está em cima ou o foco está dentro. Escape fecha o
+  aviso focado, e o foco volta para onde estava antes de entrar nele.
+- **Deduplicação:** mesmo tipo e mesma mensagem dentro de 4 s saem uma vez. A
+  janela conta da emissão que saiu — a sexta falha, 5 s depois, aparece de
+  novo, porque o problema continua.
+
+---
+
+## DEC-084 (frontend) — o toast global de erro, com política estreita (Fase 2b)
+
+O interceptor da advogada passou a emitir toast para **o que nenhuma tela sabe
+explicar**. A política inteira é `deveExibirToastGlobal(erro, config, online)`,
+em `api/toastGlobal.js` — módulo próprio pelo motivo de `api/sessionLoss.js`
+(a suíte não carrega `axiosConfig.js`).
+
+| Caso | Toast global? | Por quê |
+|---|---|---|
+| sem resposta, com sinal (servidor fora, CORS, tempo esgotado) | **sim** | nenhuma tela sabe dizer isso melhor |
+| 5xx (inclui o 502 de envio de e-mail) | **sim** | idem |
+| 429 | **sim** | idem |
+| 400, 404, 409, 422 | não | a tela destaca o campo ou lista as pendências |
+| 401 | não | é a sessão perdida, com o próprio toast e o `isRedirecting` intactos |
+| `offlineWriteError`, `offlineQueuedError` | não | a tela já tem a frase da F-5a/F-5b |
+| sem resposta e sem sinal | não | a frase é a da F-5a, e a leitura cai no espelho |
+| `ERR_CANCELED` | não | pedido cancelado não é falha |
+| `config.semToastGlobal === true` | não | chamada de fundo |
+
+**A frase:** a do servidor quando ele escreveu uma (o 429 "Aguarde um minuto…",
+o 502 "Não foi possível enviar o e-mail…"); a nossa quando não — o 500
+genérico e o 502/503 do proxy, que chega sem corpo nosso.
+
+**`semToastGlobal`** está no sino a cada 5 minutos, no reenvio da fila offline
+(`api/outboxSender.js`), no preview de alocação disparado pela digitação e no
+aviso preventivo de compatibilidade do documento. O contador da fila lê o
+IndexedDB e não faz requisição.
+
+**A marca no erro.** O interceptor marca o erro avisado
+(`avisadoPeloToastGlobal`), e toda tela que fazia `toast.error(...)` no
+`catch` pergunta `jaAvisadoPeloToastGlobal(err)` antes. Sem isso o mesmo 500
+apareceria duas vezes, com duas frases — e frases diferentes a deduplicação
+não junta. O **erro em linha continua**: ele diz onde, o toast diz o quê.
+
+**O portal não recebe nada disto** — `portalAxios.js` é outra instância, e há
+teste travando que ele não importa a política. A política também não lê URL:
+a DEC-050 continua valendo, e a asserção de `f2a.test.js` passou a nomear a
+URL (`error.config.url`) em vez de proibir qualquer acesso ao `config`.
+
+---
+
+## DEC-085 (frontend) — a faixa de contexto substitui a trilha (Fase 2b)
+
+Apontamento da 3ª banca — **toda tela diz a qual cliente e processo se
+refere** — e o desenho da Raniele (Figura 21: "Voltar" nas telas de detalhe,
+sem trilha).
+
+**Três peças, e por que três:**
+
+| Peça | O que faz |
+|---|---|
+| `contexts/ContextoContext.jsx` | guarda o **id** que a tela publicou (`usePublicarContexto({ processoId })` ou `{ clienteId }`), casado com o `pathname` |
+| `hooks/useContextoResolvido.js` | resolve o id pelo espelho, com `resource: 'process'`/`'client'` e `params: { id }` — **as mesmas chaves do detalhe** (DEC-058, DEC-070) |
+| `components/layout/FaixaContexto.jsx` | desenha "← Voltar" e "Cliente: Fulano (+2) · Processo: número — título", e o aviso de idade quando o dado vem do espelho |
+
+A resolução fica num hook em `src/hooks/` de propósito: a varredura de
+`tests/offline/estatica.test.js` passa a cobrar o aviso de idade de **quem o
+importa** (a faixa), como faz com `useProcessoFiltrado`. Nada foi isentado.
+
+**O casamento com o caminho** (`idsPublicadosPara`) é a regra do
+`BreadcrumbContext`, trazida para função pura: entre navegar e a tela nova
+publicar, a faixa não mostra o processo da tela anterior.
+
+**O "Voltar" é um link para o PAI**, não `navigate(-1)`: quem abriu a tela por
+um favorito ou numa aba nova não tem "anterior", e o -1 a levaria para fora do
+sistema. O mapa (`paiDaRota`) é o da trilha — toda tela de uma seção volta à
+lista da seção —, com um refinamento: **a edição volta ao detalhe** do mesmo
+registro (cliente, processo, honorário). Início, listas, Financeiro, Perfil e
+Pendências não têm faixa.
+
+**A query do pai é preservada** quando veio do caminho de origem: a faixa
+guarda, em memória, a última query de cada caminho visitado nesta aba. Quem
+abriu um honorário a partir de `/honorarios?processoId=X` volta à lista
+filtrada; visitar a lista pelo menu (sem query) sobrescreve. Um `?voltar=`
+válido (DEC-087) tem precedência sobre tudo.
+
+**Listas filtradas por `?processoId=`** ganham a faixa, com "Voltar" para o
+processo. Quem publica é `useProcessoFiltrado`, que as quatro listas já usam.
+**O chip da DEC-070 continua**, porque é ele que remove o filtro — mas passou a
+dizer só o recorte ("Filtro: só este processo ×"), com o número e o título no
+`title`. Repetir o processo no chip e na faixa, a quatro centímetros, seria a
+mesma informação duas vezes.
+
+**No celular** (e no desktop) o contexto é uma linha só, com reticências e a
+frase inteira no `title` do parágrafo; o "Voltar" nunca encolhe.
+
+**A trilha saiu do `Header`**, e com ela o `BreadcrumbContext`, o
+`usePublicarBreadcrumb` e o `useBreadcrumbLabel`. O nome do honorário e o
+"Reparcelar" já eram o título das duas telas que publicavam rótulo; agora elas
+publicam o processo. Os dois testes que travavam a trilha foram **reescritos
+para a faixa** (`f1b.test.js`, `f1b2.test.js`), com a mesma régua.
+
+**Custo aceito:** o detalhe do processo e a faixa leem o mesmo processo — duas
+requisições iguais na primeira abertura, e a segunda serve o espelho se o sinal
+cair. Compartilhar o dado exigiria a faixa conhecer a tela.
+
+---
+
+## DEC-086 (frontend) — o vínculo pré-preenchido, e a opção escolhida nunca some (Fase 2b)
+
+- `FeeFormPage` aceita **`?processoId=`**; `InstallmentFormPage` aceita
+  **`?honorarioId=`** (no padrão que o `PaymentFormPage` já tinha). Só na
+  criação.
+- **Corrige o limite conhecido da DEC-067.** Se o id escolhido — vindo da URL
+  ou do registro em edição — não estiver entre os 100 mais recentes, a tela o
+  busca por id (`GET /processes/:id`, `GET /fees/:id`) e o acrescenta
+  **primeiro** no seletor. Enquanto a busca não volta, ou se ela falha, a opção
+  existe do mesmo jeito, marcada ("Carregando…" / "Registro indisponível"): o
+  `<select>` **nunca** fica sem a opção do valor que carrega. Regra em
+  `utils/seletorLimitado.js` (`comOpcaoGarantida`), busca em
+  `hooks/useOpcaoGarantida.js`. Aplicada também ao pagamento, que o
+  "+ Pagamento" da ficha pode abrir para um honorário antigo.
+- **A opção de honorário no form de parcela diz o processo:** "descrição —
+  Processo nº {número} — valor" (`rotuloDoHonorarioNoSeletor`). O número vem do
+  `processoId` populado que `GET /fees` já devolve; o valor vai por último,
+  porque é o que o seletor nativo corta quando a linha não cabe.
+
+A troca dos `<select>` por busca no servidor continua sendo da fase 3; isto
+resolve o caso que a DEC-067 deixou aberto, não o teto.
+
+---
+
+## DEC-087 (frontend) — os botões de lançamento na ficha, e o `?voltar=` validado (Fase 2b)
+
+A ficha financeira do processo ganhou **"+ Honorário"** e, em cada honorário,
+**"+ Parcela"** e **"+ Pagamento"** — o que a Raniele resolveu com modais,
+mantendo aqui as rotas. Honorário cancelado não oferece os dois últimos (o
+backend responde 409).
+
+**Sem sinal**, a regra do "Editar Processo" da mesma tela: o link vira botão
+`aria-disabled`, porque o financeiro está fora da fila offline (DEC-059).
+
+**O caminho de volta viaja na URL**, como `?voltar=/dashboard/processos/detalhe/:id`,
+e é validado na ida e na volta (`voltarValido`, em `components/layout/contexto.js`):
+só caminho que começa em `/dashboard/`, sem esquema, sem `//`, sem barra
+invertida, sem `..`, sem `%2f`/`%5c`, sem espaço nem caractere de controle, até
+512 caracteres. Fora disso o valor é ignorado, como se não existisse — **nunca
+uma URL externa**.
+
+- Honorário e parcela: o Salvar e o Cancelar vão para o `?voltar=`.
+- **Pagamento: o Cancelar volta; o Salvar não sai sozinho.** É a regra da F-1b
+  (a tela fica para comparar previsto e realizado); no lugar, "Voltar ao
+  processo" vira o botão principal entre as saídas.
+- O "Voltar" da faixa também respeita o `?voltar=`.
+
+---
+
+## DEC-088 (frontend) — o aviso de e-mail compacto, dispensável por sessão (Fase 2b)
+
+**PROVISÓRIA: a decisão final depende dos professores** (aviso fixo ou
+efêmero). Este desenho atende às duas leituras e se reverte tirando o ×.
+
+- **Uma linha:** o texto da fase 0, encurtado sem passar a prometer nada
+  ("Confirme seu e-mail (…) para receber os avisos e o link de recuperação de
+  senha."), com "Reenviar", "Já confirmei" e ×. O texto cede com reticências; os
+  botões não.
+- **O × dispensa até o próximo login**, por `sessionStorage` com a chave do
+  usuário, todo acesso em `try/catch`. O **login** limpa (o recarregar não).
+  Sem `sessionStorage`, a faixa continua aparecendo.
+- **A indicação permanente**, que não se dispensa: um ponto de alerta no círculo
+  de iniciais (`--color-marca-alerta`, fixo nos dois modos — o amarelo do claro
+  mede menos de 3:1 sobre a barra), o estado no `aria-label` do botão, e o item
+  **"Confirmar e-mail"** no menu do usuário e no "Mais", que reenvia. Somem
+  quando `emailConfirmadoEm` deixa de ser nulo.
+- **A lógica não mudou:** o mesmo POST, o mesmo `jaConfirmado` que relê a
+  sessão, os mesmos textos de erro do servidor. Saiu do aviso para
+  `hooks/useConfirmacaoEmail.js` porque agora são três lugares que reenviam.
+- **A leitura de `emailConfirmadoEm` mora num arquivo só**
+  (`components/layout/confirmacaoEmail.js`), e a varredura da A-2 continua
+  sabendo exatamente quem pergunta: a faixa, o menu, o "Mais" e o hook. Nenhum
+  portão.
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:
