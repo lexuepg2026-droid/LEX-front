@@ -3997,6 +3997,39 @@ provedor configurado.
 
 ---
 
+## DEC-066 (frontend) — `toast.info` existe, e com fundo sólido (Fase 0)
+
+**O defeito, em produção desde a F-3 (`55e3fe4`).** Cinco telas chamavam
+`toast.info(...)` e `utils/toast.js` só tinha `success` e `error`. O
+`TypeError` acontecia **antes** da linha seguinte:
+
+| Onde | O que deixava de acontecer |
+|---|---|
+| `CalendarPage.jsx` — clicar num vencimento | o `navigate` para a parcela ou honorário de origem |
+| `EventFormPage.jsx` — salvar e concluir sem sinal | sair do formulário depois de enfileirar |
+| `ProcessDetailPage.jsx` — mudar fase sem sinal | limpar o motivo; o erro escapava do `catch` |
+| `PendenciasPage.jsx` — "manter a minha versão" | a confirmação do reenvio |
+
+Nos ramos da fila a gravação **tinha** ido para a fila — o defeito era a tela
+não dizer isso e não sair do lugar, o que se lê como "não salvou".
+
+**A correção é o método que faltava**, com a mesma assinatura dos outros dois.
+Nenhum ponto de chamada mudou.
+
+**O tom `info` tem fundo SÓLIDO** (`#1D4ED8`, texto `#FFFFFF`, **6,70:1**), e não
+o `-bg` translúcido de `success` e `error`. Com fundo sólido o contraste não
+depende do tema nem do que estiver atrás do toast — o translúcido de erro mede
+4,34:1 no escuro e 3,01:1 no claro (inventário de 24/10/2026). A cor definitiva
+vem com a paleta da Fase 1; o que fica decidido aqui é **sólido**.
+
+**A varredura que teria pegado o defeito agora existe:**
+`tests/regressions/fase0.test.js` lista todo `toast.<método>(` de `src/` e falha
+se o módulo não tiver o método. `utils/toast.js` não importa nada, então a
+suíte o **carrega e executa** — o impedimento de `tests/offline/estatica.test.js`
+é do `axiosConfig.js`, que o importa sem extensão.
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:
