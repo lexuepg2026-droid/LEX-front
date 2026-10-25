@@ -1,7 +1,17 @@
 /* Bloco colapsável do painel — F-4. Ver `BlocoDoPainel.jsx`. */
 
+/* O bloco é um BALÃO (Fase 3.1): a surface sobre o fundo da página, com os
+   cantos de 24 px do Início da Raniele. Os cartões de dentro continuam na
+   `--color-surface-card`, um degrau acima do balão. */
 .bloco {
   margin-bottom: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--color-surface);
+  border-radius: 24px;
+}
+
+@media (max-width: 480px) {
+  .bloco { padding: var(--space-3) var(--space-4); }
 }
 
 .bloco__cabecalho {

@@ -121,6 +121,20 @@ export const PARES = [
   { nome: "liberação: aviso de desligar / --color-surface", texto: "--color-warning-text", fundo: "--color-surface", limite: TEXTO },
   { nome: "liberação: Desligar / --color-surface", texto: "--color-danger-text", fundo: "--color-surface", limite: TEXTO },
 
+  // O Início na pele nova (Fase 3.1, DEC-100): o selo da data (dia e mês
+  // creme sobre o verde pleno), as duas pílulas das Datas próximas em repouso
+  // (sobre o balão) e com a linha em hover (o realce por baixo), e o texto
+  // das ações rápidas e do seletor do mês sobre os seus fundos.
+  { nome: "Início: selo da data / --color-primary", texto: "--color-on-primary", fundo: "--color-primary", limite: TEXTO },
+  { nome: "Início: pílula Vencimento / balão", texto: "--color-warning-text", fundo: "--color-warning-bg", sobre: ["--color-surface"], limite: TEXTO },
+  { nome: "Início: pílula Compromisso / balão", texto: "--color-info-text", fundo: "--color-info-bg", sobre: ["--color-surface"], limite: TEXTO },
+  { nome: "Início: pílula Vencimento / linha em hover", texto: "--color-warning-text", fundo: "--color-warning-bg", sobre: ["--color-surface-raised"], limite: TEXTO },
+  { nome: "Início: pílula Compromisso / linha em hover", texto: "--color-info-text", fundo: "--color-info-bg", sobre: ["--color-surface-raised"], limite: TEXTO },
+  { nome: "Início: título da data / linha em hover", texto: "--color-text-primary", fundo: "--color-surface-raised", limite: TEXTO },
+  { nome: "Início: subtítulo da data / linha em hover", texto: "--color-text-secondary", fundo: "--color-surface-raised", limite: TEXTO },
+  { nome: "Início: ação rápida / --color-surface-card", texto: "--color-text-primary", fundo: "--color-surface-card", limite: TEXTO },
+  { nome: "Início: ação rápida em hover", texto: "--color-text-primary", fundo: "--color-surface-raised", limite: TEXTO },
+
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
   { nome: "borda de campo / --color-surface", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },

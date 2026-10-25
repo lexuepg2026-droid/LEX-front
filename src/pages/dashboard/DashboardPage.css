@@ -1,6 +1,17 @@
 /* --- Dashboard Header --- */
+/* Título à esquerda, seletor do mês à direita (Fase 3.1); na tela estreita o
+   seletor desce para a linha de baixo. */
 .dashboard-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
   margin-bottom: var(--space-6);
+}
+
+.dashboard-header__titulo {
+  min-width: 0;
 }
 
 .dashboard-title {
@@ -341,4 +352,237 @@
   font-size: 0.85rem;
   line-height: 1.5;
   color: var(--color-text-secondary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   O INÍCIO — seletor do mês, ações rápidas e Datas próximas (Fase 3.1)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Seletor do mês ───────────────────────────────────────────────────────── */
+.inicio-mes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.inicio-mes__seta,
+.inicio-mes__atual {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.inicio-mes__seta {
+  width: 2.5rem;
+  padding: 0;
+}
+
+.inicio-mes__atual {
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.inicio-mes__seta:hover,
+.inicio-mes__atual:hover {
+  background-color: var(--color-surface-raised);
+}
+
+.inicio-mes__seta:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Largura mínima: "setembro de 2026" e "maio de 2026" não podem empurrar as
+   setas a cada troca — a seta da direita andaria debaixo do dedo. */
+.inicio-mes__rotulo {
+  min-width: 10.5rem;
+  text-align: center;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+/* ── Ações rápidas ───────────────────────────────────────────────────────── */
+.inicio-acoes {
+  margin-bottom: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--color-surface);
+  border-radius: 24px;
+}
+
+.inicio-acoes__titulo {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+/* Três colunas que ENCOLHEM (`minmax(0, 1fr)`): em 360 px cada uma fica com
+   ~95 px, o rótulo quebra em duas linhas e nada rola para o lado. */
+.inicio-acoes__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.inicio-acao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 5.5rem;
+  padding: var(--space-3) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-surface-card);
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.inicio-acao:hover {
+  background-color: var(--color-surface-raised);
+}
+
+.inicio-acao[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.inicio-acao__rotulo {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.inicio-acoes__motivo {
+  margin: var(--space-3) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ── Datas próximas ──────────────────────────────────────────────────────── */
+.datas-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.datas-lista > li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+/* A linha inteira é o link. Selo | texto | pílula; em 360 px a pílula desce
+   para baixo do texto em vez de espremer o título. */
+.datas-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+a.datas-item:hover {
+  background-color: var(--color-surface-raised);
+}
+
+/* O selo: o dia grande e o mês abreviado, verde pleno com o texto creme — o
+   mesmo par do botão primário, já medido. */
+.datas-item__selo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  line-height: 1;
+}
+
+.datas-item__dia {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.datas-item__mes {
+  margin-top: 2px;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.datas-item__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.datas-item__titulo {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.datas-item__subtitulo {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.datas-item__contexto {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-discreto);
+  overflow-wrap: anywhere;
+}
+
+/* A pílula com os pares de badge do tema, e não o branco sobre #42A5F5 dela
+   (2,4:1). Vencimento é dinheiro a receber: âmbar. Compromisso: azul. */
+.datas-item__pilula {
+  justify-self: end;
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.datas-item__pilula--vencimento {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.datas-item__pilula--compromisso {
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
+}
+
+@media (max-width: 480px) {
+  .inicio-acoes { padding: var(--space-3) var(--space-4); }
+  .inicio-mes__rotulo { min-width: 9rem; }
+  .datas-item { grid-template-columns: auto minmax(0, 1fr); }
+  .datas-item__pilula { grid-column: 2; justify-self: start; }
 }
