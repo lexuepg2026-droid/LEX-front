@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import installmentService from '../../api/installmentService';
 import feeService from '../../api/feeService';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -9,7 +9,9 @@ import { toast } from '../../utils/toast';
 import { getApiErrorField } from '../../utils/apiError';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { formatCurrency } from '../../utils/formatters';
-import { LIMITE_DO_SELETOR, avisoDeSeletorLimitado } from '../../utils/seletorLimitado';
+import { LIMITE_DO_SELETOR, avisoDeSeletorLimitado, ROTULO_OPCAO_PENDENTE } from '../../utils/seletorLimitado';
+import { rotuloDoHonorarioNoSeletor } from '../../utils/feeLabel';
+import useOpcaoGarantida from '../../hooks/useOpcaoGarantida';
 import '../clients/ClientPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
@@ -41,6 +43,7 @@ function InstallmentFormPage() {
   const [fees, setFees] = useState([]);
   // O total do envelope, para dizer quando o seletor foi cortado (DEC-067).
   const [totalHonorarios, setTotalHonorarios] = useState(null);
+  const [listaCarregada, setListaCarregada] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [campoComErro, setCampoComErro] = useState(null);
@@ -51,9 +54,32 @@ function InstallmentFormPage() {
 
   const navigate = useNavigate();
   const { id } = useParams();
-  // Fase 2b (DEC-085): a faixa de contexto diz de qual processo — o do honorário escolhido esta tela é.
-  usePublicarContexto({ processoId: idDoProcesso(fees.find((f) => f._id === formData.honorarioId)?.processoId) });
+  const [searchParams] = useSearchParams();
   const isEditing = Boolean(id);
+
+  // Fase 2b (DEC-086): o honorário pode chegar PRÉ-SELECIONADO por
+  // `?honorarioId=` — é como o "+ Parcela" da ficha do processo abre esta
+  // tela —, no mesmo padrão do `PaymentFormPage`. E o escolhido que não
+  // estiver entre os 100 mais recentes é buscado pelo id (DEC-067).
+  useEffect(() => {
+    if (isEditing) return;
+    const doQuery = searchParams.get('honorarioId');
+    if (doQuery) setFormData(prev => ({ ...prev, feeId: doQuery }));
+  }, [isEditing, searchParams]);
+
+  const opcoesDeHonorario = useOpcaoGarantida({
+    lista: fees,
+    listaCarregada,
+    idEscolhido: formData.feeId,
+    buscar: (hid) => feeService.getFeeById(hid).then(res => res.data),
+  });
+
+  // Fase 2b (DEC-085): publica para a faixa de contexto o processo do
+  // honorário escolhido — o cliente e o número aparecem em cima assim que ela
+  // escolhe, que é o "nas parcelas, o nome do cliente" da banca.
+  usePublicarContexto({
+    processoId: idDoProcesso(opcoesDeHonorario.find((f) => f._id === formData.feeId)?.processoId),
+  });
   // ── Carregamento da leitura em modo edição (Fase F-0) ────────────────────
   //
   // `loading`, logo acima, é o do botão Salvar. Não havia estado nenhum para a
@@ -76,7 +102,8 @@ function InstallmentFormPage() {
         setFees(res.data.data ?? res.data);
         setTotalHonorarios(typeof res.data?.total === 'number' ? res.data.total : null);
       })
-      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar honorários.')));
+      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar honorários.')))
+      .finally(() => setListaCarregada(true));
 
     if (isEditing) {
       installmentService.getInstallmentById(id)
@@ -173,9 +200,9 @@ function InstallmentFormPage() {
             <label>Honorário *</label>
             <select name="feeId" value={formData.feeId} onChange={handleChange} required>
               <option value="">Selecione um honorário</option>
-              {fees.map(f => (
+              {opcoesDeHonorario.map(f => (
                 <option key={f._id} value={f._id}>
-                  {f.descricao} — {f.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  {f._pendente ? ROTULO_OPCAO_PENDENTE[f._pendente] : rotuloDoHonorarioNoSeletor(f)}
                 </option>
               ))}
             </select>

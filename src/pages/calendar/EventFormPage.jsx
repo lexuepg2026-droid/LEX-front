@@ -64,7 +64,7 @@ function EventFormPage() {
 
   const navigate = useNavigate();
   const { id } = useParams();
-  // Fase 2b (DEC-085): a faixa de contexto diz de qual processo — o vinculado, se houver esta tela é.
+  // Fase 2b (DEC-085): publica para a faixa de contexto o processo — o vinculado, se houver.
   usePublicarContexto({ processoId: formData.processoId });
   const [searchParams] = useSearchParams();
   const isEditing = Boolean(id);

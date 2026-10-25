@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
+import useOpcaoGarantida from '../../hooks/useOpcaoGarantida';
+import { ROTULO_OPCAO_PENDENTE } from '../../utils/seletorLimitado';
 import paymentService from '../../api/paymentService';
 import feeService from '../../api/feeService';
 import MoneyInput from '../../components/ui/MoneyInput';
@@ -93,8 +95,6 @@ function PaymentFormPage() {
 
   const navigate = useNavigate();
   const { id } = useParams();
-  // Fase 2b (DEC-085): a faixa de contexto diz de qual processo — o do honorário escolhido esta tela é.
-  usePublicarContexto({ processoId: idDoProcesso(fees.find((f) => f._id === formData.honorarioId)?.processoId) });
   const [searchParams] = useSearchParams();
   const isEditing = Boolean(id);
 
@@ -134,6 +134,23 @@ function PaymentFormPage() {
     if (doQuery) setFormData(prev => ({ ...prev, honorarioId: doQuery }));
   }, [isEditing, searchParams]);
 
+  // Fase 2b (DEC-086): o honorário escolhido que não estiver entre os 100 da
+  // lista é buscado pelo id — o "+ Pagamento" da ficha do processo pode abrir
+  // esta tela para um honorário antigo.
+  const [listaCarregada, setListaCarregada] = useState(false);
+  const opcoesDeHonorario = useOpcaoGarantida({
+    lista: fees,
+    listaCarregada,
+    idEscolhido: formData.honorarioId,
+    buscar: (hid) => feeService.getFeeById(hid).then(res => res.data),
+  });
+
+  // Fase 2b (DEC-085): publica para a faixa de contexto o processo do
+  // honorário escolhido.
+  usePublicarContexto({
+    processoId: idDoProcesso(opcoesDeHonorario.find((f) => f._id === formData.honorarioId)?.processoId),
+  });
+
   useEffect(() => {
     // Só honorários que podem receber dinheiro. Um honorário `cancelado`
     // responde 409 no POST, e oferecê-lo no seletor seria a tela convidando
@@ -143,7 +160,8 @@ function PaymentFormPage() {
         const lista = res.data.data ?? res.data;
         setFees(lista.filter(f => f.status !== 'cancelado'));
       })
-      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar honorários.')));
+      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar honorários.')))
+      .finally(() => setListaCarregada(true));
 
     if (isEditing) {
       paymentService.getPaymentById(id)
@@ -360,9 +378,9 @@ function PaymentFormPage() {
                   className={campoComErro === 'honorarioId' ? 'input-erro' : undefined}
                 >
                   <option value="">Selecione um honorário</option>
-                  {fees.map(fee => (
+                  {opcoesDeHonorario.map(fee => (
                     <option key={fee._id} value={fee._id}>
-                      {formatFeeLabel(fee)}
+                      {fee._pendente ? ROTULO_OPCAO_PENDENTE[fee._pendente] : formatFeeLabel(fee)}
                     </option>
                   ))}
                 </select>

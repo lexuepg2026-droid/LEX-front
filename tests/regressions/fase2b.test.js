@@ -422,8 +422,11 @@ describe("Fase 2b · item 3 — o contexto casa com o caminho (DEC-085)", () => 
     ["src/pages/fees/FeeDetailPage.jsx", /usePublicarContexto\(\{ processoId: idDoProcesso\(honorario\?\.processoId\) \}\)/],
     ["src/pages/fees/FeeRenegotiationPage.jsx", /usePublicarContexto\(\{ processoId: idDoProcesso\(honorario\?\.processoId\) \}\)/],
     ["src/pages/fees/FeeFormPage.jsx", /usePublicarContexto\(\{ processoId: formData\.processoId \}\)/],
-    ["src/pages/installments/InstallmentFormPage.jsx", /usePublicarContexto\(\{ processoId: idDoProcesso\(fees\.find\(\(f\) => f\._id === formData\.honorarioId\)\?\.processoId\) \}\)/],
-    ["src/pages/payments/PaymentFormPage.jsx", /usePublicarContexto\(\{ processoId: idDoProcesso\(fees\.find\(\(f\) => f\._id === formData\.honorarioId\)\?\.processoId\) \}\)/],
+    // O formulário de parcela guarda o honorário em `feeId`; o de pagamento, em
+    // `honorarioId`. A busca é nas opções GARANTIDAS (DEC-086), para o
+    // honorário antigo buscado pelo id também ter contexto.
+    ["src/pages/installments/InstallmentFormPage.jsx", /usePublicarContexto\(\{\s*processoId: idDoProcesso\(opcoesDeHonorario\.find\(\(f\) => f\._id === formData\.feeId\)\?\.processoId\),?\s*\}\)/],
+    ["src/pages/payments/PaymentFormPage.jsx", /usePublicarContexto\(\{\s*processoId: idDoProcesso\(opcoesDeHonorario\.find\(\(f\) => f\._id === formData\.honorarioId\)\?\.processoId\),?\s*\}\)/],
     ["src/hooks/useProcessoFiltrado.js", /usePublicarContexto\(\{ processoId \}\)/],
     ["src/components/documents/GenerationPanel.jsx", /usePublicarContexto\(\{ processoId \}\)/],
     ["src/pages/calendar/EventFormPage.jsx", /usePublicarContexto\(\{ processoId: formData\.processoId \}\)/],
@@ -435,4 +438,83 @@ describe("Fase 2b · item 3 — o contexto casa com o caminho (DEC-085)", () => 
       assert.match(semComentarios(ler(arquivo)), padrao);
     });
   }
+});
+
+// ── Item 4 — DEC-086 ──────────────────────────────────────────────────────
+import { comOpcaoGarantida, precisaBuscarOpcao, ROTULO_OPCAO_PENDENTE } from "../../src/utils/seletorLimitado.js";
+import { rotuloDoHonorarioNoSeletor } from "../../src/utils/feeLabel.js";
+
+describe("Fase 2b · item 4 — a opção escolhida nunca some do seletor (DEC-086)", () => {
+  const lista = [{ _id: "a" }, { _id: "b" }];
+
+  test("o escolhido que está na lista não muda nada", () => {
+    assert.equal(comOpcaoGarantida(lista, "a"), lista);
+    assert.equal(precisaBuscarOpcao(lista, "a", true), false);
+  });
+
+  test("fora dos 100: busca, e enquanto isso a opção existe marcada", () => {
+    assert.equal(precisaBuscarOpcao(lista, "z", true), true);
+    assert.equal(precisaBuscarOpcao(lista, "z", false), false, "espera a lista antes de buscar");
+    const pendente = comOpcaoGarantida(lista, "z");
+    assert.deepEqual(pendente[0], { _id: "z", _pendente: "carregando" });
+    assert.ok(pendente.some((o) => o._id === "z"), "o <select> tem a opção do valor que carrega");
+  });
+
+  test("a busca voltou: o item entra PRIMEIRO; falhou: fica marcado como indisponível", () => {
+    const extra = { _id: "z", titulo: "Antigo" };
+    assert.deepEqual(comOpcaoGarantida(lista, "z", extra), [extra, ...lista]);
+    assert.deepEqual(comOpcaoGarantida(lista, "z", null, "indisponivel")[0], { _id: "z", _pendente: "indisponivel" });
+    assert.ok(ROTULO_OPCAO_PENDENTE.carregando && ROTULO_OPCAO_PENDENTE.indisponivel);
+  });
+
+  test("um extra de OUTRO id não é usado", () => {
+    assert.deepEqual(comOpcaoGarantida(lista, "z", { _id: "y" })[0], { _id: "z", _pendente: "carregando" });
+  });
+
+  test("sem escolha, a lista fica como veio", () => {
+    assert.equal(comOpcaoGarantida(lista, ""), lista);
+    assert.deepEqual(comOpcaoGarantida(null, ""), []);
+  });
+
+  for (const [arquivo, campo, servico] of [
+    ["src/pages/fees/FeeFormPage.jsx", "processoId", /processService\.getProcessById\(pid\)/],
+    ["src/pages/installments/InstallmentFormPage.jsx", "feeId", /feeService\.getFeeById\(hid\)/],
+  ]) {
+    test(`${arquivo.split("/").pop()} usa as opções garantidas e busca pelo id`, () => {
+      const fonte = semComentarios(ler(arquivo));
+      assert.match(fonte, new RegExp(`useOpcaoGarantida\\(\\{[\\s\\S]*?idEscolhido: formData\\.${campo}`));
+      assert.match(fonte, servico);
+      assert.match(fonte, /\.finally\(\(\) => setListaCarregada\(true\)\)/, "a lista conta como carregada mesmo se falhar");
+      assert.match(fonte, /opcoesDe(Processo|Honorario)\.map\(/, "o <select> desenha as opções garantidas");
+      assert.match(fonte, /ROTULO_OPCAO_PENDENTE\[/);
+    });
+  }
+
+  test("o form de honorário aceita ?processoId=, e o de parcela ?honorarioId=", () => {
+    const fee = semComentarios(ler("src/pages/fees/FeeFormPage.jsx"));
+    assert.match(fee, /searchParams\.get\('processoId'\)/);
+    assert.match(fee, /if \(isEditing\) return;/, "só na criação");
+    const parcela = semComentarios(ler("src/pages/installments/InstallmentFormPage.jsx"));
+    assert.match(parcela, /searchParams\.get\('honorarioId'\)/);
+    assert.match(parcela, /setFormData\(prev => \(\{ \.\.\.prev, feeId: doQuery \}\)\)/);
+  });
+});
+
+describe("Fase 2b · item 4 — o honorário no seletor diz o processo (DEC-086)", () => {
+  test("descrição — Processo nº número — valor", () => {
+    const fee = { descricao: "Contratuais", valor: 5000, processoId: { _id: "p", titulo: "Cobrança", numeroProcesso: "0001234-56.2024.8.16.0001" } };
+    assert.equal(rotuloDoHonorarioNoSeletor(fee), "Contratuais — Processo nº 0001234-56.2024.8.16.0001 — R$\u00a05.000,00");
+  });
+
+  test("sem número, o título; sem processo populado, só descrição e valor", () => {
+    assert.equal(rotuloDoHonorarioNoSeletor({ descricao: "X", valor: 10, processoId: { titulo: "Inventário" } }),
+      "X — Processo: Inventário — R$\u00a010,00");
+    assert.equal(rotuloDoHonorarioNoSeletor({ descricao: "X", valor: 10, processoId: "p1" }), "X — R$\u00a010,00");
+  });
+
+  test("o form de parcela usa o rótulo novo", () => {
+    const fonte = semComentarios(ler("src/pages/installments/InstallmentFormPage.jsx"));
+    assert.match(fonte, /rotuloDoHonorarioNoSeletor\(f\)/);
+    assert.doesNotMatch(fonte, /\{f\.descricao\} — \{f\.valor/, "o rótulo antigo saiu");
+  });
 });

@@ -1,3 +1,5 @@
+import { formatCurrency } from './formatters.js';
+
 // ═══════════════════════════════════════════════════════════════════════════
 // O RÓTULO CURTO DO HONORÁRIO NAS LISTAGENS — Fase F-1b.2
 //
@@ -73,4 +75,23 @@ export const trechoDistintivo = (descricao) => {
 export const rotuloCurtoDoHonorario = (descricao, retaguarda = 'Honorário') =>
   trechoDistintivo(descricao) || retaguarda;
 
-export default { trechoDistintivo, rotuloCurtoDoHonorario };
+// ── O honorário no `<select>` do formulário de parcela (Fase 2b, DEC-086) ─
+// Era "descrição — valor": dois honorários "Honorários contratuais" de R$ 5.000
+// de clientes diferentes eram a mesma linha. A 3ª banca pediu que o
+// formulário de parcela diga o processo. O número vem do `processoId`
+// populado que `GET /fees` já devolve (`titulo numeroProcesso`, no backend);
+// sem número, o título. O valor vai por ÚLTIMO, porque é o que o seletor
+// nativo corta quando a linha não cabe — "se couber", como a fase pediu.
+export const rotuloDoHonorarioNoSeletor = (fee) => {
+  if (!fee || typeof fee !== 'object') return '';
+  const processo = fee.processoId && typeof fee.processoId === 'object' ? fee.processoId : null;
+  const numero = (processo?.numeroProcesso || '').trim();
+  const titulo = (processo?.titulo || '').trim();
+  const partes = [fee.descricao || 'Honorário'];
+  if (numero) partes.push(`Processo nº ${numero}`);
+  else if (titulo) partes.push(`Processo: ${titulo}`);
+  if (typeof fee.valor === 'number') partes.push(formatCurrency(fee.valor));
+  return partes.join(' — ');
+};
+
+export default { trechoDistintivo, rotuloCurtoDoHonorario, rotuloDoHonorarioNoSeletor };

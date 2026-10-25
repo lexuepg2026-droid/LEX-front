@@ -59,7 +59,7 @@ function ClienteFormPage() {
 
   const navigate = useNavigate();
   const { id } = useParams();
-  // Fase 2b (DEC-085): a faixa de contexto diz de qual cliente (na edição) esta tela é.
+  // Fase 2b (DEC-085): publica para a faixa de contexto o cliente (na edição).
   usePublicarContexto({ clienteId: id });
   const isEditing = Boolean(id);
   // ── Carregamento da leitura em modo edição (Fase F-0) ────────────────────

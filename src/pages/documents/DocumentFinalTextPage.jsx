@@ -53,7 +53,7 @@ function DocumentFinalTextPage() {
   const navigate = useNavigate();
 
   const [documento, setDocumento] = useState(null);
-  // Fase 2b (DEC-085): a faixa de contexto diz de qual processo — o do documento esta tela é.
+  // Fase 2b (DEC-085): publica para a faixa de contexto o processo — o do documento.
   usePublicarContexto({ processoId: idDoProcesso(documento?.processoId) });
   const [vinculos, setVinculos] = useState([]);
   const [texto, setTexto] = useState('');

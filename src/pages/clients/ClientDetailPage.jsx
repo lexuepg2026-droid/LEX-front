@@ -13,7 +13,7 @@ import { usePublicarContexto } from '../../contexts/ContextoContext';
 
 function ClientDetailPage() {
   const { id } = useParams();
-  // Fase 2b (DEC-085): a faixa de contexto diz de qual cliente esta tela é.
+  // Fase 2b (DEC-085): publica para a faixa de contexto o cliente.
   usePublicarContexto({ clienteId: id });
   const navigate = useNavigate();
   const online = useOnlineStatus();

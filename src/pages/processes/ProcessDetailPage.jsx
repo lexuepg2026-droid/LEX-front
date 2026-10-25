@@ -78,7 +78,7 @@ function ProcessoDetalhePage() {
   const [salvandoFase, setSalvandoFase] = useState(false);
 
   const { id } = useParams();
-  // Fase 2b (DEC-085): a faixa de contexto diz de qual processo esta tela é.
+  // Fase 2b (DEC-085): publica para a faixa de contexto o processo.
   usePublicarContexto({ processoId: id });
   const online = useOnlineStatus();
   const { entradas } = useOutbox();

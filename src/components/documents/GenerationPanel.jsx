@@ -87,7 +87,7 @@ import { usePublicarContexto } from '../../contexts/ContextoContext';
 function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
   const [processos, setProcessos] = useState([]);
   const [processoId, setProcessoId] = useState('');
-  // Fase 2b (DEC-085): a faixa de contexto diz de qual processo — o escolhido para gerar esta tela é.
+  // Fase 2b (DEC-085): publica para a faixa de contexto o processo — o escolhido para gerar.
   usePublicarContexto({ processoId });
 
   const [participantes, setParticipantes] = useState([]);
