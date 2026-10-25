@@ -255,10 +255,30 @@ describe("o portal do cliente fica de fora", () => {
 // ═════════════════════════════════════════════════════════════════════════
 
 describe("quem serve do espelho DIZ que está servindo do espelho", () => {
-  const telasComEspelho = arquivosFonte()
+  const usaEspelho = arquivosFonte()
     .filter((c) => /useCachedResource\(/.test(semComentarios(readFileSync(c, "utf8"))))
     .map(relativo)
     .filter((rel) => rel !== "src/hooks/useCachedResource.js");
+
+  // ── Hook que serve do espelho não é tela, e a regra passa a QUEM o usa ──
+  // Fase 0 (DEC-070): `useProcessoFiltrado` lê o processo pelo espelho, e quem
+  // mostra o dado é a lista que o importa. Isentar o hook sem cobrar a tela
+  // abriria o buraco que esta varredura existe para fechar — um hook novo
+  // serviria dado guardado a uma tela sem aviso. Por isso o hook sai da lista
+  // e todo arquivo que o importa ENTRA nela.
+  const hooksComEspelho = usaEspelho.filter((rel) => rel.startsWith("src/hooks/"));
+  const consumidoresDosHooks = arquivosFonte()
+    .map(relativo)
+    .filter((rel) => {
+      const codigo = semComentarios(ler(rel));
+      return hooksComEspelho.some((hook) => {
+        const nome = hook.split("/").pop().replace(/\.js$/, "");
+        return new RegExp(`from ['"][^'"]*hooks/${nome}['"]`).test(codigo);
+      });
+    });
+  const telasComEspelho = [
+    ...new Set([...usaEspelho.filter((rel) => !rel.startsWith("src/hooks/")), ...consumidoresDosHooks])
+  ];
 
   test("há telas convertidas para analisar", () => {
     assert.ok(telasComEspelho.length >= 8, `só ${telasComEspelho.length} telas — a varredura quebrou`);
@@ -269,6 +289,13 @@ describe("quem serve do espelho DIZ que está servindo do espelho", () => {
       assert.ok(telasComEspelho.includes(rel));
     });
   }
+
+  test("o hook do filtro de processo é cobrado na tela que o usa", () => {
+    assert.ok(hooksComEspelho.includes("src/hooks/useProcessoFiltrado.js"), "o hook usa o espelho");
+    assert.ok(!telasComEspelho.includes("src/hooks/useProcessoFiltrado.js"), "hook não é tela");
+    // A lista de documentos não tinha espelho próprio: entra por importar o hook.
+    assert.ok(telasComEspelho.includes("src/pages/documents/DocumentListPage.jsx"));
+  });
 
   test("toda tela convertida renderiza o aviso de idade", () => {
     const semAviso = telasComEspelho.filter((rel) => {

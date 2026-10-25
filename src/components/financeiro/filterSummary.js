@@ -1,5 +1,6 @@
 import { descricaoDoPeriodo } from '../ui/periodo.js';
 import { rotuloCurtoDoHonorario } from '../../utils/feeLabel.js';
+import { trechoDoProcessoFiltrado } from '../../utils/processoFiltrado.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // A FRASE QUE DIZ O QUE ESTÁ FILTRANDO — Fase F-1b.3
@@ -28,12 +29,19 @@ export const descricaoDoRecorteFinanceiro = ({
   filtros = {},
   busca = '',
   honorarios = [],
-  extras = []
+  extras = [],
+  // Fase 0 (DEC-070): o `?processoId=` da URL. `{ rotulo }`, com `rotulo`
+  // nulo enquanto o processo não carregou; `null` quando não há o filtro.
+  // Vem logo depois da busca e antes do honorário: o processo é o recorte mais
+  // largo dos dois, e é a ordem em que se lê ("do processo X e do honorário Y").
+  processo = null
 } = {}) => {
   const trechos = [];
 
   const termo = (busca ?? '').trim();
   if (termo) trechos.push(`com "${termo}"`);
+
+  if (processo) trechos.push(trechoDoProcessoFiltrado(processo.rotulo));
 
   if (filtros.honorarioId) {
     const achado = honorarios.find((h) => String(h._id) === String(filtros.honorarioId));

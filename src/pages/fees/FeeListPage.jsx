@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import feeService from '../../api/feeService';
 import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
@@ -10,6 +10,8 @@ import ActionMenu from '../../components/ui/ActionMenu';
 import FinancialFilters from '../../components/financeiro/FinancialFilters';
 import { descricaoDoRecorteFinanceiro } from '../../components/financeiro/filterSummary.js';
 import useListFilters from '../../hooks/useListFilters';
+import useProcessoFiltrado from '../../hooks/useProcessoFiltrado';
+import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
 import { formatDate, formatCurrency, formatPercent } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
@@ -30,8 +32,10 @@ const POR_PAGINA = 20;
 
 function FeeListPage({ embedded = false }) {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
-  const [searchParams] = useSearchParams();
-  const processoId = searchParams.get('processoId');
+  // `?processoId=` vem das abas do processo. A lista filtrava por ele sem
+  // dizer; agora ele aparece num chip e na frase do recorte (DEC-070).
+  const filtroProcesso = useProcessoFiltrado();
+  const processoId = filtroProcesso.processoId || undefined;
   const online = useOnlineStatus();
 
   const {
@@ -99,13 +103,30 @@ function FeeListPage({ embedded = false }) {
     extras: [
       filtros.tipo ? `do tipo "${labelDe(TIPO_HONORARIO_OPTIONS, filtros.tipo)}"` : null,
       filtros.status ? `com status "${labelDe(STATUS_HONORARIO_OPTIONS, filtros.status)}"` : null
-    ]
+    ],
+    processo: processoId ? { rotulo: filtroProcesso.rotulo } : null
   });
+
+  // O processo da URL é um filtro como os outros: conta como "filtrado" para a
+  // barra e para o estado vazio, e o "Limpar filtros" o remove junto — senão a
+  // frase diria "do processo X" e o botão deixaria o processo de pé.
+  const filtrado = temFiltro || Boolean(processoId);
+  const limparTudo = () => {
+    limpar();
+    if (processoId) filtroProcesso.remover();
+  };
 
   const body = (
     <>
       {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
       {error && <p className="error-message">{error}</p>}
+      {processoId && (
+        <ProcessFilterChip
+          rotulo={filtroProcesso.rotulo}
+          carregando={filtroProcesso.carregando}
+          onRemover={filtroProcesso.remover}
+        />
+      )}
 
       {/* `honorarios={null}` — a listagem DE honorários não se filtra por
           honorário. `null` é a ausência do controle; uma lista vazia seria
@@ -114,8 +135,8 @@ function FeeListPage({ embedded = false }) {
         filtros={filtros}
         definirFiltro={definirFiltro}
         aplicarPreset={aplicarPreset}
-        limpar={limpar}
-        temFiltro={temFiltro}
+        limpar={limparTudo}
+        temFiltro={filtrado}
         honorarios={null}
         placeholderBusca="Buscar por descrição ou número do processo…"
         descricaoDoRecorte={recorte}
@@ -150,7 +171,7 @@ function FeeListPage({ embedded = false }) {
         <EmptyState
           title="Nenhum honorário encontrado"
           description={
-            temFiltro
+            filtrado
               ? `Nenhum honorário ${recorte}. Limpe os filtros para ver a lista inteira.`
               : 'Registre um novo honorário para vê-lo aqui.'
           }

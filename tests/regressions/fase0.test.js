@@ -17,6 +17,8 @@ import { join } from "node:path";
 // módulo.
 import { toast, subscribe } from "../../src/utils/toast.js";
 import { LIMITE_DO_SELETOR, avisoDeSeletorLimitado } from "../../src/utils/seletorLimitado.js";
+import { rotuloDoProcessoFiltrado, trechoDoProcessoFiltrado } from "../../src/utils/processoFiltrado.js";
+import { descricaoDoRecorteFinanceiro } from "../../src/components/financeiro/filterSummary.js";
 
 const RAIZ = fileURLToPath(new URL("../../", import.meta.url));
 const ler = (caminho) => readFileSync(join(RAIZ, caminho), "utf8");
@@ -118,5 +120,79 @@ describe("Fase 0 · item 4 — o cartão se chama \"Honorários em aberto\"", ()
     const codigo = semComentarios(ler("src/pages/dashboard/DashboardHomePage.jsx"));
     assert.match(codigo, /key: 'honorariosAReceber',\s*label: 'Honorários em aberto'/);
     assert.doesNotMatch(codigo, /Honorários a Receber/);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 5 — DEC-070: o filtro `?processoId=` aparece, e sai com um clique
+// ═══════════════════════════════════════════════════════════════════════════
+describe("Fase 0 · item 5 — o filtro de processo da URL é visível", () => {
+  test("o rótulo é 'número — título', e aguenta o campo que faltar", () => {
+    assert.equal(
+      rotuloDoProcessoFiltrado({ numeroProcesso: "0001234-56.2024.8.16.0001", titulo: "Ação de cobrança" }),
+      "0001234-56.2024.8.16.0001 — Ação de cobrança"
+    );
+    assert.equal(rotuloDoProcessoFiltrado({ titulo: "Sem número" }), "Sem número");
+    assert.equal(rotuloDoProcessoFiltrado({ numeroProcesso: "  ", titulo: "Só título" }), "Só título");
+    assert.equal(rotuloDoProcessoFiltrado(null), null);
+  });
+
+  test("a frase do recorte nomeia o processo, ou diz 'deste processo' sem inventar", () => {
+    assert.equal(trechoDoProcessoFiltrado("123 — Ação"), 'do processo "123 — Ação"');
+    assert.equal(trechoDoProcessoFiltrado(null), "deste processo");
+  });
+
+  test("o processo entra em descricaoDoRecorteFinanceiro depois da busca", () => {
+    assert.equal(
+      descricaoDoRecorteFinanceiro({ processo: { rotulo: "123 — Ação" } }),
+      'do processo "123 — Ação"'
+    );
+    assert.equal(
+      descricaoDoRecorteFinanceiro({ busca: "pix", processo: { rotulo: "123 — Ação" } }),
+      'com "pix" e do processo "123 — Ação"'
+    );
+    // Sem o filtro, a frase não muda — as três listas continuam dizendo o que diziam.
+    assert.equal(descricaoDoRecorteFinanceiro({ busca: "pix" }), 'com "pix"');
+  });
+
+  const LISTAS = [
+    "src/pages/fees/FeeListPage.jsx",
+    "src/pages/installments/InstallmentListPage.jsx",
+    "src/pages/payments/PaymentListPage.jsx",
+    "src/pages/documents/DocumentListPage.jsx",
+  ];
+
+  for (const arquivo of LISTAS) {
+    test(`${arquivo.split("/").pop()} mostra o chip e lê o processo pelo hook`, () => {
+      const codigo = semComentarios(ler(arquivo));
+      assert.match(codigo, /useProcessoFiltrado\(\)/);
+      assert.match(codigo, /<ProcessFilterChip[\s\S]*?onRemover=\{filtroProcesso\.remover\}/);
+      // A leitura crua do parâmetro é o defeito: filtrava sem mostrar.
+      assert.doesNotMatch(codigo, /searchParams\.get\('processoId'\)/);
+    });
+  }
+
+  for (const arquivo of LISTAS.slice(0, 3)) {
+    test(`${arquivo.split("/").pop()} põe o processo na frase e o "Limpar" o remove`, () => {
+      const codigo = semComentarios(ler(arquivo));
+      assert.match(codigo, /processo: processoId \? \{ rotulo: filtroProcesso\.rotulo \} : null/);
+      assert.match(codigo, /limpar=\{limparTudo\}/);
+      assert.match(codigo, /temFiltro=\{filtrado\}/);
+      assert.match(codigo, /if \(processoId\) filtroProcesso\.remover\(\)/);
+    });
+  }
+
+  test("o hook usa o mesmo recurso offline do detalhe e tira só o processoId da URL", () => {
+    const hook = semComentarios(ler("src/hooks/useProcessoFiltrado.js"));
+    assert.match(hook, /resource: 'process'/);
+    assert.match(hook, /params: \{ id: processoId \}/);
+    assert.match(hook, /enabled: Boolean\(processoId\)/);
+    assert.match(hook, /proximo\.delete\('processoId'\)/);
+  });
+
+  test("o × tem rótulo acessível, e o chip importa a própria folha", () => {
+    const chip = ler("src/components/ui/ProcessFilterChip.jsx");
+    assert.match(chip, /aria-label="Remover o filtro de processo"/);
+    assert.match(chip, /import '\.\/ProcessFilterChip\.css'/);
   });
 });

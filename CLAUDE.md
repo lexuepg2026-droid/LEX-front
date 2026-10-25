@@ -4074,6 +4074,53 @@ que muda é só o texto do cartão. Teste em `tests/regressions/fase0.test.js`.
 
 ---
 
+## DEC-070 (frontend) — o filtro `?processoId=` aparece, e sai com um clique (Fase 0)
+
+**O defeito, apontado pela 3ª banca.** As abas do processo
+(`pages/processes/ProcessTabs.jsx`) abrem honorários, parcelas, documentos e
+pagamentos com `?processoId=` na URL. As quatro listas filtravam por ele e
+**nenhuma dizia**: a frase do recorte não o citava, o "Limpar filtros" não o
+removia (ele vive na URL, não no estado do `useListFilters`), e a advogada lia
+uma lista curta como se fosse o escritório inteiro.
+
+**A correção, em três peças reutilizáveis:**
+
+| Peça | O que faz |
+|---|---|
+| `utils/processoFiltrado.js` | função pura: "número — título", e o trecho da frase |
+| `hooks/useProcessoFiltrado.js` | lê o parâmetro, busca o processo, remove **só** o `processoId` da URL |
+| `components/ui/ProcessFilterChip.jsx` | "Processo: {número} — {título} ×", com o × rotulado para leitor de tela |
+
+**O processo vem pelo MESMO recurso do detalhe** (`resource: 'process'`,
+`params: { id }`), que é a mesma chave do espelho local da DEC-058: quem abriu o
+processo com sinal vê o nome no chip sem sinal.
+
+**Nas três listas financeiras o processo é um filtro como os outros:**
+
+- entra em `descricaoDoRecorteFinanceiro` por um parâmetro próprio, `processo`,
+  logo depois da busca e antes do honorário (é o recorte mais largo dos dois);
+- conta como "filtrado" para a barra "Filtros aplicados" e para o estado vazio;
+- o "Limpar filtros" o remove junto. Sem isso a frase diria "do processo X" e o
+  botão deixaria o processo de pé.
+
+**Na lista de documentos** (que não tem barra de filtros) entra o chip, e o
+estado vazio diz "Nenhum documento deste processo." em vez de "Nenhum
+documento gerado ainda." — o segundo seria falso sobre o escritório.
+
+### A varredura de espelho passou a cobrar QUEM usa o hook
+
+`tests/offline/estatica.test.js` tratava todo arquivo que chama
+`useCachedResource` como tela obrigada a exibir o aviso de idade, e o hook novo
+entrou como "tela". **A saída não foi isentá-lo**, o que deixaria um hook futuro
+servir dado guardado sem aviso: hook em `src/hooks/` saiu da lista e **todo
+arquivo que o importa entrou nela**. A regra mais estrita pegou um caso real —
+a lista de documentos mostraria, sem sinal, o nome do processo vindo do espelho
+sem dizer de quando — e ela passou a exibir o `OfflineNotice` do chip.
+
+Testes em `tests/regressions/fase0.test.js` (bloco do item 5).
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:
