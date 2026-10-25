@@ -219,9 +219,11 @@ describe("Fase 0 · item 7 — o texto do aviso de e-mail é verdadeiro", () => 
   });
 
   test("a frase nova está lá", () => {
+    // Encurtada na Fase 2b (DEC-088) para caber numa linha, sem passar a
+    // prometer nada: diz para que serve confirmar, e não o que acontece se não.
     assert.match(
       corrido,
-      /<strong>Confirme seu e-mail<\/strong> para garantir que os avisos e o link de recuperação de senha cheguem até você\./
+      /<strong>Confirme seu e-mail<\/strong> \(\{user\.email\}\) para receber os avisos e o link de recuperação de senha\./
     );
   });
 });

@@ -577,3 +577,95 @@ describe("Fase 2b · item 5 — os botões de lançamento da ficha (DEC-087)", (
     assert.match(fonte, /const voltarAoProcesso = voltarValido\(searchParams\.get\('voltar'\)\)/);
   });
 });
+
+// ── Item 6 — DEC-088 ──────────────────────────────────────────────────────
+import {
+  emailPendente, avisoDispensado, dispensarAviso, limparDispensaDoAviso
+} from "../../src/components/layout/confirmacaoEmail.js";
+
+const armazenamentoFalso = () => {
+  const m = new Map();
+  return {
+    get length() { return m.size; },
+    key: (i) => [...m.keys()][i] ?? null,
+    getItem: (k) => (m.has(k) ? m.get(k) : null),
+    setItem: (k, v) => m.set(k, String(v)),
+    removeItem: (k) => m.delete(k),
+  };
+};
+const armazenamentoQueLanca = () => ({
+  get length() { throw new Error("bloqueado"); },
+  key() { throw new Error("bloqueado"); },
+  getItem() { throw new Error("bloqueado"); },
+  setItem() { throw new Error("bloqueado"); },
+  removeItem() { throw new Error("bloqueado"); },
+});
+
+describe("Fase 2b · item 6 — o aviso de e-mail compacto e dispensável (DEC-088)", () => {
+  test("pendente só com null; undefined (servidor sem o campo) não é pendente", () => {
+    assert.equal(emailPendente({ emailConfirmadoEm: null }), true);
+    assert.equal(emailPendente({ emailConfirmadoEm: "2026-10-25" }), false);
+    assert.equal(emailPendente({}), false);
+    assert.equal(emailPendente(null), false);
+  });
+
+  test("dispensar vale por usuário, e o login limpa", () => {
+    const s = armazenamentoFalso();
+    assert.equal(avisoDispensado("u1", s), false);
+    assert.equal(dispensarAviso("u1", s), true);
+    assert.equal(avisoDispensado("u1", s), true);
+    assert.equal(avisoDispensado("u2", s), false, "outra conta não herda a dispensa");
+    s.setItem("outra:chave", "x");
+    limparDispensaDoAviso(s);
+    assert.equal(avisoDispensado("u1", s), false);
+    assert.equal(s.getItem("outra:chave"), "x", "só as chaves do aviso saem");
+  });
+
+  test("sem sessionStorage (ou bloqueado), nada lança e a faixa continua aparecendo", () => {
+    const s = armazenamentoQueLanca();
+    assert.equal(dispensarAviso("u1", s), false);
+    assert.equal(avisoDispensado("u1", s), false);
+    assert.doesNotThrow(() => limparDispensaDoAviso(s));
+    assert.equal(avisoDispensado("u1", null), false);
+    // E na suíte (Node, sem `sessionStorage` global) o padrão também não lança.
+    assert.doesNotThrow(() => avisoDispensado("u1"));
+  });
+
+  test("a faixa: uma linha, Reenviar, Já confirmei e o × rotulado", () => {
+    const fonte = semComentarios(ler("src/components/layout/EmailConfirmationBanner.jsx"));
+    assert.match(fonte, /\{enviando \? 'Enviando…' : 'Reenviar'\}/);
+    assert.match(fonte, /Já confirmei/);
+    assert.match(fonte, /aria-label="Dispensar o aviso até o próximo login"/);
+    assert.match(fonte, /avisoDispensado\(user\.id\)/);
+    const css = semComentarios(ler("src/components/layout/EmailConfirmationBanner.css"));
+    assert.match(css, /\.email-banner__texto\s*\{[^}]*white-space:\s*nowrap[^}]*text-overflow:\s*ellipsis/);
+    assert.match(css, /\.email-banner__acoes\s*\{[^}]*flex-shrink:\s*0/, "os botões nunca encolhem");
+  });
+
+  test("o login limpa a dispensa; o recarregar (checkAuth) não", () => {
+    const fonte = semComentarios(ler("src/contexts/AuthContext.jsx"));
+    const login = fonte.slice(fonte.indexOf("const login = useCallback"), fonte.indexOf("const register = useCallback"));
+    assert.match(login, /limparDispensaDoAviso\(\)/);
+    const check = fonte.slice(fonte.indexOf("const checkAuth = useCallback"), fonte.indexOf("const login = useCallback"));
+    assert.doesNotMatch(check, /limparDispensaDoAviso/);
+  });
+
+  test("a indicação permanente: o ponto no avatar e o item no menu e no Mais", () => {
+    const menu = semComentarios(ler("src/components/layout/MenuUsuario.jsx"));
+    assert.match(menu, /\{pendente && <span className="menu-usuario__alerta" \/>\}/);
+    assert.match(menu, /e-mail não confirmado/, "o estado está no nome acessível do botão, não só no ponto");
+    assert.match(menu, /'Confirmar e-mail'/);
+    const mais = semComentarios(ler("src/components/layout/BottomNav.jsx"));
+    assert.match(mais, /\{pendente && \(/);
+    assert.match(mais, /'Confirmar e-mail'/);
+    // Nenhum dos dois é dispensável: não leem a dispensa.
+    assert.doesNotMatch(menu + mais, /avisoDispensado/);
+  });
+
+  test("o reenvio não mudou: o mesmo POST, o jaConfirmado e o texto do servidor", () => {
+    const hook = semComentarios(ler("src/hooks/useConfirmacaoEmail.js"));
+    assert.match(hook, /authService\.resendConfirmation\(\)/);
+    assert.match(hook, /if \(res\.data\?\.jaConfirmado\) \{\s*await checkAuth\(\);/);
+    assert.match(hook, /getApiErrorMessage\(err, 'Não foi possível enviar o e-mail agora\.'\)/);
+  });
+});

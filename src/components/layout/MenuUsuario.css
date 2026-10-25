@@ -28,6 +28,7 @@
 }
 
 .menu-usuario__avatar {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -40,6 +41,25 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   user-select: none;
+}
+
+/* O ponto de alerta: e-mail não confirmado (Fase 2b, DEC-088). O anel da
+   cor da barra separa o ponto do contorno bege do círculo. A palavra está no
+   `aria-label` do botão — o ponto é a pista visual, não a única. */
+.menu-usuario__alerta {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--color-marca-fundo);
+  border-radius: var(--radius-full);
+  background-color: var(--color-marca-alerta);
+}
+
+.menu-suspenso__item--alerta {
+  color: var(--color-warning-text);
+  font-weight: var(--font-weight-medium);
 }
 
 /* Na barra compacta (< 1024 px) a saudação sai e fica o círculo, que continua

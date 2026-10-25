@@ -82,7 +82,21 @@ export const PARES = [
   { nome: "marca: borda de campo / --color-marca-fundo", texto: "--color-marca-borda-campo", fundo: "--color-marca-fundo", limite: NAO_TEXTO },
   { nome: "marca: anel de foco / --color-marca-fundo", texto: "--color-marca-foco", fundo: "--color-marca-fundo", limite: NAO_TEXTO },
   { nome: "marca: anel de foco / --color-marca-escuro", texto: "--color-marca-foco", fundo: "--color-marca-escuro", limite: NAO_TEXTO },
+  { nome: "marca: ponto de alerta do avatar / --color-marca-fundo", texto: "--color-marca-alerta", fundo: "--color-marca-fundo", limite: NAO_TEXTO },
   { nome: "marca: avatar (iniciais bege) / --color-marca-fundo", texto: "--color-marca-texto", fundo: "--color-marca-fundo", limite: TEXTO },
+
+  // O aviso de e-mail não confirmado (A-2; compacto desde a Fase 2b, DEC-088):
+  // o amarelo translúcido pousa no fundo da página, e o hover dos botões o
+  // empilha mais uma vez.
+  { nome: "aviso de e-mail: texto / --color-warning-bg", texto: "--color-text-primary", fundo: "--color-warning-bg", sobre: ["--color-bg"], limite: TEXTO },
+  { nome: "aviso de e-mail: botão em hover", texto: "--color-text-primary", fundo: "--color-warning-bg", sobre: ["--color-warning-bg", "--color-bg"], limite: TEXTO },
+  { nome: "aviso de e-mail: resposta ok", texto: "--color-success-text", fundo: "--color-warning-bg", sobre: ["--color-bg"], limite: TEXTO },
+  { nome: "aviso de e-mail: resposta de erro", texto: "--color-danger-text", fundo: "--color-warning-bg", sobre: ["--color-bg"], limite: TEXTO },
+
+  // "Confirmar e-mail" no menu do usuário e no "Mais" (DEC-088), em repouso e
+  // sobre o realce de hover do item.
+  { nome: "menu: Confirmar e-mail / --color-surface", texto: "--color-warning-text", fundo: "--color-surface", limite: TEXTO },
+  { nome: "menu: Confirmar e-mail / --color-accent-muted (hover)", texto: "--color-warning-text", fundo: "--color-accent-muted", sobre: ["--color-surface"], limite: TEXTO },
 
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },

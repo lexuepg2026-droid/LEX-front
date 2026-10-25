@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { CloudUpload, Ellipsis, LayoutDashboard, LogOut, Moon, Sun, UserCog } from 'lucide-react';
+import { CloudUpload, Ellipsis, LayoutDashboard, LogOut, MailWarning, Moon, Sun, UserCog } from 'lucide-react';
 import Icone from '../ui/Icone.jsx';
 import { GRUPOS, LINKS_PRINCIPAIS, PENDENCIAS, PERFIL, itemAtivo, maisAtivo } from './navegacao.js';
+import useConfirmacaoEmail from '../../hooks/useConfirmacaoEmail';
+import { toast } from '../../utils/toast';
 import './BottomNav.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -48,6 +50,8 @@ function BottomNav({ theme, toggleTheme, onLogout }) {
   const [aberto, setAberto] = useState(false);
   const botaoMais = useRef(null);
   const folha = useRef(null);
+  // Fase 2b (DEC-088): o mesmo "Confirmar e-mail" do menu do usuário.
+  const { pendente, enviando, reenviar } = useConfirmacaoEmail();
 
   const fechar = useCallback(() => {
     setAberto(false);
@@ -154,6 +158,24 @@ function BottomNav({ theme, toggleTheme, onLogout }) {
             ))}
 
             <ul className="mais__lista mais__lista--conta">
+              {pendente && (
+                <li>
+                  <button
+                    type="button"
+                    className="mais__item mais__item--alerta"
+                    disabled={enviando}
+                    onClick={async () => {
+                      fechar();
+                      const resultado = await reenviar();
+                      if (resultado.tipo === 'ok') toast.success(resultado.texto);
+                      else if (!resultado.jaAvisado) toast.error(resultado.texto);
+                    }}
+                  >
+                    <MailWarning size={18} aria-hidden="true" />
+                    {enviando ? 'Enviando…' : 'Confirmar e-mail'}
+                  </button>
+                </li>
+              )}
               <li>
                 <Link to={PENDENCIAS.to} className={classeDoItemDaFolha(PENDENCIAS)} onClick={fechar}>
                   <CloudUpload size={18} aria-hidden="true" />
