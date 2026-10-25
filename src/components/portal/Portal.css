@@ -108,7 +108,7 @@
   max-width: 720px;
   margin: 0 auto;
   font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 
 .portal-carregando {
@@ -151,7 +151,7 @@
 
 .portal-ajuda {
   font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   line-height: var(--line-height-normal);
   margin-top: var(--space-3);
 }
@@ -307,7 +307,7 @@
   font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 
 .portal-dado__valor {
@@ -335,7 +335,7 @@
 
 .portal-doc__meta {
   font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   margin-bottom: var(--space-3);
 }
 

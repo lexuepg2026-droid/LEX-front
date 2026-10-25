@@ -12,7 +12,7 @@
 
 .dashboard-date {
   font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   margin: 0;
   text-transform: capitalize;
 }
@@ -26,7 +26,7 @@
   font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   margin: 0 0 var(--space-4);
 }
 
@@ -63,7 +63,7 @@
   font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   margin: 0 0 var(--space-2);
 }
 
@@ -86,7 +86,7 @@
 .card-note {
   margin: var(--space-2) 0 0;
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   line-height: var(--line-height-tight);
 }
 
@@ -208,7 +208,7 @@
 
 .chart-empty {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   margin: var(--space-6) 0;
   text-align: center;
 }

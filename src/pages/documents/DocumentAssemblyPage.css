@@ -104,7 +104,7 @@
 }
 
 .montagem__estado-item--ocioso {
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 
 .montagem__girando {

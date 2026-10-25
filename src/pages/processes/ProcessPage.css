@@ -111,7 +111,7 @@
 
 .participantes-vazio {
   font-size: 14px;
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   margin: 10px 0 0;
 }
 
@@ -202,7 +202,7 @@
 
 .participante-portal-data {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 
 /* ── Entrega do acesso ─────────────────────────────────────────────────── */
@@ -228,7 +228,7 @@
   font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 
 /* Corpo grande e espaçamento entre caracteres: este código é DITADO por
@@ -299,7 +299,7 @@
 
 .confirmacao-instantaneo {
   font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 
 .confirmacao-texto {

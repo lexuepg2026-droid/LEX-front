@@ -161,7 +161,7 @@
   flex-shrink: 0;
 }
 
-.cal-legenda__texto { color: var(--color-text-muted); }
+.cal-legenda__texto { color: var(--color-text-discreto); }
 
 /* ── A GRADE ──────────────────────────────────────────────────────────── */
 
@@ -312,7 +312,7 @@
 
 .cal-item__subtitulo,
 .cal-item__valor {
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   font-size: var(--font-size-xs);
   flex-shrink: 0;
   margin-left: auto;

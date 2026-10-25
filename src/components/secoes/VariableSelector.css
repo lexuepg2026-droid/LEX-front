@@ -82,7 +82,7 @@
   padding: 2px;
   background: none;
   border: none;
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   cursor: pointer;
 }
 
@@ -142,7 +142,7 @@
   margin: 4px 0 6px;
   padding: 0 var(--space-3, 12px);
   font-size: var(--font-size-xs, 0.7rem);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   line-height: 1.4;
 }
 
@@ -198,7 +198,7 @@
   margin-top: 3px;
   font-family: ui-monospace, 'SFMono-Regular', 'Consolas', monospace;
   font-size: var(--font-size-xs, 0.7rem);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 
 @media (max-width: 900px) {

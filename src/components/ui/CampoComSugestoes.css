@@ -46,9 +46,9 @@
 .sugestoes__aviso {
   margin: var(--space-1) 0 0;
   font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 
 .sugestoes__aviso--erro {
-  color: var(--color-warning-text, var(--color-text-muted));
+  color: var(--color-warning-text, var(--color-text-discreto));
 }

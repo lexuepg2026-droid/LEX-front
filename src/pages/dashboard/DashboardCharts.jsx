@@ -27,7 +27,7 @@ import EmptyState from '../../components/ui/EmptyState';
 // leitura só do mesmo dado — não duas cópias em sincronia por disciplina.
 // ═══════════════════════════════════════════════════════════════════════════
 
-const TICK_STYLE = { fontSize: 12, fill: 'var(--color-text-muted)' };
+const TICK_STYLE = { fontSize: 12, fill: 'var(--color-text-discreto)' };
 const GRID_COLOR = 'var(--color-border)';
 const LABEL_STYLE = { fontSize: 11, fill: 'var(--color-text-secondary)' };
 

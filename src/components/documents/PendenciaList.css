@@ -37,7 +37,7 @@
   margin: 0;
   font-size: var(--font-size-xs);
   line-height: var(--line-height-normal);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 .geracao__opcoes {
   list-style: none;
@@ -75,7 +75,7 @@
 }
 .geracao__opcao-meta {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 .geracao__pendencias {
   padding: var(--space-3);
@@ -129,7 +129,7 @@
 .geracao__pendencia-chave {
   font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
 }
 
 /* ── Um item da lista ────────────────────────────────────────────────────── */
@@ -162,7 +162,7 @@
 }
 
 .pendencia__chave {
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   font-size: var(--font-size-xs);
   font-family: monospace;
 }

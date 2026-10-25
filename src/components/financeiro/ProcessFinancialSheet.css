@@ -204,7 +204,7 @@
   color: var(--color-text-primary);
 }
 
-.ficha-documentos__meta { color: var(--color-text-muted); }
+.ficha-documentos__meta { color: var(--color-text-discreto); }
 
 @media (max-width: 1023px) {
   .ficha-totais { grid-template-columns: repeat(2, 1fr); }

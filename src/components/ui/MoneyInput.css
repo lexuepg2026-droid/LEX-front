@@ -23,7 +23,7 @@
   /* O clique atravessa o símbolo e cai no campo: quem mira o "R$" quer
      escrever, não selecionar duas letras. */
   pointer-events: none;
-  color: var(--color-text-muted);
+  color: var(--color-text-discreto);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
 }
