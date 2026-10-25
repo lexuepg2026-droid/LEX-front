@@ -4229,6 +4229,171 @@ envelhece na primeira troca de token — foi assim que o claro chegou a 2,0:1.
 
 ---
 
+## DEC-077 (frontend) — os ícones dela, em linha e com `currentColor` (Fase 2a)
+
+`components/ui/Icone.jsx` desenha os 12 SVG de `assets/icons/` (`<Icone
+nome="pessoa" />`, 20 px por padrão). **Os arquivos são a fonte**, já com
+`currentColor`; `components/ui/iconesDados.js` repete os caminhos para o
+componente, em `.js` para a suíte poder importá-lo. `tests/css/icones.test.js`
+confere, traço a traço, que o dado é o arquivo e que nenhum traço tem cor fixa.
+
+**Por que não `<img>`:** o traço deles era `#EDE3CF` fixo, que some no modo
+claro, e `currentColor` não atravessa `<img>`. É o mesmo princípio do `LogoLex`
+(DEC-074).
+
+Sem `rotulo` o ícone é `aria-hidden`; com `rotulo`, `role="img"` e
+`aria-label`. **Não se desenha ícone novo:** onde os 12 não cobrem, fica o
+lucide que a tela já usava.
+
+---
+
+## DEC-078 (frontend) — a marca fixa: cabeçalho e autenticação iguais nos dois modos (Fase 2a)
+
+O cabeçalho (`#174034`) e as telas de autenticação (`#01261F` e `#174034`) são
+**marca**, e não tema: têm a mesma cor no escuro e no claro, como os sólidos da
+DEC-075. Os tokens `--color-marca-*` moram **só no `:root`**, e um teste falha
+se `body.light-mode` redefinir algum.
+
+| Token | Valor | Uso |
+|---|---|---|
+| `--color-marca-fundo` | `#174034` | barra do cabeçalho, lado direito da autenticação |
+| `--color-marca-escuro` | `#01261F` | painel da logo |
+| `--color-marca-texto` | `#EDE3CF` | texto, ícone, link ativo, borda do botão contornado |
+| `--color-marca-texto-suave` | `#D1CEBB` | link não ativo (bege87 composto) |
+| `--color-marca-botao` / `-hover` | `#ADB2A0` / `#D1CEBB` | o botão claro da Figura 14 |
+| `--color-on-marca-botao` | `#01261F` | texto do botão claro (7,4:1) |
+| `--color-marca-borda-campo` | `#ADB2A0` | borda dos campos (5,3:1) |
+| `--color-marca-erro` | `#FFB4AB` | erro sobre o verde (6,8:1) |
+| `--color-marca-foco` | `#EDE3CF` | anel de foco sobre a marca |
+
+**Quem monta algo SOBRE a marca usa estes tokens, nunca os do tema.** O
+`--color-text-secondary` do claro (`#2E4A41`) some sobre `#174034`, e o
+`--color-focus` do claro **é** `#174034`. Por isso a barra não define `color`
+para os filhos herdarem: os painéis que abrem dela (submenus, sino) são
+superfície do tema, e herdariam o bege.
+
+`--color-primary` continua sendo **só fundo** (DEC-074). Os pares estão em
+`tests/css/contrastePares.js`, no bloco "marca:".
+
+---
+
+## DEC-079 (frontend) — o cabeçalho horizontal substitui a Sidebar (Fase 2a)
+
+### Um mapa de destinos só
+
+`components/layout/navegacao.js` é a lista que o cabeçalho e a barra de baixo
+leem — eram duas listas à mão (Sidebar e BottomNav). Os **13 destinos** da
+Sidebar continuam alcançáveis, e há teste comparando com a lista antiga:
+
+| Antes (Sidebar) | Agora |
+|---|---|
+| Início, Clientes, Processos, Agenda | links diretos |
+| Financeiro, Honorários, Parcelas, Pagamentos | **Financeiro ▾** (Visão geral + os três) |
+| Documentos, Gerar documento, Montar modelo, Seções | **Documentos ▾** — as duas portas da montagem continuam separadas |
+| Perfil | **menu do usuário** (e o "Mais", no celular) |
+
+A regra de "item ativo" é função pura (`itemAtivo`): as duas portas da
+montagem acendem pelo `?modo=`, e a lista de documentos não acende na
+montagem.
+
+### O que abre e fecha
+
+`MenuSuspenso.jsx` é o padrão **disclosure** (botão com `aria-expanded` e
+`aria-controls`, painel de links), e não `role="menu"`: são links de
+navegação. Fecha com Escape (o foco volta ao botão), clique fora, foco saindo
+por Tab e ao navegar. Não está em portal: o cabeçalho não recorta, e fora do
+portal a ordem de Tab é a natural.
+
+O menu do usuário é um `<button>` — o dela era uma `div` clicável, sem teclado.
+**Tema e Sair são as funções do `DashboardPage`**, entregues ao menu e à folha
+do "Mais"; o Sair continua avisando da fila offline antes de sair.
+
+### O ponto de troca é 1024 px, e a saudação cabe
+
+Abaixo de 1024 px os links saem do cabeçalho, a barra fica compacta (logo,
+fila, sino, iniciais) e a navegação vai para a barra de baixo: Início,
+Clientes, Processos, Agenda e **Mais** (folha `role="dialog"` com Financeiro,
+Documentos, Pendências, Perfil, Tema e Sair; foco no primeiro item, Tab preso,
+Escape e toque no fundo fecham, o foco volta ao "Mais").
+
+Medido no Chrome com o seed: em **1024 px** os seis links e o lado direito
+cabem com ~210 px de folga entre "Documentos" e o sino, **com** a saudação. O
+ponto não precisou subir. Abaixo de 1024 px a saudação sai e fica o círculo,
+com o nome no `aria-label`.
+
+### Quem rola é `.main-content`
+
+O `.app-layout` tem a altura da tela e esconde o excedente; **o `window` não
+rola** na área da advogada. É isso que deixa o cabeçalho sempre visível sem
+`sticky` (o desenho dela o escondia ao rolar — não veio), é o que
+`VoltarAoTopo` rola, e é o que o menu ⋮ escuta para se fechar (DEC-046). Nas
+páginas públicas e no portal, quem rola é o `window`.
+
+O conteúdo centraliza acima de `--largura-conteudo` (1280 px), com o recuo no
+**padding** do `.main-content`, e não num invólucro: a barra de rolagem fica na
+borda da tela e as larguras de coluna (`col-money`, `col-parcela`) não mudam.
+
+A **trilha** continua, logo abaixo da barra, com a lógica de sempre. Trilha ou
+"Voltar" é decisão da Fase 2b.
+
+---
+
+## DEC-080 (frontend) — vocabulário único no financeiro (Fase 2a)
+
+O financeiro usa só **Honorários**, **Parcelas** e **Pagamentos** — os nomes do
+menu, das rotas e das listagens. "Cobranças previstas" e "Recebimentos" eram os
+mesmos objetos com outros nomes, e a advogada procurava no menu uma "cobrança"
+que não existia.
+
+Trocados só textos visíveis (lista no relatório da fase); nenhum nome de campo,
+rota ou variável. `tests/regressions/fase2a.test.js` varre o código sem
+comentários atrás de "cobrança" e "recebimento". **"Recebido"** (o particípio,
+nos cartões) continua: é o fato, não o nome de um objeto.
+
+O documento do TCC (Quadros 9, 10 e 12) ainda usa os nomes antigos e é
+corrigido à mão.
+
+---
+
+## DEC-081 (frontend) — o layout das telas de autenticação (Fase 2a)
+
+`components/layout/LayoutAutenticacao.jsx`, das Figuras 14 e 16: painel
+`#01261F` com a logo e o verde `#174034` com o conteúdo; abaixo de 768 px uma
+coluna só. Login, cadastro, esqueci, redefinir e confirmar usam o layout; **o
+portal não** (fase 3).
+
+**Rótulo visível acima do campo**, ligado por `htmlFor`. Os campos dela usavam
+só placeholder, que some ao digitar e com o preenchimento automático.
+
+**Todo seletor da folha começa por `.auth-layout`.** A dela tinha
+`a { width: 24rem }`, que no bundle valia para todo `<a>` do app — há teste. E
+as folhas das telas **não** declaram cor, borda nem raio de campo e botão: com
+a mesma especificidade do layout, quem venceria dependeria da ordem do bundle.
+
+`#root` passou a ocupar a largura toda (`global.css`): o `body` é flex
+centralizado desde o login antigo, e o `#root` encolhia até o conteúdo.
+
+---
+
+## DEC-082 (frontend) — `/` é a página inicial pública; o login fica em `/login` (Fase 2a)
+
+`pages/public/InicioPublico.jsx` em `/`: **Fazer login**, **Criar nova conta**
+e **Acompanhe seu processo** — as três pessoas que chegam ao LEX, incluindo o
+cliente da advogada. Com sessão, `/` vai ao Início pela mesma pergunta do
+`ProtectedRoute`, sem chamada nova à API. O portal continua em `lazy()`.
+
+**Ninguém mandava para `/` esperando o login** — conferido antes da troca:
+portão de rota, logout, sessão expirada no interceptor, fim da redefinição de
+senha e confirmação de e-mail já apontavam para `/login`. Os links de e-mail do
+backend apontam para `/confirmar-email` e `/redefinir-senha`. Há varredura
+proibindo `navigate('/')`, `to="/"` e `href = '/'`.
+
+A rota coringa `*` existe dentro do layout da advogada (com o cabeçalho) e fora
+de tudo; o link de volta sai de `pages/public/naoEncontrada.js` — `/portal` nos
+caminhos do portal, `/dashboard` com sessão, `/` sem.
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:
