@@ -28,6 +28,9 @@ import '../../components/ui/Button.css';
 import './DocumentFinalTextPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
+import { idDoProcesso } from '../../components/layout/contexto.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // EDITOR DE TEXTO FINAL
@@ -50,6 +53,8 @@ function DocumentFinalTextPage() {
   const navigate = useNavigate();
 
   const [documento, setDocumento] = useState(null);
+  // Fase 2b (DEC-085): publica para a faixa de contexto o processo — o do documento.
+  usePublicarContexto({ processoId: idDoProcesso(documento?.processoId) });
   const [vinculos, setVinculos] = useState([]);
   const [texto, setTexto] = useState('');
   const [textoSalvo, setTextoSalvo] = useState('');
@@ -137,7 +142,7 @@ function DocumentFinalTextPage() {
       setLacunas(Array.isArray(res.data?.lacunas) ? res.data.lacunas : []);
       toast.success('Texto final salvo.');
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Não foi possível salvar o texto.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível salvar o texto.'));
     } finally {
       setSalvando(false);
     }
@@ -151,7 +156,7 @@ function DocumentFinalTextPage() {
         const kb = tamanho ? ` (${Math.round(tamanho / 1024)} kB)` : '';
         toast.success(`${nome}${kb}`);
       } catch (err) {
-        toast.error(getApiErrorMessage(err, `Não foi possível baixar em ${formato.toUpperCase()}.`));
+        if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, `Não foi possível baixar em ${formato.toUpperCase()}.`));
       } finally {
         setBaixando('');
       }
@@ -171,7 +176,7 @@ function DocumentFinalTextPage() {
           : 'Documento oculto do portal do cliente.'
       );
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Não foi possível alterar a visibilidade.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível alterar a visibilidade.'));
     } finally {
       setAlternandoPortal(false);
     }
@@ -228,7 +233,7 @@ function DocumentFinalTextPage() {
             return;
           }
         }
-        toast.error(getApiErrorMessage(err, 'Não foi possível regerar o documento.'));
+        if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível regerar o documento.'));
       } finally {
         setRegerando(false);
       }

@@ -17,6 +17,8 @@ import '../../components/ui/Button.css';
 import '../clients/ClientPage.css';
 import OfflineQueueNotice from '../../components/ui/OfflineQueueNotice';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORMULÁRIO DO EVENTO
@@ -62,6 +64,8 @@ function EventFormPage() {
 
   const navigate = useNavigate();
   const { id } = useParams();
+  // Fase 2b (DEC-085): publica para a faixa de contexto o processo — o vinculado, se houver.
+  usePublicarContexto({ processoId: formData.processoId });
   const [searchParams] = useSearchParams();
   const isEditing = Boolean(id);
 
@@ -213,7 +217,7 @@ function EventFormPage() {
         toast.info(err.message);
         return;
       }
-      toast.error(getApiErrorMessage(err, 'Erro ao mudar a conclusão.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Erro ao mudar a conclusão.'));
     }
   };
 

@@ -23,6 +23,15 @@ export const getApiErrorMessage = (err, fallback = 'Ocorreu um erro. Tente novam
 // ler `err.response` por conta própria.
 export const getApiErrorStatus = (err) => err?.response?.status ?? null;
 
+// A frase que o NOSSO servidor escreveu, e só ela — sem cair em `err.message`
+// (que é o "Request failed with status code 503" do axios, em inglês) nem em
+// fallback. Existe para o toast global da Fase 2b (DEC-084), que precisa saber
+// se há frase do servidor antes de escolher a própria.
+export const getApiServerMessage = (err) => {
+  const mensagem = err?.response?.data?.message;
+  return typeof mensagem === 'string' && mensagem.trim() ? mensagem : null;
+};
+
 // Campo que originou o erro ("email", "cpf", "oab", "cnpj"), quando o backend
 // informa. Serve para a UI rotear (destacar input, voltar de etapa) sem
 // interpretar o texto da mensagem — reescrever a mensagem quebrava o

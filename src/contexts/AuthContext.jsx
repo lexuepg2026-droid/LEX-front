@@ -4,6 +4,7 @@ import authService from '../api/authService';
 import { registrarSessao } from '../api/sessionLoss';
 import { startSession, clearAll } from '../offline/offlineCache';
 import { registrarUsuarioAtual } from '../offline/currentUser';
+import { limparDispensaDoAviso } from '../components/layout/confirmacaoEmail.js';
 
 const AuthContext = createContext(null);
 
@@ -61,6 +62,9 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, senha) => {
     const res = await authService.login(email, senha);
+    // Fase 2b (DEC-088): o "Dispensar" do aviso de e-mail vale até o próximo
+    // LOGIN — e este é o login. O recarregar de página (`checkAuth`) não limpa.
+    limparDispensaDoAviso();
     await startSession(res.data.usuario?.id);
     registrarUsuario(res.data.usuario);
   }, [registrarUsuario]);

@@ -8,7 +8,8 @@ import MoneyInput from '../../components/ui/MoneyInput';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { toast } from '../../utils/toast';
-import { usePublicarBreadcrumb } from '../../contexts/BreadcrumbContext';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
+import { idDoProcesso } from '../../components/layout/contexto.js';
 import { rotuloNaLista } from '../../components/financeiro/installmentLabel';
 import {
   montarPlano,
@@ -103,7 +104,9 @@ function FeeRenegotiationPage() {
   // quebra com o cliente ("a primeira fica em 350 e as outras em 325").
   const [linhas, setLinhas] = useState([]);
 
-  usePublicarBreadcrumb(honorario ? `Reparcelar — ${honorario.descricao}` : null);
+  // Fase 2b (DEC-085): "Reparcelar" e o nome do honorário já são o título e o
+  // subtítulo desta tela; a faixa de cima diz o processo e o cliente.
+  usePublicarContexto({ processoId: idDoProcesso(honorario?.processoId) });
 
   useEffect(() => {
     let ativo = true;

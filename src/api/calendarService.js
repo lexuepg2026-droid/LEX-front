@@ -17,6 +17,10 @@ const getCalendar = ({ de, ate, processoId } = {}) => {
 
 // O sino. Sem parâmetro: "hoje" é do servidor, e o navegador não tem como
 // saber qual é — um relógio de máquina atrasado destacaria o dia errado.
-const getAvisos = () => api.get('/calendar/avisos');
+//
+// `opcoes` existe para o sino, que relê a cada cinco minutos e passa
+// `semToastGlobal` (Fase 2b, DEC-084); o Início chama sem nada e, com o
+// servidor fora, recebe o toast global como qualquer tela.
+const getAvisos = (opcoes = {}) => api.get('/calendar/avisos', opcoes);
 
 export default { getCalendar, getAvisos };

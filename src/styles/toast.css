@@ -11,8 +11,20 @@
   pointer-events: none;
 }
 
+/* As duas regiões vivas (DEC-083): erro em `alert`, o resto em `status`. Ficam
+   montadas mesmo vazias, e por isso não podem ocupar espaço nem tomar clique. */
+.toast-regiao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .toast {
-  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  pointer-events: auto;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
@@ -39,6 +51,42 @@
 .toast--info {
   background-color: var(--color-info-solid);
   color: var(--color-on-solid);
+}
+
+.toast__mensagem {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* O × herda o branco do aviso, e o anel também é branco: o bege do foco global
+   não tem contraste garantido sobre os três fundos sólidos, e o branco tem —
+   é o mesmo par texto × fundo medido em `contrastePares.js`. */
+.toast__fechar {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: -4px -2px -4px 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.toast__fechar:hover {
+  background-color: var(--color-toast-fechar-hover);
+}
+
+.toast__fechar:focus-visible {
+  outline: 2px solid var(--color-on-solid);
+  outline-offset: 1px;
 }
 
 @keyframes toast-in {

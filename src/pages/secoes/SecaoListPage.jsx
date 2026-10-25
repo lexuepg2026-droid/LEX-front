@@ -13,6 +13,7 @@ import { getApiErrorMessage } from '../../utils/apiError';
 import { toast } from '../../utils/toast';
 import '../../styles/modules.css';
 import './SecaoPage.css';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 // Trecho inicial do texto, para a lista dar ideia do conteúdo sem virar
 // parede de texto. As quebras viram espaço: numa célula de tabela elas não
@@ -74,7 +75,7 @@ function SecaoListPage() {
     } catch (err) {
       // 409 quando a seção está em uso: a mensagem do backend já nomeia os
       // documentos que a usam, então basta exibi-la.
-      toast.error(getApiErrorMessage(err, 'Erro ao desativar a seção.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Erro ao desativar a seção.'));
     }
   };
 

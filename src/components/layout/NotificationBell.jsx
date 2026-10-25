@@ -48,7 +48,9 @@ function NotificationBell() {
 
   const carregar = useCallback(() => {
     calendarService
-      .getAvisos()
+      // `semToastGlobal` (Fase 2b, DEC-084): pela mesma razão do `catch`
+      // abaixo, o toast global também não pode disparar daqui.
+      .getAvisos({ semToastGlobal: true })
       .then((res) => setAvisos(res.data))
       // Falhar aqui NÃO derruba o cabeçalho nem mostra erro: o sino é
       // periférico, e um toast de erro a cada cinco minutos por causa de uma

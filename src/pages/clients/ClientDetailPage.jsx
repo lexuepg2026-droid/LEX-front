@@ -9,9 +9,12 @@ import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useCachedResource from '../../hooks/useCachedResource';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
 import './ClientPage.css';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
 
 function ClientDetailPage() {
   const { id } = useParams();
+  // Fase 2b (DEC-085): publica para a faixa de contexto o cliente.
+  usePublicarContexto({ clienteId: id });
   const navigate = useNavigate();
   const online = useOnlineStatus();
 

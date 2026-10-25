@@ -32,6 +32,11 @@ const esqueci = ler("src/pages/auth/ForgotPasswordPage.jsx");
 const redefinir = ler("src/pages/auth/ResetPasswordPage.jsx");
 const confirmar = ler("src/pages/auth/ConfirmEmailPage.jsx");
 const aviso = ler("src/components/layout/EmailConfirmationBanner.jsx");
+// Fase 2b (DEC-088): a leitura de `emailConfirmadoEm` e o reenvio saíram do
+// aviso para dois módulos, porque o menu do usuário e o "Mais" também os usam.
+// As asserções abaixo seguem a regra até onde ela mora agora.
+const regraDoAviso = ler("src/components/layout/confirmacaoEmail.js");
+const reenvio = ler("src/hooks/useConfirmacaoEmail.js");
 const layout = ler("src/components/layout/AppLayout.jsx");
 const clienteForm = ler("src/pages/clients/ClientFormPage.jsx");
 
@@ -47,8 +52,10 @@ const arquivosDeSrc = (dir = join(RAIZ, "src"), acc = []) => {
 describe("A-2 — a API chamada pela tela", () => {
   test("as quatro chamadas são POST nas rotas do backend", () => {
     assert.match(authService, /confirmEmail = \(token\) => api\.post\('\/auth\/confirm-email', \{ token \}\)/);
-    assert.match(authService, /resendConfirmation = \(\) => api\.post\('\/auth\/resend-confirmation'\)/);
-    assert.match(authService, /forgotPassword = \(email\) => api\.post\('\/auth\/forgot-password', \{ email \}\)/);
+    // Desde a Fase 2b as duas levam `SO_A_TELA_AVISA` (`semToastGlobal`): a
+    // tela mostra o erro em linha, e o toast global repetiria (DEC-084).
+    assert.match(authService, /resendConfirmation = \(\) => api\.post\('\/auth\/resend-confirmation', undefined, SO_A_TELA_AVISA\)/);
+    assert.match(authService, /forgotPassword = \(email\) => api\.post\('\/auth\/forgot-password', \{ email \}, SO_A_TELA_AVISA\)/);
     assert.match(authService, /resetPassword = \(token, novaSenha\) =>\s*api\.post\('\/auth\/reset-password', \{ token, novaSenha \}\)/);
   });
 
@@ -152,8 +159,9 @@ describe("A-2 — nenhuma destas telas abre sessão", () => {
 
 describe("A-2 — o aviso de e-mail não confirmado NÃO bloqueia", () => {
   test("só aparece quando `emailConfirmadoEm` é exatamente null", () => {
-    assert.match(aviso, /if \(!user \|\| user\.emailConfirmadoEm !== null\) return null;/,
+    assert.match(regraDoAviso, /export const emailPendente = \(user\) => Boolean\(user\) && user\.emailConfirmadoEm === null;/,
       "com `undefined` (servidor sem o campo) afirmar 'não confirmado' seria dizer o que ninguém verificou");
+    assert.match(aviso, /if \(!emailPendente\(user\)\) return null;/);
   });
 
   test("está montado no layout, ao lado do conteúdo — e não envolvendo ou substituindo o Outlet", () => {
@@ -167,15 +175,29 @@ describe("A-2 — o aviso de e-mail não confirmado NÃO bloqueia", () => {
 
     assert.deepEqual(
       usos,
-      ["src/components/layout/EmailConfirmationBanner.jsx"],
+      ["src/components/layout/confirmacaoEmail.js"],
       "um portão (ProtectedRoute, login, rota) passou a olhar o e-mail confirmado — o login deixou de ser livre"
     );
+
+    // E quem pergunta pela regra é só o AVISO — a faixa, o menu do usuário,
+    // o "Mais" e o hook do reenvio (Fase 2b, DEC-088). Nenhum portão.
+    const perguntam = arquivosDeSrc()
+      .filter((caminho) => /emailPendente\(|\bpendente\b.*useConfirmacaoEmail|useConfirmacaoEmail\(\)/.test(readFileSync(caminho, "utf8")))
+      .map((caminho) => caminho.slice(RAIZ.length))
+      .sort();
+    assert.deepEqual(perguntam, [
+      "src/components/layout/BottomNav.jsx",
+      "src/components/layout/EmailConfirmationBanner.jsx",
+      "src/components/layout/MenuUsuario.jsx",
+      "src/hooks/useConfirmacaoEmail.js",
+    ]);
   });
 
   test("oferece reenviar e 'já confirmei' (a confirmação acontece em outra aba)", () => {
-    assert.match(aviso, /authService\.resendConfirmation\(\)/);
+    assert.match(reenvio, /authService\.resendConfirmation\(\)/);
     assert.match(aviso, /onClick=\{\(\) => checkAuth\(\)\}/);
-    assert.match(aviso, /res\.data\?\.jaConfirmado/);
+    assert.match(reenvio, /res\.data\?\.jaConfirmado/);
+    assert.match(aviso, /useConfirmacaoEmail\(\)/, "o aviso usa o mesmo reenvio do menu");
   });
 
   test("o botão do aviso tem estilo próprio (`btn-secondary` só existe na folha de uma tela)", () => {

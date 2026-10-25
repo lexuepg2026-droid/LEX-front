@@ -13,6 +13,7 @@ import {
 import { formatDate } from '../../utils/formatters';
 import { getApiErrorDetails, getApiErrorMessage, getApiErrorPendencias } from '../../utils/apiError';
 import './GenerationPanel.css';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GERAÇÃO
@@ -86,6 +87,8 @@ import './GenerationPanel.css';
 function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
   const [processos, setProcessos] = useState([]);
   const [processoId, setProcessoId] = useState('');
+  // Fase 2b (DEC-085): publica para a faixa de contexto o processo — o escolhido para gerar.
+  usePublicarContexto({ processoId });
 
   const [participantes, setParticipantes] = useState([]);
   const [carregandoParticipantes, setCarregandoParticipantes] = useState(false);

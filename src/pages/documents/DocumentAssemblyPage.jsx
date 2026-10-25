@@ -23,6 +23,7 @@ import { toast } from '../../utils/toast';
 import '../../styles/modules.css';
 import '../../components/ui/Button.css';
 import './DocumentAssemblyPage.css';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TELA DE MONTAGEM — UMA TELA, DOIS MODOS
@@ -161,7 +162,7 @@ function DocumentAssemblyPage() {
             if (snapshot) setVinculos(snapshot);
             setErroSalvamento(mensagem);
           }
-          toast.error(mensagem);
+          if (!jaAvisadoPeloToastGlobal(err)) toast.error(mensagem);
 
           // Reconcilia com o servidor. Silenciosa de propósito: o erro que
           // importa já foi mostrado, e falha aqui só significa que o snapshot

@@ -27,6 +27,7 @@ import {
   labelDe,
 } from '../../utils/enums';
 import '../../styles/modules.css';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 const POR_PAGINA = 20;
 
@@ -88,7 +89,7 @@ function FeeListPage({ embedded = false }) {
     } catch (err) {
       // 409 de integridade: o honorário tem parcelas ativas. A mensagem diz
       // quantas, de `dependencia` + `quantidade`, e não destaca campo nenhum.
-      toast.error(getFinancialErrorMessage(err, 'Erro ao remover honorário.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getFinancialErrorMessage(err, 'Erro ao remover honorário.'));
     }
   };
 

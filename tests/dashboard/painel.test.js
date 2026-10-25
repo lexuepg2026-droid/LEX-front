@@ -82,7 +82,9 @@ describe("a contagem de vencidas tem UMA fonte", () => {
       assert.match(texto, /from '.*\/api\/calendarService'/, `${arquivo}: falta o serviço do calendário`);
       // A chamada pode vir encadeada em outra linha — o que importa é que os
       // dois batam na MESMA rota, e não que a chamada esteja escrita igual.
-      assert.match(texto, /\.getAvisos\(\)/, `${arquivo}: precisa ler de /calendar/avisos`);
+      // O sino passa `{ semToastGlobal: true }` desde a Fase 2b (DEC-084): é a
+      // mesma rota, com uma opção de transporte.
+      assert.match(texto, /\.getAvisos\((\{ semToastGlobal: true \})?\)/, `${arquivo}: precisa ler de /calendar/avisos`);
     }
   });
 

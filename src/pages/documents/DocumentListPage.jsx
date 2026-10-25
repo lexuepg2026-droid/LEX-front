@@ -18,6 +18,7 @@ import useProcessoFiltrado from '../../hooks/useProcessoFiltrado';
 import OfflineNotice from '../../components/ui/OfflineNotice';
 import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
 import { MENSAGEM_DOWNLOAD_OFFLINE, blockReason } from '../../offline/offlineMessages';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 // Só documentos GERADOS aparecem aqui. O caminho de upload segue dormente na
 // API (o campo `origem` aceita "upload"), mas fora da interface — o anteprojeto
@@ -74,7 +75,7 @@ function DocumentListPage() {
       setDocumentos((atual) => atual.filter((d) => d._id !== documento._id));
       toast.success('Documento removido com sucesso.');
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Erro ao remover documento.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Erro ao remover documento.'));
     }
   };
 
@@ -90,7 +91,7 @@ function DocumentListPage() {
       const kb = tamanho ? ` (${Math.round(tamanho / 1024)} kB)` : '';
       toast.success(`${nome}${kb}`);
     } catch (err) {
-      toast.error(getApiErrorMessage(err, `Não foi possível baixar em ${formato.toUpperCase()}.`));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, `Não foi possível baixar em ${formato.toUpperCase()}.`));
     } finally {
       setBaixando('');
     }

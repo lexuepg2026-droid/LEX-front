@@ -629,12 +629,18 @@ describe("F-1b.2 — responsividade: os mecanismos, não a aparência", () => {
     }
   });
 
-  test("o breadcrumb longo encurta e não empurra o bloco do usuário", () => {
-    const folha = css("src/components/layout/Header.css");
-    assert.match(folha, /\.breadcrumb\s*\{[^}]*min-width:\s*0/);
-    assert.match(folha, /\.breadcrumb-current\s*\{[^}]*text-overflow:\s*ellipsis/);
-    assert.match(folha, /@media \(max-width: 480px\)[\s\S]*?\.breadcrumb-current\s*\{[^}]*max-width/,
-      "e um teto em 360 px, para o corte acontecer antes de a linha estourar");
+  test("o contexto longo encurta e não empurra o \"Voltar\" nem a página", () => {
+    // Era a regra do breadcrumb longo (F-1b.2); a trilha virou a faixa de
+    // contexto na Fase 2b (DEC-085), e a regra veio junto: quem cede é o
+    // texto, com reticências e o inteiro no `title`; o Voltar não encolhe.
+    const folha = css("src/components/layout/FaixaContexto.css");
+    assert.match(folha, /\.faixa-contexto\s*\{[^}]*min-width:\s*0/);
+    assert.match(folha, /\.faixa-contexto__texto\s*\{[^}]*min-width:\s*0/);
+    assert.match(folha, /\.faixa-contexto__voltar\s*\{[^}]*flex-shrink:\s*0/);
+    assert.match(folha, /\.faixa-contexto__texto\s*\{[^}]*white-space:\s*nowrap[^}]*text-overflow:\s*ellipsis/,
+      "uma linha só, com reticências — no celular inclusive");
+    const faixa = ler("src/components/layout/FaixaContexto.jsx");
+    assert.match(faixa, /className="faixa-contexto__texto" title=\{texto\}/, "o texto inteiro no title");
   });
 
   test(":focus-visible preservado em tudo que ganhou CSS novo", () => {

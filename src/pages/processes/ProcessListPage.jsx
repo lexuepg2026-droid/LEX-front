@@ -25,6 +25,7 @@ import {
   motivoDeNaoReativar
 } from '../../utils/activationMessages';
 import '../../styles/modules.css';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 function ProcessoListPage() {
   // DEC-052: um modal só, para as duas ações. `acao` diz qual — e é ela que
@@ -106,7 +107,7 @@ function ProcessoListPage() {
       setAtivacaoModal({ open: true, id, acao, mensagem, carregando: false });
     } catch (err) {
       setAtivacaoModal({ open: false, id: null, acao: null, mensagem: '', carregando: false });
-      toast.error(getApiErrorMessage(err, 'Não foi possível conferir o efeito desta ação.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível conferir o efeito desta ação.'));
     }
   };
 
@@ -129,7 +130,7 @@ function ProcessoListPage() {
       // adivinhar isso aqui duplicaria a regra do filtro.
       reload();
     } catch (err) {
-      toast.error(getApiErrorMessage(
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(
         err,
         acao === 'desativar' ? 'Erro ao desativar processo.' : 'Erro ao reativar processo.'
       ));

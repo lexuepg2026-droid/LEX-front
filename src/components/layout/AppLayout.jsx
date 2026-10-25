@@ -4,10 +4,11 @@ import Header from './Header';
 import BottomNav from './BottomNav';
 import EmailConfirmationBanner from './EmailConfirmationBanner';
 import VoltarAoTopo from './VoltarAoTopo.jsx';
-// A trilha do cabeçalho precisa, em telas de detalhe, de um rótulo que só a
-// página conhece. O provider envolve Header e Outlet — os dois lados da
-// conversa. Ver `contexts/BreadcrumbContext.jsx`.
-import { BreadcrumbProvider } from '../../contexts/BreadcrumbContext';
+import FaixaContexto from './FaixaContexto.jsx';
+// A faixa de contexto precisa saber de qual processo ou cliente a página é, e
+// só a página sabe. O provider envolve a faixa e o Outlet — os dois lados da
+// conversa. Ver `contexts/ContextoContext.jsx` (Fase 2b, DEC-085).
+import { ContextoProvider } from '../../contexts/ContextoContext';
 import './AppLayout.css';
 
 // Fase 2a (DEC-079): a Sidebar saiu. O cabeçalho horizontal ocupa o topo, e
@@ -16,9 +17,11 @@ import './AppLayout.css';
 // do usuário (no cabeçalho) e à folha do "Mais" (na barra de baixo).
 function AppLayout({ theme, toggleTheme, onLogout }) {
   return (
-    <BreadcrumbProvider>
+    <ContextoProvider>
       <div className="app-layout">
         <Header theme={theme} toggleTheme={toggleTheme} onLogout={onLogout} />
+        {/* No lugar da trilha: "Voltar" e o contexto, só onde há os dois. */}
+        <FaixaContexto />
         {/* A-2: aviso de e-mail não confirmado. Não bloqueia nada. */}
         <EmailConfirmationBanner />
         <main className="main-content">
@@ -28,7 +31,7 @@ function AppLayout({ theme, toggleTheme, onLogout }) {
         <VoltarAoTopo seletor=".main-content" />
         <BottomNav theme={theme} toggleTheme={toggleTheme} onLogout={onLogout} />
       </div>
-    </BreadcrumbProvider>
+    </ContextoProvider>
   );
 }
 

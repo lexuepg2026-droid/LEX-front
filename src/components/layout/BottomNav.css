@@ -141,6 +141,10 @@
   font-weight: var(--font-weight-semibold);
 }
 
+.mais__item--alerta {
+  color: var(--color-warning-text);
+}
+
 .mais__item--sair {
   color: var(--color-danger-text);
 }

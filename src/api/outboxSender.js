@@ -30,6 +30,10 @@ export const enviarEntrada = (entrada) =>
     url: entrada.url,
     data: entrada.body ?? undefined,
     daFila: true,
+    // O reenvio da fila sobe sozinho quando o sinal volta, e o desfecho de
+    // cada entrada é da tela de pendências (DEC-060). Toast aqui seria uma
+    // rajada a cada reconexão (Fase 2b, DEC-084).
+    semToastGlobal: true,
     headers: {
       'Idempotency-Key': entrada.chaveIdempotencia,
       ...(entrada.versaoVista ? { [CABECALHO_VERSAO]: entrada.versaoVista } : {})

@@ -83,6 +83,10 @@
   --color-danger-solid:   #B40000;
   --color-info-solid:     #1F5A96;
   --color-on-solid:       #FFFFFF;
+  /* O realce do × do toast ao passar o mouse (Fase 2b, DEC-083): ESCURECE o
+     fundo sólido, e não clareia — clarear o verde do sucesso derrubava o
+     branco para baixo de 4,5:1. Medido nos três tons. */
+  --color-toast-fechar-hover: rgba(0, 0, 0, 0.22);
   /* ═════════════════════════════════════════════════════════════════════
      A MARCA FIXA — cabeçalho e telas de autenticação (Fase 2a, DEC-078)
 
@@ -107,6 +111,10 @@
   --color-marca-borda-campo:  #ADB2A0;
   /* Erro sobre o verde: o vermelho do tema mede menos de 3:1 aqui. */
   --color-marca-erro:         #FFB4AB;
+  /* O ponto de alerta no avatar (e-mail não confirmado, Fase 2b, DEC-088): o
+     amarelo do escuro, fixo — o `--color-warning` do claro (#B7791F) mede
+     menos de 3:1 sobre o verde da barra. */
+  --color-marca-alerta:       #FFC107;
   /* O anel de foco sobre a marca: o `--color-focus` do claro é o próprio
      #174034, e sumiria no cabeçalho. */
   --color-marca-foco:         #EDE3CF;

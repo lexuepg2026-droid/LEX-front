@@ -26,6 +26,8 @@ import useOnlineStatus from '../../hooks/useOnlineStatus';
 import './ProcessPage.css';
 import './ProcessTabs.css';
 import ProcessoTabs from './ProcessTabs';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
 
 // Data e hora no fuso do escritório. `ultimoAcessoPortal` e `dataHora` da
 // confirmação são carimbos que a advogada pode precisar citar — deixá-los ao
@@ -76,6 +78,8 @@ function ProcessoDetalhePage() {
   const [salvandoFase, setSalvandoFase] = useState(false);
 
   const { id } = useParams();
+  // Fase 2b (DEC-085): publica para a faixa de contexto o processo.
+  usePublicarContexto({ processoId: id });
   const online = useOnlineStatus();
   const { entradas } = useOutbox();
   // Só a pendência DESTE processo: a fila é do aparelho inteiro, e avisar aqui
@@ -144,7 +148,7 @@ function ProcessoDetalhePage() {
       setConfirmacoes(Array.isArray(lista) ? lista : []);
       await processService.marcarConfirmacoesVistas(id);
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Não foi possível carregar as confirmações.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar as confirmações.'));
     } finally {
       setCarregandoConfirmacoes(false);
     }
@@ -193,7 +197,7 @@ function ProcessoDetalhePage() {
         toast.info(err.message);
         return;
       }
-      toast.error(getApiErrorMessage(err, 'Não foi possível mudar a fase do processo.'));
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível mudar a fase do processo.'));
     } finally {
       setSalvandoFase(false);
     }

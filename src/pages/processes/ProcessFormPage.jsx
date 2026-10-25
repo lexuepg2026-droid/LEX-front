@@ -18,6 +18,7 @@ import { rotuloComarca, rotuloCnj } from '../../utils/tabelasDominio';
 import './ProcessPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
 
 const STATUS_OPTIONS = ['ativo', 'encerrado', 'suspenso'];
 
@@ -74,6 +75,8 @@ function ProcessoFormPage() {
 
   const navigate = useNavigate();
   const { id } = useParams();
+  // Fase 2b (DEC-085): publica para a faixa de contexto o processo (na edição).
+  usePublicarContexto({ processoId: id });
   const isEditing = Boolean(id);
   // ── Carregamento da leitura em modo edição (Fase F-0) ────────────────────
   //

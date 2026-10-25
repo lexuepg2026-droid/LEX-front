@@ -44,7 +44,10 @@ const gerarDocumento = (modeloId, { processoId, clienteId, honorarioId, confirma
 // Compatibilidade modelo × cliente (Fase 4.6). Leitura: diz se o modelo tem
 // variáveis que não se aplicam ao tipo do cliente, ANTES de gerar. Não bloqueia.
 const compatibilidadeModelo = (modeloId, clienteId) =>
-  api.get(`/documents/modelos/${modeloId}/compatibilidade`, { params: { clienteId } });
+  // `semToastGlobal`: o aviso preventivo é silencioso por decisão da Fase 4.6
+  // — se a consulta falhar, o pior caso é o aviso não aparecer, e o 422 da
+  // geração continua sendo a rede (DEC-084).
+  api.get(`/documents/modelos/${modeloId}/compatibilidade`, { params: { clienteId }, semToastGlobal: true });
 
 const previewDocumento = (id, { processoId, clienteId, honorarioId } = {}) => {
   const params = {};

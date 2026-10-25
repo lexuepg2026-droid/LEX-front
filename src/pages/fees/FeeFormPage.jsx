@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import feeService from '../../api/feeService';
 import processService from '../../api/processService';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -10,7 +10,8 @@ import { getApiErrorField } from '../../utils/apiError';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { formatCurrency, formatPercent } from '../../utils/formatters';
 import { TIPO_HONORARIO_OPTIONS, STATUS_CANCELADO } from '../../utils/enums';
-import { LIMITE_DO_SELETOR, avisoDeSeletorLimitado } from '../../utils/seletorLimitado';
+import { LIMITE_DO_SELETOR, avisoDeSeletorLimitado, ROTULO_OPCAO_PENDENTE } from '../../utils/seletorLimitado';
+import useOpcaoGarantida from '../../hooks/useOpcaoGarantida';
 import {
   camposDoTipo,
   derivarValorHonorario,
@@ -20,6 +21,8 @@ import {
 import '../clients/ClientPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
+import { destinoDepoisDeSalvar } from '../../components/layout/contexto.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORMULÁRIO DE HONORÁRIO — o campo `tipo` comanda a tela (DEC-027)
@@ -61,12 +64,19 @@ function FeeFormPage() {
   const [processes, setProcesses] = useState([]);
   // O total do envelope, para dizer quando o seletor foi cortado (DEC-067).
   const [totalProcessos, setTotalProcessos] = useState(null);
+  const [listaCarregada, setListaCarregada] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [campoComErro, setCampoComErro] = useState(null);
 
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  // Fase 2b (DEC-087): aberto pelo "+ Honorário" da ficha do processo, o
+  // formulário volta para o processo — no Salvar e no Cancelar.
+  const saida = destinoDepoisDeSalvar(searchParams.get('voltar'), '/dashboard/honorarios');
+  // Fase 2b (DEC-085): publica para a faixa de contexto o processo — assim que escolhido no seletor.
+  usePublicarContexto({ processoId: formData.processoId });
   const isEditing = Boolean(id);
   // ── Carregamento da leitura em modo edição (Fase F-0) ────────────────────
   //
@@ -81,6 +91,25 @@ function FeeFormPage() {
   const [carregandoRegistro, setCarregandoRegistro] = useState(Boolean(id));
 
 
+  // Fase 2b (DEC-086): o processo pode chegar PRÉ-SELECIONADO por
+  // `?processoId=`, que é como o "+ Honorário" da ficha financeira do processo
+  // abre esta tela — o mesmo padrão do `?honorarioId=` do pagamento.
+  useEffect(() => {
+    if (isEditing) return;
+    const doQuery = searchParams.get('processoId');
+    if (doQuery) setFormData(prev => ({ ...prev, processoId: doQuery }));
+  }, [isEditing, searchParams]);
+
+  // E se o processo escolhido (da URL ou do honorário em edição) não estiver
+  // entre os 100 mais recentes, ele é buscado pelo id e entra no seletor —
+  // o limite conhecido da DEC-067.
+  const opcoesDeProcesso = useOpcaoGarantida({
+    lista: processes,
+    listaCarregada,
+    idEscolhido: formData.processoId,
+    buscar: (pid) => processService.getProcessById(pid).then(res => res.data),
+  });
+
   useEffect(() => {
     // Sem `limit` vinham os 20 do padrão do backend, e um processo mais antigo
     // simplesmente não existia no seletor (DEC-067). O teto é paliativo: a
@@ -90,7 +119,8 @@ function FeeFormPage() {
         setProcesses(res.data.data ?? res.data);
         setTotalProcessos(typeof res.data?.total === 'number' ? res.data.total : null);
       })
-      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar processos.')));
+      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar processos.')))
+      .finally(() => setListaCarregada(true));
 
     if (isEditing) {
       feeService.getFeeById(id)
@@ -171,7 +201,7 @@ function FeeFormPage() {
         await feeService.createFee(payload);
       }
       toast.success(isEditing ? 'Honorário atualizado com sucesso.' : 'Honorário cadastrado com sucesso.');
-      navigate('/dashboard/honorarios');
+      navigate(saida);
     } catch (err) {
       setError(getFinancialErrorMessage(err, 'Erro ao salvar honorário.'));
       // O backend informa qual campo causou o erro; destacamos o input em vez
@@ -205,9 +235,11 @@ function FeeFormPage() {
               required
             >
               <option value="">Selecione um processo</option>
-              {processes.map(p => (
+              {opcoesDeProcesso.map(p => (
                 <option key={p._id} value={p._id}>
-                  {p.titulo} {p.numeroProcesso ? `— ${p.numeroProcesso}` : ''}
+                  {p._pendente
+                    ? ROTULO_OPCAO_PENDENTE[p._pendente]
+                    : `${p.titulo} ${p.numeroProcesso ? `— ${p.numeroProcesso}` : ''}`}
                 </option>
               ))}
             </select>
@@ -392,7 +424,7 @@ function FeeFormPage() {
         {error && <p className="error-message">{error}</p>}
 
         <div className="form-actions">
-          <button type="button" onClick={() => navigate('/dashboard/honorarios')} className="btn-cancel">
+          <button type="button" onClick={() => navigate(saida)} className="btn-cancel">
             Cancelar
           </button>
           <button type="submit"

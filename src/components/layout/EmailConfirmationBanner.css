@@ -1,27 +1,35 @@
+/* O aviso de e-mail não confirmado (A-2), em UMA linha desde a Fase 2b
+   (DEC-088). Quem cede é o texto, com reticências e o inteiro no `title`; os
+   três botões nunca encolhem. A resposta do reenvio, quando há, vai para a
+   linha de baixo — é temporária, e some ao dispensar. */
 .email-banner {
   flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  padding: var(--space-2) max(var(--space-6), calc((100% - var(--largura-conteudo)) / 2));
   background: var(--color-warning-bg);
   border-bottom: 1px solid var(--color-warning);
   color: var(--text-color);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.4;
 }
 
 .email-banner__texto {
-  flex: 1 1 320px;
+  flex: 1 1 0;
   margin: 0;
   min-width: 0;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .email-banner__acoes {
   display: flex;
-  flex-wrap: wrap;
+  flex-shrink: 0;
+  align-items: center;
   gap: var(--space-2);
 }
 
@@ -42,12 +50,13 @@
 /* Botão próprio: `.btn-secondary` só tem regra dentro de ProcessPage.css, e o
    layout não alcança a folha de uma tela (a varredura de CSS trava isso). */
 .email-banner__botao {
-  padding: 8px 14px;
+  padding: 4px 10px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--text-color);
   background: transparent;
   color: var(--text-color);
   font-size: 13px;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -58,4 +67,30 @@
 .email-banner__botao:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.email-banner__dispensar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-color);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.email-banner__dispensar:hover {
+  background: var(--color-warning-bg);
+}
+
+@media (max-width: 1023px) {
+  .email-banner {
+    padding: var(--space-2) var(--space-4);
+  }
 }

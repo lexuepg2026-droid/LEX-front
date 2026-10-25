@@ -1,0 +1,80 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   A FAIXA DE CONTEXTO (Fase 2b, DEC-085) — no lugar da trilha, no tema da tela.
+   Mesmo recuo do conteúdo (`.main-content`), para alinhar com ele em tela larga.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.faixa-contexto {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 40px;
+  padding: var(--space-2) max(var(--space-6), calc((100% - var(--largura-conteudo)) / 2));
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.faixa-contexto__voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  padding: var(--space-1) var(--space-2);
+  margin-left: calc(-1 * var(--space-2));
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+}
+
+.faixa-contexto__voltar:hover {
+  background-color: var(--color-surface-raised);
+}
+
+.faixa-contexto__texto {
+  flex: 1;
+  margin: 0;
+  min-width: 0;
+  color: var(--color-text-secondary);
+  /* UMA linha em toda largura, com reticências e o texto inteiro no `title`
+     do parágrafo. Quebrar em duas linhas no desktop faria a faixa mudar de
+     altura conforme o título do processo, e o conteúdo pularia junto. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.faixa-contexto__parte {
+  display: inline;
+}
+
+.faixa-contexto__texto--carregando {
+  font-style: italic;
+}
+
+.faixa-contexto__rotulo {
+  color: var(--color-text-secondary);
+}
+
+.faixa-contexto__link {
+  color: var(--color-link);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+}
+
+.faixa-contexto__link:hover {
+  text-decoration: underline;
+}
+
+.faixa-contexto__outros,
+.faixa-contexto__sep {
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 1023px) {
+  .faixa-contexto {
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+  }
+}

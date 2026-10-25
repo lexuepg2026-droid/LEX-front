@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
+import useOpcaoGarantida from '../../hooks/useOpcaoGarantida';
+import { ROTULO_OPCAO_PENDENTE } from '../../utils/seletorLimitado';
 import paymentService from '../../api/paymentService';
 import feeService from '../../api/feeService';
 import MoneyInput from '../../components/ui/MoneyInput';
@@ -22,6 +24,8 @@ import './PaymentFormPage.css';
 import '../clients/ClientPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { usePublicarContexto } from '../../contexts/ContextoContext';
+import { idDoProcesso, destinoDepoisDeSalvar, voltarValido } from '../../components/layout/contexto.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORMULÁRIO DE PAGAMENTO — reescrito na Fase F-1a
@@ -92,6 +96,12 @@ function PaymentFormPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
+  // Fase 2b (DEC-087): aberto pelo "+ Pagamento" da ficha do processo. O
+  // Cancelar volta ao processo; depois de gravar a tela NÃO sai sozinha (a
+  // regra da F-1b, para comparar previsto e realizado), e a saída para o
+  // processo vira o botão principal.
+  const voltarAoProcesso = voltarValido(searchParams.get('voltar'));
+  const saida = destinoDepoisDeSalvar(searchParams.get('voltar'), '/dashboard/pagamentos');
   const isEditing = Boolean(id);
 
   // ── Preview e realizado ─────────────────────────────────────────────────
@@ -130,6 +140,23 @@ function PaymentFormPage() {
     if (doQuery) setFormData(prev => ({ ...prev, honorarioId: doQuery }));
   }, [isEditing, searchParams]);
 
+  // Fase 2b (DEC-086): o honorário escolhido que não estiver entre os 100 da
+  // lista é buscado pelo id — o "+ Pagamento" da ficha do processo pode abrir
+  // esta tela para um honorário antigo.
+  const [listaCarregada, setListaCarregada] = useState(false);
+  const opcoesDeHonorario = useOpcaoGarantida({
+    lista: fees,
+    listaCarregada,
+    idEscolhido: formData.honorarioId,
+    buscar: (hid) => feeService.getFeeById(hid).then(res => res.data),
+  });
+
+  // Fase 2b (DEC-085): publica para a faixa de contexto o processo do
+  // honorário escolhido.
+  usePublicarContexto({
+    processoId: idDoProcesso(opcoesDeHonorario.find((f) => f._id === formData.honorarioId)?.processoId),
+  });
+
   useEffect(() => {
     // Só honorários que podem receber dinheiro. Um honorário `cancelado`
     // responde 409 no POST, e oferecê-lo no seletor seria a tela convidando
@@ -139,7 +166,8 @@ function PaymentFormPage() {
         const lista = res.data.data ?? res.data;
         setFees(lista.filter(f => f.status !== 'cancelado'));
       })
-      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar honorários.')));
+      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar honorários.')))
+      .finally(() => setListaCarregada(true));
 
     if (isEditing) {
       paymentService.getPaymentById(id)
@@ -274,7 +302,7 @@ function PaymentFormPage() {
         setRealizado(res.data);
         return;
       }
-      navigate('/dashboard/pagamentos');
+      navigate(saida);
     } catch (err) {
       setError(getFinancialErrorMessage(err, 'Erro ao salvar pagamento.'));
       setCampoComErro(getApiErrorField(err));
@@ -356,9 +384,9 @@ function PaymentFormPage() {
                   className={campoComErro === 'honorarioId' ? 'input-erro' : undefined}
                 >
                   <option value="">Selecione um honorário</option>
-                  {fees.map(fee => (
+                  {opcoesDeHonorario.map(fee => (
                     <option key={fee._id} value={fee._id}>
-                      {formatFeeLabel(fee)}
+                      {fee._pendente ? ROTULO_OPCAO_PENDENTE[fee._pendente] : formatFeeLabel(fee)}
                     </option>
                   ))}
                 </select>
@@ -516,15 +544,20 @@ function PaymentFormPage() {
             {realizado.pagamento?.honorarioId && (
               <Link
                 to={`/dashboard/honorarios/${realizado.pagamento.honorarioId._id ?? realizado.pagamento.honorarioId}`}
-                className="btn-primary"
+                className={voltarAoProcesso ? 'btn-cancel' : 'btn-primary'}
               >
                 Abrir o honorário
+              </Link>
+            )}
+            {voltarAoProcesso && (
+              <Link to={voltarAoProcesso} className="btn-primary">
+                Voltar ao processo
               </Link>
             )}
           </div>
         ) : (
           <div className="form-actions">
-            <button type="button" onClick={() => navigate('/dashboard/pagamentos')} className="btn-cancel">
+            <button type="button" onClick={() => navigate(saida)} className="btn-cancel">
               Cancelar
             </button>
             <button type="submit"

@@ -46,11 +46,22 @@ export const PARES = [
   // Link.
   { nome: "link / --color-surface", texto: "--color-link", fundo: "--color-surface", limite: TEXTO },
   { nome: "link / --color-bg", texto: "--color-link", fundo: "--color-bg", limite: TEXTO },
+  // A faixa de contexto (Fase 2b, DEC-085): o "Voltar" sobre o realce de
+  // hover. O link, o rótulo e o texto da faixa já são pares de cima (link,
+  // texto primário e secundário sobre a surface).
+  { nome: "ficha: botão de lançamento / --color-surface-raised (hover)", texto: "--color-link", fundo: "--color-surface-raised", limite: TEXTO },
+  { nome: "faixa de contexto: Voltar / --color-surface-raised (hover)", texto: "--color-text-primary", fundo: "--color-surface-raised", limite: TEXTO },
 
   // Toasts sólidos (texto branco, como os dela).
   { nome: "toast success", texto: "--color-on-solid", fundo: "--color-success-solid", limite: TEXTO },
   { nome: "toast error", texto: "--color-on-solid", fundo: "--color-danger-solid", limite: TEXTO },
   { nome: "toast info", texto: "--color-on-solid", fundo: "--color-info-solid", limite: TEXTO },
+  // O × dos toasts (Fase 2b, DEC-083): o branco sobre o realce de hover, que
+  // pousa no fundo sólido de cada tom, e o anel de foco branco (não texto).
+  ...["success", "danger", "info"].flatMap((tom) => [
+    { nome: `toast ${tom}: × sobre o realce`, texto: "--color-on-solid", fundo: "--color-toast-fechar-hover", sobre: [`--color-${tom}-solid`], limite: TEXTO },
+    { nome: `toast ${tom}: anel de foco do ×`, texto: "--color-on-solid", fundo: `--color-${tom}-solid`, limite: NAO_TEXTO },
+  ]),
 
   // Cartão de resumo do Início (item 2 da banca): valor, rótulo e nota.
   ...["--color-text-primary", "--color-text-secondary", "--color-text-discreto", "--color-accent",
@@ -71,7 +82,21 @@ export const PARES = [
   { nome: "marca: borda de campo / --color-marca-fundo", texto: "--color-marca-borda-campo", fundo: "--color-marca-fundo", limite: NAO_TEXTO },
   { nome: "marca: anel de foco / --color-marca-fundo", texto: "--color-marca-foco", fundo: "--color-marca-fundo", limite: NAO_TEXTO },
   { nome: "marca: anel de foco / --color-marca-escuro", texto: "--color-marca-foco", fundo: "--color-marca-escuro", limite: NAO_TEXTO },
+  { nome: "marca: ponto de alerta do avatar / --color-marca-fundo", texto: "--color-marca-alerta", fundo: "--color-marca-fundo", limite: NAO_TEXTO },
   { nome: "marca: avatar (iniciais bege) / --color-marca-fundo", texto: "--color-marca-texto", fundo: "--color-marca-fundo", limite: TEXTO },
+
+  // O aviso de e-mail não confirmado (A-2; compacto desde a Fase 2b, DEC-088):
+  // o amarelo translúcido pousa no fundo da página, e o hover dos botões o
+  // empilha mais uma vez.
+  { nome: "aviso de e-mail: texto / --color-warning-bg", texto: "--color-text-primary", fundo: "--color-warning-bg", sobre: ["--color-bg"], limite: TEXTO },
+  { nome: "aviso de e-mail: botão em hover", texto: "--color-text-primary", fundo: "--color-warning-bg", sobre: ["--color-warning-bg", "--color-bg"], limite: TEXTO },
+  { nome: "aviso de e-mail: resposta ok", texto: "--color-success-text", fundo: "--color-warning-bg", sobre: ["--color-bg"], limite: TEXTO },
+  { nome: "aviso de e-mail: resposta de erro", texto: "--color-danger-text", fundo: "--color-warning-bg", sobre: ["--color-bg"], limite: TEXTO },
+
+  // "Confirmar e-mail" no menu do usuário e no "Mais" (DEC-088), em repouso e
+  // sobre o realce de hover do item.
+  { nome: "menu: Confirmar e-mail / --color-surface", texto: "--color-warning-text", fundo: "--color-surface", limite: TEXTO },
+  { nome: "menu: Confirmar e-mail / --color-accent-muted (hover)", texto: "--color-warning-text", fundo: "--color-accent-muted", sobre: ["--color-surface"], limite: TEXTO },
 
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
