@@ -67,6 +67,15 @@ a:hover {
 
 /* O textarea do texto final ocupa a largura toda e tem borda própria; o offset
    positivo faria o anel encostar no cartão. Aqui ele fica rente. */
+/* O `border-radius` da regra global vale para o que não tem raio próprio (um
+   link, um ícone). Campo e botão têm: sem isto, o campo arredondado ficaria
+   quadrado no instante em que recebe foco. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-radius: var(--radius-campo);
+}
+
 .final__textarea:focus-visible,
 .biblioteca__busca input:focus-visible,
 .var-selector__search input:focus-visible {

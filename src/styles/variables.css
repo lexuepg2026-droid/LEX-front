@@ -112,6 +112,8 @@
   --radius-lg:   12px;
   --radius-xl:   16px;
   --radius-pill: 2rem;
+  /* Campo de formulário: input, select e textarea (Fase 1, a forma dos dela). */
+  --radius-campo: 1rem;
   --radius-full: 9999px;
 
   /* Sombras */
