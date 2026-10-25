@@ -91,6 +91,14 @@ describe("Fase 2a · os destinos da navegação (DEC-079)", () => {
     assert.equal(grupoAtivo(GRUPOS[0], { pathname: "/dashboard/clientes" }), false);
   });
 
+  test("'Mais' acende nos destinos que só ele alcança", () => {
+    assert.equal(maisAtivo({ pathname: "/dashboard/pagamentos" }), true);
+    assert.equal(maisAtivo({ pathname: PERFIL.to }), true);
+    assert.equal(maisAtivo({ pathname: PENDENCIAS.to }), true);
+    assert.equal(maisAtivo({ pathname: "/dashboard/agenda" }), false);
+    assert.equal(maisAtivo({ pathname: "/dashboard" }), false);
+  });
+
   test("saudação e iniciais", () => {
     assert.equal(primeiroNome("  Laís  Fernanda Souza "), "Laís");
     assert.equal(iniciais("Laís Fernanda Souza"), "LF");
@@ -100,6 +108,7 @@ describe("Fase 2a · os destinos da navegação (DEC-079)", () => {
 
 describe("Fase 2a · o que abre e fecha funciona por teclado", () => {
   const submenu = semComentarios(ler("src/components/layout/MenuSuspenso.jsx"));
+  const mais = semComentarios(ler("src/components/layout/BottomNav.jsx"));
 
   test("o submenu é um <button> com aria-expanded e aria-controls", () => {
     assert.match(submenu, /<button[\s\S]*?type="button"[\s\S]*?aria-expanded=\{aberto\}[\s\S]*?aria-controls=\{idPainel\}/);
@@ -113,9 +122,19 @@ describe("Fase 2a · o que abre e fecha funciona por teclado", () => {
     assert.match(submenu, /useEffect\(\(\) => \{ setAberto\(false\); \}, \[pathname, search\]\)/);
   });
 
+  test("o 'Mais' é diálogo com nome, foco no primeiro item, Tab preso, Escape e foco de volta", () => {
+    assert.match(mais, /role="dialog"/);
+    assert.match(mais, /aria-label="Mais opções de navegação"/);
+    assert.match(mais, /aria-expanded=\{aberto\}/);
+    assert.match(mais, /querySelector\(SELETOR_FOCAVEL\)\?\.focus\(\)/);
+    assert.match(mais, /e\.key === 'Escape'/);
+    assert.match(mais, /e\.preventDefault\(\);\s*ultimo\.focus\(\)/);
+    assert.match(mais, /botaoMais\.current\?\.focus\(\)/);
+  });
+
   test("nenhuma div clicável no cabeçalho e na barra de baixo", () => {
     // O menu do usuário dela abria por clique numa `div`, sem teclado.
-    for (const arquivo of ["Header.jsx", "MenuSuspenso.jsx", "MenuUsuario.jsx"]) {
+    for (const arquivo of ["Header.jsx", "MenuSuspenso.jsx", "MenuUsuario.jsx", "BottomNav.jsx"]) {
       const fonte = semComentarios(ler(`src/components/layout/${arquivo}`));
       assert.doesNotMatch(fonte, /<(div|span|li)\b[^>]*\bonClick=/, arquivo);
     }
@@ -124,6 +143,7 @@ describe("Fase 2a · o que abre e fecha funciona por teclado", () => {
   test("Tema e Sair usam as funções do DashboardPage, sem reescrever", () => {
     const layout = semComentarios(ler("src/components/layout/AppLayout.jsx"));
     assert.match(layout, /<Header theme=\{theme\} toggleTheme=\{toggleTheme\} onLogout=\{onLogout\} \/>/);
+    assert.match(layout, /<BottomNav theme=\{theme\} toggleTheme=\{toggleTheme\} onLogout=\{onLogout\} \/>/);
     assert.doesNotMatch(layout, /Sidebar/);
     const pagina = semComentarios(ler("src/pages/dashboard/DashboardPage.jsx"));
     assert.match(pagina, /<AppLayout theme=\{theme\} toggleTheme=\{toggleTheme\} onLogout=\{handleLogout\} \/>/);
