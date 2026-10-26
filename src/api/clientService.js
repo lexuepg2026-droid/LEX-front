@@ -11,6 +11,12 @@ const getAllClients = ({ page = 1, limit = 20, busca, situacao, ordem } = {}) =>
   return api.get('/clients', { params });
 };
 
+// Fase 3.3b (DEC-110): o seletor de participante do processo busca no
+// servidor — nome sem acento, razão social, nome fantasia e CPF/CNPJ. Dispara
+// pela digitação, então sem o toast global (DEC-084): a falha aparece no campo.
+const buscarClientes = (busca) =>
+  api.get('/clients', { params: { page: 1, limit: 20, busca }, semToastGlobal: true });
+
 const getClientById = (id) => api.get(`/clients/${id}`);
 
 const createClient = (data) => api.post('/clients', data);
@@ -49,6 +55,7 @@ const getAcessoPortal = (id) => api.get(`/clients/${id}/acesso-portal`);
 export default {
   getAcessoPortal,
   getAllClients,
+  buscarClientes,
   getClientById,
   createClient,
   updateClient,

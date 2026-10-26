@@ -7,12 +7,13 @@ import { toast } from '../../utils/toast';
 import {
   FASE_PROCESSO_OPTIONS,
   PAPEL_PROCESSO_OPTIONS,
-  documentoDoCliente,
   nomeDoCliente,
   rotuloDaFase,
 } from '../../utils/enums';
 import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import CampoComSugestoes from '../../components/ui/CampoComSugestoes';
+import SeletorComBusca from '../../components/ui/SeletorComBusca';
+import { documentoFormatado, rotuloDoClienteNoSeletor } from '../../utils/clienteLabel.js';
 import useTabelaDominio from '../../hooks/useTabelaDominio';
 import { rotuloComarca, rotuloCnj } from '../../utils/tabelasDominio';
 import './ProcessPage.css';
@@ -60,7 +61,16 @@ function ProcessoFormPage() {
     transitoEmJulgadoEm: '',
     motivoEncerramento: '',
   });
-  const [clientes, setClientes] = useState([]);
+  // Fase 3.3b (DEC-110): o cliente de cada participante, só para EXIBIR,
+  // por id. Era a lista dos 100 primeiros clientes, de onde o `<select>`
+  // tirava as opções e a lista tirava os nomes — o 101º não aparecia. Agora o
+  // seletor busca no servidor, e o nome vem do item escolhido (na criação) ou
+  // do participante populado (na edição). Fica FORA de `participantes` para
+  // não viajar no payload da criação.
+  const [clientesConhecidos, setClientesConhecidos] = useState({});
+  const lembrarCliente = (cliente) => {
+    if (cliente?._id) setClientesConhecidos((atual) => ({ ...atual, [String(cliente._id)]: cliente }));
+  };
   // Participantes do processo: [{ clienteId, papel, principal }]. Substitui o
   // seletor único de cliente — um processo pode ter litisconsórcio.
   const [participantes, setParticipantes] = useState([]);
@@ -69,6 +79,9 @@ function ProcessoFormPage() {
   // próprios, um por operação — não por PUT do processo inteiro.
   const [participantesOriginais, setParticipantesOriginais] = useState([]);
   const [clienteParaAdicionar, setClienteParaAdicionar] = useState('');
+  const [clienteEscolhido, setClienteEscolhido] = useState(null);
+  // Troca a cada inclusão: o seletor nasce de novo, vazio, para a próxima.
+  const [seletorDoParticipante, setSeletorDoParticipante] = useState(0);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [campoComErro, setCampoComErro] = useState(null);
@@ -92,18 +105,6 @@ function ProcessoFormPage() {
 
 
   useEffect(() => {
-    const fetchClientes = async () => {
-      try {
-        const response = await clientService.getAllClients({ limit: 100 });
-        setClientes(response.data.data ?? response.data);
-      } catch {
-        setError('Falha ao carregar a lista de clientes.');
-      }
-    };
-    fetchClientes();
-  }, []);
-
-  useEffect(() => {
     if (!isEditing) return;
     const fetchProcesso = async () => {
       try {
@@ -116,6 +117,11 @@ function ProcessoFormPage() {
         }));
         setParticipantes(vindos);
         setParticipantesOriginais(vindos);
+        setClientesConhecidos(Object.fromEntries(
+          (d.participantes ?? [])
+            .filter((p) => p.clienteId && typeof p.clienteId === 'object')
+            .map((p) => [String(p.clienteId._id), p.clienteId])
+        ));
         setFormData({
           titulo: d.titulo || '',
           numeroProcesso: d.numeroProcesso || '',
@@ -186,7 +192,10 @@ function ProcessoFormPage() {
         principal: prev.length === 0,
       },
     ]);
+    lembrarCliente(clienteEscolhido);
     setClienteParaAdicionar('');
+    setClienteEscolhido(null);
+    setSeletorDoParticipante((n) => n + 1);
   };
 
   const removerParticipante = (clienteId) => {
@@ -214,9 +223,10 @@ function ProcessoFormPage() {
     );
   };
 
-  const clientesDisponiveis = clientes.filter(
-    c => !participantes.some(p => p.clienteId === c._id)
-  );
+  // Quem já é participante não aparece nas sugestões.
+  const aindaNaoParticipa = (c) => !participantes.some(p => p.clienteId === String(c._id));
+  const buscarClientes = (termo) => clientService.buscarClientes(termo);
+  const buscarClientePorId = (cid) => clientService.getClientById(cid).then(res => res.data);
 
   // Aplica ao processo já existente a diferença entre o que veio do servidor e
   // o que está na tela. A ORDEM importa: promover o novo principal antes de
@@ -337,7 +347,6 @@ function ProcessoFormPage() {
     }
   };
 
-  const clienteLabel = (c) => `${nomeDoCliente(c)} — ${documentoDoCliente(c)}`;
 
   if (carregandoRegistro) return <Loading />;
 
@@ -358,16 +367,21 @@ function ProcessoFormPage() {
             </p>
 
             <div className="participantes-adicionar">
-              <select
+              <SeletorComBusca
+                key={seletorDoParticipante}
                 id="clienteParaAdicionar"
-                value={clienteParaAdicionar}
-                onChange={(e) => setClienteParaAdicionar(e.target.value)}
-              >
-                <option value="">Selecione um cliente...</option>
-                {clientesDisponiveis.map(c => (
-                  <option key={c._id} value={c._id}>{clienteLabel(c)}</option>
-                ))}
-              </select>
+                name="clienteParaAdicionar"
+                valor={clienteParaAdicionar}
+                onMudar={(cid, item) => {
+                  setClienteParaAdicionar(cid);
+                  setClienteEscolhido(item);
+                }}
+                buscar={buscarClientes}
+                buscarPorId={buscarClientePorId}
+                rotulo={rotuloDoClienteNoSeletor}
+                filtrar={aindaNaoParticipa}
+                placeholder="Digite o nome, a razão social ou o CPF/CNPJ"
+              />
               <button
                 type="button"
                 className="btn-secondary"
@@ -383,12 +397,12 @@ function ProcessoFormPage() {
             ) : (
               <ul className="participantes-lista">
                 {participantes.map(p => {
-                  const cliente = clientes.find(c => c._id === p.clienteId);
+                  const cliente = clientesConhecidos[p.clienteId];
                   return (
                     <li key={p.clienteId} className="participante-item">
                       <div className="participante-nome">
                         <strong>{nomeDoCliente(cliente)}</strong>
-                        <span className="participante-doc">{documentoDoCliente(cliente)}</span>
+                        <span className="participante-doc">{documentoFormatado(cliente)}</span>
                       </div>
 
                       <select

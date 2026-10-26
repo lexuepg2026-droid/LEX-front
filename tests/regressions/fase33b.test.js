@@ -59,3 +59,50 @@ describe("Fase 3.3b · item 1 — um aviso de idade por tela (DEC-109)", () => {
     assert.match(faixa, /const avisoProprio = useAvisoProprioPublicado\(location\.pathname\)/);
   });
 });
+
+// ── Item 5 — DEC-110 ──────────────────────────────────────────────────────
+import { rotuloDoClienteNoSeletor, documentoFormatado } from "../../src/utils/clienteLabel.js";
+
+describe("Fase 3.3b · item 5 — o seletor de participante busca no servidor (DEC-110)", () => {
+  test("rótulo: nome — CPF formatado", () => {
+    assert.equal(
+      rotuloDoClienteNoSeletor({ tipoPessoa: "fisica", nomeCompleto: "João Conceição", cpf: "79426153837" }),
+      "João Conceição — 794.261.538-37"
+    );
+  });
+
+  test("rótulo: razão social — CNPJ formatado", () => {
+    assert.equal(
+      rotuloDoClienteNoSeletor({ tipoPessoa: "juridica", razaoSocial: "Padaria Pão Quente Ltda", cnpj: "11222333000181" }),
+      "Padaria Pão Quente Ltda — 11.222.333/0001-81"
+    );
+  });
+
+  test("sem documento, só o nome; sem cliente, nada", () => {
+    assert.equal(rotuloDoClienteNoSeletor({ tipoPessoa: "fisica", nomeCompleto: "Ana" }), "Ana");
+    assert.equal(rotuloDoClienteNoSeletor(null), "");
+    assert.equal(documentoFormatado(undefined), "");
+  });
+
+  const form = semComentarios(ler("src/pages/processes/ProcessFormPage.jsx"));
+
+  test("o formulário não carrega mais os 100 primeiros clientes", () => {
+    assert.doesNotMatch(form, /getAllClients/);
+    assert.doesNotMatch(form, /limit: 100/);
+    assert.doesNotMatch(form, /<select\s+id="clienteParaAdicionar"/);
+  });
+
+  test("o seletor é o SeletorComBusca, com o rótulo da fonte única e sem quem já participa", () => {
+    assert.match(form, /<SeletorComBusca[\s\S]*?id="clienteParaAdicionar"[\s\S]*?rotulo=\{rotuloDoClienteNoSeletor\}[\s\S]*?filtrar=\{aindaNaoParticipa\}/);
+    const servico = semComentarios(ler("src/api/clientService.js"));
+    assert.match(servico, /buscarClientes = \(busca\) =>\s*api\.get\('\/clients', \{ params: \{ page: 1, limit: 20, busca \}, semToastGlobal: true \}\)/);
+  });
+
+  test("o cliente exibido não viaja no payload da criação", () => {
+    // `participantes` continua { clienteId, papel, principal }; o objeto do
+    // cliente mora em `clientesConhecidos`.
+    assert.match(form, /createProcess\(\{ \.\.\.payload, clientes: participantes \}\)/);
+    assert.doesNotMatch(form, /setParticipantes\([^)]*cliente:/);
+    assert.match(form, /const cliente = clientesConhecidos\[p\.clienteId\]/);
+  });
+});

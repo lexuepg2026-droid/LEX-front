@@ -108,6 +108,9 @@
   align-items: center;
 }
 .participantes-adicionar select { flex: 1; }
+/* Fase 3.3b (DEC-110): o seletor de cliente busca no servidor; a raiz dele é
+   a `.sugestoes` do `CampoComSugestoes`, e é ela que ocupa a linha. */
+.participantes-adicionar .sugestoes { flex: 1; min-width: 0; }
 
 .participantes-vazio {
   font-size: 14px;
