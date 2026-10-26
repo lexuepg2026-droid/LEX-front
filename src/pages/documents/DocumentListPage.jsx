@@ -35,7 +35,7 @@ function DocumentListPage() {
   const online = useOnlineStatus();
 
   // `?processoId=` vem da aba do processo; agora ele aparece num chip (DEC-070).
-  const filtroProcesso = useProcessoFiltrado();
+  const filtroProcesso = useProcessoFiltrado({ avisoProprio: true });
   const processoId = filtroProcesso.processoId || undefined;
   // A lista de documentos não tem espelho próprio; o NOME do processo no chip
   // tem. Sem sinal, a tela diz de quando é esse nome (DEC-058).

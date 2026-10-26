@@ -407,7 +407,9 @@ describe("Fase 2b · item 3 — o contexto casa com o caminho (DEC-085)", () => 
 
   test("a faixa mostra o aviso de idade e o Voltar é link, não navigate(-1)", () => {
     const faixa = semComentarios(ler("src/components/layout/FaixaContexto.jsx"));
-    assert.match(faixa, /fromCache && <OfflineNotice atualizadoEm=\{updatedAt\}/);
+    // Fase 3.3b (DEC-109): o aviso continua, condicionado à tela não mostrar o
+    // dela (`faixaMostraAviso`); quem dispensa é cobrado em offline/estatica.
+    assert.match(faixa, /faixaMostraAviso\(\{ fromCache, avisoProprio \}\) && <OfflineNotice atualizadoEm=\{updatedAt\}/);
     assert.match(faixa, /<Link to=\{destino\} className="faixa-contexto__voltar">/);
     assert.doesNotMatch(faixa, /navigate\(-1\)|history\.back/);
   });
@@ -425,7 +427,9 @@ describe("Fase 2b · item 3 — o contexto casa com o caminho (DEC-085)", () => 
 
   // Quem publica, e de onde vem o id (tabela 3.4 do prompt da fase).
   const PUBLICAM = [
-    ["src/pages/processes/ProcessDetailPage.jsx", /usePublicarContexto\(\{ processoId: id \}\)/],
+    // Fase 3.3b (DEC-109): o detalhe, o detalhe do cliente e o filtro passam
+    // também `avisoProprio` — o id publicado é o mesmo.
+    ["src/pages/processes/ProcessDetailPage.jsx", /usePublicarContexto\(\{ processoId: id, avisoProprio: true \}\)/],
     ["src/pages/processes/ProcessFormPage.jsx", /usePublicarContexto\(\{ processoId: id \}\)/],
     ["src/pages/fees/FeeDetailPage.jsx", /usePublicarContexto\(\{ processoId: idDoProcesso\(honorario\?\.processoId\) \}\)/],
     ["src/pages/fees/FeeRenegotiationPage.jsx", /usePublicarContexto\(\{ processoId: idDoProcesso\(honorario\?\.processoId\) \}\)/],
@@ -437,10 +441,10 @@ describe("Fase 2b · item 3 — o contexto casa com o caminho (DEC-085)", () => 
     // (clicado ou resolvido pelo id), não mais da lista de opções.
     ["src/pages/installments/InstallmentFormPage.jsx", /usePublicarContexto\(\{\s*processoId: idDoProcesso\([\s\S]*?honorarioEscolhido\.processoId[\s\S]*?\}\)/],
     ["src/pages/payments/PaymentFormPage.jsx", /usePublicarContexto\(\{\s*processoId: idDoProcesso\([\s\S]*?honorarioEscolhido\.processoId[\s\S]*?\}\)/],
-    ["src/hooks/useProcessoFiltrado.js", /usePublicarContexto\(\{ processoId \}\)/],
+    ["src/hooks/useProcessoFiltrado.js", /usePublicarContexto\(\{ processoId, avisoProprio \}\)/],
     ["src/components/documents/GenerationPanel.jsx", /usePublicarContexto\(\{ processoId \}\)/],
     ["src/pages/calendar/EventFormPage.jsx", /usePublicarContexto\(\{ processoId: formData\.processoId \}\)/],
-    ["src/pages/clients/ClientDetailPage.jsx", /usePublicarContexto\(\{ clienteId: id \}\)/],
+    ["src/pages/clients/ClientDetailPage.jsx", /usePublicarContexto\(\{ clienteId: id, avisoProprio: true \}\)/],
     ["src/pages/clients/ClientFormPage.jsx", /usePublicarContexto\(\{ clienteId: id \}\)/],
   ];
   for (const [arquivo, padrao] of PUBLICAM) {

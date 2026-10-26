@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useContextoPublicado } from '../../contexts/ContextoContext';
+import { useAvisoProprioPublicado, useContextoPublicado } from '../../contexts/ContextoContext';
 import useContextoResolvido from '../../hooks/useContextoResolvido';
 import OfflineNotice from '../ui/OfflineNotice';
-import { destinoDoVoltar, textoDoContexto } from './contexto.js';
+import { destinoDoVoltar, faixaMostraAviso, textoDoContexto } from './contexto.js';
 import './FaixaContexto.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -35,6 +35,9 @@ function FaixaContexto() {
   }, [location.pathname, location.search]);
 
   const ids = useContextoPublicado(location.pathname);
+  // DEC-109: um aviso de idade por tela. Quando a tela já mostra o dela, a
+  // faixa não repete.
+  const avisoProprio = useAvisoProprioPublicado(location.pathname);
   const { contexto, carregando, fromCache, updatedAt } = useContextoResolvido(ids);
 
   const destino = destinoDoVoltar(location, ultimaQuery);
@@ -87,7 +90,7 @@ function FaixaContexto() {
           <p className="faixa-contexto__texto faixa-contexto__texto--carregando">Carregando…</p>
         )}
       </nav>
-      {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
+      {faixaMostraAviso({ fromCache, avisoProprio }) && <OfflineNotice atualizadoEm={updatedAt} />}
     </>
   );
 }

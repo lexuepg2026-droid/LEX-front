@@ -79,8 +79,10 @@ function ProcessoDetalhePage() {
   const [salvandoFase, setSalvandoFase] = useState(false);
 
   const { id } = useParams();
-  // Fase 2b (DEC-085): publica para a faixa de contexto o processo.
-  usePublicarContexto({ processoId: id });
+  // Fase 2b (DEC-085): publica para a faixa de contexto o processo. Fase 3.3b
+  // (DEC-109): o aviso de idade é o desta tela, do mesmo processo — a faixa
+  // não repete.
+  usePublicarContexto({ processoId: id, avisoProprio: true });
   const online = useOnlineStatus();
   const { entradas } = useOutbox();
   // Só a pendência DESTE processo: a fila é do aparelho inteiro, e avisar aqui
