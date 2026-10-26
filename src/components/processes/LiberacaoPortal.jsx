@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import processService from '../../api/processService';
 import { toast } from '../../utils/toast';
 import { getApiErrorMessage } from '../../utils/apiError';
@@ -21,13 +21,16 @@ import '../../pages/processes/ProcessPage.css';
 //     ser registrada. O foco vai para "Desligar"; Escape cancela e devolve o
 //     foco ao controle.
 //   - Sem sinal, a regra de toda ação que exige rede nesta tela: anunciado
-//     como desabilitado, com o motivo dito uma vez no topo da página.
+//     como desabilitado. Fase 3.3b (DEC-111): o motivo aparece também ao
+//     lado do controle, curto, e é a descrição dele para o leitor de tela —
+//     no meio de uma lista, a frase do topo da página fica longe demais.
 // ═══════════════════════════════════════════════════════════════════════════
 function LiberacaoPortal({ processoId, clienteId, nomeCliente, liberado, online, onAlterado }) {
   const [confirmando, setConfirmando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const controle = useRef(null);
   const botaoDesligar = useRef(null);
+  const idMotivo = useId();
 
   useEffect(() => {
     if (confirmando) botaoDesligar.current?.focus();
@@ -71,6 +74,7 @@ function LiberacaoPortal({ processoId, clienteId, nomeCliente, liberado, online,
         role="switch"
         aria-checked={liberado}
         aria-disabled={online && !enviando ? undefined : 'true'}
+        aria-describedby={online ? undefined : idMotivo}
         className={`liberacao-portal__controle${liberado ? ' liberacao-portal__controle--sim' : ''}`}
         onClick={alternar}
       >
@@ -79,6 +83,12 @@ function LiberacaoPortal({ processoId, clienteId, nomeCliente, liberado, online,
         </span>
         Liberado no portal: {liberado ? 'sim' : 'não'}
       </button>
+
+      {!online && (
+        <span id={idMotivo} className="liberacao-portal__motivo">
+          Sem conexão: liberar e desligar precisam de sinal.
+        </span>
+      )}
 
       {confirmando && (
         <span

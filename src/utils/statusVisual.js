@@ -98,6 +98,14 @@ export const STATUS_VISUAL = {
   nunca_acessou:         { label: 'Nunca acessou',          tom: 'neutral' },
   acessou_sem_confirmar: { label: 'Acessou, não confirmou', tom: 'warning' },
   confirmou:             { label: 'Confirmou a leitura',    tom: 'success' },
+
+  // A situação do participante no portal, NESTE processo (Fase 3.3b, DEC-111).
+  // Não é status do backend: sai de `temAcessoPortal` e `liberadoNoPortal`
+  // (`components/processes/detalheProcesso.js`). "Não liberado" é `warning`
+  // porque é o que o cartão do Início aponta como pendente.
+  portal_sem_acesso:   { label: 'Sem acesso',   tom: 'neutral' },
+  portal_liberado:     { label: 'Liberado',     tom: 'success' },
+  portal_nao_liberado: { label: 'Não liberado', tom: 'warning' },
 };
 
 const normalizar = (status) =>

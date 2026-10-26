@@ -264,8 +264,11 @@
   background-color: var(--color-text-secondary);
 }
 
+/* Fase 3.3b: a BORDA do trilho ligado é o verde de texto. O preenchimento
+   sólido mede 2,72:1 contra a linha realçada no hover do escuro (#2E7D32 sobre
+   #2C2C2C); o contorno é o que separa o controle do fundo, e ele passa. */
 .liberacao-portal__controle--sim .liberacao-portal__trilho {
-  border-color: var(--color-success-solid);
+  border-color: var(--color-success-text);
   background-color: var(--color-success-solid);
 }
 
@@ -276,6 +279,12 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .liberacao-portal__botao { transition: left var(--transition-fast); }
+}
+
+/* Fase 3.3b (DEC-111): o motivo, ao lado do controle, sem sinal. */
+.liberacao-portal__motivo {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
 .liberacao-portal__confirmacao {
