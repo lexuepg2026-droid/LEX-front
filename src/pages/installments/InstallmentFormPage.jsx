@@ -9,9 +9,9 @@ import { toast } from '../../utils/toast';
 import { getApiErrorField } from '../../utils/apiError';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { formatCurrency } from '../../utils/formatters';
-import { LIMITE_DO_SELETOR, avisoDeSeletorLimitado, ROTULO_OPCAO_PENDENTE } from '../../utils/seletorLimitado';
 import { rotuloDoHonorarioNoSeletor } from '../../utils/feeLabel';
-import useOpcaoGarantida from '../../hooks/useOpcaoGarantida';
+import SeletorComBusca from '../../components/ui/SeletorComBusca';
+import { MENSAGENS_DO_SELETOR, honorarioDoDetalhe } from '../../utils/seletorComBusca.js';
 import '../clients/ClientPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
@@ -41,10 +41,9 @@ const EMPTY_FORM = {
 
 function InstallmentFormPage() {
   const [formData, setFormData] = useState(EMPTY_FORM);
-  const [fees, setFees] = useState([]);
-  // O total do envelope, para dizer quando o seletor foi cortado (DEC-067).
-  const [totalHonorarios, setTotalHonorarios] = useState(null);
-  const [listaCarregada, setListaCarregada] = useState(false);
+  // O honorário escolhido, inteiro — é dele que sai o processo publicado na
+  // faixa de contexto (DEC-085).
+  const [honorarioEscolhido, setHonorarioEscolhido] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [campoComErro, setCampoComErro] = useState(null);
@@ -63,26 +62,26 @@ function InstallmentFormPage() {
 
   // Fase 2b (DEC-086): o honorário pode chegar PRÉ-SELECIONADO por
   // `?honorarioId=` — é como o "+ Parcela" da ficha do processo abre esta
-  // tela —, no mesmo padrão do `PaymentFormPage`. E o escolhido que não
-  // estiver entre os 100 mais recentes é buscado pelo id (DEC-067).
+  // tela —, no mesmo padrão do `PaymentFormPage`. Desde a Fase 3.2 (DEC-101)
+  // o seletor busca no servidor e acha o escolhido pelo id, sem teto.
   useEffect(() => {
     if (isEditing) return;
     const doQuery = searchParams.get('honorarioId');
     if (doQuery) setFormData(prev => ({ ...prev, feeId: doQuery }));
   }, [isEditing, searchParams]);
 
-  const opcoesDeHonorario = useOpcaoGarantida({
-    lista: fees,
-    listaCarregada,
-    idEscolhido: formData.feeId,
-    buscar: (hid) => feeService.getFeeById(hid).then(res => res.data),
-  });
+  const buscarHonorarios = (termo) => feeService.buscarHonorarios(termo);
+  const buscarHonorarioPorId = (hid) => feeService.getFeeById(hid).then(res => honorarioDoDetalhe(res.data));
 
   // Fase 2b (DEC-085): publica para a faixa de contexto o processo do
   // honorário escolhido — o cliente e o número aparecem em cima assim que ela
   // escolhe, que é o "nas parcelas, o nome do cliente" da banca.
   usePublicarContexto({
-    processoId: idDoProcesso(opcoesDeHonorario.find((f) => f._id === formData.feeId)?.processoId),
+    processoId: idDoProcesso(
+      honorarioEscolhido && String(honorarioEscolhido._id) === String(formData.feeId)
+        ? honorarioEscolhido.processoId
+        : null
+    ),
   });
   // ── Carregamento da leitura em modo edição (Fase F-0) ────────────────────
   //
@@ -98,17 +97,6 @@ function InstallmentFormPage() {
 
 
   useEffect(() => {
-    // Sem `limit` vinham os 20 do padrão do backend, e um honorário mais
-    // antigo simplesmente não existia no seletor (DEC-067). O teto é
-    // paliativo: a busca no servidor é da fase 3.
-    feeService.listFees({ page: 1, limit: LIMITE_DO_SELETOR })
-      .then(res => {
-        setFees(res.data.data ?? res.data);
-        setTotalHonorarios(typeof res.data?.total === 'number' ? res.data.total : null);
-      })
-      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar honorários.')))
-      .finally(() => setListaCarregada(true));
-
     if (isEditing) {
       installmentService.getInstallmentById(id)
         .then(res => {
@@ -157,6 +145,13 @@ function InstallmentFormPage() {
     //
     // Deixar salvar para dar erro depois perde o que foi digitado.
     if (!online) return;
+    // O seletor guarda o id da ESCOLHA; texto digitado sem escolher não é
+    // honorário nenhum.
+    if (!formData.feeId) {
+      setError(`Honorário: ${MENSAGENS_DO_SELETOR.escolhaDaLista}`);
+      setCampoComErro('feeId');
+      return;
+    }
     setLoading(true);
     setError('');
     setCampoComErro(null);
@@ -201,18 +196,23 @@ function InstallmentFormPage() {
           <h3>Dados da Parcela</h3>
 
           <div className="form-group span-3">
-            <label>Honorário *</label>
-            <select name="feeId" value={formData.feeId} onChange={handleChange} required>
-              <option value="">Selecione um honorário</option>
-              {opcoesDeHonorario.map(f => (
-                <option key={f._id} value={f._id}>
-                  {f._pendente ? ROTULO_OPCAO_PENDENTE[f._pendente] : rotuloDoHonorarioNoSeletor(f)}
-                </option>
-              ))}
-            </select>
-            {avisoDeSeletorLimitado(fees.length, totalHonorarios) && (
-              <p className="form-hint">{avisoDeSeletorLimitado(fees.length, totalHonorarios)}</p>
-            )}
+            <label htmlFor="parcela-honorario">Honorário *</label>
+            <SeletorComBusca
+              id="parcela-honorario"
+              name="feeId"
+              valor={formData.feeId}
+              onMudar={(hid, item) => {
+                setFormData(prev => ({ ...prev, feeId: hid }));
+                if (item) setHonorarioEscolhido(item);
+                if (campoComErro === 'feeId') setCampoComErro(null);
+              }}
+              onEscolhido={setHonorarioEscolhido}
+              buscar={buscarHonorarios}
+              buscarPorId={buscarHonorarioPorId}
+              rotulo={rotuloDoHonorarioNoSeletor}
+              placeholder="Busque pela descrição, número do processo ou cliente"
+              className={campoComErro === 'feeId' ? 'input-erro' : undefined}
+            />
           </div>
 
           <div className="form-group span-1">

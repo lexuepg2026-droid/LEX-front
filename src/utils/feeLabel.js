@@ -1,4 +1,4 @@
-import { formatCurrency } from './formatters.js';
+import { nomeDoCliente } from './enums.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // O RÓTULO CURTO DO HONORÁRIO NAS LISTAGENS — Fase F-1b.2
@@ -75,13 +75,18 @@ export const trechoDistintivo = (descricao) => {
 export const rotuloCurtoDoHonorario = (descricao, retaguarda = 'Honorário') =>
   trechoDistintivo(descricao) || retaguarda;
 
-// ── O honorário no `<select>` do formulário de parcela (Fase 2b, DEC-086) ─
+// ── O honorário no seletor dos formulários (Fase 2b, DEC-086; Fase 3.2) ──
 // Era "descrição — valor": dois honorários "Honorários contratuais" de R$ 5.000
-// de clientes diferentes eram a mesma linha. A 3ª banca pediu que o
-// formulário de parcela diga o processo. O número vem do `processoId`
-// populado que `GET /fees` já devolve (`titulo numeroProcesso`, no backend);
-// sem número, o título. O valor vai por ÚLTIMO, porque é o que o seletor
-// nativo corta quando a linha não cabe — "se couber", como a fase pediu.
+// de clientes diferentes eram a mesma linha. A 2b pôs o processo; a 3.2
+// (DEC-101, decisão 3) fechou o rótulo como
+//
+//   "{descrição} — Processo nº {número} — {cliente principal}"
+//
+// — o cliente é o que a advogada lembra primeiro (apontamentos 3 e 4 da
+// banca). O valor saiu: o seletor agora é uma lista de sugestões, com espaço
+// para a linha inteira, e o valor não distingue cobrança nenhuma. O número e o
+// cliente vêm do `processoId` populado de `GET /fees` (com o cliente dentro
+// desde a 2.5); sem número, o título do processo.
 export const rotuloDoHonorarioNoSeletor = (fee) => {
   if (!fee || typeof fee !== 'object') return '';
   const processo = fee.processoId && typeof fee.processoId === 'object' ? fee.processoId : null;
@@ -90,8 +95,30 @@ export const rotuloDoHonorarioNoSeletor = (fee) => {
   const partes = [fee.descricao || 'Honorário'];
   if (numero) partes.push(`Processo nº ${numero}`);
   else if (titulo) partes.push(`Processo: ${titulo}`);
-  if (typeof fee.valor === 'number') partes.push(formatCurrency(fee.valor));
+  const cliente = nomeDoClienteOuNada(processo?.clientePrincipalId);
+  if (cliente) partes.push(cliente);
   return partes.join(' — ');
 };
 
-export default { trechoDistintivo, rotuloCurtoDoHonorario, rotuloDoHonorarioNoSeletor };
+// O processo no seletor do formulário de honorário (Fase 3.2, decisão 3):
+// "{número} — {título} — {cliente principal}". `GET /processes` popula o
+// cliente principal na listagem.
+export const rotuloDoProcessoNoSeletor = (processo) => {
+  if (!processo || typeof processo !== 'object') return '';
+  const partes = [
+    (processo.numeroProcesso || '').trim(),
+    (processo.titulo || '').trim(),
+    nomeDoClienteOuNada(processo.clientePrincipalId),
+  ].filter(Boolean);
+  return partes.length > 0 ? partes.join(' — ') : 'Processo';
+};
+
+// `nomeDoCliente` devolve "—" sem nome; num rótulo composto o traço viraria
+// "… — —", então aqui a ausência é string vazia e a parte simplesmente sai.
+const nomeDoClienteOuNada = (cliente) => {
+  if (!cliente || typeof cliente !== 'object') return '';
+  const nome = nomeDoCliente(cliente);
+  return nome === '—' ? '' : nome;
+};
+
+export default { trechoDistintivo, rotuloCurtoDoHonorario, rotuloDoHonorarioNoSeletor, rotuloDoProcessoNoSeletor };

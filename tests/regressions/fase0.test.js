@@ -7,7 +7,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 
@@ -16,7 +16,6 @@ import { join } from "node:path";
 // é do `axiosConfig.js`, que importa `'../utils/toast'` SEM extensão — não deste
 // módulo.
 import { toast, subscribe } from "../../src/utils/toast.js";
-import { LIMITE_DO_SELETOR, avisoDeSeletorLimitado } from "../../src/utils/seletorLimitado.js";
 import { rotuloDoProcessoFiltrado, trechoDoProcessoFiltrado } from "../../src/utils/processoFiltrado.js";
 import { descricaoDoRecorteFinanceiro } from "../../src/components/financeiro/filterSummary.js";
 
@@ -90,35 +89,33 @@ describe("Fase 0 · item 1 — o toast tem os três tons que as telas chamam", (
 // ═══════════════════════════════════════════════════════════════════════════
 // 2 — DEC-067: os seletores pediam 20 e calavam o resto
 // ═══════════════════════════════════════════════════════════════════════════
-describe("Fase 0 · item 2 — o seletor pede o teto do backend e diz quando corta", () => {
-  test("o teto é o mesmo `Math.min(100, …)` dos controllers", () => {
-    assert.equal(LIMITE_DO_SELETOR, 100);
-  });
-
-  test("a frase só aparece quando o total passa do que veio", () => {
-    assert.equal(avisoDeSeletorLimitado(100, 137), "Mostrando os 100 mais recentes de 137.");
-    assert.equal(avisoDeSeletorLimitado(100, 100), null);
-    assert.equal(avisoDeSeletorLimitado(12, 12), null);
-    // Envelope sem `total` (resposta antiga): não se inventa um corte.
-    assert.equal(avisoDeSeletorLimitado(20, null), null);
-    assert.equal(avisoDeSeletorLimitado(20, undefined), null);
-  });
-
+describe("Fase 0 · item 2 — REESCRITO na Fase 3.2: o teto saiu, a busca é no servidor (DEC-101)", () => {
+  // A Fase 0 fixava o paliativo da DEC-067 — `limit: 100` e "Mostrando os N
+  // mais recentes de T". A 3.2 trocou os `<select>` por `SeletorComBusca`, e
+  // o andaime saiu. O defeito que a Fase 0 combatia (o registro mais antigo
+  // não existir no seletor) continua travado, agora pela ausência do teto e
+  // pela busca no servidor.
   const FORMULARIOS = [
-    ["src/pages/fees/FeeFormPage.jsx", /processService\.listProcesses\(\{ page: 1, limit: LIMITE_DO_SELETOR \}\)/],
-    ["src/pages/installments/InstallmentFormPage.jsx", /feeService\.listFees\(\{ page: 1, limit: LIMITE_DO_SELETOR \}\)/],
+    ["src/pages/fees/FeeFormPage.jsx", /processService\.buscarProcessos\(termo\)/],
+    ["src/pages/installments/InstallmentFormPage.jsx", /feeService\.buscarHonorarios\(termo\)/],
+    ["src/pages/payments/PaymentFormPage.jsx", /feeService\.buscarHonorarios\(termo\)/],
   ];
 
   for (const [arquivo, chamada] of FORMULARIOS) {
-    test(`${arquivo.split("/").pop()} pede o teto e mostra o aviso`, () => {
+    test(`${arquivo.split("/").pop()} busca no servidor e não carrega lista com teto`, () => {
       const codigo = semComentarios(ler(arquivo));
       assert.match(codigo, chamada);
-      // A chamada sem argumento é o defeito: voltaria aos 20 do padrão.
-      assert.doesNotMatch(codigo, /\.(listProcesses|listFees)\(\)/);
-      assert.match(codigo, /avisoDeSeletorLimitado\(/);
-      assert.match(codigo, /className="form-hint"/);
+      assert.match(codigo, /<SeletorComBusca/);
+      assert.doesNotMatch(codigo, /\.(listProcesses|listFees)\(/, "nenhuma lista inteira para o seletor");
+      assert.doesNotMatch(codigo, /LIMITE_DO_SELETOR|avisoDeSeletorLimitado|mais recentes de/);
+      assert.doesNotMatch(codigo, /<select[^>]*name="(processoId|feeId|honorarioId)"/);
     });
   }
+
+  test("o módulo do paliativo saiu", () => {
+    assert.equal(existsSync(join(RAIZ, "src/utils/seletorLimitado.js")), false);
+    assert.equal(existsSync(join(RAIZ, "src/hooks/useOpcaoGarantida.js")), false);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

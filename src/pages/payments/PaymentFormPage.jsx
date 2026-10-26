@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
-import useOpcaoGarantida from '../../hooks/useOpcaoGarantida';
-import { ROTULO_OPCAO_PENDENTE } from '../../utils/seletorLimitado';
+import SeletorComBusca from '../../components/ui/SeletorComBusca';
+import { MENSAGENS_DO_SELETOR, honorarioDoDetalhe } from '../../utils/seletorComBusca.js';
+import { rotuloDoHonorarioNoSeletor } from '../../utils/feeLabel';
 import paymentService from '../../api/paymentService';
 import feeService from '../../api/feeService';
 import MoneyInput from '../../components/ui/MoneyInput';
@@ -85,7 +86,9 @@ const EMPTY_FORM = {
 
 function PaymentFormPage() {
   const [formData, setFormData] = useState(EMPTY_FORM);
-  const [fees, setFees] = useState([]);
+  // O honorário escolhido, inteiro — é dele que sai o processo publicado na
+  // faixa de contexto (DEC-085).
+  const [honorarioEscolhido, setHonorarioEscolhido] = useState(null);
   // Em modo edição, o pagamento gravado — é dele que saem os campos
   // somente-leitura.
   const [pagamento, setPagamento] = useState(null);
@@ -140,35 +143,29 @@ function PaymentFormPage() {
     if (doQuery) setFormData(prev => ({ ...prev, honorarioId: doQuery }));
   }, [isEditing, searchParams]);
 
-  // Fase 2b (DEC-086): o honorário escolhido que não estiver entre os 100 da
-  // lista é buscado pelo id — o "+ Pagamento" da ficha do processo pode abrir
-  // esta tela para um honorário antigo.
-  const [listaCarregada, setListaCarregada] = useState(false);
-  const opcoesDeHonorario = useOpcaoGarantida({
-    lista: fees,
-    listaCarregada,
-    idEscolhido: formData.honorarioId,
-    buscar: (hid) => feeService.getFeeById(hid).then(res => res.data),
-  });
+  // Fase 3.2 (DEC-101): o seletor busca no servidor, sem o teto de 100. O
+  // honorário da URL (o "+ Pagamento" da ficha pode abrir esta tela para um
+  // honorário antigo) é buscado pelo id dentro do `SeletorComBusca` (DEC-086).
+  const buscarHonorarios = (termo) => feeService.buscarHonorarios(termo);
+  const buscarHonorarioPorId = (hid) => feeService.getFeeById(hid).then(res => honorarioDoDetalhe(res.data));
+  // Só honorários que podem receber dinheiro. Um honorário `cancelado`
+  // responde 409 no POST, e sugeri-lo seria a tela convidando para um erro
+  // que ela já sabe evitar.
+  const podeReceber = (f) => f.status !== 'cancelado';
 
   // Fase 2b (DEC-085): publica para a faixa de contexto o processo do
-  // honorário escolhido.
+  // honorário escolhido — na edição, o do pagamento gravado.
   usePublicarContexto({
-    processoId: idDoProcesso(opcoesDeHonorario.find((f) => f._id === formData.honorarioId)?.processoId),
+    processoId: idDoProcesso(
+      isEditing
+        ? pagamento?.honorarioId?.processoId
+        : (honorarioEscolhido && String(honorarioEscolhido._id) === String(formData.honorarioId)
+          ? honorarioEscolhido.processoId
+          : null)
+    ),
   });
 
   useEffect(() => {
-    // Só honorários que podem receber dinheiro. Um honorário `cancelado`
-    // responde 409 no POST, e oferecê-lo no seletor seria a tela convidando
-    // para um erro que ela já sabe evitar.
-    feeService.listFees({ limit: 100 })
-      .then(res => {
-        const lista = res.data.data ?? res.data;
-        setFees(lista.filter(f => f.status !== 'cancelado'));
-      })
-      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar honorários.')))
-      .finally(() => setListaCarregada(true));
-
     if (isEditing) {
       paymentService.getPaymentById(id)
         .then(res => {
@@ -269,6 +266,13 @@ function PaymentFormPage() {
     //
     // Deixar salvar para dar erro depois perde o que foi digitado.
     if (!online) return;
+    // O seletor guarda o id da ESCOLHA; texto digitado sem escolher não é
+    // honorário nenhum. Na edição o honorário não se troca.
+    if (!isEditing && !formData.honorarioId) {
+      setError(`Honorário: ${MENSAGENS_DO_SELETOR.escolhaDaLista}`);
+      setCampoComErro('honorarioId');
+      return;
+    }
     setLoading(true);
     setError('');
     setCampoComErro(null);
@@ -309,12 +313,6 @@ function PaymentFormPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatFeeLabel = (fee) => {
-    const valor = formatCurrency(fee.valor);
-    const processo = fee.processoId?.titulo || fee.processoId?.numeroProcesso || '';
-    return `${fee.descricao} — ${valor}${processo ? ` (${processo})` : ''}`;
   };
 
   if (carregandoRegistro) return <Loading />;
@@ -375,21 +373,22 @@ function PaymentFormPage() {
             <>
               <div className="form-group span-3">
                 <label htmlFor="pagamento-honorario">Honorário *</label>
-                <select
+                <SeletorComBusca
                   id="pagamento-honorario"
                   name="honorarioId"
-                  value={formData.honorarioId}
-                  onChange={handleChange}
-                  required
+                  valor={formData.honorarioId}
+                  onMudar={(hid) => {
+                    setFormData(prev => ({ ...prev, honorarioId: hid }));
+                    if (campoComErro === 'honorarioId') setCampoComErro(null);
+                  }}
+                  onEscolhido={setHonorarioEscolhido}
+                  buscar={buscarHonorarios}
+                  buscarPorId={buscarHonorarioPorId}
+                  filtrar={podeReceber}
+                  rotulo={rotuloDoHonorarioNoSeletor}
+                  placeholder="Busque pela descrição, número do processo ou cliente"
                   className={campoComErro === 'honorarioId' ? 'input-erro' : undefined}
-                >
-                  <option value="">Selecione um honorário</option>
-                  {opcoesDeHonorario.map(fee => (
-                    <option key={fee._id} value={fee._id}>
-                      {fee._pendente ? ROTULO_OPCAO_PENDENTE[fee._pendente] : formatFeeLabel(fee)}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               <div className="form-group span-1">

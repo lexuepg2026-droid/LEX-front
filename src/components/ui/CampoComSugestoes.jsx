@@ -30,6 +30,18 @@ import './CampoComSugestoes.css';
 // de duas caixas roláveis. Este campo vive num formulário, cujo `form-group`
 // não recorta nada. Portal aqui traria o custo de posicionar por viewport sem
 // nenhum recorte para resolver.
+//
+// ── O modo de busca no servidor (Fase 3.2, DEC-101) ───────────────────────
+// Os seletores de processo e de honorário dos formulários financeiros usam
+// este mesmo combobox, pelo `SeletorComBusca`. Quatro props mudam o modo, e
+// sem elas o campo é exatamente o da F-4:
+//   - `filtrarLocalmente={false}`: os `itens` já chegam filtrados pelo
+//     servidor; aqui só se corta no `limite`;
+//   - `onEscolher(item)`: escolher entrega o ITEM, e não escreve o texto —
+//     quem guarda o id é o seletor, e o texto que ele escreve é o rótulo;
+//   - `mensagemErro` / `mensagemSemResultado` / `mensagemCarregando`: as
+//     frases do modo, porque
+//     "pode salvar assim mesmo" seria mentira num campo que exige escolha.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const CampoComSugestoes = ({
@@ -44,6 +56,12 @@ const CampoComSugestoes = ({
   carregando = false,
   erro = null,
   descricao = null,       // dica curta abaixo do campo, opcional
+  filtrarLocalmente = true,
+  onEscolher,
+  mensagemErro = null,
+  mensagemSemResultado = null,
+  mensagemCarregando = null,
+  chaveDoItem = null,
   ...resto
 }) => {
   const [aberto, setAberto] = useState(false);
@@ -54,8 +72,10 @@ const CampoComSugestoes = ({
   const listaRef = useRef(null);
 
   const sugestoes = useMemo(
-    () => filtrarSugestoes(itens, value, { limite, rotulo }),
-    [itens, value, limite, rotulo]
+    () => (filtrarLocalmente
+      ? filtrarSugestoes(itens, value, { limite, rotulo })
+      : (Array.isArray(itens) ? itens.slice(0, limite) : [])),
+    [itens, value, limite, rotulo, filtrarLocalmente]
   );
 
   // O item ativo tem que continuar visível quando se percorre com o teclado —
@@ -85,10 +105,11 @@ const CampoComSugestoes = ({
     (item) => {
       // Grava-se o TEXTO, exatamente como está na tabela. Não há campo de
       // código, e é decisão: ver a DEC-057 e o trade-off no relatório da F-4.
-      onChange(rotulo(item));
+      if (onEscolher) onEscolher(item);
+      else onChange(rotulo(item));
       fechar();
     },
-    [onChange, rotulo, fechar]
+    [onChange, onEscolher, rotulo, fechar]
   );
 
   const aoDigitar = (e) => {
@@ -167,7 +188,7 @@ const CampoComSugestoes = ({
         <ul className="sugestoes__lista" id={listaId} role="listbox" ref={listaRef}>
           {sugestoes.map((item, i) => (
             <li
-              key={`${rotulo(item)}-${i}`}
+              key={chaveDoItem ? chaveDoItem(item) : `${rotulo(item)}-${i}`}
               id={`${listaId}-${i}`}
               data-indice={i}
               role="option"
@@ -185,24 +206,31 @@ const CampoComSugestoes = ({
         </ul>
       )}
 
-      {carregando && <p className="sugestoes__aviso">Carregando sugestões…</p>}
+      {/* Região viva: o "Buscando…", o erro e o "Nenhum resultado" mudam com
+          a digitação, e quem usa leitor de tela precisa ouvi-los sem sair do
+          campo. */}
+      <div aria-live="polite">
+        {carregando && <p className="sugestoes__aviso">{mensagemCarregando ?? 'Carregando sugestões…'}</p>}
 
-      {/* Falhar em carregar a tabela NÃO impede de preencher o campo. */}
-      {erro && (
-        <p className="sugestoes__aviso sugestoes__aviso--erro">
-          Não foi possível carregar as sugestões. Pode digitar normalmente.
-        </p>
-      )}
+        {/* Falhar em carregar a tabela NÃO impede de preencher o campo. */}
+        {erro && (
+          <p className="sugestoes__aviso sugestoes__aviso--erro">
+            {mensagemErro ?? 'Não foi possível carregar as sugestões. Pode digitar normalmente.'}
+          </p>
+        )}
 
-      {semResultado && (
-        <p className="sugestoes__aviso">
-          Nada na lista casa com isso — <strong>pode salvar assim mesmo</strong>.
-        </p>
-      )}
+        {semResultado && (
+          <p className="sugestoes__aviso">
+            {mensagemSemResultado ?? (
+              <>Nada na lista casa com isso — <strong>pode salvar assim mesmo</strong>.</>
+            )}
+          </p>
+        )}
 
-      {descricao && !semResultado && !carregando && !erro && (
-        <p className="sugestoes__aviso">{descricao}</p>
-      )}
+        {descricao && !semResultado && !carregando && !erro && (
+          <p className="sugestoes__aviso">{descricao}</p>
+        )}
+      </div>
     </div>
   );
 };
