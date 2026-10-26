@@ -220,9 +220,15 @@ describe("o selo de liminar e o filtro", () => {
   });
 
   test("a listagem monta o filtro a partir da lista, e o manda ao serviço", () => {
+    // REESCRITO na Fase 3.4 (DEC-116): o filtro mora na URL (`useListFilters`)
+    // e a consulta sai de `consultaDaLista` (`listaProcessos.js`). A regra é a
+    // mesma: as opções vêm da lista, e o valor escolhido chega ao serviço.
     const codigo = semComentarios(ler(LISTAGEM));
     assert.match(codigo, /FILTRO_LIMINAR_OPTIONS\.map/);
-    assert.match(codigo, /liminar: liminar \|\| undefined/);
+    assert.match(codigo, /definirFiltro\('liminar', e\.target\.value\)/);
+    const regras = semComentarios(ler("src/pages/processes/listaProcessos.js"));
+    assert.match(regras, /if \(filtros\.liminar\) consulta\.liminar = filtros\.liminar;/);
+    assert.match(codigo, /processService\.listProcesses\(consulta\)/);
   });
 
   test("o serviço repassa `fase` e `liminar` como query", () => {

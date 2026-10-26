@@ -128,3 +128,104 @@ describe("Fase 3.4 · item 2 — o processo nasce ativo (DEC-114)", () => {
     }
   });
 });
+
+// ── Item 4 — DEC-116 ──────────────────────────────────────────────────────
+import {
+  FILTROS_DA_LISTA, SITUACAO_OPTIONS, PORTAL_OPTIONS, PRESETS_DA_LISTA, AJUDA_DO_PERIODO,
+  consultaDaLista, opcoesDeTipo, descricaoDoRecorteDeProcessos, destinoDaLinha
+} from "../../src/pages/processes/listaProcessos.js";
+import { PRESETS_PERIODO } from "../../src/components/ui/periodo.js";
+import { NOMES_NA_URL } from "../../src/utils/filtrosNaUrl.js";
+
+describe("Fase 3.4 · item 4 — a lista de processos no padrão da Figura 19 (DEC-116)", () => {
+  test("o padrão continua só ativos: situação vazia, fora da URL e fora da consulta", () => {
+    assert.equal(FILTROS_DA_LISTA.situacao, "");
+    assert.deepEqual(SITUACAO_OPTIONS[0], { value: "", label: "Somente ativos" });
+    assert.ok(!("situacao" in consultaDaLista(FILTROS_DA_LISTA, { page: 1, limit: 20 })));
+  });
+
+  test("o status jurídico é `andamento` no estado e na URL, e `status` na API", () => {
+    // `filtrosNaUrl` escreve `status` como `?situacao=`, que aqui é o registro.
+    assert.equal(NOMES_NA_URL.status, "situacao");
+    assert.ok(!("status" in FILTROS_DA_LISTA));
+    const c = consultaDaLista({ ...FILTROS_DA_LISTA, andamento: "suspenso", situacao: "todos" }, { page: 2, limit: 20 });
+    assert.equal(c.status, "suspenso");
+    assert.equal(c.situacao, "todos");
+    assert.equal(c.page, 2);
+  });
+
+  test("todos os filtros chegam à consulta, e os vazios não", () => {
+    const c = consultaDaLista(
+      { ...FILTROS_DA_LISTA, fase: "execucao", liminar: "com", tipoAcao: "Inventário", portal: "nao_liberado", de: "2026-10-01", ate: "2026-10-31" },
+      { page: 1, limit: 20, busca: "wosch" }
+    );
+    assert.deepEqual(c, {
+      page: 1, limit: 20, busca: "wosch", fase: "execucao", liminar: "com",
+      tipoAcao: "Inventário", portal: "nao_liberado", de: "2026-10-01", ate: "2026-10-31",
+    });
+    assert.deepEqual(consultaDaLista(FILTROS_DA_LISTA, { page: 1, limit: 20 }), { page: 1, limit: 20 });
+  });
+
+  test("período: só os três presets, com a linha de ajuda sobre o processo sem data", () => {
+    assert.deepEqual([...PRESETS_DA_LISTA], [PRESETS_PERIODO.TODOS, PRESETS_PERIODO.MES_ATUAL, PRESETS_PERIODO.PERSONALIZADO]);
+    assert.match(AJUDA_DO_PERIODO, /data de distribuição/);
+    assert.match(AJUDA_DO_PERIODO, /sem essa data só aparece em “Qualquer período”/);
+  });
+
+  test("portal: as três opções da decisão 3", () => {
+    assert.deepEqual(PORTAL_OPTIONS.map((o) => o.value), ["", "nao_liberado", "liberado"]);
+  });
+
+  test("a opção de tipo da URL nunca some da pílula", () => {
+    assert.deepEqual(opcoesDeTipo(["Cobrança", "Inventário"], "Despejo"), ["Despejo", "Cobrança", "Inventário"]);
+    assert.deepEqual(opcoesDeTipo(["Cobrança", "Inventário"], "inventario"), ["Cobrança", "Inventário"], "sem acento é a mesma");
+    assert.deepEqual(opcoesDeTipo(null, ""), []);
+  });
+
+  test("a frase do recorte, em português", () => {
+    assert.equal(
+      descricaoDoRecorteDeProcessos({
+        filtros: { andamento: "ativo", tipoAcao: "Inventário", portal: "nao_liberado", preset: PRESETS_PERIODO.MES_ATUAL },
+        busca: "wosch",
+      }),
+      'com "wosch", com status "Ativo", do tipo "Inventário", com cliente não liberado no portal e distribuídos neste mês'
+    );
+    assert.equal(descricaoDoRecorteDeProcessos({ filtros: {} }), "");
+  });
+
+  test("a linha do desativado não leva a lugar nenhum (o detalhe responderia 404)", () => {
+    assert.equal(destinoDaLinha({ _id: "p1", ativo: true }), "/dashboard/processos/detalhe/p1");
+    assert.equal(destinoDaLinha({ _id: "p1", ativo: false }), null);
+  });
+
+  const lista = semComentarios(ler("src/pages/processes/ProcessListPage.jsx"));
+
+  test("o balão da 3.2: cabeçalho, filtros em pílulas na URL, ações fixas e paginador", () => {
+    assert.match(lista, /<CabecalhoDeLista[\s\S]*?total=\{totalConhecido\}[\s\S]*?novoDestino="\/dashboard\/processos\/novo"/);
+    assert.match(lista, /useListFilters\(FILTROS_DA_LISTA, \{ naUrl: true \}\)/);
+    assert.match(lista, /<FinancialFilters[\s\S]*?semBusca\s*pilulas\s*presets=\{PRESETS_DA_LISTA\}\s*ajudaDoPeriodo=\{AJUDA_DO_PERIODO\}/);
+    assert.match(lista, /className="data-table data-table--fixed data-table--acoes-fixas"/);
+    assert.match(lista, /<Paginador[\s\S]*?rotulo="processo"/);
+    assert.match(lista, /fromCache && <OfflineNotice atualizadoEm=\{updatedAt\} \/>/);
+  });
+
+  test("as colunas, na ordem pedida", () => {
+    const ths = [...lista.matchAll(/<th>([^<]+)<\/th>/g)].map((m) => m[1]);
+    assert.deepEqual(ths, ["Nº Processo", "Título", "Cliente", "Tipo de ação", "Fase", "Status", "Distribuição", "Ações"]);
+  });
+
+  test("sem sanfonas e sem seleção em massa", () => {
+    assert.doesNotMatch(lista, /<details|sanfona|aria-expanded/i);
+    assert.doesNotMatch(lista, /type="checkbox"/);
+  });
+
+  test("a linha não recebe foco extra", () => {
+    assert.doesNotMatch(lista, /<tr[^>]*tabIndex/);
+  });
+
+  test("a barra de filtros só muda com as props novas (as financeiras não mudam)", () => {
+    const barra = semComentarios(ler("src/components/financeiro/FinancialFilters.jsx"));
+    assert.match(barra, /presets = Object\.values\(PRESETS_PERIODO\)/);
+    assert.match(barra, /ajudaDoPeriodo = null/);
+  });
+});

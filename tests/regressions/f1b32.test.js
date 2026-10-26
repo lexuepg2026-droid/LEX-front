@@ -299,7 +299,11 @@ describe("F-1b.3.2 — DEC-047: o ⋮ em toda listagem", () => {
       // DEC-052: "Excluir" virou "Desativar", e "Reativar" nasceu ao lado —
       // as duas são mutuamente exclusivas, e a que aparece depende de `ativo`.
       "src/pages/clients/ClientListPage.jsx": ["Ver", "Editar", "Desativar", "Reativar"],
-      "src/pages/processes/ProcessListPage.jsx": ["Gerenciar", "Desativar", "Reativar"],
+      // Fase 3.4 (DEC-116): "Gerenciar" (o caminho do detalhe) saiu do menu,
+      // e não se perdeu — virou o link do título e a linha inteira, como nas
+      // listas da 3.2. No lugar entrou "Editar". A trava confere as duas
+      // pontas logo abaixo.
+      "src/pages/processes/ProcessListPage.jsx": ["Editar", "Desativar", "Reativar"],
       "src/pages/documents/DocumentListPage.jsx": ["Abrir", "Baixar PDF", "Baixar DOCX", "Excluir"],
       "src/pages/secoes/SecaoListPage.jsx": ["Ver", "Editar", "Desativar"]
     };
@@ -312,6 +316,10 @@ describe("F-1b.3.2 — DEC-047: o ⋮ em toda listagem", () => {
         );
       }
     }
+    // O detalhe do processo continua alcançável a partir da lista.
+    const processos = semComentarios(ler("src/pages/processes/ProcessListPage.jsx"));
+    assert.match(processos, /<Link to=\{destino\} className="link-interno">\{p\.titulo\}<\/Link>/);
+    assert.match(processos, /onClick=\{clicarNaLinha\(destino\)\}/);
   });
 
   test("o estado `baixando` sobreviveu, e desabilita o item", () => {

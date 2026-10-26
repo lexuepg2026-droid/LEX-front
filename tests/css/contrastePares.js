@@ -192,6 +192,17 @@ export const PARES = [
   { nome: "interruptor: contorno desligado / balão", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },
   { nome: "interruptor: contorno desligado / linha em hover", texto: "--color-border-input", fundo: "--color-surface-raised", limite: NAO_TEXTO },
 
+  // A lista de processos (Fase 3.4, DEC-116): a bolinha do status na coluna
+  // (não texto, reforço da palavra ao lado) sobre a linha em hover — sobre o
+  // balão ela já está nos pares "detalhe: bolinha …" —, a palavra do status e
+  // a linha de ajuda do período.
+  ...["success", "warning", "danger", "info"].map((tom) => (
+    { nome: `lista de processos: bolinha ${tom} / linha em hover`, texto: `--color-${tom}-text`, fundo: "--color-surface-raised", limite: NAO_TEXTO }
+  )),
+  { nome: "lista de processos: bolinha neutra / linha em hover", texto: "--color-text-secondary", fundo: "--color-surface-raised", limite: NAO_TEXTO },
+  { nome: "lista de processos: ajuda do período / balão", texto: "--color-text-secondary", fundo: "--color-surface", limite: TEXTO },
+  { nome: "lista de processos: tipo de ação na célula / linha em hover", texto: "--color-text-primary", fundo: "--color-surface-raised", limite: TEXTO },
+
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
   { nome: "borda de campo / --color-surface", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },

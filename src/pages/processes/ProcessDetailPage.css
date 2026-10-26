@@ -77,11 +77,8 @@
   background-color: var(--color-text-secondary);
 }
 
-.processo-cabecalho__bolinha--success { background-color: var(--color-success-text); }
-.processo-cabecalho__bolinha--warning { background-color: var(--color-warning-text); }
-.processo-cabecalho__bolinha--danger  { background-color: var(--color-danger-text); }
-.processo-cabecalho__bolinha--info    { background-color: var(--color-info-text); }
-.processo-cabecalho__bolinha--neutral { background-color: var(--color-text-secondary); }
+/* A cor por tom (`--success`, `--warning`…) mora em `ProcessPage.css` desde a
+   3.4: a coluna Status da lista usa a mesma bolinha (DEC-116). */
 
 .processo-cabecalho__textos {
   min-width: 0;

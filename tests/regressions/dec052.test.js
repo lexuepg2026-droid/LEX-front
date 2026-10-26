@@ -103,14 +103,21 @@ describe("DEC-052 — o menu ⋮ oferece só a ação que o estado permite", () 
   test("a escolha entre elas é condicionada a `ativo === false`", () => {
     // Um menu que mostrasse as duas ofereceria, em metade dos casos, uma ação
     // que o backend responde 404.
+    //
+    // Fase 3.4 (DEC-116): na lista de processos o ternário escolhe a LISTA de
+    // itens (o ativo ganhou "Editar" ao lado de "Desativar"), e não um item.
+    // A regra é a mesma: "Reativar" só no desativado, "Desativar" só no ativo.
     for (const arquivo of LISTAGENS) {
       const codigo = semComentarios(ler(arquivo));
       assert.match(
         codigo,
-        /ativo === false\s*\n?\s*\?\s*\{\s*\n?\s*rotulo: 'Reativar'/,
+        /ativo === false\s*\n?\s*\?\s*\[?\{\s*\n?\s*rotulo: 'Reativar'/,
         `${arquivo}: "Reativar" precisa aparecer SÓ em registro desativado, num ternário sobre \`ativo\``
       );
     }
+    const processos = semComentarios(ler("src/pages/processes/ProcessListPage.jsx"));
+    const ramoAtivo = processos.slice(processos.indexOf("rotulo: 'Reativar'"));
+    assert.ok(ramoAtivo.indexOf("rotulo: 'Desativar'") > ramoAtivo.indexOf(": ["), "Desativar fica no ramo do ativo");
   });
 
   test("'Excluir' saiu das duas — o nome mentia depois da reativação", () => {
@@ -210,6 +217,11 @@ describe("DEC-052 — o filtro de situação", () => {
   // declara `situacao: 'ativos'` nos iniciais do hook. Exigir uma delas seria
   // travar o andaime de novo, uma fase depois.
   test("as duas listagens têm o seletor de situação", () => {
+    // Fase 3.4 (DEC-116): na lista de processos as opções vêm de
+    // `SITUACAO_OPTIONS` (`listaProcessos.js`), e "Somente ativos" é o valor
+    // vazio — o padrão do back sem `?situacao=`, que fica fora da URL. As
+    // três opções continuam, e continuam sendo as mesmas.
+    const regrasDosProcessos = semComentarios(ler("src/pages/processes/listaProcessos.js"));
     for (const arquivo of LISTAGENS) {
       const codigo = semComentarios(ler(arquivo));
       assert.match(
@@ -217,11 +229,13 @@ describe("DEC-052 — o filtro de situação", () => {
         /aria-label="Situação do registro"/,
         `${arquivo}: falta o seletor de situação`
       );
-      for (const valor of ["ativos", "inativos", "todos"]) {
-        assert.match(
-          codigo, new RegExp(`value="${valor}"`),
-          `${arquivo}: falta a opção "${valor}"`
-        );
+      const onde = arquivo.includes("ProcessListPage") ? regrasDosProcessos : codigo;
+      const valores = arquivo.includes("ProcessListPage") ? [["", "Somente ativos"], ["inativos", "Somente desativados"], ["todos", "Ativos e desativados"]] : [["ativos"], ["inativos"], ["todos"]];
+      for (const [valor, rotulo] of valores) {
+        const padrao = arquivo.includes("ProcessListPage")
+          ? new RegExp(`\\{ value: '${valor}', label: '${rotulo}' \\}`)
+          : new RegExp(`value="${valor}"`);
+        assert.match(onde, padrao, `${arquivo}: falta a opção "${valor}"`);
       }
     }
   });
@@ -232,7 +246,10 @@ describe("DEC-052 — o filtro de situação", () => {
       const codigo = semComentarios(ler(arquivo));
       assert.match(
         codigo,
-        /useState\('ativos'\)|situacao: 'ativos'/,
+        // Fase 3.4: a lista de processos guarda "ativos" como o valor vazio
+        // da URL (`situacao: ''` em `FILTROS_DA_LISTA`), que o serviço não
+        // envia — e o back, sem o parâmetro, devolve só os ativos.
+        /useState\('ativos'\)|situacao: 'ativos'|FILTROS_DA_LISTA/,
         `${arquivo}: o padrão do filtro precisa continuar "ativos"`
       );
     }

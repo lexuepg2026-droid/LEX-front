@@ -143,9 +143,13 @@ describe("Fase 3.3b · item 2 — cabeçalho de identidade e balões (DEC-111)",
   });
 
   test("a bolinha tem uma regra por tom, com o token do badge", () => {
+    // Fase 3.4 (DEC-116): as regras por tom foram para `ProcessPage.css`, que
+    // o detalhe e a lista importam — a coluna Status usa a mesma bolinha.
+    const CSS_COMUM = ler("src/pages/processes/ProcessPage.css").replace(/\/\*[\s\S]*?\*\//g, "");
+    assert.match(DETALHE, /import '\.\/ProcessPage\.css';/);
     for (const [tom, cor] of Object.entries(COR_DO_TOM)) {
       assert.match(
-        CSS_DETALHE,
+        CSS_COMUM,
         new RegExp(`\\.${classeDaBolinha(tom).replace(/-/g, "\\-")}\\s*\\{\\s*background-color:\\s*${cor.replace(/[()]/g, "\\$&")}`),
         `sem regra para o tom ${tom}`
       );

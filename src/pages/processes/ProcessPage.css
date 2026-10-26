@@ -622,3 +622,27 @@
     grid-column: 1 / -1;
   }
 }
+
+/* ── A bolinha do status, por tom (DEC-111) — comum ao cabeçalho do detalhe e
+   à coluna Status da lista (Fase 3.4, DEC-116). É a cor do TOM do
+   `StatusBadge`, e é reforço: o status está escrito ao lado. */
+.processo-cabecalho__bolinha--success { background-color: var(--color-success-text); }
+.processo-cabecalho__bolinha--warning { background-color: var(--color-warning-text); }
+.processo-cabecalho__bolinha--danger  { background-color: var(--color-danger-text); }
+.processo-cabecalho__bolinha--info    { background-color: var(--color-info-text); }
+.processo-cabecalho__bolinha--neutral { background-color: var(--color-text-secondary); }
+
+/* Na tabela: a bolinha e a palavra numa linha, alinhadas ao texto. */
+.processo-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.processo-status__bolinha {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-text-secondary);
+}
