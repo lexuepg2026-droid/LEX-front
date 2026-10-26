@@ -4038,6 +4038,11 @@ suíte o **carrega e executa** — o impedimento de `tests/offline/estatica.test
 
 ## DEC-067 (frontend) — o seletor pede o teto e diz quando corta; a busca é da fase 3 (Fase 0)
 
+> ⚠️ **SUBSTITUÍDA pela DEC-101 (Fase 3.2).** Os `<select>` viraram
+> `SeletorComBusca`, com busca no servidor: o teto de 100, o aviso "Mostrando os
+> N mais recentes de T", `utils/seletorLimitado.js` e `hooks/useOpcaoGarantida.js`
+> saíram. O texto abaixo fica como histórico do paliativo.
+
 **O defeito.** O seletor de processo do formulário de honorário
 (`processService.listProcesses()`) e o seletor de honorário do formulário de
 parcela (`feeService.listFees()`) eram chamados **sem `limit`**. O backend
@@ -4527,6 +4532,12 @@ cair. Compartilhar o dado exigiria a faixa conhecer a tela.
 
 ## DEC-086 (frontend) — o vínculo pré-preenchido, e a opção escolhida nunca some (Fase 2b)
 
+> **Continua valendo, por outro meio (Fase 3.2, DEC-101):** o id da URL ou do
+> registro em edição aparece escolhido no `SeletorComBusca`, com o rótulo
+> completo, buscado pelo id quando preciso. `comOpcaoGarantida` e o
+> `useOpcaoGarantida` saíram junto com o `<select>`; o rótulo do honorário
+> passou a "descrição — Processo nº — cliente" (sem o valor).
+
 - `FeeFormPage` aceita **`?processoId=`**; `InstallmentFormPage` aceita
   **`?honorarioId=`** (no padrão que o `PaymentFormPage` já tinha). Só na
   criação.
@@ -4756,6 +4767,129 @@ continuam levando a `/portal`.
 - **Achado no navegador, corrigido:** sem preferência gravada, o primeiro
   clique num bloco que nasce fechado gravava "fechado" e não abria nada.
   `alternarBloco` agora parte do estado à vista (`PADRAO_FECHADO`).
+
+---
+
+## DEC-101 (frontend) — os seletores buscam no servidor (Fase 3.2)
+
+> O alcance da busca é a DEC-101 do `CLAUDE.md` do backend: processo por
+> número, título e cliente principal; honorário por descrição, número do
+> processo e cliente principal — sem acento e sem caixa.
+
+**Os três `<select>`** — processo no formulário de honorário, honorário nos de
+parcela e de pagamento — viraram **`components/ui/SeletorComBusca.jsx`**, que
+usa o `CampoComSugestoes` (combobox ARIA) no modo de busca no servidor.
+
+- **Espera de 300 ms**, **até 20 sugestões** (`limit` pedido ao servidor),
+  "**Nenhum resultado.**" quando vazio. As regras são funções puras em
+  `utils/seletorComBusca.js`.
+- **`semToastGlobal`** nas duas chamadas (`feeService.buscarHonorarios`,
+  `processService.buscarProcessos`): dispara pela digitação (DEC-084). A falha
+  aparece **em linha**, no próprio campo.
+- **Sem sinal não pergunta:** "A busca precisa de conexão. Conecte-se para
+  procurar." Os formulários financeiros continuam fora da fila (DEC-059).
+- **O seletor guarda o ID**; o texto é o rótulo dele. Digitar por cima desfaz a
+  escolha (`onMudar('', null)`) — um id antigo atrás de um texto novo mandaria
+  o registro que a advogada não está vendo. O `handleSubmit` de cada tela
+  recusa salvar sem escolha e destaca o campo.
+- **DEC-086 continua:** `?processoId=`/`?honorarioId=` e o registro em edição
+  aparecem escolhidos, com o rótulo completo. `GET /fees/:id` popula o processo
+  sem o cliente e manda o cliente ao lado; `honorarioDoDetalhe` junta os dois só
+  para o rótulo. A faixa de contexto (DEC-085) é publicada também quando o item
+  chega pelo id (`onEscolhido`).
+- **Rótulos (decisão 3):** processo "{número} — {título} — {cliente principal}"
+  (`rotuloDoProcessoNoSeletor`); honorário "{descrição} — Processo nº {número}
+  — {cliente principal}" (`rotuloDoHonorarioNoSeletor`, sem o valor).
+- **Pagamento:** honorário cancelado não aparece nas sugestões (`filtrar`).
+- **O `CampoComSugestoes` sem as props novas continua sendo o da F-4**
+  (DEC-057: sugere, não obriga). O modo novo entra por `filtrarLocalmente`,
+  `onEscolher`, `mensagemErro`, `mensagemSemResultado`, `mensagemCarregando` e
+  `chaveDoItem`; os avisos ficaram numa região `aria-live`.
+
+**Duas travas antigas reescritas, não apagadas:** `fase0.test.js` (exigia
+`limit: LIMITE_DO_SELETOR` e o aviso) e `fase2b.test.js` (exigia
+`useOpcaoGarantida` e o rótulo com valor). Agora exigem a busca no servidor e a
+escolha pelo id.
+
+## DEC-102 (frontend) — as listas financeiras no padrão da Figura 19 (Fase 3.2)
+
+Honorários, parcelas e pagamentos, **na página própria**:
+
+- **Balão** `--color-surface`, cantos de 24 px (o do Início), com
+  `components/financeiro/CabecalhoDeLista.jsx`: título com o total entre
+  parênteses (só com resposta na mão), **busca em pílula** larga e "**+**" à
+  direita com `aria-label` ("Novo honorário", "Nova parcela", "Registrar
+  pagamento"). Sem sinal, o "+" é `<button aria-disabled>` com o motivo.
+- **Os filtros da F-1b.3 numa linha abaixo, em pílulas** (`FinancialFilters`
+  com `semBusca` e `pilulas`). Embutidas no `FinanceiroPage`, as listas
+  continuam como eram — o Financeiro é a 3.7.
+- **A linha inteira abre o registro:** detalhe do honorário; edição da parcela
+  (a reparcelada leva ao honorário) e do pagamento — sem sinal, a linha de
+  edição não abre (o menu já recusa). Regra em
+  `components/financeiro/linhaClicavel.js`: o menu ⋮ (portal, DEC-046) e
+  qualquer elemento interativo da linha não disparam a linha; texto
+  selecionado e clique com modificador ficam com o navegador. **A linha não é
+  focável**: o link do nome continua sendo o alvo de Tab.
+- **Coluna Cliente** ao lado de Processo nas três; as parcelas ganharam também
+  a coluna Processo (chave nova `processo` da listagem, DEC-102 do back).
+- **A seleção em massa da Raniele não entra**; o menu ⋮ com teclado (DEC-046)
+  fica no lugar dos ícones de hover dela.
+
+**Três achados da verificação no navegador, corrigidos na fase:**
+
+1. **As colunas de texto colapsavam** — 0 px a 768 e 14 px a 1280 nas parcelas:
+   as fixas (`col-money` etc.) já somavam mais que a área útil, e coluna `auto`
+   numa tabela `fixed` recebe o que sobra. Agora as de texto têm `col-md` /
+   `col-lg`, e **a tabela rola dentro do `.table-wrapper`** (regra do passo
+   111). A 1280 px a coluna Ações fica fora da área visível até rolar a tabela.
+2. **Trocar filtro trocava a tabela pelo `<Loading/>`** e a página encolhia. A
+   recarga mantém a tabela (`aria-busy`, esmaecida); o indicador fica para a
+   primeira carga (`loading = carregando && !data`).
+3. **Dentro do balão, o hover `--color-accent-muted`** composto sobre a surface
+   derrubava os badges danger e info do escuro para 4,44:1 e 4,35:1. O hover da
+   linha no balão é `--color-surface-raised`. Pares "lista: …" em
+   `tests/css/contrastePares.js`.
+
+## DEC-103 (frontend) — situação, período e busca das listas na URL (Fase 3.2)
+
+O período **não ia para a URL** até aqui (vivia no estado do `useListFilters`).
+Agora, nas três listas **na página própria** (`useListFilters(…, { naUrl })`,
+via `FILTROS_NA_URL(embedded)`):
+
+- `?busca=`, `?situacao=` (o `status` do estado), `?de=AAAA-MM-DD&ate=…` e os
+  filtros próprios de cada lista (`?tipo=`, `?honorarioId=`,
+  `?formaPagamento=`, `?inativos=`). Regras em `utils/filtrosNaUrl.js`.
+- **O padrão continua "Qualquer período"**, sem parâmetro. O preset **não** vai
+  para a URL: é derivado de `de`/`ate` (um link de "Mês atual" aberto no mês
+  seguinte mostra o intervalo copiado, como personalizado). Data torta na URL
+  é ignorada.
+- O "voltar" desfaz; trocar filtro volta à página 1 (pela assinatura dos filtros
+  na URL, inclusive no "voltar"); `preventScrollReset`. A busca vai à URL após
+  300 ms, e refinar a busca **substitui** a entrada do histórico.
+- O "Limpar filtros" tira também o `?processoId=` na **mesma** escrita: duas
+  escritas seguidas se atropelariam.
+- **Achado no navegador:** preencher a data inicial e logo a final perdia a
+  primeira — as duas escritas partiam da mesma query do render. O hook guarda
+  a query mais recente (`queryAtual`) e parte dela.
+- **Embutidas no Financeiro**, as listas ficam no estado: três listas na mesma
+  query brigariam pelo mesmo `?busca=`. A lista de clientes também (3.5).
+
+## DEC-104 (frontend) — o Início leva às confirmações e mostra os não liberados (Fase 3.2)
+
+- **"Confirmações novas"** (`destinoDasConfirmacoes`, em `pages/dashboard/inicio.js`):
+  com **um** processo, o cartão é o link para a ficha ("Abrir o processo"),
+  que marca as confirmações como vistas; com **vários**, um botão abre uma lista
+  curta embaixo dos cartões, com "número — título" e "N confirmações"; sem
+  nenhuma, o cartão é só o número.
+- **"Processos não liberados no portal"**: cartão novo no Resumo Geral com
+  `processosNaoLiberados` e o link para a **lista comum** de processos — o
+  filtro por liberação é da 3.4.
+
+## DEC-105 (frontend) — o cliente nas Datas próximas (Fase 3.2)
+
+A linha diz "**{processo} · {cliente}**" (`contextoDoProcesso`), com o nome que
+as duas fontes passaram a trazer (DEC-105 do back). `proximosVencimentos` agora
+vem com até 8, o mesmo limite das Datas — o risco 2 da 3.1 fechou.
 
 ---
 

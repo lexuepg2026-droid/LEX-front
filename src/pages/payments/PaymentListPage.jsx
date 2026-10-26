@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import paymentService from '../../api/paymentService';
 import feeService from '../../api/feeService';
-import PageHeader from '../../components/ui/PageHeader';
+import CabecalhoDeLista from '../../components/financeiro/CabecalhoDeLista';
+import useLinhaClicavel from '../../components/financeiro/useLinhaClicavel';
 import EmptyState from '../../components/ui/EmptyState';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Paginador from '../../components/ui/Paginador';
 import ActionMenu from '../../components/ui/ActionMenu';
 import FinancialFilters from '../../components/financeiro/FinancialFilters';
 import { descricaoDoRecorteFinanceiro } from '../../components/financeiro/filterSummary.js';
-import useListFilters from '../../hooks/useListFilters';
+import useListFilters, { FILTROS_NA_URL } from '../../hooks/useListFilters';
 import useProcessoFiltrado from '../../hooks/useProcessoFiltrado';
 import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
 import { formatDate, formatCurrency } from '../../utils/formatters';
@@ -25,7 +26,7 @@ import {
   blockReason
 } from '../../offline/offlineMessages';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
-import { FORMA_PAGAMENTO_OPTIONS, labelDe } from '../../utils/enums';
+import { FORMA_PAGAMENTO_OPTIONS, labelDe, nomeDoCliente } from '../../utils/enums';
 import { rotuloDasParcelas, temEstorno, estornadoIntegralmente } from './paymentRow.js';
 import ReversalModal from '../../components/financeiro/ReversalModal';
 import '../../styles/modules.css';
@@ -64,7 +65,7 @@ function PaymentListPage({ embedded = false }) {
   const {
     filtros, buscaDebounced, page, setPage,
     definirFiltro, aplicarPreset, limpar, temFiltro
-  } = useListFilters({ formaPagamento: '' });
+  } = useListFilters({ formaPagamento: '' }, FILTROS_NA_URL(embedded));
 
   useEffect(() => {
     let ativo = true;
@@ -90,7 +91,7 @@ function PaymentListPage({ embedded = false }) {
     de: filtros.de || undefined,
     ate: filtros.ate || undefined
   };
-  const { data, loading, error, updatedAt, fromCache, reload } = useCachedResource({
+  const { data, loading: carregando, error, updatedAt, fromCache, reload } = useCachedResource({
     resource: 'payments',
     params: consulta,
     fetcher: () => paymentService.listPayments(consulta).then((res) => res.data),
@@ -99,6 +100,12 @@ function PaymentListPage({ embedded = false }) {
   });
   const payments = data?.data ?? (Array.isArray(data) ? data : []);
   const total = typeof data?.total === 'number' ? data.total : 0;
+  // O "(37)" do título só com resposta na mão (DEC-102).
+  const totalConhecido = typeof data?.total === 'number' ? data.total : null;
+  const clicarNaLinha = useLinhaClicavel();
+  // `loading` é a PRIMEIRA carga: só ela troca a tabela pelo indicador. A
+  // recarga por troca de filtro (`carregando`) mantém a tabela (ver o JSX).
+  const loading = carregando && !data;
 
   // ── `handleReativar`, `confirmDelete` e `handleRemove` SAÍRAM na F-1a ────
   //
@@ -150,9 +157,11 @@ function PaymentListPage({ embedded = false }) {
   // barra e para o estado vazio, e o "Limpar filtros" o remove junto — senão a
   // frase diria "do processo X" e o botão deixaria o processo de pé.
   const filtrado = temFiltro || Boolean(processoId);
+  // Na página própria o `processoId` sai no mesmo `limpar` (uma escrita só
+  // na URL — duas seguidas se atropelariam); embutida, pelo chip.
   const limparTudo = () => {
     limpar();
-    if (processoId) filtroProcesso.remover();
+    if (processoId && embedded) filtroProcesso.remover();
   };
 
   const body = (
@@ -175,6 +184,8 @@ function PaymentListPage({ embedded = false }) {
         temFiltro={filtrado}
         honorarios={honorarios}
         descricaoDoRecorte={recorte}
+        semBusca={!embedded}
+        pilulas={!embedded}
       >
         <select
           value={filtros.formaPagamento}
@@ -188,6 +199,10 @@ function PaymentListPage({ embedded = false }) {
         </select>
       </FinancialFilters>
 
+      {/* Fase 3.2: o `<Loading />` só na PRIMEIRA carga. Trocar um filtro com
+          a lista na tela mantém a tabela (esmaecida, `aria-busy`) até a
+          resposta nova — trocá-la pelo indicador encolhia a página e a
+          rolagem voltava ao topo (medido no navegador: 200 → 0 px). */}
       {loading ? (
         <Loading />
       ) : payments.length === 0 ? (
@@ -203,7 +218,7 @@ function PaymentListPage({ embedded = false }) {
           }
         />
       ) : (
-        <div className="table-wrapper">
+        <div className="table-wrapper" aria-busy={carregando || undefined}>
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`.
               "Observações" é texto livre digitado pela advogada, sem teto: era
               a coluna mais exposta ao defeito que a fase corrigiu. */}
@@ -227,12 +242,17 @@ function PaymentListPage({ embedded = false }) {
                 imune ao número de ações. */}
             <colgroup>
               <col className="col-lg" />
-              <col />
-              <col />
+              {/* Fase 3.2 (DEC-102): o cliente principal ao lado do processo,
+                  de dentro do processo populado. As colunas de texto ganharam
+                  largura: a 768 px as `auto` colapsavam para 0 (medido). A
+                  tabela rola dentro do `.table-wrapper`. */}
+              <col className="col-md" />
+              <col className="col-md" />
+              <col className="col-md" />
               <col className="col-money" />
               <col className="col-money" />
               <col className="col-data" />
-              <col />
+              <col className="col-xs" />
               <col className="col-acoes-menu" />
             </colgroup>
             <thead>
@@ -242,6 +262,7 @@ function PaymentListPage({ embedded = false }) {
                     ele tocou sai na coluna "Aplicado em", que pode dizer duas. */}
                 <th>Honorário</th>
                 <th>Processo</th>
+                <th>Cliente</th>
                 <th>Aplicado em</th>
                 <th>Valor</th>
                 <th>Líquido</th>
@@ -254,7 +275,13 @@ function PaymentListPage({ embedded = false }) {
               {payments.map(p => {
                 const liquido = p.valorLiquido ?? p.valor;
                 return (
-                <tr key={p._id}>
+                // A linha leva à edição do pagamento, o "Editar" do menu
+                // (DEC-102). Sem sinal a edição é recusada, e a linha não abre.
+                <tr
+                  key={p._id}
+                  className={online ? 'linha-clicavel' : undefined}
+                  onClick={clicarNaLinha(online ? `/dashboard/pagamentos/editar/${p._id}` : null)}
+                >
                   {/* Do pagamento ao honorário (F-1b). */}
                   {/* O TRECHO DISTINTIVO, não a descrição inteira (F-1b.2):
                       "Honorários advocatícios — " é prefixo de quase toda
@@ -268,6 +295,7 @@ function PaymentListPage({ embedded = false }) {
                     ) : '—'}
                   </td>
                   <td className="cell-truncate" title={p.honorarioId?.processoId?.titulo ?? undefined}>{p.honorarioId?.processoId?.titulo ?? '—'}</td>
+                  <td className="cell-truncate" title={clienteDoPagamento(p) ?? undefined}>{clienteDoPagamento(p) ?? '—'}</td>
                   <td className="cell-truncate" title={rotuloDasParcelas(p)}>{rotuloDasParcelas(p)}</td>
                   <td className="cell-num">{formatCurrency(p.valor)}</td>
                   {/* O líquido é o que ainda vale depois dos estornos. Exibido
@@ -380,16 +408,32 @@ function PaymentListPage({ embedded = false }) {
 
   return (
     <div className="module-container">
-      <PageHeader
-        title="Pagamentos"
-        actionLabel="+ Novo Pagamento"
-        actionTo="/dashboard/pagamentos/novo"
-        actionMotivo={online ? undefined : MENSAGEM_ESCRITA_OFFLINE}
-      />
-      {body}
+      <section className="lista-balao" aria-labelledby="titulo-lista-pagamentos">
+        <CabecalhoDeLista
+          id="titulo-lista-pagamentos"
+          titulo="Pagamentos"
+          total={totalConhecido}
+          busca={filtros.busca}
+          onBusca={(v) => definirFiltro('busca', v)}
+          placeholderBusca="Buscar por honorário, processo, cliente ou observação…"
+          rotuloBusca="Buscar pagamentos"
+          novoRotulo="Registrar pagamento"
+          novoDestino="/dashboard/pagamentos/novo"
+          novoMotivo={online ? null : MENSAGEM_ESCRITA_OFFLINE}
+        />
+        {body}
+      </section>
       {modal}
     </div>
   );
 }
+
+// O cliente principal vem dentro do processo do honorário (Fase 3.2).
+const clienteDoPagamento = (p) => {
+  const cliente = p.honorarioId?.processoId?.clientePrincipalId;
+  if (!cliente || typeof cliente !== 'object') return null;
+  const nome = nomeDoCliente(cliente);
+  return nome === '—' ? null : nome;
+};
 
 export default PaymentListPage;

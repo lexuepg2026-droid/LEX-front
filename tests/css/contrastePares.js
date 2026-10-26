@@ -135,6 +135,28 @@ export const PARES = [
   { nome: "Início: ação rápida / --color-surface-card", texto: "--color-text-primary", fundo: "--color-surface-card", limite: TEXTO },
   { nome: "Início: ação rápida em hover", texto: "--color-text-primary", fundo: "--color-surface-raised", limite: TEXTO },
 
+  // As listas financeiras no balão da Figura 19 (Fase 3.2, DEC-102). A tabela
+  // passou a pousar na `--color-surface` (o balão) em vez do `--color-bg`. O
+  // hover da linha dentro do balão é `--color-surface-raised`, e não o
+  // `--color-accent-muted` da tabela: composto sobre a surface, ele derrubava
+  // os badges danger e info do escuro para 4,44:1 e 4,35:1 (medido aqui).
+  { nome: "lista: total do título / balão", texto: "--color-text-secondary", fundo: "--color-surface", limite: TEXTO },
+  { nome: "lista: busca (texto e lupa) / campo", texto: "--color-text-primary", fundo: "--color-surface-input", limite: TEXTO },
+  { nome: "lista: \"+\" em hover", texto: "--color-text-primary", fundo: "--color-surface-raised", limite: TEXTO },
+  { nome: "lista: célula / linha em hover", texto: "--color-text-primary", fundo: "--color-surface-raised", limite: TEXTO },
+  { nome: "lista: link do nome / balão", texto: "--color-accent", fundo: "--color-surface", limite: TEXTO },
+  { nome: "lista: link do nome / linha em hover", texto: "--color-accent", fundo: "--color-surface-raised", limite: TEXTO },
+  ...SEMANTICAS.flatMap((sm) => [
+    { nome: `lista: badge ${sm} / balão`, texto: `--color-${sm}-text`, fundo: `--color-${sm}-bg`, sobre: ["--color-surface"], limite: TEXTO },
+    { nome: `lista: badge ${sm} / linha em hover`, texto: `--color-${sm}-text`, fundo: `--color-${sm}-bg`, sobre: ["--color-surface-raised"], limite: TEXTO }
+  ]),
+  // O Início na 3.2 (DEC-104): os links do cartão de confirmações e do de
+  // processos não liberados, e a lista curta, todos na `--color-surface-card`.
+  { nome: "Início: link do cartão / --color-surface-card", texto: "--color-accent", fundo: "--color-surface-card", limite: TEXTO },
+  { nome: "Início: quantidade da lista curta / --color-surface-card", texto: "--color-text-secondary", fundo: "--color-surface-card", limite: TEXTO },
+  { nome: "Início: valor de atenção (não liberados) / --color-surface-card", texto: "--color-warning-text", fundo: "--color-surface-card", limite: TEXTO },
+  { nome: "lista: borda da busca em pílula / balão", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },
+
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
   { nome: "borda de campo / --color-surface", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },

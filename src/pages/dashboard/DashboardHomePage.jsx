@@ -36,7 +36,10 @@ import {
   datasProximas,
   janelaDasDatas,
   TIPOS_DE_DATA,
+  destinoDasConfirmacoes,
+  rotuloDaConfirmacaoPorProcesso,
 } from './inicio.js';
+import { pluralizar } from '../../components/ui/plural.js';
 // `link-interno` (F-1b) mora em `styles/modules.css`, junto das demais
 // classes compartilhadas das telas de módulo.
 import '../../styles/modules.css';
@@ -175,6 +178,9 @@ const pluralParcelas = (n) => (n === 1 ? '1 parcela vencida' : `${n} parcelas ve
 function DashboardHomePage() {
   const online = useOnlineStatus();
   const [summary, setSummary] = useState(null);
+  // Fase 3.2 (DEC-104): a lista curta das confirmações por processo.
+  const [listaDeConfirmacoesAberta, setListaDeConfirmacoesAberta] = useState(false);
+  const confirmacoes = destinoDasConfirmacoes(summary?.confirmacoesNovasPorProcesso);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [upcoming, setUpcoming] = useState([]);
@@ -674,17 +680,84 @@ function DashboardHomePage() {
 
         {summary && (
           <div className="summary-grid">
-            {CARDS.map(({ key, label, icone, color }) => (
-              <div key={key} className={`summary-card summary-card--${color}`}>
-                <p className="card-label">
-                  <IconeDoCartao icone={icone} />
-                  {label}
-                </p>
-                <p className="card-value">
-                  {summary[key] != null ? summary[key].toLocaleString('pt-BR') : '—'}
-                </p>
-              </div>
-            ))}
+            {CARDS.map(({ key, label, icone, color }) => {
+              const conteudo = (
+                <>
+                  <p className="card-label">
+                    <IconeDoCartao icone={icone} />
+                    {label}
+                  </p>
+                  <p className="card-value">
+                    {summary[key] != null ? summary[key].toLocaleString('pt-BR') : '—'}
+                  </p>
+                </>
+              );
+              // Fase 3.2 (DEC-104): com UM processo, o cartão de confirmações
+              // é o link para ele; com vários, abre a lista curta embaixo.
+              if (key === 'confirmacoesNaoVistas' && confirmacoes.tipo === 'processo') {
+                return (
+                  <Link key={key} to={confirmacoes.destino} className={`summary-card summary-card--${color} summary-card--link`}>
+                    {conteudo}
+                    <span className="card-note">Abrir o processo</span>
+                  </Link>
+                );
+              }
+              if (key === 'confirmacoesNaoVistas' && confirmacoes.tipo === 'lista') {
+                return (
+                  <div key={key} className={`summary-card summary-card--${color}`}>
+                    {conteudo}
+                    <button
+                      type="button"
+                      className="summary-card__alternar"
+                      aria-expanded={listaDeConfirmacoesAberta}
+                      aria-controls="confirmacoes-por-processo"
+                      onClick={() => setListaDeConfirmacoesAberta((v) => !v)}
+                    >
+                      {listaDeConfirmacoesAberta ? 'Fechar a lista' : `Ver os ${confirmacoes.itens.length} processos`}
+                    </button>
+                  </div>
+                );
+              }
+              return (
+                <div key={key} className={`summary-card summary-card--${color}`}>
+                  {conteudo}
+                </div>
+              );
+            })}
+
+            {/* Fase 3.2 (DEC-104): vínculos de cliente com portal ainda não
+                liberados. O link vai para a lista COMUM de processos — o
+                filtro por liberação é da 3.4. */}
+            <div className="summary-card summary-card--warning">
+              <p className="card-label">
+                <IconeDoCartao icone="folder" />
+                Processos não liberados no portal
+              </p>
+              <p className="card-value">
+                {summary.processosNaoLiberados != null ? summary.processosNaoLiberados.toLocaleString('pt-BR') : '—'}
+              </p>
+              <Link to="/dashboard/processos" className="card-note card-note--link">
+                Ver a lista de processos
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {summary && confirmacoes.tipo === 'lista' && listaDeConfirmacoesAberta && (
+          <div className="confirmacoes-por-processo" id="confirmacoes-por-processo">
+            <p className="confirmacoes-por-processo__titulo">Confirmações novas por processo</p>
+            <ul>
+              {confirmacoes.itens.map((c) => (
+                <li key={c.processoId}>
+                  <Link to={`/dashboard/processos/detalhe/${c.processoId}`} className="link-interno">
+                    {rotuloDaConfirmacaoPorProcesso(c)}
+                  </Link>
+                  <span className="confirmacoes-por-processo__quantidade">
+                    {pluralizar(c.quantidade, 'confirmação')}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </BlocoDoPainel>

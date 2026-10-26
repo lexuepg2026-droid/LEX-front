@@ -433,8 +433,10 @@ describe("Fase 2b · item 3 — o contexto casa com o caminho (DEC-085)", () => 
     // O formulário de parcela guarda o honorário em `feeId`; o de pagamento, em
     // `honorarioId`. A busca é nas opções GARANTIDAS (DEC-086), para o
     // honorário antigo buscado pelo id também ter contexto.
-    ["src/pages/installments/InstallmentFormPage.jsx", /usePublicarContexto\(\{\s*processoId: idDoProcesso\(opcoesDeHonorario\.find\(\(f\) => f\._id === formData\.feeId\)\?\.processoId\),?\s*\}\)/],
-    ["src/pages/payments/PaymentFormPage.jsx", /usePublicarContexto\(\{\s*processoId: idDoProcesso\(opcoesDeHonorario\.find\(\(f\) => f\._id === formData\.honorarioId\)\?\.processoId\),?\s*\}\)/],
+    // Fase 3.2: o processo sai do honorário ESCOLHIDO no `SeletorComBusca`
+    // (clicado ou resolvido pelo id), não mais da lista de opções.
+    ["src/pages/installments/InstallmentFormPage.jsx", /usePublicarContexto\(\{\s*processoId: idDoProcesso\([\s\S]*?honorarioEscolhido\.processoId[\s\S]*?\}\)/],
+    ["src/pages/payments/PaymentFormPage.jsx", /usePublicarContexto\(\{\s*processoId: idDoProcesso\([\s\S]*?honorarioEscolhido\.processoId[\s\S]*?\}\)/],
     ["src/hooks/useProcessoFiltrado.js", /usePublicarContexto\(\{ processoId \}\)/],
     ["src/components/documents/GenerationPanel.jsx", /usePublicarContexto\(\{ processoId \}\)/],
     ["src/pages/calendar/EventFormPage.jsx", /usePublicarContexto\(\{ processoId: formData\.processoId \}\)/],
@@ -449,52 +451,49 @@ describe("Fase 2b · item 3 — o contexto casa com o caminho (DEC-085)", () => 
 });
 
 // ── Item 4 — DEC-086 ──────────────────────────────────────────────────────
-import { comOpcaoGarantida, precisaBuscarOpcao, ROTULO_OPCAO_PENDENTE } from "../../src/utils/seletorLimitado.js";
+// REESCRITO na Fase 3.2 (DEC-101). A regra da 2b — o valor escolhido (da URL
+// ou do registro em edição) NUNCA aparece vazio — continua; o que mudou é o
+// meio: não há mais `<option>` garantida num `<select>` com teto, há o
+// `SeletorComBusca`, que busca o escolhido pelo id e mostra o rótulo inteiro.
+import {
+  precisaBuscarPorId,
+  textoDoEscolhido,
+  MENSAGENS_DO_SELETOR,
+  honorarioDoDetalhe,
+} from "../../src/utils/seletorComBusca.js";
 import { rotuloDoHonorarioNoSeletor } from "../../src/utils/feeLabel.js";
 
-describe("Fase 2b · item 4 — a opção escolhida nunca some do seletor (DEC-086)", () => {
-  const lista = [{ _id: "a" }, { _id: "b" }];
-
-  test("o escolhido que está na lista não muda nada", () => {
-    assert.equal(comOpcaoGarantida(lista, "a"), lista);
-    assert.equal(precisaBuscarOpcao(lista, "a", true), false);
+describe("Fase 2b · item 4 — a escolha nunca some do seletor (DEC-086, pela 3.2)", () => {
+  test("o id que chega sem item conhecido é buscado; o conhecido, não", () => {
+    assert.equal(precisaBuscarPorId("z", null), true);
+    assert.equal(precisaBuscarPorId("z", { _id: "z" }), false);
+    assert.equal(precisaBuscarPorId("z", { _id: "y" }), true, "item de OUTRO id não serve");
+    assert.equal(precisaBuscarPorId("", null), false, "sem escolha, nada a buscar");
   });
 
-  test("fora dos 100: busca, e enquanto isso a opção existe marcada", () => {
-    assert.equal(precisaBuscarOpcao(lista, "z", true), true);
-    assert.equal(precisaBuscarOpcao(lista, "z", false), false, "espera a lista antes de buscar");
-    const pendente = comOpcaoGarantida(lista, "z");
-    assert.deepEqual(pendente[0], { _id: "z", _pendente: "carregando" });
-    assert.ok(pendente.some((o) => o._id === "z"), "o <select> tem a opção do valor que carrega");
+  test("enquanto busca, e se falhar, a tela diz — nunca um campo vazio mudo", () => {
+    assert.ok(MENSAGENS_DO_SELETOR.carregandoEscolhido);
+    assert.match(MENSAGENS_DO_SELETOR.indisponivel, /indisponível/);
+    assert.equal(textoDoEscolhido(null, () => "x"), "");
+    assert.equal(textoDoEscolhido({ _id: "a" }, (i) => `rótulo ${i._id}`), "rótulo a");
   });
 
-  test("a busca voltou: o item entra PRIMEIRO; falhou: fica marcado como indisponível", () => {
-    const extra = { _id: "z", titulo: "Antigo" };
-    assert.deepEqual(comOpcaoGarantida(lista, "z", extra), [extra, ...lista]);
-    assert.deepEqual(comOpcaoGarantida(lista, "z", null, "indisponivel")[0], { _id: "z", _pendente: "indisponivel" });
-    assert.ok(ROTULO_OPCAO_PENDENTE.carregando && ROTULO_OPCAO_PENDENTE.indisponivel);
-  });
-
-  test("um extra de OUTRO id não é usado", () => {
-    assert.deepEqual(comOpcaoGarantida(lista, "z", { _id: "y" })[0], { _id: "z", _pendente: "carregando" });
-  });
-
-  test("sem escolha, a lista fica como veio", () => {
-    assert.equal(comOpcaoGarantida(lista, ""), lista);
-    assert.deepEqual(comOpcaoGarantida(null, ""), []);
+  test("o seletor busca pelo id e avisa a faixa de contexto do item resolvido", () => {
+    const seletor = semComentarios(ler("src/components/ui/SeletorComBusca.jsx"));
+    assert.match(seletor, /buscarPorIdRef\.current\(valor\)/);
+    assert.match(seletor, /onEscolhidoRef\.current\?\.\(item\)/);
+    assert.match(seletor, /setEstadoDoId\('indisponivel'\)/);
   });
 
   for (const [arquivo, campo, servico] of [
     ["src/pages/fees/FeeFormPage.jsx", "processoId", /processService\.getProcessById\(pid\)/],
     ["src/pages/installments/InstallmentFormPage.jsx", "feeId", /feeService\.getFeeById\(hid\)/],
+    ["src/pages/payments/PaymentFormPage.jsx", "honorarioId", /feeService\.getFeeById\(hid\)/],
   ]) {
-    test(`${arquivo.split("/").pop()} usa as opções garantidas e busca pelo id`, () => {
+    test(`${arquivo.split("/").pop()} entrega o id escolhido ao seletor e busca pelo id`, () => {
       const fonte = semComentarios(ler(arquivo));
-      assert.match(fonte, new RegExp(`useOpcaoGarantida\\(\\{[\\s\\S]*?idEscolhido: formData\\.${campo}`));
+      assert.match(fonte, new RegExp(`<SeletorComBusca[\\s\\S]*?valor=\\{formData\\.${campo}\\}`));
       assert.match(fonte, servico);
-      assert.match(fonte, /\.finally\(\(\) => setListaCarregada\(true\)\)/, "a lista conta como carregada mesmo se falhar");
-      assert.match(fonte, /opcoesDe(Processo|Honorario)\.map\(/, "o <select> desenha as opções garantidas");
-      assert.match(fonte, /ROTULO_OPCAO_PENDENTE\[/);
     });
   }
 
@@ -506,24 +505,36 @@ describe("Fase 2b · item 4 — a opção escolhida nunca some do seletor (DEC-0
     assert.match(parcela, /searchParams\.get\('honorarioId'\)/);
     assert.match(parcela, /setFormData\(prev => \(\{ \.\.\.prev, feeId: doQuery \}\)\)/);
   });
+
+  test("o detalhe do honorário vira o formato da listagem (cliente dentro do processo)", () => {
+    const fee = { _id: "f", descricao: "D", processoId: { _id: "p", numeroProcesso: "1" }, cliente: { tipoPessoa: "fisica", nomeCompleto: "Ana" } };
+    assert.equal(honorarioDoDetalhe(fee).processoId.clientePrincipalId.nomeCompleto, "Ana");
+    assert.equal(rotuloDoHonorarioNoSeletor(honorarioDoDetalhe(fee)), "D — Processo nº 1 — Ana");
+  });
 });
 
-describe("Fase 2b · item 4 — o honorário no seletor diz o processo (DEC-086)", () => {
-  test("descrição — Processo nº número — valor", () => {
-    const fee = { descricao: "Contratuais", valor: 5000, processoId: { _id: "p", titulo: "Cobrança", numeroProcesso: "0001234-56.2024.8.16.0001" } };
-    assert.equal(rotuloDoHonorarioNoSeletor(fee), "Contratuais — Processo nº 0001234-56.2024.8.16.0001 — R$\u00a05.000,00");
+describe("Fase 2b · item 4 — o rótulo do honorário (DEC-086, decisão 3 da 3.2)", () => {
+  test("descrição — Processo nº número — cliente principal", () => {
+    const fee = {
+      descricao: "Contratuais", valor: 5000,
+      processoId: { _id: "p", titulo: "Cobrança", numeroProcesso: "0001234-56.2024.8.16.0001",
+        clientePrincipalId: { tipoPessoa: "juridica", razaoSocial: "Agro Ltda" } },
+    };
+    assert.equal(rotuloDoHonorarioNoSeletor(fee), "Contratuais — Processo nº 0001234-56.2024.8.16.0001 — Agro Ltda");
   });
 
-  test("sem número, o título; sem processo populado, só descrição e valor", () => {
+  test("sem número, o título; sem processo populado, só a descrição; o valor saiu", () => {
     assert.equal(rotuloDoHonorarioNoSeletor({ descricao: "X", valor: 10, processoId: { titulo: "Inventário" } }),
-      "X — Processo: Inventário — R$\u00a010,00");
-    assert.equal(rotuloDoHonorarioNoSeletor({ descricao: "X", valor: 10, processoId: "p1" }), "X — R$\u00a010,00");
+      "X — Processo: Inventário");
+    assert.equal(rotuloDoHonorarioNoSeletor({ descricao: "X", valor: 10, processoId: "p1" }), "X");
   });
 
-  test("o form de parcela usa o rótulo novo", () => {
-    const fonte = semComentarios(ler("src/pages/installments/InstallmentFormPage.jsx"));
-    assert.match(fonte, /rotuloDoHonorarioNoSeletor\(f\)/);
-    assert.doesNotMatch(fonte, /\{f\.descricao\} — \{f\.valor/, "o rótulo antigo saiu");
+  test("os forms de parcela e de pagamento usam o rótulo novo", () => {
+    for (const arquivo of ["src/pages/installments/InstallmentFormPage.jsx", "src/pages/payments/PaymentFormPage.jsx"]) {
+      const fonte = semComentarios(ler(arquivo));
+      assert.match(fonte, /rotulo=\{rotuloDoHonorarioNoSeletor\}/);
+      assert.doesNotMatch(fonte, /formatFeeLabel/, "o rótulo antigo saiu");
+    }
   });
 });
 

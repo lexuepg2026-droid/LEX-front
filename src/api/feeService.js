@@ -12,6 +12,13 @@ const listFees = ({ page = 1, limit = 20, processoId, busca, tipo, status, de, a
   if (ate) params.ate = ate;
   return api.get('/fees', { params });
 };
+// Fase 3.2 (DEC-101): a busca do seletor de honorário dos formulários de
+// parcela e de pagamento. Dispara pela digitação (espera de 300 ms), então vai
+// com `semToastGlobal` (DEC-084): a falha aparece em linha, no próprio campo.
+// Até 20 sugestões — quem não achou digita mais uma letra.
+export const LIMITE_DE_SUGESTOES = 20;
+const buscarHonorarios = (busca) =>
+  api.get('/fees', { params: { page: 1, limit: LIMITE_DE_SUGESTOES, busca }, semToastGlobal: true });
 const getFeeById = (id) => api.get(`/fees/${id}`);
 const createFee = (data) => api.post('/fees', data);
 // PATCH, e não PUT (Fase 4.2). `PUT` sobrevive no backend apenas como alias
@@ -36,6 +43,7 @@ const createRenegotiation = (id, data) => api.post(`/fees/${id}/renegotiations`,
 
 export default {
   listFees,
+  buscarHonorarios,
   getFeeById,
   createFee,
   updateFee,

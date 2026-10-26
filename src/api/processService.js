@@ -14,6 +14,11 @@ const listProcesses = ({ page = 1, limit = 20, busca, status, situacao, fase, li
   if (liminar) params.liminar = liminar;
   return api.get('/processes', { params });
 };
+// Fase 3.2 (DEC-101): a busca do seletor de processo do formulário de
+// honorário — número, título e nome do cliente principal, sem acento. Pela
+// digitação, então `semToastGlobal` (DEC-084) e erro em linha. Até 20.
+const buscarProcessos = (busca) =>
+  api.get('/processes', { params: { page: 1, limit: 20, busca }, semToastGlobal: true });
 const getProcessById = (id) => api.get(`/processes/${id}`);
 const createProcess = (data) => api.post('/processes', data);
 // `PATCH` é o verbo de update do projeto. O `PUT` continua no backend como
@@ -109,6 +114,7 @@ const getTimeline = (id) => api.get(`/processes/${id}/timeline`);
 export default {
   getTimeline,
   listProcesses,
+  buscarProcessos,
   getProcessById,
   createProcess,
   updateProcess,

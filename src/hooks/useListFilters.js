@@ -1,5 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PRESETS_PERIODO, intervaloDoPreset } from '../components/ui/periodo.js';
+import {
+  filtrosDaUrl,
+  paramsComFiltros,
+  paramsSemFiltros,
+  assinaturaDosFiltros,
+  substituiNoHistorico,
+} from '../utils/filtrosNaUrl.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // O ESTADO DOS FILTROS DE UMA LISTAGEM — Fase F-1b.3
@@ -26,21 +34,56 @@ import { PRESETS_PERIODO, intervaloDoPreset } from '../components/ui/periodo.js'
 // primeiro (e por isso nunca "engasga" enquanto se digita) e a consulta
 // depende do segundo.
 //
+// ── Fase 3.2 (DEC-103): `{ naUrl: true }` ────────────────────────────────
+// As três listas financeiras, na página própria, guardam os filtros na query
+// (`?busca=`, `?situacao=`, `?de=&ate=`…, regras em `utils/filtrosNaUrl.js`):
+// o "voltar" desfaz a troca, o link copiado abre no mesmo recorte, e trocar a
+// query não rola a página (`preventScrollReset`; o `VoltarAoTopo` só reage ao
+// `pathname`). A página continua no estado e volta a 1 quando a assinatura
+// dos filtros na URL muda — inclusive pelo "voltar".
+//
+// O modo de estado puro continua para quem divide a tela com outras listas:
+// o `FinanceiroPage` embute as três, e três listas na mesma query brigariam
+// pelo mesmo `?busca=`. E para a lista de clientes, que a 3.5 redesenha.
+//
 // ── O que este hook NÃO faz ──────────────────────────────────────────────
 // Não busca nada. Quem consulta é a tela, no seu próprio `useEffect`, porque
 // cada listagem tem endpoint e parâmetros próprios. Um hook que também
 // buscasse teria de conhecer as três APIs — e a quarta, quando chegasse.
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const useListFilters = (iniciais = {}) => {
-  const [filtros, setFiltros] = useState(() => ({
-    busca: '',
-    honorarioId: '',
-    preset: PRESETS_PERIODO.TODOS,
-    de: '',
-    ate: '',
-    ...iniciais
-  }));
+// As três listas financeiras: na página própria, filtros na URL (o
+// `processoId` sai junto no "Limpar filtros", DEC-070); embutidas no
+// `FinanceiroPage`, no estado.
+export const FILTROS_NA_URL = (embedded) =>
+  ({ naUrl: !embedded, extrasNaLimpeza: EXTRAS_DAS_FINANCEIRAS });
+const EXTRAS_DAS_FINANCEIRAS = Object.freeze(['processoId']);
+
+const PADROES = { busca: '', honorarioId: '', preset: PRESETS_PERIODO.TODOS, de: '', ate: '' };
+
+export const useListFilters = (iniciais = {}, { naUrl = false, extrasNaLimpeza = [] } = {}) => {
+  const estado = useFiltrosNoEstado(iniciais);
+  const url = useFiltrosNaUrl(iniciais, { ativo: naUrl, extrasNaLimpeza });
+  return naUrl ? url : estado;
+};
+
+// Quais filtros estão valendo AGORA. É o que a barra exibe e o que o estado
+// vazio usa para dizer o que está filtrando — quem chega numa lista curta
+// precisa saber se ela é curta ou está filtrada.
+const filtrosAtivos = (filtros) => {
+  const lista = [];
+  for (const [chave, valor] of Object.entries(filtros)) {
+    if (chave === 'preset') continue;
+    if (valor !== '' && valor !== undefined && valor !== null && valor !== false) {
+      lista.push(chave);
+    }
+  }
+  if (filtros.preset && filtros.preset !== PRESETS_PERIODO.TODOS) lista.push('preset');
+  return lista;
+};
+
+function useFiltrosNoEstado(iniciais) {
+  const [filtros, setFiltros] = useState(() => ({ ...PADROES, ...iniciais }));
   const [page, setPage] = useState(1);
   const [buscaDebounced, setBuscaDebounced] = useState('');
 
@@ -84,20 +127,7 @@ export const useListFilters = (iniciais = {}) => {
     setPage(1);
   }, []);
 
-  // Quais filtros estão valendo AGORA. É o que a barra exibe e o que o estado
-  // vazio usa para dizer o que está filtrando — quem chega numa lista curta
-  // precisa saber se ela é curta ou está filtrada.
-  const ativos = useMemo(() => {
-    const lista = [];
-    for (const [chave, valor] of Object.entries(filtros)) {
-      if (chave === 'preset') continue;
-      if (valor !== '' && valor !== undefined && valor !== null && valor !== false) {
-        lista.push(chave);
-      }
-    }
-    if (filtros.preset && filtros.preset !== PRESETS_PERIODO.TODOS) lista.push('preset');
-    return lista;
-  }, [filtros]);
+  const ativos = useMemo(() => filtrosAtivos(filtros), [filtros]);
 
   return {
     filtros,
@@ -110,6 +140,115 @@ export const useListFilters = (iniciais = {}) => {
     temFiltro: ativos.length > 0,
     ativos
   };
-};
+}
+
+function useFiltrosNaUrl(iniciais, { ativo, extrasNaLimpeza }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const campos = useMemo(
+    () => Object.keys({ ...PADROES, ...iniciais }).filter((c) => c !== 'preset'),
+    // As chaves de `iniciais` são fixas por tela.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+  const [personalizado, setPersonalizado] = useState(false);
+  const [page, setPage] = useState(1);
+
+  const daUrl = useMemo(
+    () => filtrosDaUrl(searchParams, campos, { personalizado }),
+    [searchParams, campos, personalizado]
+  );
+
+  // A busca DIGITADA é estado local (o input nunca engasga); a da URL é a
+  // consultada. O "voltar" que muda a URL reescreve o digitado.
+  const [buscaDigitada, setBuscaDigitada] = useState(daUrl.busca);
+  const buscaDaUrl = daUrl.busca;
+  const ultimaEscrita = useRef(buscaDaUrl);
+  useEffect(() => {
+    if (buscaDaUrl !== ultimaEscrita.current) {
+      ultimaEscrita.current = buscaDaUrl;
+      setBuscaDigitada(buscaDaUrl);
+    }
+  }, [buscaDaUrl]);
+
+  // A query mais recente, inclusive a que acabou de ser escrita e o roteador
+  // ainda não devolveu. Duas escritas seguidas (a data inicial e logo a final)
+  // partiriam da MESMA query antiga, e a segunda apagaria a primeira — foi o
+  // que a verificação no navegador da 3.2 pegou. Quando o roteador muda a URL
+  // por conta própria (o "voltar"), ela passa a valer.
+  const queryAtual = useRef(searchParams);
+  const queryDoRoteador = useRef(searchParams);
+  if (queryDoRoteador.current !== searchParams) {
+    queryDoRoteador.current = searchParams;
+    queryAtual.current = searchParams;
+  }
+
+  const escrever = useCallback((proximo, { substituir = false } = {}) => {
+    queryAtual.current = proximo;
+    setSearchParams(proximo, { replace: substituir, preventScrollReset: true });
+  }, [setSearchParams]);
+
+  // A busca vai para a URL depois da pausa de 300 ms.
+  useEffect(() => {
+    if (!ativo || buscaDigitada === buscaDaUrl) return undefined;
+    const t = setTimeout(() => {
+      ultimaEscrita.current = buscaDigitada;
+      escrever(paramsComFiltros(queryAtual.current, { busca: buscaDigitada.trim() === '' ? '' : buscaDigitada }), {
+        substituir: substituiNoHistorico(buscaDaUrl, buscaDigitada),
+      });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [ativo, buscaDigitada, buscaDaUrl, searchParams, escrever]);
+
+  // A REGRA 1: mudou a assinatura dos filtros na URL (por controle ou pelo
+  // "voltar"), página 1.
+  const assinatura = assinaturaDosFiltros(searchParams, campos, extrasNaLimpeza);
+  const assinaturaAnterior = useRef(assinatura);
+  useEffect(() => {
+    if (assinatura !== assinaturaAnterior.current) {
+      assinaturaAnterior.current = assinatura;
+      setPage(1);
+    }
+  }, [assinatura]);
+
+  const definirFiltro = useCallback((campo, valor) => {
+    if (campo === 'busca') {
+      setBuscaDigitada(valor);
+      return;
+    }
+    escrever(paramsComFiltros(queryAtual.current, { [campo]: valor }));
+    setPage(1);
+  }, [escrever]);
+
+  const aplicarPreset = useCallback((preset) => {
+    setPersonalizado(preset === PRESETS_PERIODO.PERSONALIZADO);
+    if (preset === PRESETS_PERIODO.PERSONALIZADO) return; // preserva as datas
+    const intervalo = intervaloDoPreset(preset);
+    escrever(paramsComFiltros(queryAtual.current, { de: intervalo.de ?? '', ate: intervalo.ate ?? '' }));
+    setPage(1);
+  }, [escrever]);
+
+  const limpar = useCallback(() => {
+    setPersonalizado(false);
+    setBuscaDigitada('');
+    ultimaEscrita.current = '';
+    escrever(paramsSemFiltros(queryAtual.current, campos, extrasNaLimpeza));
+    setPage(1);
+  }, [campos, extrasNaLimpeza, escrever]);
+
+  const filtros = useMemo(() => ({ ...daUrl, busca: buscaDigitada }), [daUrl, buscaDigitada]);
+  const ativos = useMemo(() => filtrosAtivos({ ...daUrl }), [daUrl]);
+
+  return {
+    filtros,
+    buscaDebounced: buscaDaUrl,
+    page,
+    setPage,
+    definirFiltro,
+    aplicarPreset,
+    limpar,
+    temFiltro: ativos.length > 0,
+    ativos
+  };
+}
 
 export default useListFilters;

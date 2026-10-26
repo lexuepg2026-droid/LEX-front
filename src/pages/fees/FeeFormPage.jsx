@@ -10,8 +10,9 @@ import { getApiErrorField } from '../../utils/apiError';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
 import { formatCurrency, formatPercent } from '../../utils/formatters';
 import { TIPO_HONORARIO_OPTIONS, STATUS_CANCELADO } from '../../utils/enums';
-import { LIMITE_DO_SELETOR, avisoDeSeletorLimitado, ROTULO_OPCAO_PENDENTE } from '../../utils/seletorLimitado';
-import useOpcaoGarantida from '../../hooks/useOpcaoGarantida';
+import SeletorComBusca from '../../components/ui/SeletorComBusca';
+import { rotuloDoProcessoNoSeletor } from '../../utils/feeLabel';
+import { MENSAGENS_DO_SELETOR } from '../../utils/seletorComBusca.js';
 import {
   camposDoTipo,
   derivarValorHonorario,
@@ -61,10 +62,9 @@ const EMPTY_FORM = {
 
 function FeeFormPage() {
   const [formData, setFormData] = useState(EMPTY_FORM);
-  const [processes, setProcesses] = useState([]);
-  // O total do envelope, para dizer quando o seletor foi cortado (DEC-067).
-  const [totalProcessos, setTotalProcessos] = useState(null);
-  const [listaCarregada, setListaCarregada] = useState(false);
+  // O processo do honorário em edição, populado pelo `GET /fees/:id`, para o
+  // seletor nascer com o rótulo sem outra ida ao servidor (DEC-086).
+  const [processoInicial, setProcessoInicial] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [campoComErro, setCampoComErro] = useState(null);
@@ -100,32 +100,23 @@ function FeeFormPage() {
     if (doQuery) setFormData(prev => ({ ...prev, processoId: doQuery }));
   }, [isEditing, searchParams]);
 
-  // E se o processo escolhido (da URL ou do honorário em edição) não estiver
-  // entre os 100 mais recentes, ele é buscado pelo id e entra no seletor —
-  // o limite conhecido da DEC-067.
-  const opcoesDeProcesso = useOpcaoGarantida({
-    lista: processes,
-    listaCarregada,
-    idEscolhido: formData.processoId,
-    buscar: (pid) => processService.getProcessById(pid).then(res => res.data),
-  });
+  // Fase 3.2 (DEC-101): o seletor busca no servidor — número, título e
+  // cliente principal —, e o teto de 100 e o aviso "Mostrando os N mais
+  // recentes" da DEC-067 saíram. O processo da URL ou da edição é buscado
+  // pelo id dentro do `SeletorComBusca` (DEC-086).
+  const buscarProcessos = (termo) => processService.buscarProcessos(termo);
+  const buscarProcessoPorId = (pid) => processService.getProcessById(pid).then(res => res.data);
 
   useEffect(() => {
-    // Sem `limit` vinham os 20 do padrão do backend, e um processo mais antigo
-    // simplesmente não existia no seletor (DEC-067). O teto é paliativo: a
-    // busca no servidor é da fase 3.
-    processService.listProcesses({ page: 1, limit: LIMITE_DO_SELETOR })
-      .then(res => {
-        setProcesses(res.data.data ?? res.data);
-        setTotalProcessos(typeof res.data?.total === 'number' ? res.data.total : null);
-      })
-      .catch(err => setError(getFinancialErrorMessage(err, 'Falha ao carregar processos.')))
-      .finally(() => setListaCarregada(true));
-
     if (isEditing) {
       feeService.getFeeById(id)
         .then(res => {
           const f = res.data;
+          // O processo vem populado sem o cliente; o cliente vem ao lado, em
+          // `cliente` — junta-se aqui para o rótulo do seletor sair completo.
+          if (f.processoId && typeof f.processoId === 'object') {
+            setProcessoInicial({ ...f.processoId, clientePrincipalId: f.cliente ?? null });
+          }
           setFormData({
             processoId: f.processoId?._id || f.processoId || '',
             descricao: f.descricao || '',
@@ -183,6 +174,13 @@ function FeeFormPage() {
     // última palavra: se esta validação e a de lá discordarem, quem vale é a
     // de lá — por isso o `catch` abaixo trata o 400 com `campo` do mesmo jeito,
     // e não como "erro que não deveria acontecer".
+    // O seletor guarda o id da ESCOLHA; texto digitado sem escolher não é
+    // processo nenhum.
+    if (!formData.processoId) {
+      setError(`Processo: ${MENSAGENS_DO_SELETOR.escolhaDaLista}`);
+      setCampoComErro('processoId');
+      return;
+    }
     const problema = validarHonorario(formData);
     if (problema) {
       setError(problema.mensagem);
@@ -226,26 +224,22 @@ function FeeFormPage() {
           <h3>Dados do Honorário</h3>
 
           <div className="form-group span-3">
-            <label>Processo *</label>
-            <select
+            <label htmlFor="honorario-processo">Processo *</label>
+            <SeletorComBusca
+              id="honorario-processo"
               name="processoId"
-              value={formData.processoId}
-              onChange={handleChange}
+              valor={formData.processoId}
+              onMudar={(pid) => {
+                setFormData(prev => ({ ...prev, processoId: pid }));
+                if (campoComErro === 'processoId') setCampoComErro(null);
+              }}
+              buscar={buscarProcessos}
+              buscarPorId={buscarProcessoPorId}
+              rotulo={rotuloDoProcessoNoSeletor}
+              itemInicial={processoInicial}
+              placeholder="Busque pelo número, título ou cliente"
               className={campoComErro === 'processoId' ? 'input-erro' : undefined}
-              required
-            >
-              <option value="">Selecione um processo</option>
-              {opcoesDeProcesso.map(p => (
-                <option key={p._id} value={p._id}>
-                  {p._pendente
-                    ? ROTULO_OPCAO_PENDENTE[p._pendente]
-                    : `${p.titulo} ${p.numeroProcesso ? `— ${p.numeroProcesso}` : ''}`}
-                </option>
-              ))}
-            </select>
-            {avisoDeSeletorLimitado(processes.length, totalProcessos) && (
-              <p className="form-hint">{avisoDeSeletorLimitado(processes.length, totalProcessos)}</p>
-            )}
+            />
           </div>
 
           <div className="form-group span-3">
