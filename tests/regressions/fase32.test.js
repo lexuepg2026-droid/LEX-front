@@ -301,3 +301,30 @@ describe("3.2 · item 3 — as três listas", () => {
     assert.match(css, /\.lista-balao \.data-table tbody tr:hover \{\s*background-color: var\(--color-surface-raised\);/);
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Item 5 — o cliente nas Datas próximas do Início (DEC-105)
+// ═══════════════════════════════════════════════════════════════════════════
+import { datasProximas, contextoDoProcesso, LIMITE_DE_DATAS } from "../../src/pages/dashboard/inicio.js";
+
+describe("3.2 · item 5 — {processo} · {cliente} nas Datas próximas", () => {
+  test("o contexto junta processo e cliente; sem cliente, só o processo; solto, nada", () => {
+    assert.equal(contextoDoProcesso(null, "0001", "Maria"), "0001 · Maria");
+    assert.equal(contextoDoProcesso({ numeroProcesso: "0002", titulo: "Inventário" }, null, "João"), "0002 — Inventário · João");
+    assert.equal(contextoDoProcesso(null, "0003", null), "0003");
+    assert.equal(contextoDoProcesso(null, null, "Sem processo"), null, "cliente sem processo não vira contexto");
+  });
+
+  test("as duas fontes levam o cliente até a linha", () => {
+    const itens = datasProximas({
+      vencimentos: [{ _id: "v", descricaoHonorario: "H", numeroParcela: 1, emAberto: 10, dataVencimento: "2026-10-28T00:00:00.000Z", numeroProcesso: "0001", clientePrincipalNome: "Maria" }],
+      eventos: [{ _id: "e", natureza: "evento", titulo: "Audiência", data: "2026-10-27", processo: { _id: "p", numeroProcesso: "0002", titulo: "Ação", clientePrincipalNome: "Agro Ltda" } }],
+      hoje: "2026-10-26",
+    });
+    assert.deepEqual(itens.map((i) => i.contexto), ["0002 — Ação · Agro Ltda", "0001 · Maria"]);
+  });
+
+  test("até 8 itens", () => {
+    assert.equal(LIMITE_DE_DATAS, 8);
+  });
+});
