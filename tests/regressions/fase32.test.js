@@ -328,3 +328,41 @@ describe("3.2 · item 5 — {processo} · {cliente} nas Datas próximas", () => 
     assert.equal(LIMITE_DE_DATAS, 8);
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Item 6 — confirmações levando ao processo e não liberados no portal (DEC-104)
+// ═══════════════════════════════════════════════════════════════════════════
+import { destinoDasConfirmacoes, rotuloDaConfirmacaoPorProcesso } from "../../src/pages/dashboard/inicio.js";
+
+describe("3.2 · item 6 — o Início com as duas chaves novas de GET /dashboard", () => {
+  test("nenhum processo: número; um: link direto; vários: lista curta", () => {
+    assert.deepEqual(destinoDasConfirmacoes(undefined), { tipo: "nenhum", itens: [] });
+    assert.deepEqual(destinoDasConfirmacoes([]), { tipo: "nenhum", itens: [] });
+    const um = destinoDasConfirmacoes([{ processoId: "p1", quantidade: 2 }]);
+    assert.equal(um.tipo, "processo");
+    assert.equal(um.destino, "/dashboard/processos/detalhe/p1");
+    const varios = destinoDasConfirmacoes([{ processoId: "p1", quantidade: 1 }, { processoId: "p2", quantidade: 3 }]);
+    assert.equal(varios.tipo, "lista");
+    assert.equal(varios.itens.length, 2);
+  });
+
+  test("o rótulo do processo na lista é número — título", () => {
+    assert.equal(rotuloDaConfirmacaoPorProcesso({ numeroProcesso: "0001", titulo: "Inventário" }), "0001 — Inventário");
+    assert.equal(rotuloDaConfirmacaoPorProcesso({}), "Processo");
+  });
+
+  test("a tela: link direto, botão que abre a lista, quantidade no plural certo", () => {
+    const fonte = semComentarios(ler("src/pages/dashboard/DashboardHomePage.jsx"));
+    assert.match(fonte, /confirmacoes\.tipo === 'processo'[\s\S]{0,200}<Link key=\{key\} to=\{confirmacoes\.destino\}/);
+    assert.match(fonte, /aria-expanded=\{listaDeConfirmacoesAberta\}/);
+    assert.match(fonte, /pluralizar\(c\.quantidade, 'confirmação'\)/);
+  });
+
+  test("o cartão de não liberados leva à lista COMUM de processos — sem filtro novo", () => {
+    const fonte = semComentarios(ler("src/pages/dashboard/DashboardHomePage.jsx"));
+    assert.match(fonte, /Processos não liberados no portal/);
+    assert.match(fonte, /summary\.processosNaoLiberados/);
+    assert.match(fonte, /<Link to="\/dashboard\/processos" className="card-note card-note--link">/);
+    assert.doesNotMatch(fonte, /processos\?liberado/, "o filtro por liberação é da 3.4");
+  });
+});

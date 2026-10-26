@@ -586,3 +586,71 @@ a.datas-item:hover {
   .datas-item { grid-template-columns: auto minmax(0, 1fr); }
   .datas-item__pilula { grid-column: 2; justify-self: start; }
 }
+
+/* ── Fase 3.2 (DEC-104): o cartão que leva ao processo e a lista curta ───
+   O cartão de "Confirmações novas" vira link quando há um processo só; o
+   realce de hover é o das ações rápidas (`--color-surface-raised`), pares já
+   medidos na 3.1. Com vários processos, um botão de texto abre a lista. */
+.summary-card--link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.summary-card--link:hover {
+  background-color: var(--color-surface-raised);
+}
+
+.summary-card__alternar {
+  align-self: flex-start;
+  margin-top: var(--space-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.card-note--link {
+  color: var(--color-accent);
+  text-decoration: underline;
+  align-self: flex-start;
+}
+
+.confirmacoes-por-processo {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-surface-card);
+}
+
+.confirmacoes-por-processo__titulo {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.confirmacoes-por-processo ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.confirmacoes-por-processo li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  overflow-wrap: anywhere;
+}
+
+.confirmacoes-por-processo__quantidade {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}

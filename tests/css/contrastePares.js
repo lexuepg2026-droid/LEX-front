@@ -150,6 +150,11 @@ export const PARES = [
     { nome: `lista: badge ${sm} / balão`, texto: `--color-${sm}-text`, fundo: `--color-${sm}-bg`, sobre: ["--color-surface"], limite: TEXTO },
     { nome: `lista: badge ${sm} / linha em hover`, texto: `--color-${sm}-text`, fundo: `--color-${sm}-bg`, sobre: ["--color-surface-raised"], limite: TEXTO }
   ]),
+  // O Início na 3.2 (DEC-104): os links do cartão de confirmações e do de
+  // processos não liberados, e a lista curta, todos na `--color-surface-card`.
+  { nome: "Início: link do cartão / --color-surface-card", texto: "--color-accent", fundo: "--color-surface-card", limite: TEXTO },
+  { nome: "Início: quantidade da lista curta / --color-surface-card", texto: "--color-text-secondary", fundo: "--color-surface-card", limite: TEXTO },
+  { nome: "Início: valor de atenção (não liberados) / --color-surface-card", texto: "--color-warning-text", fundo: "--color-surface-card", limite: TEXTO },
   { nome: "lista: borda da busca em pílula / balão", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },
 
   // Não texto.

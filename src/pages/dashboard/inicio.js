@@ -185,3 +185,25 @@ export const janelaDasDatas = (agora = new Date()) => {
   const chave = (ms) => new Date(ms).toISOString().slice(0, 10);
   return { de: chave(base - dia), ate: chave(base + JANELA_DE_DIAS * dia) };
 };
+
+// ── "Confirmações novas" leva ao processo (Fase 3.2, DEC-104) ─────────────
+//
+// O cartão dizia quantas confirmações e não de quem. `GET /dashboard` passou a
+// mandar `confirmacoesNovasPorProcesso` (até 10, pela mais recente). Com UM
+// processo, o cartão é o link para ele — abrir a ficha marca as confirmações
+// como vistas (passo 97). Com vários, uma lista curta abre embaixo do cartão,
+// com cada processo e quantas confirmações. Sem nenhuma, o cartão é número.
+export const destinoDasConfirmacoes = (lista) => {
+  const itens = (Array.isArray(lista) ? lista : []).filter((c) => c && c.processoId);
+  if (itens.length === 0) return { tipo: 'nenhum', itens: [] };
+  if (itens.length === 1) {
+    return { tipo: 'processo', destino: `/dashboard/processos/detalhe/${itens[0].processoId}`, itens };
+  }
+  return { tipo: 'lista', itens };
+};
+
+// "número — título", como a faixa de contexto (DEC-085).
+export const rotuloDaConfirmacaoPorProcesso = (item) => {
+  const partes = [(item?.numeroProcesso || '').trim(), (item?.titulo || '').trim()].filter(Boolean);
+  return partes.length ? partes.join(' — ') : 'Processo';
+};
