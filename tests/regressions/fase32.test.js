@@ -123,3 +123,85 @@ describe("3.2 · item 2 — o seletor com busca no servidor", () => {
     assert.match(fonte, /pode salvar assim mesmo/);
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Item 4 — situação, período e busca na URL (DEC-103)
+// ═══════════════════════════════════════════════════════════════════════════
+import {
+  nomeNaUrl,
+  presetDoIntervalo,
+  filtrosDaUrl,
+  paramsComFiltros,
+  paramsSemFiltros,
+  assinaturaDosFiltros,
+  substituiNoHistorico,
+} from "../../src/utils/filtrosNaUrl.js";
+import { PRESETS_PERIODO } from "../../src/components/ui/periodo.js";
+
+describe("3.2 · item 4 — os filtros na URL", () => {
+  const OUTUBRO = new Date(Date.UTC(2026, 9, 26, 15));
+  const CAMPOS = ["busca", "honorarioId", "de", "ate", "status"];
+
+  test("sem parâmetro é 'Qualquer período' — o padrão não se escreve", () => {
+    const f = filtrosDaUrl(new URLSearchParams(""), CAMPOS, { agora: OUTUBRO });
+    assert.equal(f.preset, PRESETS_PERIODO.TODOS);
+    assert.equal(f.de, "");
+    assert.equal(paramsComFiltros(new URLSearchParams("de=2026-10-01"), { de: "" }).toString(), "");
+  });
+
+  test("um período que cruza a virada do mês vai e volta inteiro, como intervalo personalizado", () => {
+    const params = paramsComFiltros(new URLSearchParams("processoId=p1"), { de: "2026-09-25", ate: "2026-10-05" });
+    assert.equal(params.toString(), "processoId=p1&de=2026-09-25&ate=2026-10-05");
+    const f = filtrosDaUrl(params, CAMPOS, { agora: OUTUBRO });
+    assert.equal(f.de, "2026-09-25");
+    assert.equal(f.ate, "2026-10-05");
+    assert.equal(f.preset, PRESETS_PERIODO.PERSONALIZADO);
+  });
+
+  test("o preset é derivado das datas: mês atual e últimos 6 meses", () => {
+    assert.equal(presetDoIntervalo("2026-10-01", "2026-10-31", OUTUBRO), PRESETS_PERIODO.MES_ATUAL);
+    assert.equal(presetDoIntervalo("2026-05-01", "2026-10-31", OUTUBRO), PRESETS_PERIODO.ULTIMOS_6_MESES);
+    // O mesmo link aberto em novembro diz a verdade: é um intervalo fixo.
+    assert.equal(presetDoIntervalo("2026-10-01", "2026-10-31", new Date(Date.UTC(2026, 10, 2))), PRESETS_PERIODO.PERSONALIZADO);
+  });
+
+  test("'Intervalo personalizado' sem datas ainda continua personalizado", () => {
+    const f = filtrosDaUrl(new URLSearchParams(""), CAMPOS, { personalizado: true, agora: OUTUBRO });
+    assert.equal(f.preset, PRESETS_PERIODO.PERSONALIZADO);
+  });
+
+  test("status vai como ?situacao=; data torta é ignorada", () => {
+    assert.equal(nomeNaUrl("status"), "situacao");
+    assert.equal(paramsComFiltros(new URLSearchParams(""), { status: "vencido" }).toString(), "situacao=vencido");
+    const f = filtrosDaUrl(new URLSearchParams("situacao=pago&de=26/10/2026&busca=ana"), CAMPOS, { agora: OUTUBRO });
+    assert.equal(f.status, "pago");
+    assert.equal(f.de, "", "data fora de AAAA-MM-DD não vai ao servidor");
+    assert.equal(f.busca, "ana");
+  });
+
+  test("limpar tira os filtros e o processoId, e preserva o resto", () => {
+    const p = paramsSemFiltros(new URLSearchParams("busca=a&situacao=pago&processoId=x&voltar=/dashboard"), CAMPOS, ["processoId"]);
+    assert.equal(p.toString(), "voltar=%2Fdashboard");
+  });
+
+  test("a assinatura muda quando um filtro muda (página 1) e não com parâmetro alheio", () => {
+    const a = assinaturaDosFiltros(new URLSearchParams("busca=a"), CAMPOS, ["processoId"]);
+    assert.notEqual(a, assinaturaDosFiltros(new URLSearchParams("busca=ab"), CAMPOS, ["processoId"]));
+    assert.equal(a, assinaturaDosFiltros(new URLSearchParams("busca=a&voltar=/x"), CAMPOS, ["processoId"]));
+  });
+
+  test("refinar a busca substitui a entrada do histórico; começar ou apagar cria uma", () => {
+    assert.equal(substituiNoHistorico("mar", "mari"), true);
+    assert.equal(substituiNoHistorico("", "m"), false);
+    assert.equal(substituiNoHistorico("maria", ""), false);
+  });
+
+  test("o hook escreve na URL sem rolar a página, e as três listas usam o modo URL fora do Financeiro", () => {
+    const hook = semComentarios(ler("src/hooks/useListFilters.js"));
+    assert.match(hook, /setSearchParams\(proximo, \{ replace: substituir, preventScrollReset: true \}\)/);
+    assert.match(hook, /naUrl: !embedded/);
+    for (const arquivo of ["src/pages/fees/FeeListPage.jsx", "src/pages/installments/InstallmentListPage.jsx", "src/pages/payments/PaymentListPage.jsx"]) {
+      assert.match(semComentarios(ler(arquivo)), /useListFilters\(\{[^}]*\}, FILTROS_NA_URL\(embedded\)\)/, arquivo);
+    }
+  });
+});

@@ -184,7 +184,12 @@ describe("Fase 0 · item 5 — o filtro de processo da URL é visível", () => {
       assert.match(codigo, /processo: processoId \? \{ rotulo: filtroProcesso\.rotulo \} : null/);
       assert.match(codigo, /limpar=\{limparTudo\}/);
       assert.match(codigo, /temFiltro=\{filtrado\}/);
-      assert.match(codigo, /if \(processoId\) filtroProcesso\.remover\(\)/);
+      // Fase 3.2 (DEC-103): na página própria o `processoId` sai no mesmo
+      // `limpar` da URL (`FILTROS_NA_URL` → `extrasNaLimpeza`); embutida no
+      // Financeiro, pelo chip, como antes. As duas metades continuam travadas.
+      assert.match(codigo, /if \(processoId && embedded\) filtroProcesso\.remover\(\)/);
+      assert.match(codigo, /FILTROS_NA_URL\(embedded\)/);
+      assert.match(semComentarios(ler("src/hooks/useListFilters.js")), /EXTRAS_DAS_FINANCEIRAS = Object\.freeze\(\['processoId'\]\)/);
     });
   }
 

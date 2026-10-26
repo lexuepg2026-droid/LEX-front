@@ -9,7 +9,7 @@ import Paginador from '../../components/ui/Paginador';
 import ActionMenu from '../../components/ui/ActionMenu';
 import FinancialFilters from '../../components/financeiro/FinancialFilters';
 import { descricaoDoRecorteFinanceiro } from '../../components/financeiro/filterSummary.js';
-import useListFilters from '../../hooks/useListFilters';
+import useListFilters, { FILTROS_NA_URL } from '../../hooks/useListFilters';
 import useProcessoFiltrado from '../../hooks/useProcessoFiltrado';
 import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
 import { formatDate, formatCurrency } from '../../utils/formatters';
@@ -64,7 +64,7 @@ function PaymentListPage({ embedded = false }) {
   const {
     filtros, buscaDebounced, page, setPage,
     definirFiltro, aplicarPreset, limpar, temFiltro
-  } = useListFilters({ formaPagamento: '' });
+  } = useListFilters({ formaPagamento: '' }, FILTROS_NA_URL(embedded));
 
   useEffect(() => {
     let ativo = true;
@@ -150,9 +150,11 @@ function PaymentListPage({ embedded = false }) {
   // barra e para o estado vazio, e o "Limpar filtros" o remove junto — senão a
   // frase diria "do processo X" e o botão deixaria o processo de pé.
   const filtrado = temFiltro || Boolean(processoId);
+  // Na página própria o `processoId` sai no mesmo `limpar` (uma escrita só
+  // na URL — duas seguidas se atropelariam); embutida, pelo chip.
   const limparTudo = () => {
     limpar();
-    if (processoId) filtroProcesso.remover();
+    if (processoId && embedded) filtroProcesso.remover();
   };
 
   const body = (
