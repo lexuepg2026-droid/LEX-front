@@ -75,7 +75,7 @@ function InstallmentListPage({ embedded = false }) {
     de: filtros.de || undefined,
     ate: filtros.ate || undefined
   };
-  const { data, loading, error, updatedAt, fromCache, reload } = useCachedResource({
+  const { data, loading: carregando, error, updatedAt, fromCache, reload } = useCachedResource({
     resource: 'installments',
     params: consulta,
     fetcher: () => installmentService.listInstallments(consulta).then((res) => res.data),
@@ -87,6 +87,9 @@ function InstallmentListPage({ embedded = false }) {
   // O "(37)" do título só com resposta na mão (DEC-102).
   const totalConhecido = typeof data?.total === 'number' ? data.total : null;
   const clicarNaLinha = useLinhaClicavel();
+  // `loading` é a PRIMEIRA carga: só ela troca a tabela pelo indicador. A
+  // recarga por troca de filtro (`carregando`) mantém a tabela (ver o JSX).
+  const loading = carregando && !data;
   // A linha leva à EDIÇÃO da parcela — o "Editar" do menu. A reparcelada não
   // se edita: a linha leva ao honorário, como o link do nome. Sem sinal a
   // edição é recusada (o menu diz o porquê), e a linha não abre nada.
@@ -199,6 +202,10 @@ function InstallmentListPage({ embedded = false }) {
         </label>
       </FinancialFilters>
 
+      {/* Fase 3.2: o `<Loading />` só na PRIMEIRA carga. Trocar um filtro com
+          a lista na tela mantém a tabela (esmaecida, `aria-busy`) até a
+          resposta nova — trocá-la pelo indicador encolhia a página e a
+          rolagem voltava ao topo (medido no navegador: 200 → 0 px). */}
       {loading ? (
         <Loading />
       ) : installments.length === 0 ? (
@@ -221,7 +228,7 @@ function InstallmentListPage({ embedded = false }) {
           }
         />
       ) : (
-        <div className="table-wrapper">
+        <div className="table-wrapper" aria-busy={carregando || undefined}>
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
           <table className="data-table data-table--fixed">
             {/* Dinheiro em `col-money`, data em `col-data`, status em
@@ -229,11 +236,14 @@ function InstallmentListPage({ embedded = false }) {
                 estavam em `col-sm`, que só aguenta até a casa dos milhares;
                 as duas datas em `col-xs` saíam "18/08/20…". */}
             <colgroup>
-              <col />
               {/* Fase 3.2 (DEC-102): processo e cliente principal, da chave
-                  nova `processo` da listagem. Texto livre, `auto`. */}
-              <col />
-              <col />
+                  nova `processo` da listagem. As colunas de texto ganharam
+                  largura pelo mesmo motivo da lista de honorários: a 1280 px
+                  as três `auto` ficavam com 14 px (medido). A tabela rola
+                  dentro do `.table-wrapper`. */}
+              <col className="col-md" />
+              <col className="col-md" />
+              <col className="col-md" />
               {/* `col-parcela`, e não `col-xxs`: a coluna mostrava "Parce…"
                   desde que a DEC-048 trocou o ordinal nu por "Parcela 1 de 3"
                   e a largura de 80 px continuou sendo a de um número. Ver a

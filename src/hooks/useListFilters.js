@@ -170,7 +170,20 @@ function useFiltrosNaUrl(iniciais, { ativo, extrasNaLimpeza }) {
     }
   }, [buscaDaUrl]);
 
+  // A query mais recente, inclusive a que acabou de ser escrita e o roteador
+  // ainda não devolveu. Duas escritas seguidas (a data inicial e logo a final)
+  // partiriam da MESMA query antiga, e a segunda apagaria a primeira — foi o
+  // que a verificação no navegador da 3.2 pegou. Quando o roteador muda a URL
+  // por conta própria (o "voltar"), ela passa a valer.
+  const queryAtual = useRef(searchParams);
+  const queryDoRoteador = useRef(searchParams);
+  if (queryDoRoteador.current !== searchParams) {
+    queryDoRoteador.current = searchParams;
+    queryAtual.current = searchParams;
+  }
+
   const escrever = useCallback((proximo, { substituir = false } = {}) => {
+    queryAtual.current = proximo;
     setSearchParams(proximo, { replace: substituir, preventScrollReset: true });
   }, [setSearchParams]);
 
@@ -179,7 +192,7 @@ function useFiltrosNaUrl(iniciais, { ativo, extrasNaLimpeza }) {
     if (!ativo || buscaDigitada === buscaDaUrl) return undefined;
     const t = setTimeout(() => {
       ultimaEscrita.current = buscaDigitada;
-      escrever(paramsComFiltros(searchParams, { busca: buscaDigitada.trim() === '' ? '' : buscaDigitada }), {
+      escrever(paramsComFiltros(queryAtual.current, { busca: buscaDigitada.trim() === '' ? '' : buscaDigitada }), {
         substituir: substituiNoHistorico(buscaDaUrl, buscaDigitada),
       });
     }, 300);
@@ -202,25 +215,25 @@ function useFiltrosNaUrl(iniciais, { ativo, extrasNaLimpeza }) {
       setBuscaDigitada(valor);
       return;
     }
-    escrever(paramsComFiltros(searchParams, { [campo]: valor }));
+    escrever(paramsComFiltros(queryAtual.current, { [campo]: valor }));
     setPage(1);
-  }, [searchParams, escrever]);
+  }, [escrever]);
 
   const aplicarPreset = useCallback((preset) => {
     setPersonalizado(preset === PRESETS_PERIODO.PERSONALIZADO);
     if (preset === PRESETS_PERIODO.PERSONALIZADO) return; // preserva as datas
     const intervalo = intervaloDoPreset(preset);
-    escrever(paramsComFiltros(searchParams, { de: intervalo.de ?? '', ate: intervalo.ate ?? '' }));
+    escrever(paramsComFiltros(queryAtual.current, { de: intervalo.de ?? '', ate: intervalo.ate ?? '' }));
     setPage(1);
-  }, [searchParams, escrever]);
+  }, [escrever]);
 
   const limpar = useCallback(() => {
     setPersonalizado(false);
     setBuscaDigitada('');
     ultimaEscrita.current = '';
-    escrever(paramsSemFiltros(searchParams, campos, extrasNaLimpeza));
+    escrever(paramsSemFiltros(queryAtual.current, campos, extrasNaLimpeza));
     setPage(1);
-  }, [searchParams, campos, extrasNaLimpeza, escrever]);
+  }, [campos, extrasNaLimpeza, escrever]);
 
   const filtros = useMemo(() => ({ ...daUrl, busca: buscaDigitada }), [daUrl, buscaDigitada]);
   const ativos = useMemo(() => filtrosAtivos({ ...daUrl }), [daUrl]);

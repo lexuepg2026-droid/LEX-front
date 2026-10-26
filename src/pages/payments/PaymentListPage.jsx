@@ -91,7 +91,7 @@ function PaymentListPage({ embedded = false }) {
     de: filtros.de || undefined,
     ate: filtros.ate || undefined
   };
-  const { data, loading, error, updatedAt, fromCache, reload } = useCachedResource({
+  const { data, loading: carregando, error, updatedAt, fromCache, reload } = useCachedResource({
     resource: 'payments',
     params: consulta,
     fetcher: () => paymentService.listPayments(consulta).then((res) => res.data),
@@ -103,6 +103,9 @@ function PaymentListPage({ embedded = false }) {
   // O "(37)" do título só com resposta na mão (DEC-102).
   const totalConhecido = typeof data?.total === 'number' ? data.total : null;
   const clicarNaLinha = useLinhaClicavel();
+  // `loading` é a PRIMEIRA carga: só ela troca a tabela pelo indicador. A
+  // recarga por troca de filtro (`carregando`) mantém a tabela (ver o JSX).
+  const loading = carregando && !data;
 
   // ── `handleReativar`, `confirmDelete` e `handleRemove` SAÍRAM na F-1a ────
   //
@@ -196,6 +199,10 @@ function PaymentListPage({ embedded = false }) {
         </select>
       </FinancialFilters>
 
+      {/* Fase 3.2: o `<Loading />` só na PRIMEIRA carga. Trocar um filtro com
+          a lista na tela mantém a tabela (esmaecida, `aria-busy`) até a
+          resposta nova — trocá-la pelo indicador encolhia a página e a
+          rolagem voltava ao topo (medido no navegador: 200 → 0 px). */}
       {loading ? (
         <Loading />
       ) : payments.length === 0 ? (
@@ -211,7 +218,7 @@ function PaymentListPage({ embedded = false }) {
           }
         />
       ) : (
-        <div className="table-wrapper">
+        <div className="table-wrapper" aria-busy={carregando || undefined}>
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`.
               "Observações" é texto livre digitado pela advogada, sem teto: era
               a coluna mais exposta ao defeito que a fase corrigiu. */}
@@ -235,15 +242,17 @@ function PaymentListPage({ embedded = false }) {
                 imune ao número de ações. */}
             <colgroup>
               <col className="col-lg" />
-              <col />
               {/* Fase 3.2 (DEC-102): o cliente principal ao lado do processo,
-                  de dentro do processo populado. Texto livre, `auto`. */}
-              <col />
-              <col />
+                  de dentro do processo populado. As colunas de texto ganharam
+                  largura: a 768 px as `auto` colapsavam para 0 (medido). A
+                  tabela rola dentro do `.table-wrapper`. */}
+              <col className="col-md" />
+              <col className="col-md" />
+              <col className="col-md" />
               <col className="col-money" />
               <col className="col-money" />
               <col className="col-data" />
-              <col />
+              <col className="col-xs" />
               <col className="col-acoes-menu" />
             </colgroup>
             <thead>

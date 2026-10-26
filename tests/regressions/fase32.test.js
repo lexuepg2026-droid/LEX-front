@@ -366,3 +366,34 @@ describe("3.2 · item 6 — o Início com as duas chaves novas de GET /dashboard
     assert.doesNotMatch(fonte, /processos\?liberado/, "o filtro por liberação é da 3.4");
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Achados da verificação no navegador (Fase 3.2)
+// ═══════════════════════════════════════════════════════════════════════════
+describe("3.2 · os três achados do navegador, travados", () => {
+  test("duas escritas seguidas na URL partem da query mais recente (data inicial + final)", () => {
+    const hook = semComentarios(ler("src/hooks/useListFilters.js"));
+    assert.match(hook, /queryAtual\.current = proximo;/);
+    for (const chamada of ["paramsComFiltros(queryAtual.current, { [campo]: valor })", "paramsSemFiltros(queryAtual.current, campos, extrasNaLimpeza)"]) {
+      assert.ok(hook.includes(chamada), chamada);
+    }
+    assert.doesNotMatch(hook, /paramsComFiltros\(searchParams/, "a query do render pode estar velha");
+  });
+
+  test("nenhuma coluna de texto fica `auto` nas três listas (colapsavam para 0 px a 768)", () => {
+    for (const arquivo of ["src/pages/fees/FeeListPage.jsx", "src/pages/installments/InstallmentListPage.jsx", "src/pages/payments/PaymentListPage.jsx"]) {
+      const colgroup = semComentarios(ler(arquivo)).match(/<colgroup>([\s\S]*?)<\/colgroup>/)[1];
+      assert.doesNotMatch(colgroup, /<col \/>/, arquivo);
+    }
+  });
+
+  test("recarregar por filtro mantém a tabela; o indicador é só da primeira carga", () => {
+    for (const arquivo of ["src/pages/fees/FeeListPage.jsx", "src/pages/installments/InstallmentListPage.jsx", "src/pages/payments/PaymentListPage.jsx"]) {
+      const fonte = semComentarios(ler(arquivo));
+      assert.match(fonte, /loading: carregando/, arquivo);
+      assert.match(fonte, /const loading = carregando && !data;/, arquivo);
+      assert.match(fonte, /aria-busy=\{carregando \|\| undefined\}/, arquivo);
+    }
+    assert.match(ler("src/components/financeiro/CabecalhoDeLista.css"), /\.table-wrapper\[aria-busy="true"\]/);
+  });
+});

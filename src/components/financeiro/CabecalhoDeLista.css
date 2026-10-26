@@ -127,6 +127,13 @@
   background-color: var(--color-surface-raised);
 }
 
+/* A lista que recarrega por troca de filtro continua na tela, esmaecida,
+   até a resposta nova (a página não encolhe nem volta ao topo). */
+.table-wrapper[aria-busy="true"] {
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+
 /* 360 px: o título e o "+" na primeira linha, a busca inteira embaixo. */
 @media (max-width: 767px) {
   .lista-balao {

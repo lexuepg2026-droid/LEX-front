@@ -66,7 +66,7 @@ function FeeListPage({ embedded = false }) {
     de: filtros.de || undefined,
     ate: filtros.ate || undefined,
   };
-  const { data, loading, error, updatedAt, fromCache, reload } = useCachedResource({
+  const { data, loading: carregando, error, updatedAt, fromCache, reload } = useCachedResource({
     resource: 'fees',
     params: consulta,
     fetcher: () => feeService.listFees(consulta).then((res) => res.data),
@@ -78,6 +78,9 @@ function FeeListPage({ embedded = false }) {
   // O "(37)" do título só com resposta na mão (DEC-102).
   const totalConhecido = typeof data?.total === 'number' ? data.total : null;
   const clicarNaLinha = useLinhaClicavel();
+  // `loading` é a PRIMEIRA carga: só ela troca a tabela pelo indicador. A
+  // recarga por troca de filtro (`carregando`) mantém a tabela (ver o JSX).
+  const loading = carregando && !data;
 
   const confirmDelete = (id) => setDeleteModal({ open: true, id });
 
@@ -175,6 +178,10 @@ function FeeListPage({ embedded = false }) {
         </select>
       </FinancialFilters>
 
+      {/* Fase 3.2: o `<Loading />` só na PRIMEIRA carga. Trocar um filtro com
+          a lista na tela mantém a tabela (esmaecida, `aria-busy`) até a
+          resposta nova — trocá-la pelo indicador encolhia a página e a
+          rolagem voltava ao topo (medido no navegador: 200 → 0 px). */}
       {loading ? (
         <Loading />
       ) : fees.length === 0 ? (
@@ -187,7 +194,7 @@ function FeeListPage({ embedded = false }) {
           }
         />
       ) : (
-        <div className="table-wrapper">
+        <div className="table-wrapper" aria-busy={carregando || undefined}>
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
           <table className="data-table data-table--fixed">
             {/* Dinheiro em `col-money`, data em `col-data`, status em
@@ -195,11 +202,15 @@ function FeeListPage({ embedded = false }) {
                 honorário sobre monte-mor, que é o maior número do sistema —
                 era a coluna com mais chance de cortar em silêncio. */}
             <colgroup>
-              <col />
               {/* Fase 3.2 (DEC-102): o cliente principal ao lado do processo
-                  (apontamentos 3 e 4). Texto livre, `auto`, com `title`. */}
-              <col />
-              <col />
+                  (apontamentos 3 e 4). As colunas de texto ganharam largura:
+                  com três `auto`, a soma das fixas (890 px) já passava da área
+                  útil, e as de texto colapsavam para 0 px a 768 e ~100 a 1280
+                  (medido no navegador). Agora a tabela rola DENTRO do
+                  `.table-wrapper` e nenhuma coluna some. */}
+              <col className="col-md" />
+              <col className="col-md" />
+              <col className="col-lg" />
               <col className="col-xs" />
               <col className="col-xxs" />
               <col className="col-money" />
