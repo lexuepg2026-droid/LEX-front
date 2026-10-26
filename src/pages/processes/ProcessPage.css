@@ -600,8 +600,24 @@
   border-top: 0;
 }
 
+/* O papel é um campo como os do formulário — fora de `.form-group`, a regra
+   dos campos não o alcançava e ele saía no branco nativo, também no escuro
+   (visto na captura da 3.4). Mesmos tokens da regra de `.form-group select`. */
 .participante-form__papel {
   min-width: 0;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--radius-campo);
+  border: 1px solid var(--color-border-input);
+  background: var(--bg-input);
+  color: var(--text-color);
+  font-size: 15px;
+  font-family: inherit;
+}
+
+.participante-form__papel option {
+  background: var(--bg-color);
+  color: var(--text-color);
 }
 
 .participante-form__remover {
