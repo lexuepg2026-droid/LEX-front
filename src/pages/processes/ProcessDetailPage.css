@@ -111,6 +111,7 @@
 
 .processo-cabecalho__numero {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
   margin: var(--space-1) 0 0;
@@ -123,7 +124,9 @@
 .processo-cabecalho__numero-valor {
   font-variant-numeric: tabular-nums;
   user-select: all;
-  overflow-wrap: anywhere;
+  /* O número CNJ não quebra no hífen: partido em duas linhas ele se lê como
+     dois números. Sem espaço, quem desce é o botão de copiar. */
+  white-space: nowrap;
 }
 
 .processo-cabecalho__copiar {
