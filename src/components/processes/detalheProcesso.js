@@ -42,7 +42,23 @@ export const classeDaBolinha = (tom) => `processo-cabecalho__bolinha--${tom || '
 export const deveMarcarComoVistas = (confirmacoes, jaMarcadas) =>
   Array.isArray(confirmacoes) && confirmacoes.length > 0 && !jaMarcadas;
 
+// ── O cartão "Confirmações novas" leva ao balão (Fase 3.4, DEC-118) ──────
+// `…/detalhe/:id#confirmacoes`: a página rola até o balão DEPOIS de ele
+// aparecer (com o processo carregado), uma vez por chegada. Rolar não marca
+// nada como visto — só a lista aberta marca (DEC-112).
+export const ANCORA_DAS_CONFIRMACOES = '#confirmacoes';
+
+export const deveRolarParaConfirmacoes = (hash, { carregado, jaRolou }) =>
+  hash === ANCORA_DAS_CONFIRMACOES && Boolean(carregado) && !jaRolou;
+
+// Quem pediu menos movimento ao sistema chega lá sem animação.
+export const comportamentoDaRolagem = (prefereMenosMovimento) =>
+  prefereMenosMovimento ? 'auto' : 'smooth';
+
 export default {
+  ANCORA_DAS_CONFIRMACOES,
+  deveRolarParaConfirmacoes,
+  comportamentoDaRolagem,
   SITUACOES_NO_PORTAL,
   situacaoNoPortal,
   temInterruptor,

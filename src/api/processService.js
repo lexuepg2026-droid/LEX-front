@@ -1,7 +1,9 @@
 import api from './axiosConfig';
 import { cabecalhoDeVersao } from '../offline/versionHeader';
 
-const listProcesses = ({ page = 1, limit = 20, busca, status, situacao, fase, liminar } = {}) => {
+const listProcesses = ({
+  page = 1, limit = 20, busca, status, situacao, fase, liminar, tipoAcao, de, ate, portal
+} = {}) => {
   const params = { page, limit };
   if (busca) params.busca = busca;
   if (status) params.status = status;
@@ -12,8 +14,18 @@ const listProcesses = ({ page = 1, limit = 20, busca, status, situacao, fase, li
   // recorta por `com`/`sem`, e vazio não filtra nada.
   if (fase) params.fase = fase;
   if (liminar) params.liminar = liminar;
+  // Fase 3.4 (DEC-115): tipo de ação (igualdade sem acento), período por
+  // distribuição e liberação no portal.
+  if (tipoAcao) params.tipoAcao = tipoAcao;
+  if (de) params.de = de;
+  if (ate) params.ate = ate;
+  if (portal) params.portal = portal;
   return api.get('/processes', { params });
 };
+
+// As opções da pílula "Tipo de ação" (DEC-115). Sem toast global (DEC-084):
+// sem elas a pílula fica só com "Todos os tipos", e a lista funciona igual.
+const listarTiposDeAcao = () => api.get('/processes/tipos-acao', { semToastGlobal: true });
 // Fase 3.2 (DEC-101): a busca do seletor de processo do formulário de
 // honorário — número, título e nome do cliente principal, sem acento. Pela
 // digitação, então `semToastGlobal` (DEC-084) e erro em linha. Até 20.
@@ -115,6 +127,7 @@ export default {
   getTimeline,
   listProcesses,
   buscarProcessos,
+  listarTiposDeAcao,
   getProcessById,
   createProcess,
   updateProcess,

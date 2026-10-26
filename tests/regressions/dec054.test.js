@@ -220,9 +220,15 @@ describe("o selo de liminar e o filtro", () => {
   });
 
   test("a listagem monta o filtro a partir da lista, e o manda ao serviço", () => {
+    // REESCRITO na Fase 3.4 (DEC-116): o filtro mora na URL (`useListFilters`)
+    // e a consulta sai de `consultaDaLista` (`listaProcessos.js`). A regra é a
+    // mesma: as opções vêm da lista, e o valor escolhido chega ao serviço.
     const codigo = semComentarios(ler(LISTAGEM));
     assert.match(codigo, /FILTRO_LIMINAR_OPTIONS\.map/);
-    assert.match(codigo, /liminar: liminar \|\| undefined/);
+    assert.match(codigo, /definirFiltro\('liminar', e\.target\.value\)/);
+    const regras = semComentarios(ler("src/pages/processes/listaProcessos.js"));
+    assert.match(regras, /if \(filtros\.liminar\) consulta\.liminar = filtros\.liminar;/);
+    assert.match(codigo, /processService\.listProcesses\(consulta\)/);
   });
 
   test("o serviço repassa `fase` e `liminar` como query", () => {
@@ -279,11 +285,17 @@ describe("os dois eixos ficam separados na tela", () => {
   test("a fase NÃO vai no payload do PATCH comum — ela tem rota própria", () => {
     // Mandá-la lá volta 400: o backend a recusa de propósito, porque o
     // `findOneAndUpdate` não gravaria histórico.
-    const codigo = semComentarios(ler(FORMULARIO));
+    //
+    // REESCRITO na Fase 3.4 (DEC-114): o payload saiu do formulário para
+    // `utils/processoPayload.js`, e o formulário o monta por ele. A regra é
+    // a mesma; a trava lê o módulo e cobra que o formulário o use.
+    const modulo = semComentarios(ler("src/utils/processoPayload.js"));
     assert.match(
-      codigo,
+      modulo,
       /if \(!isEditing\) payload\.fase/,
       "a fase só pode ir no payload da CRIAÇÃO"
     );
+    const codigo = semComentarios(ler(FORMULARIO));
+    assert.match(codigo, /montarPayloadProcesso\(formData, \{ isEditing \}\)/);
   });
 });

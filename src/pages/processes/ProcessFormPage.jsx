@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import Loading from '../../components/common/Loading';
 import processService from '../../api/processService';
 import clientService from '../../api/clientService';
@@ -20,13 +20,17 @@ import './ProcessPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
 import { usePublicarContexto } from '../../contexts/ContextoContext';
+import { FASE_PADRAO, montarPayloadProcesso } from '../../utils/processoPayload.js';
+import { rotuloDoStatus } from '../../utils/statusVisual';
+import '../clients/ClientPage.css';
+import '../../styles/modules.css';
 
+// Só na EDIÇÃO (DEC-114): o processo nasce ativo. O rótulo sai de
+// `statusVisual.js`, a fonte única — era `charAt(0).toUpperCase()`.
 const STATUS_OPTIONS = ['ativo', 'encerrado', 'suspenso'];
 
-// DEC-054: a fase padrão do backend, repetida aqui só para o formulário de
-// CRIAÇÃO nascer com o seletor preenchido. O valor gravado quando o campo não
-// vai no payload continua sendo decidido pelo model.
-const FASE_PADRAO = 'conhecimento';
+// DEC-054: a fase padrão do backend mora em `utils/processoPayload.js`, junto
+// da regra do payload.
 
 const PAPEL_PADRAO = 'autor';
 
@@ -291,39 +295,10 @@ function ProcessoFormPage() {
     setLoading(true);
     setError('');
 
-    const payload = {
-      titulo: formData.titulo,
-      status: formData.status,
-      numeroProcesso: formData.numeroProcesso || undefined,
-      tipoAcao: formData.tipoAcao || undefined,
-      area: formData.area || undefined,
-      orgao: formData.orgao || undefined,
-      vara: formData.vara || undefined,
-      comarca: formData.comarca || undefined,
-      descricao: formData.descricao || undefined,
-      observacoes: formData.observacoes || undefined,
-      dataDistribuicao: formData.dataDistribuicao || undefined,
-
-      // ── DEC-054 — sinalizador e carimbo ────────────────────────────────
-      //
-      // `null` e não `undefined` nos campos apagáveis: a convenção do projeto é
-      // que campo apagado envia `null`. Com `undefined` o campo sairia do JSON
-      // e a data do trânsito em julgado registrada por engano ficaria lá para
-      // sempre — não haveria como desfazê-la pela tela.
-      liminar: formData.liminar === true,
-      liminarObservacao: formData.liminarObservacao || null,
-      liminarEm: formData.liminarEm || null,
-      transitoEmJulgadoEm: formData.transitoEmJulgadoEm || null,
-      motivoEncerramento: formData.motivoEncerramento || null,
-    };
-
-    // ── `fase` só na CRIAÇÃO ─────────────────────────────────────────────
-    //
-    // No processo já existente ela muda por `PATCH /processes/:id/fase`, que é
-    // a única escrita que grava histórico. Mandá-la daqui numa edição voltaria
-    // 400 — o backend recusa o campo nesta rota de propósito, e a mensagem dele
-    // aponta para a rota certa.
-    if (!isEditing) payload.fase = formData.fase || FASE_PADRAO;
+    // Campo a campo, em `utils/processoPayload.js` (DEC-114): na criação sem
+    // `status` (nasce ativo), sem trânsito e sem motivo de encerramento; a
+    // `fase` só na criação (DEC-054).
+    const payload = montarPayloadProcesso(formData, { isEditing });
 
     try {
       if (isEditing) {
@@ -350,16 +325,25 @@ function ProcessoFormPage() {
 
   if (carregandoRegistro) return <Loading />;
 
+  // ── Fase 3.4 (DEC-114): o formulário em seções, no padrão da 3.2 ──────────
+  // As seções com título dos formulários financeiros (`form-grid section`, de
+  // `ClientPage.css`). Na CRIAÇÃO não há status nem encerramento: o processo
+  // nasce ativo, e não nasce encerrado.
   return (
-    <div className="page-container">
+    <div className="cliente-page-container processo-form">
       <h1 className="page-title">{isEditing ? 'Editar Processo' : 'Registrar Novo Processo'}</h1>
 
       <form onSubmit={handleSubmit} className="data-form">
         {!online && <OfflineWriteReason />}
-        <div className="form-grid">
 
+        {/* ── Participantes, no visual da lista do detalhe (DEC-111) ───────
+            A lógica não mudou: um principal só, papéis, remover. Mudou a
+            pele, e o principal passou a ter o selo em palavra ao lado do
+            nome — o rádio continua sendo o controle. */}
+        <div className="form-grid section">
+          <h3>Clientes do processo*</h3>
           <div className="form-group span-3">
-            <label htmlFor="clienteParaAdicionar">Clientes do processo*</label>
+            <label htmlFor="clienteParaAdicionar">Adicionar cliente</label>
             <p className="participantes-ajuda">
               Um processo pode ter mais de um cliente (litisconsórcio). Marque
               qual deles é o principal — é a qualificação usada quando um
@@ -391,22 +375,28 @@ function ProcessoFormPage() {
                 Adicionar
               </button>
             </div>
+          </div>
 
+          <div className="span-3">
             {participantes.length === 0 ? (
               <p className="participantes-vazio">Nenhum cliente adicionado ainda.</p>
             ) : (
-              <ul className="participantes-lista">
+              <ul className="participantes-form" aria-label="Clientes do processo">
                 {participantes.map(p => {
                   const cliente = clientesConhecidos[p.clienteId];
+                  const nome = nomeDoCliente(cliente);
+                  const documento = documentoFormatado(cliente);
                   return (
-                    <li key={p.clienteId} className="participante-item">
-                      <div className="participante-nome">
-                        <strong>{nomeDoCliente(cliente)}</strong>
-                        <span className="participante-doc">{documentoFormatado(cliente)}</span>
+                    <li key={p.clienteId} className="participante-form">
+                      <div className="participante-linha__quem">
+                        <strong className="participante-linha__nome">{nome}</strong>
+                        {p.principal && <span className="participante-linha__principal">Principal</span>}
+                        {documento && <span className="participante-linha__doc">{documento}</span>}
                       </div>
 
                       <select
-                        aria-label={`Papel de ${nomeDoCliente(cliente)}`}
+                        className="participante-form__papel"
+                        aria-label={`Papel de ${nome}`}
                         value={p.papel}
                         onChange={(e) => alterarPapel(p.clienteId, e.target.value)}
                       >
@@ -427,7 +417,8 @@ function ProcessoFormPage() {
 
                       <button
                         type="button"
-                        className="btn-cancel"
+                        className="btn-cancel participante-form__remover"
+                        aria-label={`Remover ${nome}`}
                         onClick={() => removerParticipante(p.clienteId)}
                       >
                         Remover
@@ -438,6 +429,10 @@ function ProcessoFormPage() {
               </ul>
             )}
           </div>
+        </div>
+
+        <div className="form-grid section">
+          <h3>Identificação</h3>
 
           <div className="form-group span-2">
             <label htmlFor="titulo">Título do Processo*</label>
@@ -448,15 +443,6 @@ function ProcessoFormPage() {
             <label htmlFor="numeroProcesso">Nº do Processo (CNJ)</label>
             <input type="text" id="numeroProcesso" name="numeroProcesso" value={formData.numeroProcesso} onChange={handleChange}
                    className={campoComErro === 'numeroProcesso' ? 'input-erro' : undefined} />
-          </div>
-
-          <div className="form-group span-1">
-            <label htmlFor="status">Status</label>
-            <select id="status" name="status" value={formData.status} onChange={handleChange}>
-              {STATUS_OPTIONS.map(s => (
-                <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-              ))}
-            </select>
           </div>
 
           <div className="form-group span-1">
@@ -476,19 +462,10 @@ function ProcessoFormPage() {
 
           <div className="form-group span-1">
             {/* ── O "assunto" da F-4 mora AQUI, e é decisão registrada ──────
-                A fase pediu um campo de Assunto alimentado pela tabela de
-                assuntos do CNJ, e mandou NÃO tocar no backend. `Process` não
-                tem campo `assunto` — criá-lo seria schema, lista de campos
-                permitidos, validação e testes no backend, que esta fase não
-                abre. O campo que já existe e guarda a mesma coisa é `area`:
-                os assuntos de primeiro nível do CNJ são literalmente
-                "DIREITO TRIBUTÁRIO", "DIREITO PREVIDENCIÁRIO" — o que a
-                advogada hoje digita à mão como "Tributario", "Civel".
-
-                Consequência registrada: `{{areaProcesso}}` (rótulo "Área do
-                processo") passa a renderizar o texto do CNJ nos documentos
-                gerados daqui em diante. Nada migra, nada muda no que já está
-                gravado. Ver o relatório da F-4. */}
+                `Process` não tem campo `assunto`; o campo que guarda a mesma
+                coisa é `area` — os assuntos de primeiro nível do CNJ são
+                literalmente "DIREITO TRIBUTÁRIO", "DIREITO PREVIDENCIÁRIO".
+                Ver o relatório da F-4. */}
             <label htmlFor="area">Área / assunto (CNJ)</label>
             <CampoComSugestoes
               id="area"
@@ -532,6 +509,24 @@ function ProcessoFormPage() {
               erro={comarcas.erro}
             />
           </div>
+        </div>
+
+        <div className="form-grid section">
+          <h3>Andamento</h3>
+
+          {/* ── DEC-114 — o status só na EDIÇÃO ─────────────────────────────
+              O processo nasce ativo (apontamento 9 da banca): o payload da
+              criação nem leva o campo, e o back usa o `default` do modelo. */}
+          {isEditing && (
+            <div className="form-group span-1">
+              <label htmlFor="status">Status</label>
+              <select id="status" name="status" value={formData.status} onChange={handleChange}>
+                {STATUS_OPTIONS.map(s => (
+                  <option key={s} value={s}>{rotuloDoStatus(s)}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* ── DEC-054 — a fase, no cadastro ────────────────────────────
               Aparece só na CRIAÇÃO: um processo pode ser cadastrado quando já
@@ -547,8 +542,11 @@ function ProcessoFormPage() {
               <p className="campo-somente-leitura">
                 {rotuloDaFase(formData.fase)}
                 <span className="campo-ajuda">
-                  A fase muda no detalhe do processo, em “Andamento” — toda
-                  mudança fica registrada no histórico.
+                  A fase muda no detalhe do processo, em “Fase e linha do
+                  tempo” — toda mudança fica registrada no histórico.{' '}
+                  <Link to={`/dashboard/processos/detalhe/${id}`} className="link-interno">
+                    Ir ao detalhe
+                  </Link>
                 </span>
               </p>
             ) : (
@@ -564,9 +562,6 @@ function ProcessoFormPage() {
 
           {/* ── DEC-054 — liminar: sinalizador, não fase ──────────────────
               *"Liminar é um plus dentro das fases (…) não é uma fase nova."*
-              Por isso é uma caixa de marcar ao lado da fase, e não um valor
-              dentro dela: o processo continua na fase em que está.
-
               A observação e a data são OPCIONAIS — a marca vale sozinha. */}
           <div className="form-group span-1">
             <label htmlFor="liminar" className="campo-marcar">
@@ -592,7 +587,7 @@ function ProcessoFormPage() {
             />
           </div>
 
-          <div className="form-group span-3">
+          <div className="form-group span-2">
             <label htmlFor="liminarObservacao">Observação da liminar (opcional)</label>
             <input
               type="text"
@@ -603,45 +598,47 @@ function ProcessoFormPage() {
               onChange={handleChange}
             />
           </div>
+        </div>
 
-          {/* ── DEC-054 — encerramento: o OUTRO eixo ──────────────────────
-              *"Trânsito em julgado — processo encerrou completamente, acabou
-              todos os processos de recurso."*
+        {/* ── DEC-054 — encerramento: o OUTRO eixo, só na EDIÇÃO (DEC-114) ──
+            *"Trânsito em julgado — processo encerrou completamente."* Um
+            processo não nasce encerrado, e por isso a seção não existe na
+            criação. **Não depende da fase:** a data pode ser preenchida com o
+            processo em qualquer uma das quatro — "acordo cumprido → trânsito
+            em julgado", e acordo se cumpre em qualquer lugar. */}
+        {isEditing && (
+          <div className="form-grid section">
+            <h3>Encerramento</h3>
+            <div className="form-group span-1">
+              <label htmlFor="transitoEmJulgadoEm">Trânsito em julgado</label>
+              <input
+                type="date"
+                id="transitoEmJulgadoEm"
+                name="transitoEmJulgadoEm"
+                value={formData.transitoEmJulgadoEm}
+                onChange={handleChange}
+              />
+            </div>
 
-              **Não depende da fase.** A data pode ser preenchida com o
-              processo em qualquer uma das quatro — a Laís descreveu "acordo
-              cumprido → trânsito em julgado", e acordo se cumpre em
-              conhecimento, em execução, em qualquer lugar. Se algum dia esta
-              tela exigir "recursos" para liberar o campo, alguém inventou um
-              caminho único onde ela descreveu vários. */}
-          <div className="form-group span-1">
-            <label htmlFor="transitoEmJulgadoEm">Trânsito em julgado</label>
-            <input
-              type="date"
-              id="transitoEmJulgadoEm"
-              name="transitoEmJulgadoEm"
-              value={formData.transitoEmJulgadoEm}
-              onChange={handleChange}
-            />
+            {/* Texto livre, e não uma lista: ela citou UM caminho ("acordo
+                cumprido") e a prática dela certamente tem outros. */}
+            <div className="form-group span-2">
+              <label htmlFor="motivoEncerramento">Motivo do encerramento (opcional)</label>
+              <input
+                type="text"
+                id="motivoEncerramento"
+                name="motivoEncerramento"
+                placeholder="Ex.: acordo cumprido"
+                value={formData.motivoEncerramento}
+                maxLength={2000}
+                onChange={handleChange}
+              />
+            </div>
           </div>
+        )}
 
-          {/* Texto livre, e não uma lista: ela citou UM caminho ("acordo
-              cumprido") e a prática dela certamente tem outros. Congelar a
-              lista com um exemplo dentro obrigaria a advogada a escolher entre
-              mentir e não registrar. */}
-          <div className="form-group span-2">
-            <label htmlFor="motivoEncerramento">Motivo do encerramento (opcional)</label>
-            <input
-              type="text"
-              id="motivoEncerramento"
-              name="motivoEncerramento"
-              placeholder="Ex.: acordo cumprido"
-              value={formData.motivoEncerramento}
-              maxLength={2000}
-              onChange={handleChange}
-            />
-          </div>
-
+        <div className="form-grid section">
+          <h3>Descrição e observações</h3>
           <div className="form-group span-3">
             <label htmlFor="descricao">Descrição / Fatos</label>
             <textarea id="descricao" name="descricao" value={formData.descricao} onChange={handleChange} rows="4" />
@@ -651,7 +648,6 @@ function ProcessoFormPage() {
             <label htmlFor="observacoes">Observações</label>
             <textarea id="observacoes" name="observacoes" value={formData.observacoes} onChange={handleChange} rows="3" />
           </div>
-
         </div>
 
         {error && <p className="error-message">{error}</p>}

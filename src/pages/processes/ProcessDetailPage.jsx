@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Copy } from 'lucide-react';
 import processService from '../../api/processService';
 import { toast } from '../../utils/toast';
@@ -13,7 +13,6 @@ import {
 import { rotuloDoStatus, tomDoStatus } from '../../utils/statusVisual';
 import { documentoFormatado } from '../../utils/clienteLabel.js';
 import { getApiErrorMessage } from '../../utils/apiError';
-import { mensagemDesativarProcesso } from '../../utils/activationMessages';
 import StatusBadge from '../../components/ui/StatusBadge';
 import ActionMenu from '../../components/ui/ActionMenu';
 import Modal from '../../components/ui/Modal';
@@ -23,7 +22,9 @@ import ProcessFinancialSheet from '../../components/financeiro/ProcessFinancialS
 import ProcessTimeline from '../../components/processes/ProcessTimeline';
 import {
   classeDaBolinha,
+  comportamentoDaRolagem,
   deveMarcarComoVistas,
+  deveRolarParaConfirmacoes,
   situacaoNoPortal,
 } from '../../components/processes/detalheProcesso.js';
 import useLinhaClicavel from '../../components/financeiro/useLinhaClicavel';
@@ -36,6 +37,7 @@ import { MENSAGEM_ALTERACAO_NAO_ENVIADA } from '../../offline/outboxMessages';
 import { blockReason } from '../../offline/offlineMessages';
 import useCachedResource from '../../hooks/useCachedResource';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import useDesativacaoProcesso from '../../hooks/useDesativacaoProcesso';
 import './ProcessPage.css';
 import './ProcessDetailPage.css';
 import ProcessoTabs from './ProcessTabs';
@@ -46,6 +48,10 @@ import { usePublicarContexto } from '../../contexts/ContextoContext';
 // confirmação são carimbos que a advogada pode precisar citar — deixá-los ao
 // fuso do navegador faria o mesmo registro aparecer com horas diferentes em
 // máquinas diferentes.
+// Quanto tempo a chegada por `#confirmacoes` mantém o balão alinhado enquanto
+// os blocos de cima carregam (DEC-118).
+const JANELA_DE_ALINHAMENTO_MS = 2500;
+
 const dataHoraBR = (iso) =>
   iso
     ? new Date(iso).toLocaleString('pt-BR', {
@@ -92,6 +98,9 @@ function ProcessoDetalhePage() {
   const [confirmacoes, setConfirmacoes] = useState(null);
   const [carregandoConfirmacoes, setCarregandoConfirmacoes] = useState(false);
   const confirmacoesMarcadas = useRef(false);
+  const tituloDasConfirmacoes = useRef(null);
+  const jaRolouParaConfirmacoes = useRef(false);
+  const { hash } = useLocation();
 
   // ── DEC-054 — a mudança de fase mora AQUI, e não no formulário ──────────
   //
@@ -109,18 +118,22 @@ function ProcessoDetalhePage() {
   const [salvandoFase, setSalvandoFase] = useState(false);
   const seletorDeFase = useRef(null);
 
-  // DEC-052 no detalhe: a contagem vem ANTES da confirmação, como na lista.
-  const [desativacao, setDesativacao] = useState({ open: false, mensagem: '', carregando: false });
-
   const { id } = useParams();
   const navigate = useNavigate();
+  // DEC-052 no detalhe (Fase 3.4, DEC-117): o MESMO hook da lista — a prévia
+  // antes da confirmação, os mesmos textos. O detalhe só abre processo ativo:
+  // desativado, a casa dele é a lista, onde o "Reativar" mora.
+  const depoisDeDesativar = useCallback(({ acao, recusado }) => {
+    if (!recusado && acao === 'desativar') navigate('/dashboard/processos');
+  }, [navigate]);
+  const desativacao = useDesativacaoProcesso({ aoConcluir: depoisDeDesativar });
   const clicarNaLinha = useLinhaClicavel();
   // Fase 2b (DEC-085): publica para a faixa de contexto o processo. Fase 3.3b
   // (DEC-109): o aviso de idade é o desta tela, do mesmo processo — a faixa
   // não repete.
   usePublicarContexto({ processoId: id, avisoProprio: true });
   const online = useOnlineStatus();
-  const { entradas, recarregar: recarregarFila } = useOutbox();
+  const { entradas } = useOutbox();
   // Só a pendência DESTE processo: a fila é do aparelho inteiro, e avisar aqui
   // sobre a fase de outro processo faria o aviso perder o sentido.
   const fasePendente = entradas.some(
@@ -189,6 +202,46 @@ function ProcessoDetalhePage() {
     });
   }, [confirmacoes, id]);
 
+  // ── Fase 3.4 (DEC-118): o cartão "Confirmações novas" chega com
+  // `#confirmacoes`. O balão só existe depois de o processo carregar; aí a
+  // página rola até ele (sem animação para quem pediu menos movimento) e o
+  // foco vai ao título, para o leitor de tela anunciar onde se chegou. Nada é
+  // marcado como visto aqui — só a lista aberta marca (DEC-112).
+  //
+  // Os balões de cima (participantes, linha do tempo) chegam por requisições
+  // próprias, DEPOIS do processo, e empurram este para baixo: medido no
+  // navegador, a primeira rolagem deixava o balão a 725 px do topo. Por isso a
+  // página o mantém alinhado enquanto o que está acima cresce — até
+  // `JANELA_DE_ALINHAMENTO_MS`, e só até o primeiro gesto dela (roda, toque,
+  // tecla, clique): quem já começou a rolar não é puxada de volta.
+  useEffect(() => {
+    if (!deveRolarParaConfirmacoes(hash, { carregado: Boolean(processo), jaRolou: jaRolouParaConfirmacoes.current })) return undefined;
+    const titulo = tituloDasConfirmacoes.current;
+    const balao = titulo?.closest('section');
+    if (!balao) return undefined;
+    jaRolouParaConfirmacoes.current = true;
+    const menosMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    balao.scrollIntoView({ behavior: comportamentoDaRolagem(menosMovimento), block: 'start' });
+    titulo.focus({ preventScroll: true });
+
+    const GESTOS = ['wheel', 'touchstart', 'keydown', 'mousedown'];
+    let ativo = true;
+    const parar = () => { ativo = false; };
+    GESTOS.forEach((g) => window.addEventListener(g, parar, { passive: true }));
+    const pagina = balao.parentElement;
+    const observador = typeof ResizeObserver === 'function'
+      ? new ResizeObserver(() => { if (ativo) balao.scrollIntoView({ behavior: 'auto', block: 'start' }); })
+      : null;
+    if (observador && pagina) observador.observe(pagina);
+    const fim = setTimeout(parar, JANELA_DE_ALINHAMENTO_MS);
+    return () => {
+      parar();
+      clearTimeout(fim);
+      observador?.disconnect();
+      GESTOS.forEach((g) => window.removeEventListener(g, parar));
+    };
+  }, [hash, processo]);
+
   // Abrir o histórico é o ato de "olhar", e é ele que marca as confirmações
   // como vistas — por processo, como o backend expõe. Zerar o contador sem a
   // advogada ter aberto nada seria mentira; marcar uma a uma exigiria que ela
@@ -249,10 +302,6 @@ function ProcessoDetalhePage() {
         // volta a ficar vazio como voltaria num sucesso — ele é da transição,
         // e a transição foi registrada (na fila).
         setMotivoFase('');
-        // Fase 3.3b: o interceptor grava na fila sem avisar o contexto, e o
-        // link "alteração não enviada" logo abaixo só aparecia na próxima
-        // recarga da fila. Relê aqui, no gesto que enfileirou.
-        recarregarFila();
         toast.info(err.message);
         return;
       }
@@ -271,32 +320,6 @@ function ProcessoDetalhePage() {
       seletorDeFase.current?.scrollIntoView({ block: 'center' });
       seletorDeFase.current?.focus();
     });
-  };
-
-  const abrirDesativacao = async () => {
-    setDesativacao({ open: true, mensagem: '', carregando: true });
-    try {
-      const { data } = await processService.getActivationPreview(id);
-      setDesativacao({ open: true, mensagem: mensagemDesativarProcesso(data.vinculosAfetados), carregando: false });
-    } catch (err) {
-      setDesativacao({ open: false, mensagem: '', carregando: false });
-      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível conferir o efeito desta ação.'));
-    }
-  };
-
-  const fecharDesativacao = () => setDesativacao({ open: false, mensagem: '', carregando: false });
-
-  const confirmarDesativacao = async () => {
-    fecharDesativacao();
-    try {
-      await processService.deleteProcess(id);
-      toast.success('Processo desativado. Você pode reativá-lo quando quiser.');
-      // O detalhe só abre processo ativo: a casa dele agora é a lista, onde o
-      // filtro de situação o encontra e o "Reativar" mora.
-      navigate('/dashboard/processos');
-    } catch (err) {
-      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Erro ao desativar processo.'));
-    }
   };
 
   const copiarNumero = async (numero) => {
@@ -410,7 +433,7 @@ function ProcessoDetalhePage() {
               { rotulo: 'Editar', to: `/dashboard/processos/editar/${id}`, motivo: motivoSemSinal },
               // A fase grava sem sinal (vai para a fila): o item não bloqueia.
               { rotulo: 'Mudar fase', onSelecionar: irParaAFase },
-              { rotulo: 'Desativar', destrutivo: true, motivo: motivoSemSinal, onSelecionar: abrirDesativacao },
+              { rotulo: 'Desativar', destrutivo: true, motivo: motivoSemSinal, onSelecionar: () => desativacao.abrir(id, 'desativar') },
             ]}
           />
         </div>
@@ -680,7 +703,9 @@ function ProcessoDetalhePage() {
           viessem no carregamento, o contador do Início zeraria só por a
           advogada ter aberto o processo para ver outra coisa. */}
       <section className="processo-balao" id="confirmacoes" aria-labelledby="secao-confirmacoes">
-        <h2 id="secao-confirmacoes" className="processo-balao__titulo">Confirmações de leitura do portal</h2>
+        <h2 id="secao-confirmacoes" className="processo-balao__titulo" ref={tituloDasConfirmacoes} tabIndex={-1}>
+          Confirmações de leitura do portal
+        </h2>
 
         {confirmacoes === null ? (
           <>
@@ -747,15 +772,7 @@ function ProcessoDetalhePage() {
         <ProcessFinancialSheet processoId={id} />
       </section>
 
-      <Modal
-        open={desativacao.open}
-        title="Desativar processo"
-        message={desativacao.carregando ? 'Conferindo o efeito desta ação…' : desativacao.mensagem}
-        variant="danger"
-        confirmLabel="Desativar"
-        onConfirm={confirmarDesativacao}
-        onCancel={fecharDesativacao}
-      />
+      <Modal {...desativacao.propsDoModal} />
     </div>
   );
 }

@@ -5030,6 +5030,92 @@ marca", foi corrigido. Testes em `tests/regressions/fase33b.test.js`.
 
 ---
 
+## DEC-113 (frontend) — a fila avisa quando muda, para qualquer tela (Fase 3.4)
+
+O interceptor grava na fila (`outbox.enfileirar`) sem passar pelo
+`OutboxContext`, e o contexto só relia as entradas no próximo gesto dele: a
+tela que acabou de enfileirar dizia "ficou na fila" e não mostrava o "Há
+alteração não enviada" (achado da 3.3b, corrigido lá só no detalhe).
+
+- `offline/outboxEvents.js` (novo, sem imports): `aoMudarFila(fn)` /
+  `avisarFilaMudou(userId)`. `enfileirar` avisa **depois de gravar**; o
+  `OutboxContext` assina e relê a fila do usuário logado. O axios não conhece
+  o React. O reler local do detalhe (`8aa2ab0`) saiu.
+- Conferido no navegador: o detalhe mostra o aviso em ~60 ms; o formulário
+  de compromisso volta à Agenda, que mostra a pendência na hora.
+- O CORS local que barrava a fila é a DEC-113 do back.
+
+## DEC-114 (frontend) — o formulário de processo nasce ativo (Fase 3.4)
+
+- **Criação:** sem o seletor de status, sem trânsito em julgado e sem motivo
+  do encerramento; a fase continua escolhível (DEC-054). O payload sai de
+  `utils/processoPayload.js` (`montarPayloadProcesso`, executado pela suíte):
+  na criação **não leva `status`**, e o back usa o `default`.
+- **Edição:** como antes — status (rótulo de `statusVisual.js`, não mais
+  `charAt(0).toUpperCase()`), seção "Encerramento", fase só leitura com o link
+  para o detalhe.
+- **Seções** no padrão dos formulários da 3.2 (`form-grid section` de
+  `ClientPage.css`): Clientes do processo, Identificação, Andamento,
+  Encerramento (só edição), Descrição e observações.
+- **Participantes no visual da lista do detalhe** (DEC-111): nome, documento,
+  selo "Principal"; papel, rádio de principal e "Remover" por teclado. As
+  classes comuns da linha (`participante-linha__quem/__nome/__principal/__doc`)
+  e a bolinha de status por tom moram em `ProcessPage.css`, que as duas telas
+  importam.
+- **Offline:** criar e editar processo NÃO estão na fila (F-5b: só compromisso
+  e mudança de fase). Sem sinal o botão é anunciado como desabilitado, o clique
+  é barrado e o motivo aparece — como antes.
+
+## DEC-116 (frontend) — a lista de processos no padrão da Figura 19 (Fase 3.4)
+
+- Balão com `CabecalhoDeLista` (total, busca em pílula, "+"), filtros em
+  pílulas (`FinancialFilters` com `semBusca`, `pilulas`, e as props novas
+  `presets` e `ajudaDoPeriodo` — sem elas a barra é a de sempre), linha
+  clicável (`useLinhaClicavel`), ações fixas (DEC-107), `Paginador` (a tela
+  antiga mostrava só os 20 primeiros, sem paginação) e o espelho offline.
+  **Sem sanfonas e sem seleção em massa.**
+- **Colunas:** Nº, Título (link, o alvo de Tab), Cliente, Tipo de ação, Fase,
+  Status (bolinha e palavra, a do cabeçalho do detalhe), Distribuição, Ações.
+  Larguras: 220/220/170/170/170/130/130/120 = 1.330 px; a tabela rola no
+  balão a 1280 (1.192 úteis) e a 768 (696), com o ⋮ sempre à vista.
+- **Filtros, todos na URL** (`useListFilters` com `naUrl`): status (chave
+  **`andamento`** — `filtrosNaUrl` escreve `status` como `?situacao=`, que aqui
+  é o registro), fase, liminar, tipo de ação (opções de
+  `GET /processes/tipos-acao`, com o valor da URL garantido), período por
+  distribuição (Qualquer / Mês atual / Personalizado, com a linha de ajuda do
+  processo sem data), portal e situação ("" = só ativos, fora da URL).
+- **Linha do desativado:** esmaecida, com a etiqueta, sem clique e sem link
+  (o detalhe responde 404 a processo inativo); o ⋮ tem "Reativar".
+- ⋮ do ativo: **Editar** e **Desativar**. "Gerenciar" saiu — o detalhe é o
+  link do título e a linha.
+- Regras puras em `pages/processes/listaProcessos.js`.
+- **Achado no navegador, corrigido** (`utils/filtrosNaUrl.js`): no modo URL,
+  escolher "Intervalo personalizado" estando em "Mês atual" voltava a "Mês
+  atual" e as datas não apareciam (valia nas listas da 3.2 também). A escolha
+  explícita agora ganha; os outros presets e o "Limpar" a desfazem.
+
+## DEC-117 (frontend) — desativar e reativar o processo num hook só (Fase 3.4)
+
+`hooks/useDesativacaoProcesso.js`: a prévia antes do modal (DEC-052), a
+segunda barreira da DEC-053 (impedimento no preview → toast e a tela refeita),
+os textos e as props do `<Modal>`. A lista refaz a consulta depois de agir; o
+⋮ do detalhe vai para a lista depois de desativar. As travas `dec052` e
+`dec053` cobram o hook e os dois usos.
+
+## DEC-118 (frontend) — os destinos dos cartões do Início (Fase 3.4)
+
+- **"Processos não liberados":** um → o processo (DEC-108); mais de um → a
+  lista filtrada `?portal=nao_liberado`, que conta o mesmo (DEC-115 do back);
+  nenhum → a lista comum.
+- **"Confirmações novas":** um processo → `…/detalhe/:id#confirmacoes`; a lista
+  curta também. O detalhe rola até o balão depois de o processo carregar (sem
+  animação com `prefers-reduced-motion`), põe o foco no título e **o mantém
+  alinhado** enquanto os blocos de cima carregam, até 2,5 s ou o primeiro gesto
+  dela — medido no navegador, a primeira rolagem deixava o balão a 725 px do
+  topo. Chegar ao balão não marca nada (DEC-112).
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:

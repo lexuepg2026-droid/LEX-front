@@ -47,14 +47,20 @@ export const presetDoIntervalo = (de, ate, agora = new Date()) => {
 };
 
 // O estado dos filtros lido da URL. `campos` são os do estado (sem `preset`);
-// `personalizado` diz se a pessoa escolheu "Intervalo personalizado" e ainda
-// não preencheu data — sem isso o seletor voltaria a "Qualquer período" e os
-// campos de data sumiriam antes de ela digitar.
+// `personalizado` diz se a pessoa escolheu "Intervalo personalizado" — sem
+// isso o seletor voltaria ao preset derivado das datas e os campos de data
+// sumiriam antes de ela digitar.
+//
+// Fase 3.4 (achado no navegador): valia só SEM datas. Quem estava em "Mês
+// atual" e escolhia "Intervalo personalizado" via a pílula voltar a "Mês
+// atual" (as datas do mês continuam na URL, e o preset era derivado delas), e
+// os campos de data nunca apareciam. A escolha explícita ganha; os outros
+// presets e o "Limpar" a desfazem (`useListFilters`).
 export const filtrosDaUrl = (params, campos, { personalizado = false, agora } = {}) => {
   const filtros = {};
   for (const campo of campos) filtros[campo] = valorLido(campo, params.get(nomeNaUrl(campo)));
   const derivado = presetDoIntervalo(filtros.de, filtros.ate, agora);
-  filtros.preset = personalizado && derivado === PRESETS_PERIODO.TODOS ? PRESETS_PERIODO.PERSONALIZADO : derivado;
+  filtros.preset = personalizado ? PRESETS_PERIODO.PERSONALIZADO : derivado;
   return filtros;
 };
 

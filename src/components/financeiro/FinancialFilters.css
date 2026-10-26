@@ -49,3 +49,11 @@
 .filtros-financeiros--pilulas .filter-bar {
   margin-bottom: 0;
 }
+
+/* Fase 3.4 (DEC-116): a linha de ajuda do período, só com período escolhido
+   (a lista de processos: "processo sem data de distribuição…"). */
+.filtros-financeiros__ajuda {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}

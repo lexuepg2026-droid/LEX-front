@@ -102,18 +102,27 @@ describe("DEC-053 — a tela não oferece o que o backend recusaria", () => {
     assert.equal(blockReason(daLinha, { online: false }), MENSAGEM_ESCRITA_OFFLINE);
   });
 
+  // ── REESCRITOS na Fase 3.4 (DEC-117), e não afrouxados ─────────────────
+  // A segunda barreira mudou da lista para o hook que a lista e o detalhe
+  // usam. As asserções são as mesmas, sobre o hook; e a lista precisa chamá-lo
+  // para a reativação (é a única tela que oferece "Reativar").
+  const hook = semComentarios(ler("src/hooks/useDesativacaoProcesso.js"));
+
   test("o preview é conferido ANTES de abrir o modal de reativação", () => {
     // A segunda barreira. Sem ela, a aba aberta desde ontem abriria um modal
     // cujo botão levaria a um 409.
-    assert.match(listagem, /data\.impedimentosDeReativacao/);
+    assert.match(hook, /motivoDeNaoReativar\(data\.impedimentosDeReativacao\)/);
     assert.ok(
-      /if \(impedimento\)/.test(listagem),
+      /if \(impedimento\)/.test(hook),
       "o clique precisa parar quando o preview acusa impedimento"
     );
+    assert.match(listagem, /desativacao\.abrir\(p\._id, 'reativar'\)/);
   });
 
   test("o impedimento do preview vira aviso na tela, não silêncio", () => {
-    assert.match(listagem, /toast\.error\(`Não é possível reativar\. \$\{impedimento\}`\)/);
+    assert.match(hook, /toast\.error\(`Não é possível reativar\. \$\{impedimento\}`\)/);
+    // E a tela que estava velha é refeita, para o menu passar a mostrar o motivo.
+    assert.match(hook, /aoConcluir\?\.\(\{ acao, id, recusado: true \}\)/);
   });
 });
 

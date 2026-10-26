@@ -4,6 +4,7 @@ import useOnlineStatus from '../hooks/useOnlineStatus';
 import { listarFila, enviarFila, tentarDeNovo, descartar } from '../offline/outbox';
 import { enviarEntrada } from '../api/outboxSender';
 import { contarFalhas, filaTravada } from '../offline/outboxPlan';
+import { aoMudarFila } from '../offline/outboxEvents.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // A FILA NA TELA — um estado só, para o app inteiro (F-5b, Parte 4)
@@ -56,6 +57,14 @@ export function OutboxProvider({ children }) {
   }, [userId, recarregar]);
 
   useEffect(() => { recarregar(); }, [recarregar]);
+
+  // Fase 3.4 (DEC-113): o interceptor enfileira sem passar por aqui. O aviso
+  // de `outboxEvents` faz qualquer tela (detalhe do processo, compromisso…)
+  // mostrar a pendência na hora, e não na próxima recarga. Só a fila de quem
+  // está logado interessa.
+  useEffect(() => aoMudarFila((quem) => {
+    if (!quem || quem === userId) recarregar();
+  }), [userId, recarregar]);
 
   // ── O gatilho automático: quando o sinal VOLTA ────────────────────────
   //

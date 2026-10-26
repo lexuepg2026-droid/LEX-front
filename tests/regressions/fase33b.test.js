@@ -137,14 +137,19 @@ describe("Fase 3.3b · item 2 — cabeçalho de identidade e balões (DEC-111)",
     for (const r of ["'Editar'", "'Mudar fase'", "'Desativar'"]) assert.ok(menu[0].includes(r), r);
     // A fase grava sem sinal (fila): só editar e desativar bloqueiam.
     assert.doesNotMatch(menu[0], /'Mudar fase', motivo/);
-    // Desativar confere o efeito antes (DEC-052), como a lista.
-    assert.match(DETALHE, /processService\.getActivationPreview\(id\)/);
+    // Desativar confere o efeito antes (DEC-052), como a lista. Fase 3.4
+    // (DEC-117): pelo MESMO hook da lista — a prévia mora lá.
+    assert.match(DETALHE, /onSelecionar: \(\) => desativacao\.abrir\(id, 'desativar'\)/);
   });
 
   test("a bolinha tem uma regra por tom, com o token do badge", () => {
+    // Fase 3.4 (DEC-116): as regras por tom foram para `ProcessPage.css`, que
+    // o detalhe e a lista importam — a coluna Status usa a mesma bolinha.
+    const CSS_COMUM = ler("src/pages/processes/ProcessPage.css").replace(/\/\*[\s\S]*?\*\//g, "");
+    assert.match(DETALHE, /import '\.\/ProcessPage\.css';/);
     for (const [tom, cor] of Object.entries(COR_DO_TOM)) {
       assert.match(
-        CSS_DETALHE,
+        CSS_COMUM,
         new RegExp(`\\.${classeDaBolinha(tom).replace(/-/g, "\\-")}\\s*\\{\\s*background-color:\\s*${cor.replace(/[()]/g, "\\$&")}`),
         `sem regra para o tom ${tom}`
       );
@@ -153,7 +158,10 @@ describe("Fase 3.3b · item 2 — cabeçalho de identidade e balões (DEC-111)",
   });
 
   test("as seções são balões com título, na ordem: dados, participantes, fase, confirmações, ficha", () => {
-    const titulos = [...DETALHE.matchAll(/<h2 id="secao-[^"]+" className="processo-balao__titulo">\s*([^<{]+)/g)].map((m) => m[1].trim());
+    // Fase 3.4 (DEC-118): o título das confirmações ganhou `ref` e
+    // `tabIndex={-1}` (o foco da chegada por `#confirmacoes`); a regex aceita
+    // atributos depois da classe.
+    const titulos = [...DETALHE.matchAll(/<h2 id="secao-[^"]+" className="processo-balao__titulo"[^>]*>\s*([^<{]+)/g)].map((m) => m[1].trim());
     assert.deepEqual(titulos, [
       "Dados do processo", "Participantes", "Fase e linha do tempo",
       "Confirmações de leitura do portal", "Ficha financeira",
@@ -172,9 +180,10 @@ describe("Fase 3.3b · item 2 — cabeçalho de identidade e balões (DEC-111)",
   test("o comportamento continua: fase com fila, ficha auto-fechada, nada financeiro em modal", () => {
     assert.match(DETALHE, /err\?\.enfileirado/);
     assert.match(DETALHE, /<ProcessFinancialSheet processoId=\{id\} \/>/);
-    // O único modal da tela é o de desativar o processo.
+    // O único modal da tela é o de desativar o processo — desde a 3.4 com as
+    // props do hook (DEC-117), que dá o título.
     assert.equal((DETALHE.match(/<Modal\b/g) ?? []).length, 1);
-    assert.match(DETALHE, /title="Desativar processo"/);
+    assert.match(DETALHE, /<Modal \{\.\.\.desativacao\.propsDoModal\} \/>/);
   });
 
   test("nenhum ancestral dos menus ⋮ cria bloco de contenção (DEC-046)", () => {
@@ -256,9 +265,16 @@ describe("Fase 3.3b · item 4 — as confirmações são vistas DEPOIS de aparec
 });
 
 describe("Fase 3.3b · achado no navegador — a fase na fila aparece na hora", () => {
-  test("enfileirada a fase, a tela relê a fila do contexto", () => {
-    assert.match(DETALHE, /const \{ entradas, recarregar: recarregarFila \} = useOutbox\(\);/);
-    const ramo = DETALHE.slice(DETALHE.indexOf("if (err?.enfileirado)"), DETALHE.indexOf("toast.info(err.message)"));
-    assert.match(ramo, /recarregarFila\(\);/);
+  // Reescrita na Fase 3.4 (DEC-113): a correção local (`recarregarFila()` no
+  // ramo `enfileirado` do detalhe) virou um aviso GERAL — `outbox.enfileirar`
+  // avisa e o `OutboxContext` relê, para qualquer tela. A trava continua
+  // protegendo a mesma coisa: a pendência aparece na hora em que enfileira.
+  test("quem grava a fila avisa, e o contexto relê", () => {
+    const fila = semComentarios(ler("src/offline/outbox.js"));
+    assert.match(fila, /if \(!gravou\) return null;\s*avisarFilaMudou\(userId\);/);
+    const ctx = semComentarios(ler("src/contexts/OutboxContext.jsx"));
+    assert.match(ctx, /aoMudarFila\(\(quem\) => \{\s*if \(!quem \|\| quem === userId\) recarregar\(\);/);
+    // O detalhe não precisa mais reler por conta própria.
+    assert.doesNotMatch(DETALHE, /recarregarFila/);
   });
 });

@@ -340,7 +340,9 @@ describe("3.2 · item 6 — o Início com as duas chaves novas de GET /dashboard
     assert.deepEqual(destinoDasConfirmacoes([]), { tipo: "nenhum", itens: [] });
     const um = destinoDasConfirmacoes([{ processoId: "p1", quantidade: 2 }]);
     assert.equal(um.tipo, "processo");
-    assert.equal(um.destino, "/dashboard/processos/detalhe/p1");
+    // Fase 3.4 (DEC-118): direto no balão das confirmações. Chegar lá não
+    // marca nada — só a lista aberta marca (DEC-112, fase33b.test.js).
+    assert.equal(um.destino, "/dashboard/processos/detalhe/p1#confirmacoes");
     const varios = destinoDasConfirmacoes([{ processoId: "p1", quantidade: 1 }, { processoId: "p2", quantidade: 3 }]);
     assert.equal(varios.tipo, "lista");
     assert.equal(varios.itens.length, 2);
@@ -366,7 +368,9 @@ describe("3.2 · item 6 — o Início com as duas chaves novas de GET /dashboard
     // só, a ficha dele; senão, a lista comum. A lista continua sendo o destino
     // padrão (ver `destinoDosNaoLiberados` em fase33.test.js).
     assert.match(fonte, /<Link to=\{naoLiberados\.destino\} className="card-note card-note--link">/);
-    assert.doesNotMatch(fonte, /processos\?liberado/, "o filtro por liberação é da 3.4");
+    // Fase 3.4 (DEC-118): o filtro por liberação existe, e se chama
+    // `?portal=nao_liberado` (DEC-115). O nome antigo continua proibido.
+    assert.doesNotMatch(fonte, /processos\?liberado/, "o filtro por liberação é `?portal=`");
   });
 });
 

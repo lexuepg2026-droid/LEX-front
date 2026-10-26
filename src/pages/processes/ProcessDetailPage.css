@@ -77,11 +77,8 @@
   background-color: var(--color-text-secondary);
 }
 
-.processo-cabecalho__bolinha--success { background-color: var(--color-success-text); }
-.processo-cabecalho__bolinha--warning { background-color: var(--color-warning-text); }
-.processo-cabecalho__bolinha--danger  { background-color: var(--color-danger-text); }
-.processo-cabecalho__bolinha--info    { background-color: var(--color-info-text); }
-.processo-cabecalho__bolinha--neutral { background-color: var(--color-text-secondary); }
+/* A cor por tom (`--success`, `--warning`…) mora em `ProcessPage.css` desde a
+   3.4: a coluna Status da lista usa a mesma bolinha (DEC-116). */
 
 .processo-cabecalho__textos {
   min-width: 0;
@@ -212,35 +209,8 @@
   background-color: var(--color-surface-raised);
 }
 
-.participante-linha__quem {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1) var(--space-2);
-  min-width: 0;
-}
-
-.participante-linha__nome {
-  font-weight: var(--font-weight-semibold);
-  overflow-wrap: anywhere;
-}
-
-/* "Principal" é palavra, não só cor: o contorno e o texto no destaque. */
-.participante-linha__principal {
-  padding: 1px 8px;
-  border: 1px solid var(--color-accent);
-  border-radius: var(--radius-pill);
-  color: var(--color-accent);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-}
-
-.participante-linha__doc {
-  flex-basis: 100%;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  font-variant-numeric: tabular-nums;
-}
+/* `__quem`, `__nome`, `__principal` e `__doc` moram em `ProcessPage.css`
+   desde a 3.4: o formulário mostra os participantes no mesmo visual. */
 
 .participante-linha__papel {
   color: var(--color-text-secondary);
