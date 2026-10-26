@@ -4893,6 +4893,44 @@ vem com até 8, o mesmo limite das Datas — o risco 2 da 3.1 fechou.
 
 ---
 
+## DEC-107 (frontend) — a coluna de ações fixa à direita nas listas financeiras (Fase 3.3)
+
+O risco 1 da 3.2: com as colunas de texto com largura (para não colapsarem), a
+tabela passou a rolar dentro do `.table-wrapper`, e **o ⋮ ficava fora da vista a
+768 e a 1280 px nas três listas** (medido: o gatilho em x≈1.380 com o wrapper
+terminando em 1.236).
+
+- **`data-table--acoes-fixas`** (`styles/modules.css`) nas três listas: a última
+  coluna é `position: sticky; right: 0`, `z-index: 1`, com **fundo opaco igual
+  ao da linha** — `--color-bg` quando a tabela pousa no fundo da página
+  (embutida no Financeiro), `--color-surface` no balão (DEC-102); no hover, o
+  realce da linha (no fundo da página, o `--color-accent-muted` composto por uma
+  camada de gradiente; no balão, `--color-surface-raised`). Sombra discreta à
+  esquerda, sempre — quando a tabela cabe, é só um fio.
+- **O menu ⋮ continua no portal** (DEC-046): `sticky` não cria bloco de
+  contenção para o `fixed` dele. Conferido no navegador com a tabela rolada até o
+  fim: o painel abre colado ao gatilho e dentro da tela.
+- **A lista de honorários perdeu "Percentual" e "Valor base"** (estão no detalhe
+  do honorário). A contagem exata de colunas de dinheiro da F-1b.2 passou a 1
+  nessa lista, com o motivo no teste.
+- **Pares de contraste** "ações fixas: …" (o ⋮ e as notas da célula, em
+  `--color-text-secondary`, sobre os quatro fundos). A **borda** do gatilho
+  (`--color-border`, 1,38:1 no escuro) é decorativa e anterior à fase: quem
+  identifica o botão é o glyph, que passa.
+
+## DEC-108 (frontend) — o cartão de não liberados abre o processo quando há um só (Fase 3.3)
+
+> O contrato é a DEC-108 do back: `processosNaoLiberados` conta **processos**
+> distintos, e `processoNaoLiberadoId` vem quando a contagem é 1.
+
+`destinoDosNaoLiberados` (`pages/dashboard/inicio.js`): com **um** processo, o
+link do cartão é "Abrir o processo" e vai à ficha (onde mora o interruptor),
+como o cartão de confirmações (DEC-104); com **mais de um**, ou nenhum, "Ver a
+lista de processos" — a lista comum, sem filtro (o filtro por liberação é da
+3.4). Back antigo sem o id cai na lista: a tela não inventa destino.
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:
