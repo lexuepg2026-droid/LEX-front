@@ -730,8 +730,8 @@ function DashboardHomePage() {
 
             {/* Fase 3.2 (DEC-104) e 3.3 (DEC-108): PROCESSOS com algum cliente
                 de portal ainda não liberado. Com um só, o link abre o
-                processo; com mais, a lista COMUM — o filtro por liberação é
-                da 3.4. */}
+                processo; com mais, a lista JÁ FILTRADA por
+                `?portal=nao_liberado` (Fase 3.4, DEC-118), que conta o mesmo. */}
             <div className="summary-card summary-card--warning">
               <p className="card-label">
                 <IconeDoCartao icone="folder" />
