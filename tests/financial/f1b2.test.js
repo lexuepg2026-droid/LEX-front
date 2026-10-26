@@ -354,7 +354,9 @@ describe("F-1b.2 — nenhuma coluna de dinheiro trunca", () => {
     const ESPERADO = {
       "src/pages/payments/PaymentListPage.jsx": 2,      // Valor, Líquido
       "src/pages/installments/InstallmentListPage.jsx": 3, // Valor, Recebido, Em aberto
-      "src/pages/fees/FeeListPage.jsx": 2               // Valor base, Valor
+      // Fase 3.3 (DEC-107): "Valor base" saiu da lista (está no detalhe do
+      // honorário). A contagem continua EXATA — só perdeu a coluna que saiu.
+      "src/pages/fees/FeeListPage.jsx": 1               // Valor
     };
     for (const [arquivo, quantas] of Object.entries(ESPERADO)) {
       const codigo = ler(arquivo);

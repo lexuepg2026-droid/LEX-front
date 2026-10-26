@@ -555,3 +555,49 @@
   font-style: italic;
   line-height: var(--line-height-normal);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   A COLUNA DE AÇÕES FIXA À DIREITA — Fase 3.3 (DEC-107)
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Na 3.2 as colunas de texto das listas financeiras ganharam largura para não
+   colapsarem, e a tabela passou a rolar dentro do `.table-wrapper`: a 1280 px
+   o ⋮ ficava fora da vista até rolar. Agora a última coluna é `sticky` à
+   direita, sempre visível.
+
+   - **Fundo opaco igual ao da linha**, senão as células que rolam por baixo
+     apareceriam através dela: `--color-bg` quando a tabela pousa no fundo da
+     página (embutida no Financeiro), `--color-surface` no balão (DEC-102). No
+     hover, o mesmo realce da linha — no fundo da página, o
+     `--color-accent-muted` composto sobre o `--color-bg` por uma camada de
+     gradiente; no balão, o `--color-surface-raised`.
+   - **`z-index: 1`** acima das células e abaixo de tudo o que flutua: o menu
+     ⋮ vai em portal no `body` (DEC-046), e `sticky` não cria bloco de
+     contenção para o `fixed` dele — não é `transform`/`filter`/`contain`.
+   - **A sombra à esquerda** separa a coluna do texto que rola por baixo. Fica
+     sempre: quando a tabela cabe inteira, ela é só um fio entre as colunas. */
+.data-table--acoes-fixas th:last-child,
+.data-table--acoes-fixas td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background-color: var(--color-bg);
+  box-shadow: -8px 0 8px -8px rgba(0, 0, 0, 0.45);
+}
+
+.data-table--acoes-fixas th:last-child {
+  background-color: var(--color-surface-raised);
+}
+
+.data-table--acoes-fixas tbody tr:hover > td:last-child {
+  background-image: linear-gradient(var(--color-accent-muted), var(--color-accent-muted));
+}
+
+.lista-balao .data-table--acoes-fixas td:last-child {
+  background-color: var(--color-surface);
+}
+
+.lista-balao .data-table--acoes-fixas tbody tr:hover > td:last-child {
+  background-image: none;
+  background-color: var(--color-surface-raised);
+}

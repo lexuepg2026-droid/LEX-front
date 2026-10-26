@@ -207,3 +207,17 @@ export const rotuloDaConfirmacaoPorProcesso = (item) => {
   const partes = [(item?.numeroProcesso || '').trim(), (item?.titulo || '').trim()].filter(Boolean);
   return partes.length ? partes.join(' — ') : 'Processo';
 };
+
+// ── "Processos não liberados no portal" (Fase 3.3, DEC-108) ──────────────
+// `processosNaoLiberados` passou a contar PROCESSOS distintos, e
+// `processoNaoLiberadoId` vem preenchido quando há exatamente um. Com um, o
+// cartão abre o processo — onde mora o interruptor —, como o de confirmações
+// (DEC-104); com mais de um, a lista comum de processos (o filtro por
+// liberação é da 3.4); com nenhum, também a lista, que é onde se libera.
+export const destinoDosNaoLiberados = (resumo) => {
+  const id = resumo?.processoNaoLiberadoId;
+  if (resumo?.processosNaoLiberados === 1 && id) {
+    return { tipo: 'processo', destino: `/dashboard/processos/detalhe/${id}`, rotulo: 'Abrir o processo' };
+  }
+  return { tipo: 'lista', destino: '/dashboard/processos', rotulo: 'Ver a lista de processos' };
+};
