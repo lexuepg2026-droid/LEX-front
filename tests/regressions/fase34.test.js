@@ -274,3 +274,26 @@ describe("Fase 3.4 · item 6 — os destinos dos cartões do Início (DEC-118)",
     assert.equal((detalhe.match(/marcarConfirmacoesVistas/g) ?? []).length, 1, "a DEC-112 continua: um ponto só marca");
   });
 });
+
+// ── Achado no navegador — "Intervalo personalizado" a partir de "Mês atual" ──
+import { filtrosDaUrl } from "../../src/utils/filtrosNaUrl.js";
+
+describe("Fase 3.4 · achado — a escolha de 'Intervalo personalizado' vale com datas na URL", () => {
+  const OUTUBRO = new Date(Date.UTC(2026, 9, 26, 15));
+  const CAMPOS = ["busca", "de", "ate"];
+  const mesAtual = new URLSearchParams("de=2026-10-01&ate=2026-10-31");
+
+  test("com as datas do mês atual e a escolha explícita, é personalizado", () => {
+    assert.equal(filtrosDaUrl(mesAtual, CAMPOS, { personalizado: true, agora: OUTUBRO }).preset, PRESETS_PERIODO.PERSONALIZADO);
+  });
+
+  test("sem a escolha explícita, o preset continua derivado das datas", () => {
+    assert.equal(filtrosDaUrl(mesAtual, CAMPOS, { agora: OUTUBRO }).preset, PRESETS_PERIODO.MES_ATUAL);
+  });
+
+  test("os outros presets e o Limpar desligam a escolha", () => {
+    const hook = semComentarios(ler("src/hooks/useListFilters.js"));
+    assert.match(hook, /setPersonalizado\(preset === PRESETS_PERIODO\.PERSONALIZADO\);/);
+    assert.match(hook, /const limpar = useCallback\(\(\) => \{\s*setPersonalizado\(false\);/);
+  });
+});
