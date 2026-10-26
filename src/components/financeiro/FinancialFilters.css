@@ -40,7 +40,7 @@
    balão — o desenho dos filtros da Figura 18. Só o raio muda: fundo, borda e
    cor continuam os de campo do projeto (`.filter-bar`). */
 .filtros-financeiros--pilulas .filter-bar select,
-.filtros-financeiros--pilulas .filter-bar input {
+.filtros-financeiros--pilulas .filter-bar input:not([type="checkbox"]) {
   border-radius: var(--radius-pill);
   padding-left: var(--space-4);
   padding-right: var(--space-4);
