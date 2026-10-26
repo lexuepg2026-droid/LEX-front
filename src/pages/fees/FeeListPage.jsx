@@ -13,7 +13,7 @@ import { descricaoDoRecorteFinanceiro } from '../../components/financeiro/filter
 import useListFilters, { FILTROS_NA_URL } from '../../hooks/useListFilters';
 import useProcessoFiltrado from '../../hooks/useProcessoFiltrado';
 import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
-import { formatDate, formatCurrency, formatPercent } from '../../utils/formatters';
+import { formatDate, formatCurrency } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
 import OfflineNotice from '../../components/ui/OfflineNotice';
@@ -196,11 +196,11 @@ function FeeListPage({ embedded = false }) {
       ) : (
         <div className="table-wrapper" aria-busy={carregando || undefined}>
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
-          <table className="data-table data-table--fixed">
+          <table className="data-table data-table--fixed data-table--acoes-fixas">
             {/* Dinheiro em `col-money`, data em `col-data`, status em
-                `col-status` (F-1b.2). "Valor base" e "Valor" carregam o
-                honorário sobre monte-mor, que é o maior número do sistema —
-                era a coluna com mais chance de cortar em silêncio. */}
+                `col-status` (F-1b.2). "Valor" carrega o honorário sobre
+                monte-mor, que é o maior número do sistema — era a coluna com
+                mais chance de cortar em silêncio. */}
             <colgroup>
               {/* Fase 3.2 (DEC-102): o cliente principal ao lado do processo
                   (apontamentos 3 e 4). As colunas de texto ganharam largura:
@@ -212,8 +212,9 @@ function FeeListPage({ embedded = false }) {
               <col className="col-md" />
               <col className="col-lg" />
               <col className="col-xs" />
-              <col className="col-xxs" />
-              <col className="col-money" />
+              {/* Fase 3.3 (DEC-107): saíram "Percentual" e "Valor base" — os
+                  dois estão no detalhe do honorário, e eram 230 px que
+                  empurravam o ⋮ para fora da vista. Fica o "Valor". */}
               <col className="col-money" />
               <col className="col-status" />
               <col className="col-data" />
@@ -227,8 +228,6 @@ function FeeListPage({ embedded = false }) {
                 <th>Cliente</th>
                 <th>Descrição</th>
                 <th>Tipo</th>
-                <th>Percentual</th>
-                <th>Valor base</th>
                 <th>Valor</th>
                 <th>Status</th>
                 <th>Vencimento</th>
@@ -258,8 +257,6 @@ function FeeListPage({ embedded = false }) {
                     </Link>
                   </td>
                   <td>{labelDe(TIPO_HONORARIO_OPTIONS, fee.tipo)}</td>
-                  <td className="cell-num">{formatPercent(fee.percentual)}</td>
-                  <td className="cell-num">{fee.valorBase == null ? '—' : formatCurrency(fee.valorBase)}</td>
                   <td className="cell-num">{formatCurrency(fee.valor)}</td>
                   <td><StatusBadge status={fee.status} /></td>
                   <td>{formatDate(fee.dataVencimento)}</td>

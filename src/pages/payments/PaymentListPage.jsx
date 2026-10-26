@@ -222,7 +222,7 @@ function PaymentListPage({ embedded = false }) {
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`.
               "Observações" é texto livre digitado pela advogada, sem teto: era
               a coluna mais exposta ao defeito que a fase corrigiu. */}
-          <table className="data-table data-table--fixed">
+          <table className="data-table data-table--fixed data-table--acoes-fixas">
             {/* ── As larguras, e o que a F-1b.2 corrigiu ──────────────────
                 "Honorário" era `col-xs` (100 px) e cortava em ~8 caracteres:
                 como quase toda descrição começa por "Honorários advocatícios",

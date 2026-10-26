@@ -155,6 +155,14 @@ export const PARES = [
   { nome: "Início: link do cartão / --color-surface-card", texto: "--color-accent", fundo: "--color-surface-card", limite: TEXTO },
   { nome: "Início: quantidade da lista curta / --color-surface-card", texto: "--color-text-secondary", fundo: "--color-surface-card", limite: TEXTO },
   { nome: "Início: valor de atenção (não liberados) / --color-surface-card", texto: "--color-warning-text", fundo: "--color-surface-card", limite: TEXTO },
+  // A coluna de ações fixa à direita (Fase 3.3, DEC-107): o ⋮ e as notas da
+  // célula ("Reparcelada", "sem recibo"), ambos `--color-text-secondary`,
+  // sobre os fundos opacos da coluna — no fundo da página (embutida no
+  // Financeiro), com o realce composto do hover, e no balão.
+  { nome: "ações fixas: ⋮ e nota / fundo da página", texto: "--color-text-secondary", fundo: "--color-bg", limite: TEXTO },
+  { nome: "ações fixas: ⋮ e nota / linha em hover (fundo da página)", texto: "--color-text-secondary", fundo: "--color-accent-muted", sobre: ["--color-bg"], limite: TEXTO },
+  { nome: "ações fixas: ⋮ e nota / balão", texto: "--color-text-secondary", fundo: "--color-surface", limite: TEXTO },
+  { nome: "ações fixas: ⋮ e nota / linha em hover (balão)", texto: "--color-text-secondary", fundo: "--color-surface-raised", limite: TEXTO },
   { nome: "lista: borda da busca em pílula / balão", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },
 
   // Não texto.
