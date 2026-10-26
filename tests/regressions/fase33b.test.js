@@ -256,9 +256,16 @@ describe("Fase 3.3b · item 4 — as confirmações são vistas DEPOIS de aparec
 });
 
 describe("Fase 3.3b · achado no navegador — a fase na fila aparece na hora", () => {
-  test("enfileirada a fase, a tela relê a fila do contexto", () => {
-    assert.match(DETALHE, /const \{ entradas, recarregar: recarregarFila \} = useOutbox\(\);/);
-    const ramo = DETALHE.slice(DETALHE.indexOf("if (err?.enfileirado)"), DETALHE.indexOf("toast.info(err.message)"));
-    assert.match(ramo, /recarregarFila\(\);/);
+  // Reescrita na Fase 3.4 (DEC-113): a correção local (`recarregarFila()` no
+  // ramo `enfileirado` do detalhe) virou um aviso GERAL — `outbox.enfileirar`
+  // avisa e o `OutboxContext` relê, para qualquer tela. A trava continua
+  // protegendo a mesma coisa: a pendência aparece na hora em que enfileira.
+  test("quem grava a fila avisa, e o contexto relê", () => {
+    const fila = semComentarios(ler("src/offline/outbox.js"));
+    assert.match(fila, /if \(!gravou\) return null;\s*avisarFilaMudou\(userId\);/);
+    const ctx = semComentarios(ler("src/contexts/OutboxContext.jsx"));
+    assert.match(ctx, /aoMudarFila\(\(quem\) => \{\s*if \(!quem \|\| quem === userId\) recarregar\(\);/);
+    // O detalhe não precisa mais reler por conta própria.
+    assert.doesNotMatch(DETALHE, /recarregarFila/);
   });
 });

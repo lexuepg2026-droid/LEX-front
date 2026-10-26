@@ -120,7 +120,7 @@ function ProcessoDetalhePage() {
   // não repete.
   usePublicarContexto({ processoId: id, avisoProprio: true });
   const online = useOnlineStatus();
-  const { entradas, recarregar: recarregarFila } = useOutbox();
+  const { entradas } = useOutbox();
   // Só a pendência DESTE processo: a fila é do aparelho inteiro, e avisar aqui
   // sobre a fase de outro processo faria o aviso perder o sentido.
   const fasePendente = entradas.some(
@@ -249,10 +249,6 @@ function ProcessoDetalhePage() {
         // volta a ficar vazio como voltaria num sucesso — ele é da transição,
         // e a transição foi registrada (na fila).
         setMotivoFase('');
-        // Fase 3.3b: o interceptor grava na fila sem avisar o contexto, e o
-        // link "alteração não enviada" logo abaixo só aparecia na próxima
-        // recarga da fila. Relê aqui, no gesto que enfileirou.
-        recarregarFila();
         toast.info(err.message);
         return;
       }

@@ -23,6 +23,7 @@ import * as store from './offlineStore.js';
 import { montarEntrada, marcarFalha, marcarPendente } from './outboxEntry.js';
 import { ordenarFila, proximaEntrada } from './outboxPlan.js';
 import { classificarFalha, mensagemDaFalha } from './outboxMessages.js';
+import { avisarFilaMudou } from './outboxEvents.js';
 import {
   getApiErrorMessage,
   getApiErrorStatus,
@@ -70,7 +71,12 @@ export const enfileirar = async ({
   // perda de dado com mensagem de sucesso, que é o pior desfecho possível
   // desta fase.
   const gravou = await store.putFila({ chave: chaveDe(userId, entrada.id), entrada });
-  return gravou ? entrada : null;
+  if (!gravou) return null;
+  // Fase 3.4 (DEC-113): quem mostra a fila fica sabendo na hora — o
+  // `OutboxContext` assina e relê. Só depois de gravar: avisar de uma entrada
+  // que não existe faria a tela procurar o que não está lá.
+  avisarFilaMudou(userId);
+  return entrada;
 };
 
 const gravar = async (userId, entrada) =>
