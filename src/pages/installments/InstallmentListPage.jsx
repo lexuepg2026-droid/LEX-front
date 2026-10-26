@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import installmentService from '../../api/installmentService';
 import feeService from '../../api/feeService';
-import PageHeader from '../../components/ui/PageHeader';
+import CabecalhoDeLista from '../../components/financeiro/CabecalhoDeLista';
+import useLinhaClicavel from '../../components/financeiro/useLinhaClicavel';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -83,6 +84,16 @@ function InstallmentListPage({ embedded = false }) {
   });
   const installments = data?.data ?? (Array.isArray(data) ? data : []);
   const total = typeof data?.total === 'number' ? data.total : 0;
+  // O "(37)" do título só com resposta na mão (DEC-102).
+  const totalConhecido = typeof data?.total === 'number' ? data.total : null;
+  const clicarNaLinha = useLinhaClicavel();
+  // A linha leva à EDIÇÃO da parcela — o "Editar" do menu. A reparcelada não
+  // se edita: a linha leva ao honorário, como o link do nome. Sem sinal a
+  // edição é recusada (o menu diz o porquê), e a linha não abre nada.
+  const destinoDaLinha = (inst) => {
+    if (inst.status === 'cancelado') return inst.feeId?._id ? `/dashboard/honorarios/${inst.feeId._id}` : null;
+    return online ? `/dashboard/parcelas/editar/${inst._id}` : null;
+  };
 
   // ── `handleReativar` SAIU na F-1a ────────────────────────────────────────
   //
@@ -162,8 +173,10 @@ function InstallmentListPage({ embedded = false }) {
         limpar={limparTudo}
         temFiltro={filtrado}
         honorarios={honorarios}
-        placeholderBusca="Buscar por honorário ou processo…"
+        placeholderBusca="Buscar por honorário, processo ou cliente…"
         descricaoDoRecorte={recorte}
+        semBusca={!embedded}
+        pilulas={!embedded}
       >
         <select
           value={filtros.status}
@@ -217,6 +230,10 @@ function InstallmentListPage({ embedded = false }) {
                 as duas datas em `col-xs` saíam "18/08/20…". */}
             <colgroup>
               <col />
+              {/* Fase 3.2 (DEC-102): processo e cliente principal, da chave
+                  nova `processo` da listagem. Texto livre, `auto`. */}
+              <col />
+              <col />
               {/* `col-parcela`, e não `col-xxs`: a coluna mostrava "Parce…"
                   desde que a DEC-048 trocou o ordinal nu por "Parcela 1 de 3"
                   e a largura de 80 px continuou sendo a de um número. Ver a
@@ -235,6 +252,8 @@ function InstallmentListPage({ embedded = false }) {
             <thead>
               <tr>
                 <th>Honorário</th>
+                <th>Processo</th>
+                <th>Cliente</th>
                 <th>Nº Parcela</th>
                 <th>Valor</th>
                 {/* `valorPago` e o que falta: as duas colunas que a advogada
@@ -250,7 +269,11 @@ function InstallmentListPage({ embedded = false }) {
             </thead>
             <tbody>
               {installments.map(inst => (
-                <tr key={inst._id}>
+                <tr
+                  key={inst._id}
+                  className={destinoDaLinha(inst) ? 'linha-clicavel' : undefined}
+                  onClick={clicarNaLinha(destinoDaLinha(inst))}
+                >
                   {/* Da parcela ao honorário (F-1b): quem está olhando uma
                       parcela quase sempre quer ver a cobrança inteira, e até
                       aqui não havia caminho — só voltar ao menu. */}
@@ -262,6 +285,12 @@ function InstallmentListPage({ embedded = false }) {
                         {rotuloCurtoDoHonorario(inst.feeId.descricao)}
                       </Link>
                     ) : '—'}
+                  </td>
+                  <td className="cell-truncate" title={rotuloDoProcesso(inst.processo) ?? undefined}>
+                    {rotuloDoProcesso(inst.processo) ?? '—'}
+                  </td>
+                  <td className="cell-truncate" title={inst.processo?.clientePrincipalNome ?? undefined}>
+                    {inst.processo?.clientePrincipalNome ?? '—'}
                   </td>
                   {/* DEC-048: a coluna deixou de ser o ordinal nu. "Parcela 3"
                       de um plano de três é a primeira, e era o que esta coluna
@@ -351,15 +380,29 @@ function InstallmentListPage({ embedded = false }) {
 
   return (
     <div className="module-container">
-      <PageHeader
-        title="Parcelas"
-        actionLabel="+ Nova Parcela"
-        actionTo="/dashboard/parcelas/novo"
-        actionMotivo={online ? undefined : MENSAGEM_ESCRITA_OFFLINE}
-      />
-      {body}
+      <section className="lista-balao" aria-labelledby="titulo-lista-parcelas">
+        <CabecalhoDeLista
+          id="titulo-lista-parcelas"
+          titulo="Parcelas"
+          total={totalConhecido}
+          busca={filtros.busca}
+          onBusca={(v) => definirFiltro('busca', v)}
+          placeholderBusca="Buscar por honorário, número do processo ou cliente…"
+          rotuloBusca="Buscar parcelas"
+          novoRotulo="Nova parcela"
+          novoDestino="/dashboard/parcelas/novo"
+          novoMotivo={online ? null : MENSAGEM_ESCRITA_OFFLINE}
+        />
+        {body}
+      </section>
     </div>
   );
 }
+
+// O processo da linha, pela chave `processo` de `GET /installments` (Fase
+// 3.2): o título, como nas listas de honorários e pagamentos; o número quando
+// não há título.
+const rotuloDoProcesso = (processo) =>
+  (processo?.titulo || processo?.numeroProcesso || '').trim() || null;
 
 export default InstallmentListPage;

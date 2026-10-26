@@ -1,0 +1,151 @@
+/* O balão das listas financeiras — Fase 3.2 (DEC-102), Figura 19.
+
+   Tokens do tema, como o balão do Início (DEC-100): `--color-surface` com
+   cantos de 24 px. A busca em pílula usa o fundo e a borda de campo do
+   projeto, e o "+" é um círculo que ganha o realce de hover. Pares medidos em
+   `tests/css/contrastePares.js` ("lista: …"). */
+
+.lista-balao {
+  background-color: var(--color-surface);
+  border-radius: 24px;
+  padding: var(--space-4) var(--space-5);
+}
+
+.lista-balao__topo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.lista-balao__titulo {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.lista-balao__total {
+  font-size: var(--font-size-base);
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.lista-balao__busca {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-3);
+  background: var(--color-surface-input);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+}
+
+.lista-balao__busca:focus-within {
+  border-color: var(--color-text-primary);
+}
+
+.lista-balao__busca input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+}
+
+.lista-balao__busca input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.lista-balao__lupa {
+  flex-shrink: 0;
+}
+
+.lista-balao__novo {
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 1.6rem;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.lista-balao__novo:hover {
+  background-color: var(--color-surface-raised);
+}
+
+/* O anel de foco é o global; só o raio acompanha o círculo. */
+.lista-balao__novo:focus-visible {
+  border-radius: 50%;
+}
+
+.lista-balao__novo[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.lista-balao__novo-bloqueado {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 40%;
+}
+
+/* O motivo não é atenuado junto com o botão (DEC-053). */
+.lista-balao__motivo {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 1.35;
+}
+
+/* A linha inteira abre o registro (DEC-102): o cursor diz isso. */
+.data-table tbody tr.linha-clicavel {
+  cursor: pointer;
+}
+
+/* Dentro do balão a tabela pousa na `--color-surface`, e o realce padrão
+   (`--color-accent-muted`) composto sobre ela derrubava os badges danger e
+   info do escuro abaixo de 4,5:1. O hover aqui é o plano elevado — o mesmo
+   das linhas das Datas próximas do Início. */
+.lista-balao .data-table tbody tr:hover {
+  background-color: var(--color-surface-raised);
+}
+
+/* 360 px: o título e o "+" na primeira linha, a busca inteira embaixo. */
+@media (max-width: 767px) {
+  .lista-balao {
+    padding: var(--space-3);
+    border-radius: 16px;
+  }
+  .lista-balao__topo {
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+  }
+  .lista-balao__titulo {
+    flex: 1 1 auto;
+    font-size: var(--font-size-lg);
+  }
+  .lista-balao__busca {
+    order: 3;
+    flex: 1 1 100%;
+  }
+  .lista-balao__novo-bloqueado {
+    max-width: 100%;
+  }
+}

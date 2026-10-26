@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import feeService from '../../api/feeService';
-import PageHeader from '../../components/ui/PageHeader';
+import CabecalhoDeLista from '../../components/financeiro/CabecalhoDeLista';
+import useLinhaClicavel from '../../components/financeiro/useLinhaClicavel';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -25,6 +26,7 @@ import {
   STATUS_HONORARIO_OPTIONS,
   STATUS_CANCELADO,
   labelDe,
+  nomeDoCliente,
 } from '../../utils/enums';
 import '../../styles/modules.css';
 import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
@@ -73,6 +75,9 @@ function FeeListPage({ embedded = false }) {
   });
   const fees = data?.data ?? (Array.isArray(data) ? data : []);
   const total = typeof data?.total === 'number' ? data.total : 0;
+  // O "(37)" do título só com resposta na mão (DEC-102).
+  const totalConhecido = typeof data?.total === 'number' ? data.total : null;
+  const clicarNaLinha = useLinhaClicavel();
 
   const confirmDelete = (id) => setDeleteModal({ open: true, id });
 
@@ -141,8 +146,10 @@ function FeeListPage({ embedded = false }) {
         limpar={limparTudo}
         temFiltro={filtrado}
         honorarios={null}
-        placeholderBusca="Buscar por descrição ou número do processo…"
+        placeholderBusca="Buscar por descrição, processo ou cliente…"
         descricaoDoRecorte={recorte}
+        semBusca={!embedded}
+        pilulas={!embedded}
       >
         <select
           value={filtros.tipo}
@@ -189,6 +196,9 @@ function FeeListPage({ embedded = false }) {
                 era a coluna com mais chance de cortar em silêncio. */}
             <colgroup>
               <col />
+              {/* Fase 3.2 (DEC-102): o cliente principal ao lado do processo
+                  (apontamentos 3 e 4). Texto livre, `auto`, com `title`. */}
+              <col />
               <col />
               <col className="col-xs" />
               <col className="col-xxs" />
@@ -203,6 +213,7 @@ function FeeListPage({ embedded = false }) {
             <thead>
               <tr>
                 <th>Processo</th>
+                <th>Cliente</th>
                 <th>Descrição</th>
                 <th>Tipo</th>
                 <th>Percentual</th>
@@ -217,11 +228,15 @@ function FeeListPage({ embedded = false }) {
               {fees.map(fee => (
                 // Honorário cancelado continua na lista, atenuado: sumir levaria
                 // junto o histórico da cobrança que ela desfez.
+                // A linha inteira leva ao detalhe do honorário, como o link do
+                // nome (DEC-102); o menu ⋮ não dispara a linha.
                 <tr
                   key={fee._id}
-                  className={fee.status === STATUS_CANCELADO ? 'row-inativa' : undefined}
+                  className={`linha-clicavel${fee.status === STATUS_CANCELADO ? ' row-inativa' : ''}`}
+                  onClick={clicarNaLinha(`/dashboard/honorarios/${fee._id}`)}
                 >
                   <td className="cell-truncate" title={fee.processoId?.titulo ?? undefined}>{fee.processoId?.titulo ?? '—'}</td>
+                  <td className="cell-truncate" title={clienteDaLinha(fee) ?? undefined}>{clienteDaLinha(fee) ?? '—'}</td>
                   {/* O nome do honorário leva à página dele (F-1b). É o
                       caminho principal para a tela nova, e o que responde
                       "quanto já entrou nesta cobrança" sem passar pela
@@ -289,15 +304,32 @@ function FeeListPage({ embedded = false }) {
 
   return (
     <div className="module-container">
-      <PageHeader
-        title="Honorários"
-        actionLabel="+ Novo Honorário"
-        actionTo="/dashboard/honorarios/novo"
-        actionMotivo={online ? undefined : MENSAGEM_ESCRITA_OFFLINE}
-      />
-      {body}
+      <section className="lista-balao" aria-labelledby="titulo-lista-honorarios">
+        <CabecalhoDeLista
+          id="titulo-lista-honorarios"
+          titulo="Honorários"
+          total={totalConhecido}
+          busca={filtros.busca}
+          onBusca={(v) => definirFiltro('busca', v)}
+          placeholderBusca="Buscar por descrição, número do processo ou cliente…"
+          rotuloBusca="Buscar honorários"
+          novoRotulo="Novo honorário"
+          novoDestino="/dashboard/honorarios/novo"
+          novoMotivo={online ? null : MENSAGEM_ESCRITA_OFFLINE}
+        />
+        {body}
+      </section>
     </div>
   );
 }
+
+// O cliente principal vem dentro do processo populado (`GET /fees`, desde a
+// 2.5). Sem ele, `null` — e a célula diz "—".
+const clienteDaLinha = (fee) => {
+  const cliente = fee.processoId?.clientePrincipalId;
+  if (!cliente || typeof cliente !== 'object') return null;
+  const nome = nomeDoCliente(cliente);
+  return nome === '—' ? null : nome;
+};
 
 export default FeeListPage;

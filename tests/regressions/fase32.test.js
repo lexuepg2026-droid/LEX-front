@@ -205,3 +205,99 @@ describe("3.2 · item 4 — os filtros na URL", () => {
     }
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Item 3 — as listas no padrão da Figura 19 (DEC-102)
+// ═══════════════════════════════════════════════════════════════════════════
+import { deveSeguirOCliqueDaLinha } from "../../src/components/financeiro/linhaClicavel.js";
+
+describe("3.2 · item 3 — a linha clicável", () => {
+  // Um DOM mínimo: a linha contém o que está dentro dela; o portal do menu ⋮
+  // não está dentro dela, embora o React propague o clique até a linha.
+  const no = (interativo = false) => ({ closest: () => (interativo ? {} : null) });
+  const linha = (...dentro) => ({ contains: (n) => dentro.includes(n) });
+
+  test("clique numa célula comum segue", () => {
+    const celula = no();
+    assert.equal(deveSeguirOCliqueDaLinha({ button: 0, target: celula, currentTarget: linha(celula) }), true);
+  });
+
+  test("o link do nome e o gatilho ⋮ resolvem o próprio clique", () => {
+    const link = no(true);
+    assert.equal(deveSeguirOCliqueDaLinha({ button: 0, target: link, currentTarget: linha(link) }), false);
+  });
+
+  test("o painel do menu (portal, fora da linha no DOM) não dispara a linha", () => {
+    const itemDoPortal = no();
+    assert.equal(deveSeguirOCliqueDaLinha({ button: 0, target: itemDoPortal, currentTarget: linha() }), false);
+  });
+
+  test("texto selecionado, modificador ou botão do meio ficam com o navegador", () => {
+    const c = no();
+    const base = { button: 0, target: c, currentTarget: linha(c) };
+    assert.equal(deveSeguirOCliqueDaLinha(base, "texto copiado"), false);
+    assert.equal(deveSeguirOCliqueDaLinha({ ...base, ctrlKey: true }), false);
+    assert.equal(deveSeguirOCliqueDaLinha({ ...base, metaKey: true }), false);
+    assert.equal(deveSeguirOCliqueDaLinha({ ...base, button: 1 }), false);
+    assert.equal(deveSeguirOCliqueDaLinha({ ...base, defaultPrevented: true }), false);
+  });
+});
+
+describe("3.2 · item 3 — as três listas", () => {
+  const LISTAS = [
+    ["src/pages/fees/FeeListPage.jsx", "Honorários", "Novo honorário", /\/dashboard\/honorarios\/\$\{fee\._id\}/],
+    ["src/pages/installments/InstallmentListPage.jsx", "Parcelas", "Nova parcela", /\/dashboard\/parcelas\/editar\/\$\{inst\._id\}/],
+    ["src/pages/payments/PaymentListPage.jsx", "Pagamentos", "Registrar pagamento", /\/dashboard\/pagamentos\/editar\/\$\{p\._id\}/],
+  ];
+
+  for (const [arquivo, titulo, novo, destino] of LISTAS) {
+    const nome = arquivo.split("/").pop();
+    test(`${nome}: balão com título, total, busca em pílula e "+" rotulado`, () => {
+      const fonte = semComentarios(ler(arquivo));
+      assert.match(fonte, /<section className="lista-balao"/);
+      assert.match(fonte, new RegExp(`titulo="${titulo}"`));
+      assert.match(fonte, /total=\{totalConhecido\}/);
+      assert.match(fonte, new RegExp(`novoRotulo="${novo}"`));
+      assert.match(fonte, /novoMotivo=\{online \? null : MENSAGEM_ESCRITA_OFFLINE\}/);
+      assert.doesNotMatch(fonte, /<PageHeader/);
+    });
+
+    test(`${nome}: filtros em pílulas abaixo, sem a busca duplicada`, () => {
+      const fonte = semComentarios(ler(arquivo));
+      assert.match(fonte, /semBusca=\{!embedded\}/);
+      assert.match(fonte, /pilulas=\{!embedded\}/);
+    });
+
+    test(`${nome}: a linha inteira leva ao destino, sem virar alvo de Tab`, () => {
+      const fonte = semComentarios(ler(arquivo));
+      assert.match(fonte, /onClick=\{clicarNaLinha\(/);
+      assert.match(fonte, destino);
+      assert.doesNotMatch(fonte, /<tr[^>]*tabIndex/, "a linha não é focável");
+      assert.match(fonte, /<ActionMenu/, "o menu ⋮ continua na última coluna");
+    });
+
+    test(`${nome}: coluna Cliente, e o colgroup acompanha os <th>`, () => {
+      const fonte = semComentarios(ler(arquivo));
+      assert.match(fonte, /<th>Processo<\/th>\s*<th>Cliente<\/th>/);
+      const colgroup = fonte.match(/<colgroup>([\s\S]*?)<\/colgroup>/)[1];
+      const thead = fonte.match(/<thead>([\s\S]*?)<\/thead>/)[1];
+      assert.equal((colgroup.match(/<col\b/g) || []).length, (thead.match(/<th>/g) || []).length);
+      assert.match(fonte, /data-table data-table--fixed/);
+      assert.match(fonte, /col-money/);
+    });
+  }
+
+  test("a reparcelada não abre a edição: leva ao honorário", () => {
+    const fonte = semComentarios(ler("src/pages/installments/InstallmentListPage.jsx"));
+    assert.match(fonte, /inst\.status === 'cancelado'\) return inst\.feeId\?\._id \? `\/dashboard\/honorarios\/\$\{inst\.feeId\._id\}`/);
+  });
+
+  test("o honorário cancelado continua esmaecido", () => {
+    assert.match(semComentarios(ler("src/pages/fees/FeeListPage.jsx")), /STATUS_CANCELADO \? ' row-inativa' : ''/);
+  });
+
+  test("no balão o hover é o plano elevado (contraste dos badges no escuro)", () => {
+    const css = ler("src/components/financeiro/CabecalhoDeLista.css");
+    assert.match(css, /\.lista-balao \.data-table tbody tr:hover \{\s*background-color: var\(--color-surface-raised\);/);
+  });
+});

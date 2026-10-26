@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import paymentService from '../../api/paymentService';
 import feeService from '../../api/feeService';
-import PageHeader from '../../components/ui/PageHeader';
+import CabecalhoDeLista from '../../components/financeiro/CabecalhoDeLista';
+import useLinhaClicavel from '../../components/financeiro/useLinhaClicavel';
 import EmptyState from '../../components/ui/EmptyState';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Paginador from '../../components/ui/Paginador';
@@ -25,7 +26,7 @@ import {
   blockReason
 } from '../../offline/offlineMessages';
 import { getFinancialErrorMessage } from '../../utils/financialErrors';
-import { FORMA_PAGAMENTO_OPTIONS, labelDe } from '../../utils/enums';
+import { FORMA_PAGAMENTO_OPTIONS, labelDe, nomeDoCliente } from '../../utils/enums';
 import { rotuloDasParcelas, temEstorno, estornadoIntegralmente } from './paymentRow.js';
 import ReversalModal from '../../components/financeiro/ReversalModal';
 import '../../styles/modules.css';
@@ -99,6 +100,9 @@ function PaymentListPage({ embedded = false }) {
   });
   const payments = data?.data ?? (Array.isArray(data) ? data : []);
   const total = typeof data?.total === 'number' ? data.total : 0;
+  // O "(37)" do título só com resposta na mão (DEC-102).
+  const totalConhecido = typeof data?.total === 'number' ? data.total : null;
+  const clicarNaLinha = useLinhaClicavel();
 
   // ── `handleReativar`, `confirmDelete` e `handleRemove` SAÍRAM na F-1a ────
   //
@@ -177,6 +181,8 @@ function PaymentListPage({ embedded = false }) {
         temFiltro={filtrado}
         honorarios={honorarios}
         descricaoDoRecorte={recorte}
+        semBusca={!embedded}
+        pilulas={!embedded}
       >
         <select
           value={filtros.formaPagamento}
@@ -230,6 +236,9 @@ function PaymentListPage({ embedded = false }) {
             <colgroup>
               <col className="col-lg" />
               <col />
+              {/* Fase 3.2 (DEC-102): o cliente principal ao lado do processo,
+                  de dentro do processo populado. Texto livre, `auto`. */}
+              <col />
               <col />
               <col className="col-money" />
               <col className="col-money" />
@@ -244,6 +253,7 @@ function PaymentListPage({ embedded = false }) {
                     ele tocou sai na coluna "Aplicado em", que pode dizer duas. */}
                 <th>Honorário</th>
                 <th>Processo</th>
+                <th>Cliente</th>
                 <th>Aplicado em</th>
                 <th>Valor</th>
                 <th>Líquido</th>
@@ -256,7 +266,13 @@ function PaymentListPage({ embedded = false }) {
               {payments.map(p => {
                 const liquido = p.valorLiquido ?? p.valor;
                 return (
-                <tr key={p._id}>
+                // A linha leva à edição do pagamento, o "Editar" do menu
+                // (DEC-102). Sem sinal a edição é recusada, e a linha não abre.
+                <tr
+                  key={p._id}
+                  className={online ? 'linha-clicavel' : undefined}
+                  onClick={clicarNaLinha(online ? `/dashboard/pagamentos/editar/${p._id}` : null)}
+                >
                   {/* Do pagamento ao honorário (F-1b). */}
                   {/* O TRECHO DISTINTIVO, não a descrição inteira (F-1b.2):
                       "Honorários advocatícios — " é prefixo de quase toda
@@ -270,6 +286,7 @@ function PaymentListPage({ embedded = false }) {
                     ) : '—'}
                   </td>
                   <td className="cell-truncate" title={p.honorarioId?.processoId?.titulo ?? undefined}>{p.honorarioId?.processoId?.titulo ?? '—'}</td>
+                  <td className="cell-truncate" title={clienteDoPagamento(p) ?? undefined}>{clienteDoPagamento(p) ?? '—'}</td>
                   <td className="cell-truncate" title={rotuloDasParcelas(p)}>{rotuloDasParcelas(p)}</td>
                   <td className="cell-num">{formatCurrency(p.valor)}</td>
                   {/* O líquido é o que ainda vale depois dos estornos. Exibido
@@ -382,16 +399,32 @@ function PaymentListPage({ embedded = false }) {
 
   return (
     <div className="module-container">
-      <PageHeader
-        title="Pagamentos"
-        actionLabel="+ Novo Pagamento"
-        actionTo="/dashboard/pagamentos/novo"
-        actionMotivo={online ? undefined : MENSAGEM_ESCRITA_OFFLINE}
-      />
-      {body}
+      <section className="lista-balao" aria-labelledby="titulo-lista-pagamentos">
+        <CabecalhoDeLista
+          id="titulo-lista-pagamentos"
+          titulo="Pagamentos"
+          total={totalConhecido}
+          busca={filtros.busca}
+          onBusca={(v) => definirFiltro('busca', v)}
+          placeholderBusca="Buscar por honorário, processo, cliente ou observação…"
+          rotuloBusca="Buscar pagamentos"
+          novoRotulo="Registrar pagamento"
+          novoDestino="/dashboard/pagamentos/novo"
+          novoMotivo={online ? null : MENSAGEM_ESCRITA_OFFLINE}
+        />
+        {body}
+      </section>
       {modal}
     </div>
   );
 }
+
+// O cliente principal vem dentro do processo do honorário (Fase 3.2).
+const clienteDoPagamento = (p) => {
+  const cliente = p.honorarioId?.processoId?.clientePrincipalId;
+  if (!cliente || typeof cliente !== 'object') return null;
+  const nome = nomeDoCliente(cliente);
+  return nome === '—' ? null : nome;
+};
 
 export default PaymentListPage;

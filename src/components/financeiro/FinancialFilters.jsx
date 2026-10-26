@@ -41,13 +41,19 @@ function FinancialFilters({
   honorarios = null,
   placeholderBusca = 'Buscar por descrição, processo ou observação…',
   descricaoDoRecorte = null,
+  // Fase 3.2 (DEC-102): na página própria a busca sobe para o topo do balão
+  // (`CabecalhoDeLista`) e os filtros viram pílulas, como os da Figura 18.
+  // Embutida no Financeiro, a barra continua como era.
+  semBusca = false,
+  pilulas = false,
   children
 }) {
   const personalizado = filtros.preset === PRESETS_PERIODO.PERSONALIZADO;
 
   return (
-    <div className="filtros-financeiros">
+    <div className={`filtros-financeiros${pilulas ? ' filtros-financeiros--pilulas' : ''}`}>
       <div className="filter-bar">
+        {!semBusca && (
         <input
           type="search"
           className="filtros-financeiros__busca"
@@ -57,6 +63,7 @@ function FinancialFilters({
           maxLength={80}
           aria-label="Buscar"
         />
+        )}
 
         {/* O seletor de honorário só existe onde a listagem tem esse recorte —
             a de honorários, obviamente, não tem. `null` é a ausência, e não

@@ -35,3 +35,17 @@
 .filtros-financeiros__limpar {
   margin-left: var(--space-2);
 }
+
+/* Fase 3.2 (DEC-102): os filtros em pílulas, numa linha abaixo do topo do
+   balão — o desenho dos filtros da Figura 18. Só o raio muda: fundo, borda e
+   cor continuam os de campo do projeto (`.filter-bar`). */
+.filtros-financeiros--pilulas .filter-bar select,
+.filtros-financeiros--pilulas .filter-bar input {
+  border-radius: var(--radius-pill);
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+.filtros-financeiros--pilulas .filter-bar {
+  margin-bottom: 0;
+}
