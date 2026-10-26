@@ -254,3 +254,11 @@ describe("Fase 3.3b · item 4 — as confirmações são vistas DEPOIS de aparec
     assert.match(DETALHE, /onClick=\{abrirConfirmacoes\}/);
   });
 });
+
+describe("Fase 3.3b · achado no navegador — a fase na fila aparece na hora", () => {
+  test("enfileirada a fase, a tela relê a fila do contexto", () => {
+    assert.match(DETALHE, /const \{ entradas, recarregar: recarregarFila \} = useOutbox\(\);/);
+    const ramo = DETALHE.slice(DETALHE.indexOf("if (err?.enfileirado)"), DETALHE.indexOf("toast.info(err.message)"));
+    assert.match(ramo, /recarregarFila\(\);/);
+  });
+});
