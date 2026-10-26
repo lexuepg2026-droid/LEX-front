@@ -48,6 +48,10 @@ import { usePublicarContexto } from '../../contexts/ContextoContext';
 // confirmação são carimbos que a advogada pode precisar citar — deixá-los ao
 // fuso do navegador faria o mesmo registro aparecer com horas diferentes em
 // máquinas diferentes.
+// Quanto tempo a chegada por `#confirmacoes` mantém o balão alinhado enquanto
+// os blocos de cima carregam (DEC-118).
+const JANELA_DE_ALINHAMENTO_MS = 2500;
+
 const dataHoraBR = (iso) =>
   iso
     ? new Date(iso).toLocaleString('pt-BR', {
@@ -203,15 +207,39 @@ function ProcessoDetalhePage() {
   // página rola até ele (sem animação para quem pediu menos movimento) e o
   // foco vai ao título, para o leitor de tela anunciar onde se chegou. Nada é
   // marcado como visto aqui — só a lista aberta marca (DEC-112).
+  //
+  // Os balões de cima (participantes, linha do tempo) chegam por requisições
+  // próprias, DEPOIS do processo, e empurram este para baixo: medido no
+  // navegador, a primeira rolagem deixava o balão a 725 px do topo. Por isso a
+  // página o mantém alinhado enquanto o que está acima cresce — até
+  // `JANELA_DE_ALINHAMENTO_MS`, e só até o primeiro gesto dela (roda, toque,
+  // tecla, clique): quem já começou a rolar não é puxada de volta.
   useEffect(() => {
-    if (!deveRolarParaConfirmacoes(hash, { carregado: Boolean(processo), jaRolou: jaRolouParaConfirmacoes.current })) return;
+    if (!deveRolarParaConfirmacoes(hash, { carregado: Boolean(processo), jaRolou: jaRolouParaConfirmacoes.current })) return undefined;
     const titulo = tituloDasConfirmacoes.current;
-    if (!titulo) return;
+    const balao = titulo?.closest('section');
+    if (!balao) return undefined;
     jaRolouParaConfirmacoes.current = true;
-    const menosMovimento = typeof window !== 'undefined'
-      && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    titulo.closest('section')?.scrollIntoView({ behavior: comportamentoDaRolagem(menosMovimento), block: 'start' });
+    const menosMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    balao.scrollIntoView({ behavior: comportamentoDaRolagem(menosMovimento), block: 'start' });
     titulo.focus({ preventScroll: true });
+
+    const GESTOS = ['wheel', 'touchstart', 'keydown', 'mousedown'];
+    let ativo = true;
+    const parar = () => { ativo = false; };
+    GESTOS.forEach((g) => window.addEventListener(g, parar, { passive: true }));
+    const pagina = balao.parentElement;
+    const observador = typeof ResizeObserver === 'function'
+      ? new ResizeObserver(() => { if (ativo) balao.scrollIntoView({ behavior: 'auto', block: 'start' }); })
+      : null;
+    if (observador && pagina) observador.observe(pagina);
+    const fim = setTimeout(parar, JANELA_DE_ALINHAMENTO_MS);
+    return () => {
+      parar();
+      clearTimeout(fim);
+      observador?.disconnect();
+      GESTOS.forEach((g) => window.removeEventListener(g, parar));
+    };
   }, [hash, processo]);
 
   // Abrir o histórico é o ato de "olhar", e é ele que marca as confirmações

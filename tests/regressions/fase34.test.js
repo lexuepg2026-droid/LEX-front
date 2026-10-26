@@ -297,3 +297,13 @@ describe("Fase 3.4 · achado — a escolha de 'Intervalo personalizado' vale com
     assert.match(hook, /const limpar = useCallback\(\(\) => \{\s*setPersonalizado\(false\);/);
   });
 });
+
+describe("Fase 3.4 · achado — o balão das confirmações fica alinhado enquanto a página cresce", () => {
+  const detalhe = semComentarios(ler("src/pages/processes/ProcessDetailPage.jsx"));
+  test("re-alinha só por um tempo, e para no primeiro gesto dela", () => {
+    assert.match(detalhe, /const JANELA_DE_ALINHAMENTO_MS = 2500;/);
+    assert.match(detalhe, /const GESTOS = \['wheel', 'touchstart', 'keydown', 'mousedown'\];/);
+    assert.match(detalhe, /new ResizeObserver\(\(\) => \{ if \(ativo\) balao\.scrollIntoView\(\{ behavior: 'auto', block: 'start' \}\); \}\)/);
+    assert.match(detalhe, /observador\?\.disconnect\(\);/);
+  });
+});
