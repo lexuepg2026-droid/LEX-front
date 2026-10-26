@@ -38,6 +38,7 @@ import {
   TIPOS_DE_DATA,
   destinoDasConfirmacoes,
   rotuloDaConfirmacaoPorProcesso,
+  destinoDosNaoLiberados,
 } from './inicio.js';
 import { pluralizar } from '../../components/ui/plural.js';
 // `link-interno` (F-1b) mora em `styles/modules.css`, junto das demais
@@ -181,6 +182,7 @@ function DashboardHomePage() {
   // Fase 3.2 (DEC-104): a lista curta das confirmações por processo.
   const [listaDeConfirmacoesAberta, setListaDeConfirmacoesAberta] = useState(false);
   const confirmacoes = destinoDasConfirmacoes(summary?.confirmacoesNovasPorProcesso);
+  const naoLiberados = destinoDosNaoLiberados(summary);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [upcoming, setUpcoming] = useState([]);
@@ -725,9 +727,10 @@ function DashboardHomePage() {
               );
             })}
 
-            {/* Fase 3.2 (DEC-104): vínculos de cliente com portal ainda não
-                liberados. O link vai para a lista COMUM de processos — o
-                filtro por liberação é da 3.4. */}
+            {/* Fase 3.2 (DEC-104) e 3.3 (DEC-108): PROCESSOS com algum cliente
+                de portal ainda não liberado. Com um só, o link abre o
+                processo; com mais, a lista COMUM — o filtro por liberação é
+                da 3.4. */}
             <div className="summary-card summary-card--warning">
               <p className="card-label">
                 <IconeDoCartao icone="folder" />
@@ -736,8 +739,8 @@ function DashboardHomePage() {
               <p className="card-value">
                 {summary.processosNaoLiberados != null ? summary.processosNaoLiberados.toLocaleString('pt-BR') : '—'}
               </p>
-              <Link to="/dashboard/processos" className="card-note card-note--link">
-                Ver a lista de processos
+              <Link to={naoLiberados.destino} className="card-note card-note--link">
+                {naoLiberados.rotulo}
               </Link>
             </div>
           </div>

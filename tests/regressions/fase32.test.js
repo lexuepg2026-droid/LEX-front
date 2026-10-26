@@ -362,7 +362,10 @@ describe("3.2 · item 6 — o Início com as duas chaves novas de GET /dashboard
     const fonte = semComentarios(ler("src/pages/dashboard/DashboardHomePage.jsx"));
     assert.match(fonte, /Processos não liberados no portal/);
     assert.match(fonte, /summary\.processosNaoLiberados/);
-    assert.match(fonte, /<Link to="\/dashboard\/processos" className="card-note card-note--link">/);
+    // Fase 3.3 (DEC-108): o destino passou a ser derivado — com um processo
+    // só, a ficha dele; senão, a lista comum. A lista continua sendo o destino
+    // padrão (ver `destinoDosNaoLiberados` em fase33.test.js).
+    assert.match(fonte, /<Link to=\{naoLiberados\.destino\} className="card-note card-note--link">/);
     assert.doesNotMatch(fonte, /processos\?liberado/, "o filtro por liberação é da 3.4");
   });
 });

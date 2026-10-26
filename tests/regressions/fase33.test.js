@@ -60,3 +60,34 @@ describe("3.3 · item 1 — a coluna de ações fixa à direita (DEC-107)", () =
     assert.match(fonte, /<th>Tipo<\/th>\s*<th>Valor<\/th>/);
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Item 2 — processos não liberados, por processo (DEC-108)
+// ═══════════════════════════════════════════════════════════════════════════
+import { destinoDosNaoLiberados } from "../../src/pages/dashboard/inicio.js";
+
+describe("3.3 · item 2 — o cartão de não liberados", () => {
+  test("com um processo, abre o processo", () => {
+    assert.deepEqual(destinoDosNaoLiberados({ processosNaoLiberados: 1, processoNaoLiberadoId: "p1" }),
+      { tipo: "processo", destino: "/dashboard/processos/detalhe/p1", rotulo: "Abrir o processo" });
+  });
+
+  test("com mais de um, ou com nenhum, a lista comum de processos", () => {
+    for (const resumo of [
+      { processosNaoLiberados: 2, processoNaoLiberadoId: null },
+      { processosNaoLiberados: 0, processoNaoLiberadoId: null },
+      { processosNaoLiberados: 1 }, // back antigo, sem o id: não inventa destino
+      undefined,
+    ]) {
+      assert.deepEqual(destinoDosNaoLiberados(resumo),
+        { tipo: "lista", destino: "/dashboard/processos", rotulo: "Ver a lista de processos" });
+    }
+  });
+
+  test("a tela usa o destino derivado e continua sem filtro novo na lista", () => {
+    const fonte = semComentarios(ler("src/pages/dashboard/DashboardHomePage.jsx"));
+    assert.match(fonte, /const naoLiberados = destinoDosNaoLiberados\(summary\);/);
+    assert.match(fonte, /<Link to=\{naoLiberados\.destino\} className="card-note card-note--link">\s*\{naoLiberados\.rotulo\}/);
+    assert.doesNotMatch(fonte, /processos\?liberado/);
+  });
+});
