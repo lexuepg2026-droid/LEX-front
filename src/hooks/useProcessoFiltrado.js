@@ -17,7 +17,9 @@ import { usePublicarContexto } from '../contexts/ContextoContext';
 // (DEC-058), então quem abriu o processo com sinal vê o nome no chip sem sinal.
 // ═══════════════════════════════════════════════════════════════════════════
 
-export default function useProcessoFiltrado() {
+// `avisoProprio` (DEC-109): a lista que mostra o aviso de idade do processo do
+// filtro dispensa o da faixa — um aviso por tela.
+export default function useProcessoFiltrado({ avisoProprio = false } = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const processoId = searchParams.get('processoId') || null;
 
@@ -35,7 +37,7 @@ export default function useProcessoFiltrado() {
   // Fase 2b (DEC-085): a lista filtrada publica o processo para a faixa de
   // contexto — as quatro de uma vez, por aqui, que é onde as quatro já leem o
   // parâmetro. Removido o filtro, o id some e a faixa some junto.
-  usePublicarContexto({ processoId });
+  usePublicarContexto({ processoId, avisoProprio });
 
   const remover = useCallback(() => {
     setSearchParams((atual) => {

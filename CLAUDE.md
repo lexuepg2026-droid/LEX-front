@@ -4931,6 +4931,105 @@ lista de processos" — a lista comum, sem filtro (o filtro por liberação é d
 
 ---
 
+## DEC-109 (frontend) — um aviso de idade por tela (Fase 3.3b)
+
+Sem sinal, o detalhe do processo mostrava **dois** avisos iguais, um embaixo do
+outro: o da faixa de contexto (DEC-085) e o da tela. Os dois falam do MESMO
+processo, lido pela mesma chave do espelho.
+
+- **`usePublicarContexto({ processoId, avisoProprio: true })`**: a tela diz à
+  faixa que mostra o próprio `OfflineNotice`. A faixa consulta
+  `useAvisoProprioPublicado(pathname)` (casado com o caminho, como os ids) e
+  só mostra o dela quando `faixaMostraAviso({ fromCache, avisoProprio })`.
+  Funções puras em `components/layout/contexto.js`; `idsPublicadosPara` não
+  mudou de forma.
+- **Usam a opção:** o detalhe do processo, o detalhe do cliente (mesmo caso: o
+  mesmo cliente nos dois) e as quatro listas filtradas, por
+  `useProcessoFiltrado({ avisoProprio: true })`. As listas de honorários,
+  parcelas e pagamentos ganharam o aviso do processo do filtro para o caso em
+  que só ELE veio do espelho (`!fromCache && filtroProcesso.fromCache`).
+- **A varredura de `tests/offline/estatica.test.js` não isentou nada:** aceita
+  na faixa só a forma dispensável, e cobra de QUEM dispensa — quem publica
+  `avisoProprio: true` precisa ler o mesmo registro (`resource` e
+  `params: { id }`) e renderizar o aviso; as listas, cobrir o processo do
+  filtro. Mutação conferida: tirar o aviso do detalhe derruba a varredura.
+- Três travas antigas foram **reescritas, não apagadas** (`fase2b.test.js`:
+  o aviso da faixa e as chamadas do detalhe, do cliente e do hook;
+  `fase0.test.js`: o hook com a opção).
+
+## DEC-110 (frontend) — o seletor de participante busca no servidor (Fase 3.3b)
+
+> O alcance da busca é a DEC-110 do back: nome sem acento, razão social, nome
+> fantasia e CPF/CNPJ com ou sem máscara.
+
+- O `<select>` de `ProcessFormPage` carregava `getAllClients({ limit: 100 })`:
+  o 101º cliente não aparecia. Virou o **`SeletorComBusca`** (DEC-101), com
+  `clientService.buscarClientes` (até 20, `semToastGlobal`) e
+  `filtrar={aindaNaoParticipa}` — quem já é participante não é sugerido.
+- **Rótulo "{nome} — {CPF/CNPJ formatado}"** (`utils/clienteLabel.js`,
+  `rotuloDoClienteNoSeletor`); sem documento, só o nome.
+- **O nome de cada participante** vinha da lista dos 100. Agora mora em
+  `clientesConhecidos` (o item escolhido, ou o participante populado na
+  edição), **fora** de `participantes` — o payload da criação continua
+  `{ clienteId, papel, principal }`.
+- O seletor nasce de novo a cada inclusão (`key`), vazio para a próxima.
+
+## DEC-111 (frontend) — o detalhe do processo em balões (Fase 3.3b)
+
+O desenho de `ProcessosDetalhes.jsx` da Raniele, com o NOSSO conteúdo
+(inventário 3.15). **Nada do financeiro em modal** (DEC-049, DEC-087).
+
+- **Cabeçalho de identidade** (balão): bolinha na cor do TOM do status (a do
+  `StatusBadge`, por classe `processo-cabecalho__bolinha--{tom}`, decorativa),
+  título, "status · fase", número com botão de copiar (área de transferência;
+  falhando, o número é `user-select: all`), selo de liminar. **O cliente saiu**
+  — a faixa já o mostra (DEC-085). À direita, o ⋮ com **Editar**, **Mudar
+  fase** (leva o foco ao seletor; não bloqueia sem sinal, porque a fase vai
+  para a fila) e **Desativar** (o preview da DEC-052 antes, e depois a lista).
+- **`ProcessTabs` em pílulas** dentro do balão do cabeçalho: "Visão geral"
+  (`aria-current`) e os links das listas filtradas. A 360 px rolam numa linha.
+- **Balões com título, nesta ordem:** dados do processo, participantes, fase e
+  linha do tempo, confirmações do portal, ficha financeira. A ficha passou para
+  depois das confirmações e a linha do tempo entrou no balão da fase (continua
+  irmã da ficha, DEC-056). Não há balão de documentos: a página nunca teve essa
+  seção, e os documentos são a aba "Documentos".
+- **Participantes** numa lista no padrão da 3.2: nome (link para o cliente),
+  documento, papel, selo "Principal" (palavra com contorno), a **situação no
+  portal** ("Sem acesso", "Liberado", "Não liberado" — `statusVisual.js`,
+  `situacaoNoPortal`) com o estado de leitura ao lado, o interruptor (DEC-097)
+  só para quem tem acesso, e o ⋮ ("Abrir o cadastro", "Entregar acesso"). A
+  linha inteira abre o cadastro (`useLinhaClicavel`) e **não recebe foco**: os
+  alvos de Tab são o nome, o interruptor e o ⋮. A entrega abre por baixo, fora
+  da área clicável.
+- **"Não sei" não é "sem acesso":** a lista com o portal não tem espelho; sem
+  ela a situação diz "Situação no portal indisponível sem conexão" e o
+  interruptor não aparece.
+- **O interruptor sem sinal** continua `aria-disabled`, e agora diz o motivo ao
+  lado ("Sem conexão: liberar e desligar precisam de sinal."), ligado por
+  `aria-describedby`.
+- **Achado de contraste, corrigido:** o trilho ligado (`--color-success-solid`)
+  mede 2,72:1 sobre a linha em hover no escuro. O contorno dele passou a
+  `--color-success-text`, e é ele que se mede.
+- **Achado no navegador, corrigido:** a fase enfileirada sem sinal não mostrava
+  o "Há alteração não enviada" — o interceptor grava na fila sem avisar o
+  `OutboxContext`. O detalhe relê a fila no ramo `enfileirado`.
+- Folha própria, `pages/processes/ProcessDetailPage.css`, **sem `transform` nem
+  `filter`** (os dois ⋮ abrem em portal, DEC-046) — há teste.
+
+## DEC-112 (frontend) — as confirmações são vistas depois de aparecer (Fase 3.3b)
+
+Conferência do passo 97. A lista já era sob demanda (botão "Ver
+confirmações"), e abrir a ficha nunca marcou nada. Mas a marcação ia no mesmo
+`async` da busca, logo depois do `setConfirmacoes` — antes de o React pintar.
+Passou a um **efeito** que roda depois do render que pôs a lista na tela, uma
+vez por abertura e só se há o que marcar (`deveMarcarComoVistas`, em
+`components/processes/detalheProcesso.js`). Medido no navegador: o PATCH sai
+~10 ms depois de a lista estar no DOM, e abrir a ficha não muda o banco. O
+comentário de `destinoDasConfirmacoes` (`inicio.js`), que dizia "abrir a ficha
+marca", foi corrigido. Testes em `tests/regressions/fase33b.test.js`.
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:

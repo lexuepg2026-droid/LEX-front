@@ -1,0 +1,328 @@
+/* O detalhe do processo em balões — Fase 3.3b (DEC-111).
+
+   O desenho de `ProcessosDetalhes.jsx` da Raniele com os tokens do tema: o
+   balão é a `--color-surface` com cantos de 24 px (o do Início e das listas,
+   DEC-100 e DEC-102), sobre o `--color-bg` da página. Pares medidos em
+   `tests/css/contrastePares.js` ("detalhe: …", "abas: …", "interruptor: …").
+
+   ⚠️ Nenhum `transform` nem `filter` aqui: o ⋮ do cabeçalho e o de cada
+   participante abrem em portal com `position: fixed` (DEC-046), e um ancestral
+   com `transform` re-ancoraria o painel (tests/regressions/f1b31.test.js). */
+
+.processo-detalhe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.processo-balao {
+  background-color: var(--color-surface);
+  border-radius: 24px;
+  padding: var(--space-4) var(--space-5);
+  color: var(--color-text-primary);
+}
+
+.processo-balao__titulo {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.processo-balao__total {
+  font-size: var(--font-size-base);
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.processo-balao__vazio {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+/* ── O cabeçalho de identidade ───────────────────────────────────────────── */
+
+/* As pílulas fecham o balão do cabeçalho: um pouco menos de respiro embaixo. */
+.processo-cabecalho {
+  padding-bottom: var(--space-3);
+}
+
+.processo-cabecalho__topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.processo-cabecalho__identidade {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+/* A bolinha é a cor do TOM do status — a mesma do `StatusBadge`. É reforço:
+   o status está escrito no subtítulo, então ela é decorativa (`aria-hidden`)
+   e não carrega informação sozinha. Alinhada à primeira linha do título. */
+.processo-cabecalho__bolinha {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-top: 0.55rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-text-secondary);
+}
+
+.processo-cabecalho__bolinha--success { background-color: var(--color-success-text); }
+.processo-cabecalho__bolinha--warning { background-color: var(--color-warning-text); }
+.processo-cabecalho__bolinha--danger  { background-color: var(--color-danger-text); }
+.processo-cabecalho__bolinha--info    { background-color: var(--color-info-text); }
+.processo-cabecalho__bolinha--neutral { background-color: var(--color-text-secondary); }
+
+.processo-cabecalho__textos {
+  min-width: 0;
+}
+
+/* O título quebra em várias linhas, nunca corta: é o nome do processo. */
+.processo-cabecalho__titulo {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  overflow-wrap: break-word;
+}
+
+/* O selo vem DEPOIS do título: o afastamento é do outro lado. */
+.processo-cabecalho__selo {
+  margin-right: 0;
+  margin-left: var(--space-2);
+  vertical-align: middle;
+}
+
+.processo-cabecalho__subtitulo {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.processo-cabecalho__numero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* O número inteiro é selecionável de uma vez — o "copiar à mão" do caso em
+   que o navegador recusa a área de transferência. */
+.processo-cabecalho__numero-valor {
+  font-variant-numeric: tabular-nums;
+  user-select: all;
+  /* O número CNJ não quebra no hífen: partido em duas linhas ele se lê como
+     dois números. Sem espaço, quem desce é o botão de copiar. */
+  white-space: nowrap;
+}
+
+.processo-cabecalho__copiar {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.processo-cabecalho__copiar:hover {
+  background-color: var(--color-surface-raised);
+  color: var(--color-text-primary);
+}
+
+.processo-cabecalho__copiar:focus-visible {
+  border-radius: 50%;
+}
+
+/* ── Os dados do processo ────────────────────────────────────────────────── */
+
+.processo-dados {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-3) var(--space-4);
+  margin: 0;
+}
+
+.processo-dados__item {
+  min-width: 0;
+}
+
+.processo-dados__item--largo {
+  grid-column: 1 / -1;
+}
+
+.processo-dados dt {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.processo-dados dd {
+  margin: 2px 0 0;
+  color: var(--color-text-primary);
+  overflow-wrap: break-word;
+  white-space: pre-line;
+}
+
+/* ── Participantes, no padrão das listas da 3.2 ──────────────────────────── */
+
+.participantes-detalhe {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.participante-linha {
+  border-top: 1px solid var(--color-border);
+}
+
+.participante-linha:first-child {
+  border-top: 0;
+}
+
+/* Cinco colunas no desktop: quem, papel, portal, interruptor e ⋮. */
+.participante-linha__dados {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1.4fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+/* O hover do balão (DEC-102): o plano elevado, nunca o `--color-accent-muted`. */
+.participante-linha__dados:hover {
+  background-color: var(--color-surface-raised);
+}
+
+.participante-linha__quem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  min-width: 0;
+}
+
+.participante-linha__nome {
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+/* "Principal" é palavra, não só cor: o contorno e o texto no destaque. */
+.participante-linha__principal {
+  padding: 1px 8px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-pill);
+  color: var(--color-accent);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.participante-linha__doc {
+  flex-basis: 100%;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.participante-linha__papel {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.participante-linha__portal,
+.participante-linha__estado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+
+.participante-linha__nota {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.participante-linha__interruptor {
+  min-width: 0;
+}
+
+.participante-linha__acoes {
+  justify-self: end;
+}
+
+/* A entrega abre por baixo da linha, fora da área clicável. */
+.participante-linha > .entrega-acesso {
+  margin: 0 0 var(--space-3);
+}
+
+/* ── A linha do tempo DENTRO do balão da fase ──────────────────────────────
+   O componente traz a própria caixa (`ProcessTimeline.css`), feita para pousar
+   no fundo da página. Dentro do balão a caixa sobra: fica só o conteúdo. */
+.processo-balao .linha-tempo {
+  margin-top: var(--space-4);
+  padding: var(--space-4) 0 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+/* ── 768 px: o interruptor e o ⋮ descem para a segunda linha ───────────── */
+@media (max-width: 1023px) {
+  .participante-linha__dados {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  }
+  .participante-linha__portal {
+    grid-column: 1 / 3;
+  }
+  .participante-linha__interruptor {
+    grid-column: 1 / 3;
+  }
+  .participante-linha__acoes {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
+
+/* ── 360 px: uma coluna, com o ⋮ no canto do nome ──────────────────────── */
+@media (max-width: 767px) {
+  .processo-balao {
+    padding: var(--space-3);
+    border-radius: 16px;
+  }
+  .processo-cabecalho__titulo {
+    font-size: var(--font-size-lg);
+  }
+  .participante-linha__dados {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2);
+    padding: var(--space-3) 0;
+  }
+  .participante-linha__papel,
+  .participante-linha__portal,
+  .participante-linha__interruptor {
+    grid-column: 1 / -1;
+  }
+  .participante-linha__acoes {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}

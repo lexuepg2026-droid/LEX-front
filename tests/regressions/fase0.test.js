@@ -171,7 +171,9 @@ describe("Fase 0 · item 5 — o filtro de processo da URL é visível", () => {
   for (const arquivo of LISTAS) {
     test(`${arquivo.split("/").pop()} mostra o chip e lê o processo pelo hook`, () => {
       const codigo = semComentarios(ler(arquivo));
-      assert.match(codigo, /useProcessoFiltrado\(\)/);
+      // Fase 3.3b (DEC-109): o hook ganhou a opção `avisoProprio`; o que se
+      // trava aqui continua sendo ler o filtro pelo hook.
+      assert.match(codigo, /useProcessoFiltrado\((\{ avisoProprio: true \})?\)/);
       assert.match(codigo, /<ProcessFilterChip[\s\S]*?onRemover=\{filtroProcesso\.remover\}/);
       // A leitura crua do parâmetro é o defeito: filtrava sem mostrar.
       assert.doesNotMatch(codigo, /searchParams\.get\('processoId'\)/);

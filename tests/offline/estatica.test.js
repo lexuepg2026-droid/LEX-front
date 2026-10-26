@@ -297,16 +297,56 @@ describe("quem serve do espelho DIZ que está servindo do espelho", () => {
     assert.ok(telasComEspelho.includes("src/pages/documents/DocumentListPage.jsx"));
   });
 
+  // ── Um aviso por tela (Fase 3.3b, DEC-109) ─────────────────────────────
+  // A faixa de contexto pode DISPENSAR o próprio aviso quando a tela diz que
+  // mostra o dela (`avisoProprio`). A varredura aceita essa forma — e só ela —
+  // na faixa, e passa a cobrar o aviso de QUEM dispensa (teste abaixo). Nada
+  // fica isento: o aviso troca de lugar, não some.
+  const AVISO = /fromCache && <OfflineNotice atualizadoEm=\{updatedAt\}/;
+  const AVISO_DISPENSAVEL = /faixaMostraAviso\(\{ fromCache, avisoProprio \}\) && <OfflineNotice atualizadoEm=\{updatedAt\}/;
+
   test("toda tela convertida renderiza o aviso de idade", () => {
     const semAviso = telasComEspelho.filter((rel) => {
       const codigo = semComentarios(ler(rel));
-      return !/fromCache && <OfflineNotice atualizadoEm=\{updatedAt\}/.test(codigo);
+      if (AVISO.test(codigo)) return false;
+      return !(rel === "src/components/layout/FaixaContexto.jsx" && AVISO_DISPENSAVEL.test(codigo));
     });
     assert.deepEqual(
       semAviso, [],
       "dado offline nunca se apresenta como dado ao vivo — estas telas servem do " +
       `espelho sem dizer de quando é o dado:\n${semAviso.join("\n")}`
     );
+  });
+
+  test("quem dispensa o aviso da faixa mostra o aviso do MESMO dado", () => {
+    // Publicar `avisoProprio: true` direto: a tela lê pelo espelho o mesmo
+    // registro que a faixa resolve (processo ou cliente, `params: { id }`) e
+    // renderiza o aviso dele.
+    const diretos = arquivosFonte().map(relativo).filter((rel) =>
+      /usePublicarContexto\(\{[^}]*avisoProprio: true[^}]*\}\)/.test(semComentarios(ler(rel))));
+    assert.ok(diretos.includes("src/pages/processes/ProcessDetailPage.jsx"), "o detalhe do processo dispensa o aviso da faixa");
+    for (const rel of diretos) {
+      const codigo = semComentarios(ler(rel));
+      const tipo = /usePublicarContexto\(\{ processoId/.test(codigo) ? "process" : "client";
+      assert.match(codigo, new RegExp(`resource: '${tipo}',\\s*params: \\{ id \\}`), `${rel}: não lê o mesmo registro que a faixa`);
+      assert.match(codigo, AVISO, `${rel}: dispensa o aviso da faixa sem mostrar o próprio`);
+    }
+
+    // Pelo filtro de processo: a lista cobre o processo do filtro — pelo
+    // aviso da própria lista (sem sinal, tudo vem do espelho) e, quando só o
+    // processo veio do espelho, por um aviso com a hora dele.
+    const pelasListas = arquivosFonte().map(relativo).filter((rel) =>
+      /useProcessoFiltrado\(\{ avisoProprio: true \}\)/.test(semComentarios(ler(rel))));
+    assert.equal(pelasListas.length, 4, "as quatro listas filtradas dispensam o aviso da faixa");
+    for (const rel of pelasListas) {
+      const codigo = semComentarios(ler(rel));
+      const cobreOFiltro =
+        /filtroProcesso\.fromCache && <OfflineNotice atualizadoEm=\{filtroProcesso\.updatedAt\}/.test(codigo) ||
+        (/const \{ fromCache, updatedAt \} = filtroProcesso;/.test(codigo) && AVISO.test(codigo));
+      assert.ok(cobreOFiltro, `${rel}: dispensa o aviso da faixa sem cobrir o processo do filtro`);
+    }
+    const hook = semComentarios(ler("src/hooks/useProcessoFiltrado.js"));
+    assert.match(hook, /usePublicarContexto\(\{ processoId, avisoProprio \}\)/);
   });
 
   test("o aviso mostra a hora do DADO, e não a de agora", () => {

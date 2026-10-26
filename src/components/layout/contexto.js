@@ -163,6 +163,19 @@ export function idsPublicadosPara(publicado, pathname) {
   return { processoId: publicado.processoId ?? null, clienteId: publicado.clienteId ?? null };
 }
 
+// ── Um aviso de idade por tela (Fase 3.3b, DEC-109) ───────────────────────
+// A tela que já mostra o próprio `OfflineNotice` publica `avisoProprio`, e a
+// faixa deixa de mostrar o dela — dois avisos com a mesma frase, um embaixo
+// do outro, era o que o detalhe do processo mostrava sem sinal. Casado com o
+// caminho pela mesma regra dos ids: a dispensa de uma tela não vale na seguinte.
+export function avisoProprioPara(publicado, pathname) {
+  return Boolean(publicado && publicado.pathname === pathname && publicado.avisoProprio === true);
+}
+
+// A faixa mostra o aviso quando o contexto veio do espelho E a tela não disse
+// que o mostra ela mesma.
+export const faixaMostraAviso = ({ fromCache, avisoProprio }) => Boolean(fromCache) && !avisoProprio;
+
 // ── O link que leva o caminho de volta ────────────────────────────────────
 // Os botões de lançamento da ficha financeira (item 5) abrem formulários que
 // devem voltar ao processo depois de salvar. O destino viaja na URL, validado

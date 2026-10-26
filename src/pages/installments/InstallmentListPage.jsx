@@ -34,7 +34,7 @@ function InstallmentListPage({ embedded = false }) {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
   // `?processoId=` vem das abas do processo. A lista filtrava por ele sem
   // dizer; agora ele aparece num chip e na frase do recorte (DEC-070).
-  const filtroProcesso = useProcessoFiltrado();
+  const filtroProcesso = useProcessoFiltrado({ avisoProprio: true });
   const processoId = filtroProcesso.processoId || undefined;
   // Modo "desativadas" (Fase 4.5) — ver a nota em PaymentListPage. Vive junto
   // dos demais filtros para que ligá-lo também volte à página 1.
@@ -160,6 +160,9 @@ function InstallmentListPage({ embedded = false }) {
   const body = (
     <>
       {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
+      {/* DEC-109: a faixa não mostra o aviso do processo do filtro — esta tela
+          mostra, quando a lista em si veio da rede e só o processo do espelho. */}
+      {!fromCache && filtroProcesso.fromCache && <OfflineNotice atualizadoEm={filtroProcesso.updatedAt} />}
       {error && <p className="error-message">{error}</p>}
       {processoId && (
         <ProcessFilterChip

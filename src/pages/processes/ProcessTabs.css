@@ -1,54 +1,60 @@
-/* Cabeçalho da Página de Detalhes */
-.detalhe-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 20px;
-  margin-bottom: 20px;
+/* As abas do processo em pílulas — Fase 3.3b (DEC-111), Figura 21.
+
+   A ativa é o plano primário (`--color-primary` é só fundo; o texto é
+   `--color-on-primary`, o par do "botão primário"). As outras são texto
+   secundário sobre o balão, com o plano elevado no hover. Pares em
+   `tests/css/contrastePares.js` ("abas: …"). */
+
+.processo-abas {
+  min-width: 0;
 }
 
-.page-subtitle {
-  color: var(--text-color);
-  opacity: 0.8;
-  font-size: 1rem;
-}
-
-/* --- Container das Abas --- */
-.tabs-container {
-  width: 100%;
-  margin-top: 20px;
-}
-
-.modulos-nav-title {
-  color: var(--text-color);
-  font-weight: 500;
-  margin: 20px 0 10px;
-}
-.modulos-nav {
+.processo-abas__lista {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.processo-detalhe-secao {
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 20px;
-  margin-top: 20px;
-  color: var(--text-color);
+.processo-aba {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
 }
-.processo-detalhe-secao h3 {
-  margin-top: 0;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 10px;
-}
-.processo-detalhe-secao p { margin: 8px 0; }
 
+a.processo-aba:hover {
+  background-color: var(--color-surface-raised);
+  color: var(--color-text-primary);
+}
+
+/* O anel é o global; o raio acompanha a pílula. */
+.processo-aba:focus-visible {
+  border-radius: var(--radius-pill);
+}
+
+.processo-aba--ativa {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+/* 360 px: as pílulas rolam numa linha só, em vez de virar três linhas de
+   abas acima do conteúdo. A rolagem é da lista, nunca da página. */
 @media (max-width: 767px) {
-  .detalhe-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-3);
+  .processo-abas {
+    overflow-x: auto;
+    margin: 0 calc(-1 * var(--space-3));
+    padding: 0 var(--space-3) var(--space-1);
+  }
+  .processo-abas__lista {
+    flex-wrap: nowrap;
   }
 }

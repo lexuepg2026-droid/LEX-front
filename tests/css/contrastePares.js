@@ -165,6 +165,33 @@ export const PARES = [
   { nome: "ações fixas: ⋮ e nota / linha em hover (balão)", texto: "--color-text-secondary", fundo: "--color-surface-raised", limite: TEXTO },
   { nome: "lista: borda da busca em pílula / balão", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },
 
+  // O detalhe do processo em balões (Fase 3.3b, DEC-111). O texto do balão e
+  // os badges já estão nos pares "lista: …" (mesmos fundos). Novos: a bolinha
+  // do status (não texto, reforço do subtítulo), as abas em pílula, o selo
+  // "Principal" e o interruptor dentro da linha que realça no hover.
+  ...["success", "warning", "danger", "info"].map((tom) => (
+    { nome: `detalhe: bolinha ${tom} / balão`, texto: `--color-${tom}-text`, fundo: "--color-surface", limite: NAO_TEXTO }
+  )),
+  { nome: "detalhe: bolinha neutra / balão", texto: "--color-text-secondary", fundo: "--color-surface", limite: NAO_TEXTO },
+  { nome: "detalhe: subtítulo e número / balão", texto: "--color-text-secondary", fundo: "--color-surface", limite: TEXTO },
+  { nome: "detalhe: copiar em hover", texto: "--color-text-primary", fundo: "--color-surface-raised", limite: TEXTO },
+  { nome: "detalhe: selo Principal / balão", texto: "--color-accent", fundo: "--color-surface", limite: TEXTO },
+  { nome: "detalhe: selo Principal / linha em hover", texto: "--color-accent", fundo: "--color-surface-raised", limite: TEXTO },
+  { nome: "detalhe: papel e notas / linha em hover", texto: "--color-text-secondary", fundo: "--color-surface-raised", limite: TEXTO },
+  { nome: "abas: pílula ativa", texto: "--color-on-primary", fundo: "--color-primary", limite: TEXTO },
+  { nome: "abas: pílula / balão", texto: "--color-text-secondary", fundo: "--color-surface", limite: TEXTO },
+  { nome: "abas: pílula em hover", texto: "--color-text-primary", fundo: "--color-surface-raised", limite: TEXTO },
+  { nome: "interruptor: rótulo / linha em hover", texto: "--color-text-primary", fundo: "--color-surface-raised", limite: TEXTO },
+  { nome: "interruptor: motivo sem sinal / linha em hover", texto: "--color-text-secondary", fundo: "--color-surface-raised", limite: TEXTO },
+  // O PREENCHIMENTO sólido do trilho ligado mede 2,72:1 sobre a linha em hover
+  // do escuro; o contorno dele passou a ser o verde de texto, e é ele que se mede.
+  { nome: "interruptor: borda do trilho ligado / balão", texto: "--color-success-text", fundo: "--color-surface", limite: NAO_TEXTO },
+  { nome: "interruptor: borda do trilho ligado / linha em hover", texto: "--color-success-text", fundo: "--color-surface-raised", limite: NAO_TEXTO },
+  { nome: "interruptor: botão desligado / balão", texto: "--color-text-secondary", fundo: "--color-surface", limite: NAO_TEXTO },
+  { nome: "interruptor: botão desligado / linha em hover", texto: "--color-text-secondary", fundo: "--color-surface-raised", limite: NAO_TEXTO },
+  { nome: "interruptor: contorno desligado / balão", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },
+  { nome: "interruptor: contorno desligado / linha em hover", texto: "--color-border-input", fundo: "--color-surface-raised", limite: NAO_TEXTO },
+
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
   { nome: "borda de campo / --color-surface", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },

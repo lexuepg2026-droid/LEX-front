@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { idsPublicadosPara } from '../components/layout/contexto.js';
+import { avisoProprioPara, idsPublicadosPara } from '../components/layout/contexto.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUAL CLIENTE E QUAL PROCESSO ESTA TELA É — Fase 2b (DEC-085)
@@ -50,24 +50,37 @@ export const useContextoPublicado = (pathname) => {
   return idsPublicadosPara(ctx?.publicado, pathname);
 };
 
+// Lido pela faixa: a tela deste caminho já mostra o aviso de idade (DEC-109).
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAvisoProprioPublicado = (pathname) => {
+  const ctx = useContext(ContextoContext);
+  return avisoProprioPara(ctx?.publicado, pathname);
+};
+
 // Chamado pela página. `{ processoId }` tem precedência: o processo já traz o
 // cliente principal. Publica enquanto está montada e LIMPA ao sair, senão a
 // lista seguinte herdaria o processo do formulário que acabou de fechar.
 // Id vazio (o `<select>` ainda sem escolha) publica nada — a faixa fica só com
 // o "Voltar".
+//
+// Fase 3.3b (DEC-109): `avisoProprio: true` diz à faixa que a TELA já mostra o
+// aviso de idade do mesmo dado — um aviso por tela. Quem passa a opção assume
+// o aviso: a varredura de `tests/offline/estatica.test.js` cobra dela o
+// `OfflineNotice` que a faixa deixa de mostrar.
 // eslint-disable-next-line react-refresh/only-export-components
-export const usePublicarContexto = ({ processoId = null, clienteId = null } = {}) => {
+export const usePublicarContexto = ({ processoId = null, clienteId = null, avisoProprio = false } = {}) => {
   const ctx = useContext(ContextoContext);
   const { pathname } = useLocation();
   const definir = ctx?.definir;
   const proc = processoId ? String(processoId) : null;
   const cli = !proc && clienteId ? String(clienteId) : null;
+  const proprio = avisoProprio === true;
 
   useEffect(() => {
     if (!definir) return undefined;
-    definir(pathname, proc || cli ? { processoId: proc, clienteId: cli } : null);
+    definir(pathname, proc || cli ? { processoId: proc, clienteId: cli, avisoProprio: proprio } : null);
     return () => definir(pathname, null);
-  }, [definir, pathname, proc, cli]);
+  }, [definir, pathname, proc, cli, proprio]);
 };
 
 export default ContextoContext;

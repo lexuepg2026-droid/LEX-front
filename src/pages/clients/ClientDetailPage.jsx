@@ -15,7 +15,8 @@ import { usePublicarContexto } from '../../contexts/ContextoContext';
 function ClientDetailPage() {
   const { id } = useParams();
   // Fase 2b (DEC-085): publica para a faixa de contexto o cliente.
-  usePublicarContexto({ clienteId: id });
+  // DEC-109: o aviso de idade é o desta tela, do mesmo cliente.
+  usePublicarContexto({ clienteId: id, avisoProprio: true });
   const navigate = useNavigate();
   const online = useOnlineStatus();
 
