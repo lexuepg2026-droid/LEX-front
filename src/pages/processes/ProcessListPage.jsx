@@ -12,28 +12,16 @@ import {
   nomeDoCliente,
   rotuloDaFase,
 } from '../../utils/enums';
-import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
 import OfflineNotice from '../../components/ui/OfflineNotice';
 import useCachedResource from '../../hooks/useCachedResource';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
 import { MENSAGEM_ESCRITA_OFFLINE, blockReason } from '../../offline/offlineMessages';
-import { getApiErrorMessage } from '../../utils/apiError';
-import {
-  mensagemDesativarProcesso,
-  mensagemReativarProcesso,
-  motivoDeNaoReativar
-} from '../../utils/activationMessages';
+import { motivoDeNaoReativar } from '../../utils/activationMessages';
+import useDesativacaoProcesso from '../../hooks/useDesativacaoProcesso';
 import '../../styles/modules.css';
-import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 function ProcessoListPage() {
-  // DEC-052: um modal só, para as duas ações. `acao` diz qual — e é ela que
-  // escolhe a frase, o rótulo do botão e o verbo. Dois modais separados
-  // divergiriam na primeira revisão de redação.
-  const [ativacaoModal, setAtivacaoModal] = useState({
-    open: false, id: null, acao: null, mensagem: '', carregando: false
-  });
   const [busca, setBusca] = useState('');
   const [buscaDebounced, setBuscaDebounced] = useState('');
   const [status, setStatus] = useState('');
@@ -69,73 +57,11 @@ function ProcessoListPage() {
   });
   const processos = data ?? [];
 
-  // ── DEC-052: a contagem vem ANTES da confirmação ────────────────────────
-  //
-  // O modal só abre depois que o servidor diz quantos vínculos estão em jogo.
-  // A advogada precisa saber o tamanho do efeito antes de causá-lo — é a regra
-  // do modal de estorno (passo 161). Abrir primeiro e preencher o número
-  // depois faria a frase mudar debaixo dos olhos de quem já está lendo.
-  const abrirAtivacao = async (id, acao) => {
-    setAtivacaoModal({ open: true, id, acao, mensagem: '', carregando: true });
-    try {
-      const { data } = await processService.getActivationPreview(id);
-
-      // ── DEC-053: a última barreira antes do 409 ──────────────────────────
-      //
-      // O item do menu já vem desabilitado pela listagem, mas a listagem pode
-      // estar velha — a advogada deixou a aba aberta e desativou o cliente por
-      // outro caminho. O preview é lido no INSTANTE do clique, e é ele que
-      // impede o modal de abrir com um botão "Reativar" que levaria a uma
-      // recusa. Sem isto, "nenhuma tela dispara o que o backend recusaria"
-      // valeria só enquanto ninguém tivesse duas abas.
-      const impedimento = acao === 'reativar'
-        ? motivoDeNaoReativar(data.impedimentosDeReativacao)
-        : null;
-
-      if (impedimento) {
-        setAtivacaoModal({ open: false, id: null, acao: null, mensagem: '', carregando: false });
-        toast.error(`Não é possível reativar. ${impedimento}`);
-        // A listagem é refeita para o menu passar a mostrar o motivo — a tela
-        // estava desatualizada, e deixá-la assim faria a advogada clicar de novo.
-        reload();
-        return;
-      }
-
-      const mensagem = acao === 'desativar'
-        ? mensagemDesativarProcesso(data.vinculosAfetados)
-        : mensagemReativarProcesso(data.vinculosAfetados);
-      setAtivacaoModal({ open: true, id, acao, mensagem, carregando: false });
-    } catch (err) {
-      setAtivacaoModal({ open: false, id: null, acao: null, mensagem: '', carregando: false });
-      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível conferir o efeito desta ação.'));
-    }
-  };
-
-  const fecharAtivacao = () =>
-    setAtivacaoModal({ open: false, id: null, acao: null, mensagem: '', carregando: false });
-
-  const confirmarAtivacao = async () => {
-    const { id, acao } = ativacaoModal;
-    fecharAtivacao();
-    try {
-      if (acao === 'desativar') {
-        await processService.deleteProcess(id);
-        toast.success('Processo desativado. Você pode reativá-lo quando quiser.');
-      } else {
-        await processService.reactivateProcess(id);
-        toast.success('Processo reativado.');
-      }
-      // Refaz a busca em vez de mexer na lista em memória: o processo pode ou
-      // não continuar visível, conforme o filtro de situação em vigor, e
-      // adivinhar isso aqui duplicaria a regra do filtro.
-      reload();
-    } catch (err) {
-      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(
-        err,
-        acao === 'desativar' ? 'Erro ao desativar processo.' : 'Erro ao reativar processo.'
-      ));
-    }
-  };
+  // DEC-052/053 (Fase 3.4, DEC-117): a prévia, a recusa e as frases moram no
+  // hook, o mesmo do ⋮ do detalhe. Aqui, depois de agir (ou de o preview
+  // recusar), a lista refaz a consulta: o registro pode ou não continuar
+  // visível, conforme o filtro de situação.
+  const desativacao = useDesativacaoProcesso({ aoConcluir: reload });
 
   // Mostra o principal e, havendo litisconsórcio, quantos mais existem — a
   // coluna é estreita e a lista inteira de participantes não cabe. O detalhe
@@ -321,13 +247,13 @@ function ProcessoListPage() {
                                  agora. O motivo da DEC-053 volta a aparecer
                                  quando o sinal voltar. */
                               motivo: blockReason(motivoDeNaoReativar(p.impedimentosDeReativacao), { online }),
-                              onSelecionar: () => abrirAtivacao(p._id, 'reativar')
+                              onSelecionar: () => desativacao.abrir(p._id, 'reativar')
                             }
                           : {
                               rotulo: 'Desativar',
                               destrutivo: true,
                               motivo: blockReason(null, { online }),
-                              onSelecionar: () => abrirAtivacao(p._id, 'desativar')
+                              onSelecionar: () => desativacao.abrir(p._id, 'desativar')
                             }
                       ]}
                     />
@@ -339,15 +265,7 @@ function ProcessoListPage() {
         </div>
       )}
 
-      <Modal
-        open={ativacaoModal.open}
-        title={ativacaoModal.acao === 'reativar' ? 'Reativar processo' : 'Desativar processo'}
-        message={ativacaoModal.carregando ? 'Conferindo o efeito desta ação…' : ativacaoModal.mensagem}
-        variant={ativacaoModal.acao === 'reativar' ? 'default' : 'danger'}
-        confirmLabel={ativacaoModal.acao === 'reativar' ? 'Reativar' : 'Desativar'}
-        onConfirm={confirmarAtivacao}
-        onCancel={fecharAtivacao}
-      />
+      <Modal {...desativacao.propsDoModal} />
     </div>
   );
 }

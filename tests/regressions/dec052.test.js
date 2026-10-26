@@ -143,15 +143,26 @@ describe("DEC-052 — o menu ⋮ oferece só a ação que o estado permite", () 
 // 3 — Os modais dizem a contagem antes de confirmar
 // ═══════════════════════════════════════════════════════════════════════════
 describe("DEC-052 — a contagem vem antes da confirmação", () => {
+  // ── REESCRITO na Fase 3.4 (DEC-117), e não afrouxado ───────────────────
+  // A prévia saiu da lista para `hooks/useDesativacaoProcesso.js`, que a lista
+  // e o ⋮ do detalhe usam. A regra é a mesma — o preview vem ANTES do modal,
+  // e as frases saem das funções compartilhadas —; o lugar mudou, e a trava
+  // passa a cobrar o hook E os dois usos dele.
   test("o processo consulta o preview ANTES de abrir o modal", () => {
-    const codigo = semComentarios(ler("src/pages/processes/ProcessListPage.jsx"));
+    const hook = semComentarios(ler("src/hooks/useDesativacaoProcesso.js"));
     assert.match(
-      codigo, /getActivationPreview/,
+      hook, /setModal\(\{ open: true, id, acao, mensagem: '', carregando: true \}\);\s*try \{\s*const \{ data \} = await processService\.getActivationPreview\(id\)/,
       "sem o preview, o modal não teria número para mostrar"
     );
     // A mensagem sai das funções compartilhadas, não de texto solto na tela.
-    assert.match(codigo, /mensagemDesativarProcesso/);
-    assert.match(codigo, /mensagemReativarProcesso/);
+    assert.match(hook, /mensagemDesativarProcesso\(data\.vinculosAfetados\)/);
+    assert.match(hook, /mensagemReativarProcesso\(data\.vinculosAfetados\)/);
+    for (const tela of ["src/pages/processes/ProcessListPage.jsx", "src/pages/processes/ProcessDetailPage.jsx"]) {
+      const codigo = semComentarios(ler(tela));
+      assert.match(codigo, /useDesativacaoProcesso\(\{ aoConcluir:/, `${tela}: não usa o hook`);
+      assert.match(codigo, /<Modal \{\.\.\.desativacao\.propsDoModal\} \/>/, `${tela}: o modal não é o do hook`);
+      assert.doesNotMatch(codigo, /getActivationPreview/, `${tela}: segunda cópia da prévia`);
+    }
   });
 
   test("o cliente usa as frases compartilhadas", () => {

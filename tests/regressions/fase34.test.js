@@ -53,3 +53,25 @@ describe("Fase 3.4 · item 1 — a fila avisa quando muda (DEC-113)", () => {
     assert.doesNotMatch(axios, /OutboxContext|outboxEvents/);
   });
 });
+
+// ── Item 5 — DEC-117 ──────────────────────────────────────────────────────
+describe("Fase 3.4 · item 5 — desativar e reativar num hook só (DEC-117)", () => {
+  const hook = semComentarios(ler("src/hooks/useDesativacaoProcesso.js"));
+  const detalhe = semComentarios(ler("src/pages/processes/ProcessDetailPage.jsx"));
+  const lista = semComentarios(ler("src/pages/processes/ProcessListPage.jsx"));
+
+  test("as duas ações e os mesmos textos de antes", () => {
+    assert.match(hook, /await processService\.deleteProcess\(id\);\s*toast\.success\('Processo desativado\. Você pode reativá-lo quando quiser\.'\)/);
+    assert.match(hook, /await processService\.reactivateProcess\(id\);\s*toast\.success\('Processo reativado\.'\)/);
+    assert.match(hook, /'Erro ao desativar processo\.' : 'Erro ao reativar processo\.'/);
+    assert.match(hook, /title: modal\.acao === 'reativar' \? 'Reativar processo' : 'Desativar processo'/);
+  });
+
+  test("o detalhe vai à lista só depois de desativar de fato", () => {
+    assert.match(detalhe, /if \(!recusado && acao === 'desativar'\) navigate\('\/dashboard\/processos'\);/);
+  });
+
+  test("a lista refaz a consulta depois de agir", () => {
+    assert.match(lista, /useDesativacaoProcesso\(\{ aoConcluir: reload \}\)/);
+  });
+});

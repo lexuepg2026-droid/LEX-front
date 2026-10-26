@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Copy } from 'lucide-react';
 import processService from '../../api/processService';
@@ -13,7 +13,6 @@ import {
 import { rotuloDoStatus, tomDoStatus } from '../../utils/statusVisual';
 import { documentoFormatado } from '../../utils/clienteLabel.js';
 import { getApiErrorMessage } from '../../utils/apiError';
-import { mensagemDesativarProcesso } from '../../utils/activationMessages';
 import StatusBadge from '../../components/ui/StatusBadge';
 import ActionMenu from '../../components/ui/ActionMenu';
 import Modal from '../../components/ui/Modal';
@@ -36,6 +35,7 @@ import { MENSAGEM_ALTERACAO_NAO_ENVIADA } from '../../offline/outboxMessages';
 import { blockReason } from '../../offline/offlineMessages';
 import useCachedResource from '../../hooks/useCachedResource';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import useDesativacaoProcesso from '../../hooks/useDesativacaoProcesso';
 import './ProcessPage.css';
 import './ProcessDetailPage.css';
 import ProcessoTabs from './ProcessTabs';
@@ -109,11 +109,15 @@ function ProcessoDetalhePage() {
   const [salvandoFase, setSalvandoFase] = useState(false);
   const seletorDeFase = useRef(null);
 
-  // DEC-052 no detalhe: a contagem vem ANTES da confirmação, como na lista.
-  const [desativacao, setDesativacao] = useState({ open: false, mensagem: '', carregando: false });
-
   const { id } = useParams();
   const navigate = useNavigate();
+  // DEC-052 no detalhe (Fase 3.4, DEC-117): o MESMO hook da lista — a prévia
+  // antes da confirmação, os mesmos textos. O detalhe só abre processo ativo:
+  // desativado, a casa dele é a lista, onde o "Reativar" mora.
+  const depoisDeDesativar = useCallback(({ acao, recusado }) => {
+    if (!recusado && acao === 'desativar') navigate('/dashboard/processos');
+  }, [navigate]);
+  const desativacao = useDesativacaoProcesso({ aoConcluir: depoisDeDesativar });
   const clicarNaLinha = useLinhaClicavel();
   // Fase 2b (DEC-085): publica para a faixa de contexto o processo. Fase 3.3b
   // (DEC-109): o aviso de idade é o desta tela, do mesmo processo — a faixa
@@ -269,32 +273,6 @@ function ProcessoDetalhePage() {
     });
   };
 
-  const abrirDesativacao = async () => {
-    setDesativacao({ open: true, mensagem: '', carregando: true });
-    try {
-      const { data } = await processService.getActivationPreview(id);
-      setDesativacao({ open: true, mensagem: mensagemDesativarProcesso(data.vinculosAfetados), carregando: false });
-    } catch (err) {
-      setDesativacao({ open: false, mensagem: '', carregando: false });
-      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível conferir o efeito desta ação.'));
-    }
-  };
-
-  const fecharDesativacao = () => setDesativacao({ open: false, mensagem: '', carregando: false });
-
-  const confirmarDesativacao = async () => {
-    fecharDesativacao();
-    try {
-      await processService.deleteProcess(id);
-      toast.success('Processo desativado. Você pode reativá-lo quando quiser.');
-      // O detalhe só abre processo ativo: a casa dele agora é a lista, onde o
-      // filtro de situação o encontra e o "Reativar" mora.
-      navigate('/dashboard/processos');
-    } catch (err) {
-      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Erro ao desativar processo.'));
-    }
-  };
-
   const copiarNumero = async (numero) => {
     try {
       await navigator.clipboard.writeText(numero);
@@ -406,7 +384,7 @@ function ProcessoDetalhePage() {
               { rotulo: 'Editar', to: `/dashboard/processos/editar/${id}`, motivo: motivoSemSinal },
               // A fase grava sem sinal (vai para a fila): o item não bloqueia.
               { rotulo: 'Mudar fase', onSelecionar: irParaAFase },
-              { rotulo: 'Desativar', destrutivo: true, motivo: motivoSemSinal, onSelecionar: abrirDesativacao },
+              { rotulo: 'Desativar', destrutivo: true, motivo: motivoSemSinal, onSelecionar: () => desativacao.abrir(id, 'desativar') },
             ]}
           />
         </div>
@@ -743,15 +721,7 @@ function ProcessoDetalhePage() {
         <ProcessFinancialSheet processoId={id} />
       </section>
 
-      <Modal
-        open={desativacao.open}
-        title="Desativar processo"
-        message={desativacao.carregando ? 'Conferindo o efeito desta ação…' : desativacao.mensagem}
-        variant="danger"
-        confirmLabel="Desativar"
-        onConfirm={confirmarDesativacao}
-        onCancel={fecharDesativacao}
-      />
+      <Modal {...desativacao.propsDoModal} />
     </div>
   );
 }

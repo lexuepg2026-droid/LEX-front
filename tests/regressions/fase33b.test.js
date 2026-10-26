@@ -137,8 +137,9 @@ describe("Fase 3.3b · item 2 — cabeçalho de identidade e balões (DEC-111)",
     for (const r of ["'Editar'", "'Mudar fase'", "'Desativar'"]) assert.ok(menu[0].includes(r), r);
     // A fase grava sem sinal (fila): só editar e desativar bloqueiam.
     assert.doesNotMatch(menu[0], /'Mudar fase', motivo/);
-    // Desativar confere o efeito antes (DEC-052), como a lista.
-    assert.match(DETALHE, /processService\.getActivationPreview\(id\)/);
+    // Desativar confere o efeito antes (DEC-052), como a lista. Fase 3.4
+    // (DEC-117): pelo MESMO hook da lista — a prévia mora lá.
+    assert.match(DETALHE, /onSelecionar: \(\) => desativacao\.abrir\(id, 'desativar'\)/);
   });
 
   test("a bolinha tem uma regra por tom, com o token do badge", () => {
@@ -172,9 +173,10 @@ describe("Fase 3.3b · item 2 — cabeçalho de identidade e balões (DEC-111)",
   test("o comportamento continua: fase com fila, ficha auto-fechada, nada financeiro em modal", () => {
     assert.match(DETALHE, /err\?\.enfileirado/);
     assert.match(DETALHE, /<ProcessFinancialSheet processoId=\{id\} \/>/);
-    // O único modal da tela é o de desativar o processo.
+    // O único modal da tela é o de desativar o processo — desde a 3.4 com as
+    // props do hook (DEC-117), que dá o título.
     assert.equal((DETALHE.match(/<Modal\b/g) ?? []).length, 1);
-    assert.match(DETALHE, /title="Desativar processo"/);
+    assert.match(DETALHE, /<Modal \{\.\.\.desativacao\.propsDoModal\} \/>/);
   });
 
   test("nenhum ancestral dos menus ⋮ cria bloco de contenção (DEC-046)", () => {
