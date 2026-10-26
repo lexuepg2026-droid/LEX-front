@@ -190,8 +190,9 @@ export const janelaDasDatas = (agora = new Date()) => {
 //
 // O cartão dizia quantas confirmações e não de quem. `GET /dashboard` passou a
 // mandar `confirmacoesNovasPorProcesso` (até 10, pela mais recente). Com UM
-// processo, o cartão é o link para ele — abrir a ficha marca as confirmações
-// como vistas (passo 97). Com vários, uma lista curta abre embaixo do cartão,
+// processo, o cartão é o link para ele — a ficha tem o balão das
+// confirmações, e elas são marcadas como vistas quando a advogada abre a lista
+// e ela aparece, não ao abrir a ficha (passo 97, DEC-112). Com vários, uma lista curta abre embaixo do cartão,
 // com cada processo e quantas confirmações. Sem nenhuma, o cartão é número.
 export const destinoDasConfirmacoes = (lista) => {
   const itens = (Array.isArray(lista) ? lista : []).filter((c) => c && c.processoId);
