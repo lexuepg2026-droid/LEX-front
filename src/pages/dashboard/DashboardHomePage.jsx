@@ -37,6 +37,7 @@ import {
   janelaDasDatas,
   TIPOS_DE_DATA,
   destinoDasConfirmacoes,
+  destinoDasConfirmacoesDoProcesso,
   rotuloDaConfirmacaoPorProcesso,
   destinoDosNaoLiberados,
 } from './inicio.js';
@@ -752,7 +753,7 @@ function DashboardHomePage() {
             <ul>
               {confirmacoes.itens.map((c) => (
                 <li key={c.processoId}>
-                  <Link to={`/dashboard/processos/detalhe/${c.processoId}`} className="link-interno">
+                  <Link to={destinoDasConfirmacoesDoProcesso(c.processoId)} className="link-interno">
                     {rotuloDaConfirmacaoPorProcesso(c)}
                   </Link>
                   <span className="confirmacoes-por-processo__quantidade">

@@ -229,3 +229,48 @@ describe("Fase 3.4 · item 4 — a lista de processos no padrão da Figura 19 (D
     assert.match(barra, /ajudaDoPeriodo = null/);
   });
 });
+
+// ── Item 6 — DEC-118 ──────────────────────────────────────────────────────
+import {
+  destinoDasConfirmacoes, destinoDasConfirmacoesDoProcesso, destinoDosNaoLiberados
+} from "../../src/pages/dashboard/inicio.js";
+import {
+  deveRolarParaConfirmacoes, comportamentoDaRolagem, ANCORA_DAS_CONFIRMACOES
+} from "../../src/components/processes/detalheProcesso.js";
+
+describe("Fase 3.4 · item 6 — os destinos dos cartões do Início (DEC-118)", () => {
+  test("não liberados: um → o processo; vários → a lista filtrada; nenhum → a lista", () => {
+    assert.equal(destinoDosNaoLiberados({ processosNaoLiberados: 1, processoNaoLiberadoId: "p1" }).destino, "/dashboard/processos/detalhe/p1");
+    assert.equal(destinoDosNaoLiberados({ processosNaoLiberados: 3 }).destino, "/dashboard/processos?portal=nao_liberado");
+    assert.equal(destinoDosNaoLiberados({ processosNaoLiberados: 0 }).destino, "/dashboard/processos");
+  });
+
+  test("confirmações: um processo → o balão; a lista curta → o balão de cada um", () => {
+    assert.equal(destinoDasConfirmacoes([{ processoId: "p1", quantidade: 1 }]).destino, "/dashboard/processos/detalhe/p1#confirmacoes");
+    assert.equal(destinoDasConfirmacoesDoProcesso("p2"), "/dashboard/processos/detalhe/p2#confirmacoes");
+    const inicio = semComentarios(ler("src/pages/dashboard/DashboardHomePage.jsx"));
+    assert.match(inicio, /<Link to=\{destinoDasConfirmacoesDoProcesso\(c\.processoId\)\}/);
+  });
+
+  test("rola só com a âncora, depois de carregar, e uma vez", () => {
+    assert.equal(ANCORA_DAS_CONFIRMACOES, "#confirmacoes");
+    assert.equal(deveRolarParaConfirmacoes("#confirmacoes", { carregado: true, jaRolou: false }), true);
+    assert.equal(deveRolarParaConfirmacoes("#confirmacoes", { carregado: false, jaRolou: false }), false, "o balão ainda não existe");
+    assert.equal(deveRolarParaConfirmacoes("#confirmacoes", { carregado: true, jaRolou: true }), false);
+    assert.equal(deveRolarParaConfirmacoes("", { carregado: true, jaRolou: false }), false);
+  });
+
+  test("respeita prefers-reduced-motion", () => {
+    assert.equal(comportamentoDaRolagem(true), "auto");
+    assert.equal(comportamentoDaRolagem(false), "smooth");
+    const detalhe = semComentarios(ler("src/pages/processes/ProcessDetailPage.jsx"));
+    assert.match(detalhe, /matchMedia\?\.\('\(prefers-reduced-motion: reduce\)'\)/);
+  });
+
+  test("chegar ao balão não marca nada: a rolagem não chama a marcação", () => {
+    const detalhe = semComentarios(ler("src/pages/processes/ProcessDetailPage.jsx"));
+    const efeito = detalhe.slice(detalhe.indexOf("deveRolarParaConfirmacoes(hash"), detalhe.indexOf("}, [hash, processo]);"));
+    assert.doesNotMatch(efeito, /marcarConfirmacoesVistas|listProcessConfirmacoes|abrirConfirmacoes/);
+    assert.equal((detalhe.match(/marcarConfirmacoesVistas/g) ?? []).length, 1, "a DEC-112 continua: um ponto só marca");
+  });
+});

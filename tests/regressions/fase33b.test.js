@@ -158,7 +158,10 @@ describe("Fase 3.3b · item 2 — cabeçalho de identidade e balões (DEC-111)",
   });
 
   test("as seções são balões com título, na ordem: dados, participantes, fase, confirmações, ficha", () => {
-    const titulos = [...DETALHE.matchAll(/<h2 id="secao-[^"]+" className="processo-balao__titulo">\s*([^<{]+)/g)].map((m) => m[1].trim());
+    // Fase 3.4 (DEC-118): o título das confirmações ganhou `ref` e
+    // `tabIndex={-1}` (o foco da chegada por `#confirmacoes`); a regex aceita
+    // atributos depois da classe.
+    const titulos = [...DETALHE.matchAll(/<h2 id="secao-[^"]+" className="processo-balao__titulo"[^>]*>\s*([^<{]+)/g)].map((m) => m[1].trim());
     assert.deepEqual(titulos, [
       "Dados do processo", "Participantes", "Fase e linha do tempo",
       "Confirmações de leitura do portal", "Ficha financeira",

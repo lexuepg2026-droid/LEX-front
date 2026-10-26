@@ -72,13 +72,19 @@ describe("3.3 · item 2 — o cartão de não liberados", () => {
       { tipo: "processo", destino: "/dashboard/processos/detalhe/p1", rotulo: "Abrir o processo" });
   });
 
-  test("com mais de um, ou com nenhum, a lista comum de processos", () => {
+  // REESCRITO na Fase 3.4 (DEC-118): com mais de um, a lista JÁ FILTRADA por
+  // `?portal=nao_liberado` (o filtro nasceu na 3.4, com a mesma regra do
+  // número, DEC-115). Com nenhum, a lista comum. Back antigo sem o id não
+  // ganha destino inventado: vai à lista filtrada, que é verdade para 1.
+  test("com mais de um, a lista filtrada; com nenhum, a lista comum", () => {
     for (const resumo of [
       { processosNaoLiberados: 2, processoNaoLiberadoId: null },
-      { processosNaoLiberados: 0, processoNaoLiberadoId: null },
-      { processosNaoLiberados: 1 }, // back antigo, sem o id: não inventa destino
-      undefined,
+      { processosNaoLiberados: 1 }, // back antigo, sem o id
     ]) {
+      assert.deepEqual(destinoDosNaoLiberados(resumo),
+        { tipo: "lista", destino: "/dashboard/processos?portal=nao_liberado", rotulo: "Ver os processos não liberados" });
+    }
+    for (const resumo of [{ processosNaoLiberados: 0, processoNaoLiberadoId: null }, undefined]) {
       assert.deepEqual(destinoDosNaoLiberados(resumo),
         { tipo: "lista", destino: "/dashboard/processos", rotulo: "Ver a lista de processos" });
     }

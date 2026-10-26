@@ -190,15 +190,21 @@ export const janelaDasDatas = (agora = new Date()) => {
 //
 // O cartão dizia quantas confirmações e não de quem. `GET /dashboard` passou a
 // mandar `confirmacoesNovasPorProcesso` (até 10, pela mais recente). Com UM
-// processo, o cartão é o link para ele — a ficha tem o balão das
-// confirmações, e elas são marcadas como vistas quando a advogada abre a lista
-// e ela aparece, não ao abrir a ficha (passo 97, DEC-112). Com vários, uma lista curta abre embaixo do cartão,
+// processo, o cartão é o link para ele — direto no balão das confirmações
+// (`#confirmacoes`, Fase 3.4, DEC-118). Elas são marcadas como vistas quando a
+// advogada abre a lista e ela aparece, não ao chegar no balão (passo 97,
+// DEC-112). Com vários, uma lista curta abre embaixo do cartão,
 // com cada processo e quantas confirmações. Sem nenhuma, o cartão é número.
+// O balão das confirmações do detalhe (`id="confirmacoes"`). Usado também
+// pela lista curta, com vários processos (DEC-118).
+export const destinoDasConfirmacoesDoProcesso = (processoId) =>
+  `/dashboard/processos/detalhe/${processoId}#confirmacoes`;
+
 export const destinoDasConfirmacoes = (lista) => {
   const itens = (Array.isArray(lista) ? lista : []).filter((c) => c && c.processoId);
   if (itens.length === 0) return { tipo: 'nenhum', itens: [] };
   if (itens.length === 1) {
-    return { tipo: 'processo', destino: `/dashboard/processos/detalhe/${itens[0].processoId}`, itens };
+    return { tipo: 'processo', destino: destinoDasConfirmacoesDoProcesso(itens[0].processoId), itens };
   }
   return { tipo: 'lista', itens };
 };
@@ -213,12 +219,18 @@ export const rotuloDaConfirmacaoPorProcesso = (item) => {
 // `processosNaoLiberados` passou a contar PROCESSOS distintos, e
 // `processoNaoLiberadoId` vem preenchido quando há exatamente um. Com um, o
 // cartão abre o processo — onde mora o interruptor —, como o de confirmações
-// (DEC-104); com mais de um, a lista comum de processos (o filtro por
-// liberação é da 3.4); com nenhum, também a lista, que é onde se libera.
+// (DEC-104); com mais de um, a lista de processos JÁ FILTRADA pelo portal
+// (Fase 3.4, DEC-118: `?portal=nao_liberado`, a mesma regra do número, DEC-115);
+// com nenhum, a lista comum. Back antigo sem o id, com 1, também cai na lista
+// filtrada: a tela não inventa destino.
 export const destinoDosNaoLiberados = (resumo) => {
   const id = resumo?.processoNaoLiberadoId;
-  if (resumo?.processosNaoLiberados === 1 && id) {
+  const quantos = resumo?.processosNaoLiberados;
+  if (quantos === 1 && id) {
     return { tipo: 'processo', destino: `/dashboard/processos/detalhe/${id}`, rotulo: 'Abrir o processo' };
+  }
+  if (typeof quantos === 'number' && quantos > 0) {
+    return { tipo: 'lista', destino: '/dashboard/processos?portal=nao_liberado', rotulo: 'Ver os processos não liberados' };
   }
   return { tipo: 'lista', destino: '/dashboard/processos', rotulo: 'Ver a lista de processos' };
 };

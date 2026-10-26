@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Copy } from 'lucide-react';
 import processService from '../../api/processService';
 import { toast } from '../../utils/toast';
@@ -22,7 +22,9 @@ import ProcessFinancialSheet from '../../components/financeiro/ProcessFinancialS
 import ProcessTimeline from '../../components/processes/ProcessTimeline';
 import {
   classeDaBolinha,
+  comportamentoDaRolagem,
   deveMarcarComoVistas,
+  deveRolarParaConfirmacoes,
   situacaoNoPortal,
 } from '../../components/processes/detalheProcesso.js';
 import useLinhaClicavel from '../../components/financeiro/useLinhaClicavel';
@@ -92,6 +94,9 @@ function ProcessoDetalhePage() {
   const [confirmacoes, setConfirmacoes] = useState(null);
   const [carregandoConfirmacoes, setCarregandoConfirmacoes] = useState(false);
   const confirmacoesMarcadas = useRef(false);
+  const tituloDasConfirmacoes = useRef(null);
+  const jaRolouParaConfirmacoes = useRef(false);
+  const { hash } = useLocation();
 
   // ── DEC-054 — a mudança de fase mora AQUI, e não no formulário ──────────
   //
@@ -192,6 +197,22 @@ function ProcessoDetalhePage() {
       if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível marcar as confirmações como vistas.'));
     });
   }, [confirmacoes, id]);
+
+  // ── Fase 3.4 (DEC-118): o cartão "Confirmações novas" chega com
+  // `#confirmacoes`. O balão só existe depois de o processo carregar; aí a
+  // página rola até ele (sem animação para quem pediu menos movimento) e o
+  // foco vai ao título, para o leitor de tela anunciar onde se chegou. Nada é
+  // marcado como visto aqui — só a lista aberta marca (DEC-112).
+  useEffect(() => {
+    if (!deveRolarParaConfirmacoes(hash, { carregado: Boolean(processo), jaRolou: jaRolouParaConfirmacoes.current })) return;
+    const titulo = tituloDasConfirmacoes.current;
+    if (!titulo) return;
+    jaRolouParaConfirmacoes.current = true;
+    const menosMovimento = typeof window !== 'undefined'
+      && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    titulo.closest('section')?.scrollIntoView({ behavior: comportamentoDaRolagem(menosMovimento), block: 'start' });
+    titulo.focus({ preventScroll: true });
+  }, [hash, processo]);
 
   // Abrir o histórico é o ato de "olhar", e é ele que marca as confirmações
   // como vistas — por processo, como o backend expõe. Zerar o contador sem a
@@ -654,7 +675,9 @@ function ProcessoDetalhePage() {
           viessem no carregamento, o contador do Início zeraria só por a
           advogada ter aberto o processo para ver outra coisa. */}
       <section className="processo-balao" id="confirmacoes" aria-labelledby="secao-confirmacoes">
-        <h2 id="secao-confirmacoes" className="processo-balao__titulo">Confirmações de leitura do portal</h2>
+        <h2 id="secao-confirmacoes" className="processo-balao__titulo" ref={tituloDasConfirmacoes} tabIndex={-1}>
+          Confirmações de leitura do portal
+        </h2>
 
         {confirmacoes === null ? (
           <>
