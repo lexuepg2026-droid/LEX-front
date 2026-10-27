@@ -10,7 +10,7 @@ import Paginador from '../../components/ui/Paginador';
 import ActionMenu from '../../components/ui/ActionMenu';
 import FinancialFilters from '../../components/financeiro/FinancialFilters';
 import { descricaoDoRecorteFinanceiro } from '../../components/financeiro/filterSummary.js';
-import useListFilters, { FILTROS_NA_URL } from '../../hooks/useListFilters';
+import useListFilters, { FILTROS_DAS_FINANCEIRAS } from '../../hooks/useListFilters';
 import useProcessoFiltrado from '../../hooks/useProcessoFiltrado';
 import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
 import { formatDate, formatCurrency } from '../../utils/formatters';
@@ -33,7 +33,7 @@ import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 const POR_PAGINA = 20;
 
-function FeeListPage({ embedded = false }) {
+function FeeListPage() {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
   // `?processoId=` vem das abas do processo. A lista filtrava por ele sem
   // dizer; agora ele aparece num chip e na frase do recorte (DEC-070).
@@ -44,7 +44,7 @@ function FeeListPage({ embedded = false }) {
   const {
     filtros, buscaDebounced, page, setPage,
     definirFiltro, aplicarPreset, limpar, temFiltro
-  } = useListFilters({ tipo: '', status: '' }, FILTROS_NA_URL(embedded));
+  } = useListFilters({ tipo: '', status: '' }, FILTROS_DAS_FINANCEIRAS);
 
   // ── DEC-058 (F-5a): espelho local da listagem, escopado por usuário ─────
   //
@@ -120,12 +120,10 @@ function FeeListPage({ embedded = false }) {
   // barra e para o estado vazio, e o "Limpar filtros" o remove junto — senão a
   // frase diria "do processo X" e o botão deixaria o processo de pé.
   const filtrado = temFiltro || Boolean(processoId);
-  // Na página própria o `processoId` sai no mesmo `limpar` (uma escrita só
-  // na URL — duas seguidas se atropelariam); embutida, pelo chip.
-  const limparTudo = () => {
-    limpar();
-    if (processoId && embedded) filtroProcesso.remover();
-  };
+  // O `processoId` sai no mesmo `limpar` da URL (uma escrita só — duas
+  // seguidas se atropelariam). Desde a 3.7 a lista só existe na página
+  // própria: o Financeiro deixou de embuti-la (DEC-130).
+  const limparTudo = limpar;
 
   const body = (
     <>
@@ -154,8 +152,8 @@ function FeeListPage({ embedded = false }) {
         honorarios={null}
         placeholderBusca="Buscar por descrição, processo ou cliente…"
         descricaoDoRecorte={recorte}
-        semBusca={!embedded}
-        pilulas={!embedded}
+        semBusca
+        pilulas
       >
         <select
           value={filtros.tipo}
@@ -311,7 +309,6 @@ function FeeListPage({ embedded = false }) {
     </>
   );
 
-  if (embedded) return body;
 
   return (
     <div className="module-container">

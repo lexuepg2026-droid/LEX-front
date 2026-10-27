@@ -188,7 +188,11 @@ describe("atenção primeiro, estatística depois", () => {
 });
 
 describe("os cartões em 360 px — pendência do passo 181", () => {
-  const css = () => readFileSync(resolve(SRC, "pages/dashboard/DashboardPage.css"), "utf8");
+  // Fase 3.7 (DEC-131): as regras do cartão saíram do `DashboardPage.css`
+  // para a folha do componente `CartaoDeResumo`, sem mudar um valor — o
+  // Início e a Visão geral do Financeiro usam o mesmo cartão. A trava segue
+  // a regra até onde ela mora agora.
+  const css = () => readFileSync(resolve(SRC, "components/dashboard/CartaoDeResumo.css"), "utf8");
 
   test("os três blocos empilham numa coluna só na tela estreita", () => {
     const t = css();

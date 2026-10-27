@@ -96,6 +96,8 @@ export const LIMITE_DE_DATAS = 8;
 export const TIPOS_DE_DATA = Object.freeze({
   vencimento: { valor: 'vencimento', rotulo: 'Vencimento' },
   compromisso: { valor: 'compromisso', rotulo: 'Compromisso' },
+  // Fase 3.7 (DEC-131): a parcela que já venceu, na Visão geral do Financeiro.
+  vencida: { valor: 'vencida', rotulo: 'Vencida' },
 });
 
 // "{processo} · {cliente}" (Fase 3.2, DEC-105, apontamentos 3 e 4): as duas

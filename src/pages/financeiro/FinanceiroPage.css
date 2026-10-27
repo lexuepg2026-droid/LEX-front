@@ -1,110 +1,108 @@
-/* Cards de resumo */
-.financeiro-summary {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-4);
-  margin-bottom: var(--space-8, 2rem);
-}
+/* Financeiro — Visão geral, um painel em balões (Fase 3.7, DEC-130).
 
-.financeiro-summary-card {
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+   O balão é o do Início (`.bloco`, DEC-100): `--color-surface` com cantos de
+   24 px sobre o `--color-bg` da página, sem o gatilho de sanfona — aqui não há
+   o que recolher. Os cartões (`CartaoDeResumo.css`) e as linhas
+   (`LinhaDeData.css`) vêm com os componentes. Pares medidos em
+   `tests/css/contrastePares.js` ("Visão geral: …"). */
+
+.visao-geral .visao-balao {
+  margin-bottom: var(--space-6);
   padding: var(--space-4) var(--space-5);
-}
-
-.financeiro-summary-card__label {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0 0 var(--space-2);
-}
-
-.financeiro-summary-card__value {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
+  background-color: var(--color-surface);
+  border-radius: 24px;
   color: var(--color-text-primary);
+}
+
+.visao-geral .visao-balao__cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+
+.visao-geral .visao-balao__titulo {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.visao-geral .visao-balao__cabecalho .visao-balao__titulo {
   margin: 0;
 }
 
-.financeiro-summary-card__value--success { color: var(--color-success-text); }
-.financeiro-summary-card__value--warning { color: var(--color-warning-text); }
-.financeiro-summary-card__value--danger  { color: var(--color-danger-text);  }
-
-.financeiro-summary--unavailable {
-  display: block;
-  padding: var(--space-4) var(--space-5);
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+.visao-geral .visao-balao__total {
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
-.financeiro-summary__error {
+.visao-geral .visao-balao__vazio {
   margin: 0;
+  color: var(--color-text-secondary);
+}
+
+/* ── Atalhos: três cartões-link, cada um com o "+" ao lado ──────────────── */
+
+.visao-geral .visao-atalhos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.visao-geral .visao-atalho {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-surface-card);
+}
+
+.visao-geral .visao-atalho .ui-btn {
+  align-self: flex-start;
+}
+
+.visao-geral .visao-atalho__link {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-2);
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.visao-geral .visao-atalho__link:hover .visao-atalho__rotulo {
+  text-decoration: underline;
+}
+
+.visao-geral .visao-atalho__rotulo {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.visao-geral .visao-atalho__total {
+  grid-column: 2;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.visao-geral .visao-atalhos__motivo {
+  margin: var(--space-3) 0 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
 
-/* Seções empilhadas */
-.financeiro-section {
-  margin-bottom: var(--space-8, 2rem);
-}
-
-.financeiro-section:last-child {
-  margin-bottom: 0;
-}
-
-.financeiro-section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: var(--space-3);
-  margin-bottom: var(--space-4);
-  border-bottom: 2px solid var(--color-border);
-}
-
-.financeiro-section-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  margin: 0;
-}
-
-@media (max-width: 1023px) {
-  .financeiro-summary {
-    grid-template-columns: repeat(2, 1fr);
+@media (max-width: 480px) {
+  .visao-geral .visao-balao {
+    padding: var(--space-3) var(--space-4);
+    border-radius: 16px;
   }
-}
-
-@media (max-width: 767px) {
-  .financeiro-summary {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-3);
-    margin-bottom: var(--space-6, 1.5rem);
-  }
-
-  .financeiro-summary-card__value {
-    font-size: var(--font-size-lg);
-  }
-
-  .financeiro-section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-3);
-  }
-
-  .financeiro-section {
-    margin-bottom: var(--space-6, 1.5rem);
-  }
-}
-
-/* O motivo do botão bloqueado sem sinal (F-5a). Não é atenuado — mesma razão
-   da DEC-053: ele é a única coisa útil ao lado de um botão que não funciona. */
-.financeiro-section-motivo {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  line-height: 1.35;
-  max-width: 34ch;
 }

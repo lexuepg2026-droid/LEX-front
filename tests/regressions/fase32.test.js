@@ -199,9 +199,12 @@ describe("3.2 · item 4 — os filtros na URL", () => {
   test("o hook escreve na URL sem rolar a página, e as três listas usam o modo URL fora do Financeiro", () => {
     const hook = semComentarios(ler("src/hooks/useListFilters.js"));
     assert.match(hook, /setSearchParams\(proximo, \{ replace: substituir, preventScrollReset: true \}\)/);
-    assert.match(hook, /naUrl: !embedded/);
+    // Fase 3.7 (DEC-130): era `naUrl: !embedded` — "fora do Financeiro". O
+    // Financeiro deixou de embutir as listas; agora elas estão SEMPRE na
+    // página própria, e o modo URL vale sempre. Mais estrito, não menos.
+    assert.match(hook, /FILTROS_DAS_FINANCEIRAS = Object\.freeze\(\{ naUrl: true,/);
     for (const arquivo of ["src/pages/fees/FeeListPage.jsx", "src/pages/installments/InstallmentListPage.jsx", "src/pages/payments/PaymentListPage.jsx"]) {
-      assert.match(semComentarios(ler(arquivo)), /useListFilters\(\{[^}]*\}, FILTROS_NA_URL\(embedded\)\)/, arquivo);
+      assert.match(semComentarios(ler(arquivo)), /useListFilters\(\{[^}]*\}, FILTROS_DAS_FINANCEIRAS\)/, arquivo);
     }
   });
 });
@@ -264,8 +267,9 @@ describe("3.2 · item 3 — as três listas", () => {
 
     test(`${nome}: filtros em pílulas abaixo, sem a busca duplicada`, () => {
       const fonte = semComentarios(ler(arquivo));
-      assert.match(fonte, /semBusca=\{!embedded\}/);
-      assert.match(fonte, /pilulas=\{!embedded\}/);
+      // Fase 3.7 (DEC-130): eram `semBusca={!embedded}` e `pilulas={!embedded}`.
+      // Sem lista embutida, os dois valem sempre.
+      assert.match(fonte, /\n\s+semBusca\n\s+pilulas\n/);
     });
 
     test(`${nome}: a linha inteira leva ao destino, sem virar alvo de Tab`, () => {

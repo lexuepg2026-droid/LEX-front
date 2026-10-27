@@ -42,9 +42,10 @@ import {
 // `pathname`). A página continua no estado e volta a 1 quando a assinatura
 // dos filtros na URL muda — inclusive pelo "voltar".
 //
-// O modo de estado puro continua para quem divide a tela com outras listas:
-// o `FinanceiroPage` embute as três, e três listas na mesma query brigariam
-// pelo mesmo `?busca=`. E para a lista de clientes, que a 3.5 redesenha.
+// O modo de estado puro continua para quem precisar dividir a tela com outra
+// lista (três listas na mesma query brigariam pelo mesmo `?busca=`). Até a
+// 3.7 era o `FinanceiroPage`, que embutia as três; desde a DEC-130 ele é um
+// painel e as listas só existem na página própria.
 //
 // ── O que este hook NÃO faz ──────────────────────────────────────────────
 // Não busca nada. Quem consulta é a tela, no seu próprio `useEffect`, porque
@@ -52,12 +53,10 @@ import {
 // buscasse teria de conhecer as três APIs — e a quarta, quando chegasse.
 // ═══════════════════════════════════════════════════════════════════════════
 
-// As três listas financeiras: na página própria, filtros na URL (o
-// `processoId` sai junto no "Limpar filtros", DEC-070); embutidas no
-// `FinanceiroPage`, no estado.
-export const FILTROS_NA_URL = (embedded) =>
-  ({ naUrl: !embedded, extrasNaLimpeza: EXTRAS_DAS_FINANCEIRAS });
+// As três listas financeiras: filtros na URL, e o `processoId` sai junto no
+// "Limpar filtros" (DEC-070). Era uma função de `embedded` até a 3.7.
 const EXTRAS_DAS_FINANCEIRAS = Object.freeze(['processoId']);
+export const FILTROS_DAS_FINANCEIRAS = Object.freeze({ naUrl: true, extrasNaLimpeza: EXTRAS_DAS_FINANCEIRAS });
 
 const PADROES = { busca: '', honorarioId: '', preset: PRESETS_PERIODO.TODOS, de: '', ate: '' };
 

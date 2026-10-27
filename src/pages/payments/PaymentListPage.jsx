@@ -10,7 +10,7 @@ import Paginador from '../../components/ui/Paginador';
 import ActionMenu from '../../components/ui/ActionMenu';
 import FinancialFilters from '../../components/financeiro/FinancialFilters';
 import { descricaoDoRecorteFinanceiro } from '../../components/financeiro/filterSummary.js';
-import useListFilters, { FILTROS_NA_URL } from '../../hooks/useListFilters';
+import useListFilters, { FILTROS_DAS_FINANCEIRAS } from '../../hooks/useListFilters';
 import useProcessoFiltrado from '../../hooks/useProcessoFiltrado';
 import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
 import { formatDate, formatCurrency } from '../../utils/formatters';
@@ -34,7 +34,7 @@ import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 const POR_PAGINA = 20;
 
-function PaymentListPage({ embedded = false }) {
+function PaymentListPage() {
   // `?processoId=` vem das abas do processo. A lista filtrava por ele sem
   // dizer; agora ele aparece num chip e na frase do recorte (DEC-070).
   const filtroProcesso = useProcessoFiltrado({ avisoProprio: true });
@@ -65,7 +65,7 @@ function PaymentListPage({ embedded = false }) {
   const {
     filtros, buscaDebounced, page, setPage,
     definirFiltro, aplicarPreset, limpar, temFiltro
-  } = useListFilters({ formaPagamento: '' }, FILTROS_NA_URL(embedded));
+  } = useListFilters({ formaPagamento: '' }, FILTROS_DAS_FINANCEIRAS);
 
   useEffect(() => {
     let ativo = true;
@@ -157,12 +157,10 @@ function PaymentListPage({ embedded = false }) {
   // barra e para o estado vazio, e o "Limpar filtros" o remove junto — senão a
   // frase diria "do processo X" e o botão deixaria o processo de pé.
   const filtrado = temFiltro || Boolean(processoId);
-  // Na página própria o `processoId` sai no mesmo `limpar` (uma escrita só
-  // na URL — duas seguidas se atropelariam); embutida, pelo chip.
-  const limparTudo = () => {
-    limpar();
-    if (processoId && embedded) filtroProcesso.remover();
-  };
+  // O `processoId` sai no mesmo `limpar` da URL (uma escrita só — duas
+  // seguidas se atropelariam). Desde a 3.7 a lista só existe na página
+  // própria: o Financeiro deixou de embuti-la (DEC-130).
+  const limparTudo = limpar;
 
   const body = (
     <>
@@ -187,8 +185,8 @@ function PaymentListPage({ embedded = false }) {
         temFiltro={filtrado}
         honorarios={honorarios}
         descricaoDoRecorte={recorte}
-        semBusca={!embedded}
-        pilulas={!embedded}
+        semBusca
+        pilulas
       >
         <select
           value={filtros.formaPagamento}
@@ -407,7 +405,6 @@ function PaymentListPage({ embedded = false }) {
     />
   );
 
-  if (embedded) return <>{body}{modal}</>;
 
   return (
     <div className="module-container">
