@@ -172,10 +172,31 @@ describe("DEC-052 — a contagem vem antes da confirmação", () => {
     }
   });
 
-  test("o cliente usa as frases compartilhadas", () => {
-    const codigo = semComentarios(ler("src/pages/clients/ClientListPage.jsx"));
-    assert.match(codigo, /mensagemDesativarCliente/);
-    assert.match(codigo, /mensagemReativarCliente/);
+  // ── REESCRITO na Fase 3.5 (DEC-122), e não afrouxado ───────────────────
+  // As frases do cliente saíram da lista para `hooks/useDesativacaoCliente.js`,
+  // como as do processo foram para o hook dele na 3.4. A regra é a mesma — as
+  // frases saem das funções compartilhadas, e nenhuma tela tem cópia —, e a
+  // trava passa a cobrar o hook, a prévia ANTES do modal (a forma da DEC-052
+  // para o cliente, que não cascateia: os processos que IMPEDEM a ação) e o
+  // uso pela lista. O uso pelo ⋮ do detalhe entra no bloco "dois usos", abaixo.
+  test("o cliente usa as frases compartilhadas, pelo hook", () => {
+    const hook = semComentarios(ler("src/hooks/useDesativacaoCliente.js"));
+    assert.match(hook, /mensagemDesativarCliente\(\)/);
+    assert.match(hook, /mensagemReativarCliente\(\)/);
+    assert.match(hook, /motivoDeNaoDesativarCliente\(total,/);
+    // A prévia: o modal abre "conferindo" e só ganha a frase depois de ler os
+    // processos do cliente.
+    assert.match(
+      hook,
+      /setModal\(\{ open: true, id, acao, mensagem: '', carregando: true \}\);\s*try \{\s*const \{ data \} = await processService\.listProcesses\(\{\s*clienteId: id, situacao: 'todos'/,
+      "sem a prévia, o modal pediria confirmação de uma ação que o back vai recusar"
+    );
+    const lista = semComentarios(ler("src/pages/clients/ClientListPage.jsx"));
+    assert.match(lista, /useDesativacaoCliente\(\{ aoConcluir: reload \}\)/);
+    assert.match(lista, /<Modal \{\.\.\.desativacao\.propsDoModal\} \/>/);
+    for (const frase of [/mensagemDesativarCliente/, /mensagemReativarCliente/, /deleteClient/, /reactivateClient/]) {
+      assert.doesNotMatch(lista, frase, "a lista tem cópia do que é do hook");
+    }
   });
 
   test("nenhuma listagem escreve a frase à mão", () => {
@@ -221,7 +242,15 @@ describe("DEC-052 — o filtro de situação", () => {
     // `SITUACAO_OPTIONS` (`listaProcessos.js`), e "Somente ativos" é o valor
     // vazio — o padrão do back sem `?situacao=`, que fica fora da URL. As
     // três opções continuam, e continuam sendo as mesmas.
-    const regrasDosProcessos = semComentarios(ler("src/pages/processes/listaProcessos.js"));
+    //
+    // Fase 3.5 (DEC-121): a lista de clientes seguiu o mesmo caminho — as
+    // opções vêm de `SITUACAO_OPTIONS` (`listaClientes.js`), com "" para
+    // "Somente ativos". As três opções e os três rótulos continuam.
+    const regras = {
+      "src/pages/processes/ProcessListPage.jsx": semComentarios(ler("src/pages/processes/listaProcessos.js")),
+      "src/pages/clients/ClientListPage.jsx": semComentarios(ler("src/pages/clients/listaClientes.js")),
+    };
+    const valores = [["", "Somente ativos"], ["inativos", "Somente desativados"], ["todos", "Ativos e desativados"]];
     for (const arquivo of LISTAGENS) {
       const codigo = semComentarios(ler(arquivo));
       assert.match(
@@ -229,13 +258,13 @@ describe("DEC-052 — o filtro de situação", () => {
         /aria-label="Situação do registro"/,
         `${arquivo}: falta o seletor de situação`
       );
-      const onde = arquivo.includes("ProcessListPage") ? regrasDosProcessos : codigo;
-      const valores = arquivo.includes("ProcessListPage") ? [["", "Somente ativos"], ["inativos", "Somente desativados"], ["todos", "Ativos e desativados"]] : [["ativos"], ["inativos"], ["todos"]];
+      assert.match(codigo, /SITUACAO_OPTIONS\.map/, `${arquivo}: o seletor sai da lista de opções`);
       for (const [valor, rotulo] of valores) {
-        const padrao = arquivo.includes("ProcessListPage")
-          ? new RegExp(`\\{ value: '${valor}', label: '${rotulo}' \\}`)
-          : new RegExp(`value="${valor}"`);
-        assert.match(onde, padrao, `${arquivo}: falta a opção "${valor}"`);
+        assert.match(
+          regras[arquivo],
+          new RegExp(`\\{ value: '${valor}', label: '${rotulo}' \\}`),
+          `${arquivo}: falta a opção "${valor}"`
+        );
       }
     }
   });

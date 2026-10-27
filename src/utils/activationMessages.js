@@ -101,7 +101,31 @@ export const mensagemReativarCliente = () =>
   'Este cliente será reativado.' +
   ' Os processos dele NÃO voltam — cada processo se reativa por si.';
 
+// ── A prévia da desativação de cliente (Fase 3.5, DEC-122) ──────────────
+// O cliente não cascateia: o back RECUSA desativar quem participa de processo
+// ativo (409 `dependencia: "processos"`). A prévia lê os processos dele ANTES
+// do modal (`GET /processes?clienteId=`) e, havendo algum, diz o mesmo que o
+// 409 diria — sem a advogada confirmar uma ação que vai ser recusada. A frase
+// é a do servidor (`clientService.deleteClient`), com os mesmos nomes: o
+// título, e o papel quando ele não é o principal. `total` vem da contagem; os
+// processos, da primeira página, e o que passar dela vira "e mais N".
+const LIMITE_NOMES_NA_PREVIA = 3;
+export const motivoDeNaoDesativarCliente = (total = 0, processos = []) => {
+  if (!total) return null;
+  const nomes = processos.slice(0, LIMITE_NOMES_NA_PREVIA).map((p) => {
+    const titulo = (p.titulo || p.numeroProcesso || '(sem título)').trim();
+    return p.papelDoCliente && !p.principalDoCliente ? `${titulo} (${p.papelDoCliente})` : titulo;
+  });
+  const restantes = total - nomes.length;
+  const lista = restantes > 0
+    ? `${nomes.join(', ')} e mais ${restantes}`
+    : nomes.length === 1 ? nomes[0] : `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}`;
+  return `Este cliente participa de ${plural(total, 'processo ativo', 'processos ativos')} — ${lista}.` +
+    ` Desvincule-o ${total === 1 ? 'do processo' : 'dos processos'} antes; não é preciso desativar o processo.`;
+};
+
 export default {
+  motivoDeNaoDesativarCliente,
   mensagemDesativarProcesso,
   mensagemReativarProcesso,
   motivoDeNaoReativar,
