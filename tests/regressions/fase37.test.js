@@ -279,12 +279,15 @@ describe("Fase 3.7 · item 3 — a primeira coluna fixa e a prioridade das colun
     });
   }
 
-  test("as listas sem nota na célula de ações encolhem o ⋮ no celular; as com nota, não", () => {
-    for (const arquivo of ["src/pages/fees/FeeListPage.jsx", "src/pages/processes/ProcessListPage.jsx", "src/pages/clients/ClientListPage.jsx"]) {
-      assert.match(semComentarios(ler(arquivo)), /data-table--acoes-sem-nota/, arquivo);
-    }
-    for (const arquivo of ["src/pages/installments/InstallmentListPage.jsx", "src/pages/payments/PaymentListPage.jsx"]) {
-      assert.doesNotMatch(semComentarios(ler(arquivo)), /data-table--acoes-sem-nota/, `${arquivo}: tem "Reparcelada"/"sem recibo"`);
+  // Fase 3.8 (DEC-135): reescrita. Antes, só as listas SEM nota na célula de
+  // ações encolhiam o ⋮ (`--acoes-sem-nota`). As notas mudaram de coluna, e o
+  // ⋮ encolhe nas cinco — nenhuma lista guarda nota na célula de ações.
+  test("nenhuma lista guarda nota na célula de ações; o ⋮ encolhe nas cinco no celular", () => {
+    for (const arquivo of ["src/pages/fees/FeeListPage.jsx", "src/pages/installments/InstallmentListPage.jsx", "src/pages/payments/PaymentListPage.jsx", "src/pages/processes/ProcessListPage.jsx", "src/pages/clients/ClientListPage.jsx"]) {
+      const fonte = semComentarios(ler(arquivo));
+      assert.doesNotMatch(fonte, /data-table--acoes-sem-nota/, arquivo);
+      const celula = fonte.slice(fonte.indexOf('className="actions-cell'), fonte.indexOf("</td>", fonte.indexOf('className="actions-cell')));
+      assert.doesNotMatch(celula, /Reparcelada|sem recibo/, `${arquivo}: nota na célula de ações`);
     }
   });
 
@@ -296,7 +299,11 @@ describe("Fase 3.7 · item 3 — a primeira coluna fixa e a prioridade das colun
     assert.match(css, /\.lista-balao \.data-table--primeira-fixa tbody tr:hover > td:first-child \{[^}]*background-color: var\(--color-surface-raised\);/);
     assert.match(css, /\.data-table--primeira-fixa tbody tr:hover > td:first-child \{\s*background-image: linear-gradient\(var\(--color-accent-muted\), var\(--color-accent-muted\)\);/);
     assert.match(css, /@media \(max-width: 480px\) \{\s*\.data-table--primeira-fixa col:first-child \{ width: 128px; \}/);
-    assert.match(css, /@media \(max-width: 480px\) \{\s*\.data-table--acoes-sem-nota col:last-child \{ width: 64px; \}/);
+    // Fase 3.8 (DEC-135): o ⋮ com 64 px em TODAS as listas no celular (era só
+    // nas sem nota), e a primeira coluna solta nessa largura. Acima de 480 px,
+    // a primeira coluna continua fixa (a regra de cima, fora de `@media`).
+    assert.match(css, /@media \(max-width: 480px\) \{\s*\.data-table--acoes-fixas col:last-child \{ width: 64px; \}/);
+    assert.match(css, /@media \(max-width: 480px\) \{\s*\.data-table--primeira-fixa th:first-child,\s*\.data-table--primeira-fixa td:first-child \{\s*position: static;\s*box-shadow: none;\s*\}/);
     assert.match(css, /\.data-table\.data-table--primeira-fixa \{ min-width: 0; \}/);
     // `col-money` continua com a largura que garante o valor inteiro (F-1b.2).
     assert.match(css, /\.col-money \{ width: 150px; \}/);

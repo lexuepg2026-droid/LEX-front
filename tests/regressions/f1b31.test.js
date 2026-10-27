@@ -294,14 +294,18 @@ describe("F-1b.3.1 — a nota da célula cabe inteira", () => {
   });
 
   test("a nota não quebra nem encolhe", () => {
+    // Fase 3.8 (DEC-135): "Reparcelada" e "sem recibo" saíram da célula de
+    // ações para o Status e o Líquido, com a classe `nota-da-celula` — em
+    // linha própria (`display: block`), sem quebrar. O que restou na célula
+    // de ações (o "—" da parcela cancelada) segue sem encolher.
     assert.match(
-      modulesCss, /\.sem-recibo[\s\S]{0,200}?white-space:\s*nowrap/,
-      "a nota precisa de `nowrap` explícito"
+      modulesCss, /\.data-table \.nota-da-celula \{[^}]*display: block;[^}]*white-space: nowrap;/,
+      "a nota precisa de linha própria e `nowrap` explícito"
     );
     assert.match(modulesCss, /\.acao-indisponivel[\s\S]{0,200}?white-space:\s*nowrap/);
     assert.match(
-      modulesCss, /\.actions-cell\s+\.sem-recibo[\s\S]*?flex-shrink:\s*0/,
-      "sem `flex-shrink: 0` o flex espreme a nota até o truncamento"
+      modulesCss, /\.actions-cell\s+\.acao-indisponivel[\s\S]*?flex-shrink:\s*0/,
+      "sem `flex-shrink: 0` o flex espreme o conteúdo da célula até o truncamento"
     );
   });
 

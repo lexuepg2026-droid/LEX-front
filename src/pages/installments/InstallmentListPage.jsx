@@ -334,7 +334,16 @@ function InstallmentListPage() {
                   <td className="cell-num">{formatCurrency(inst.valorPago ?? 0)}</td>
                   <td className="cell-num">{formatCurrency(Math.max(0, Number(inst.valor || 0) - Number(inst.valorPago || 0)))}</td>
                   <td>{formatDate(inst.dataVencimento)}</td>
-                  <td><StatusBadge status={inst.status} /></td>
+                  {/* Fase 3.8 (DEC-135): "Reparcelada" mora ao lado do status
+                      "Cancelado" que ela explica, e não mais na célula do ⋮ —
+                      no celular a coluna de ações tem só a largura do botão.
+                      A regra é a de antes: parcela cancelada. */}
+                  <td>
+                    <StatusBadge status={inst.status} />
+                    {inst.status === 'cancelado' && (
+                      <span className="nota-da-celula">Reparcelada</span>
+                    )}
+                  </td>
                   <td>{formatDate(inst.dataPagamento)}</td>
                   <td className="actions-cell actions-cell--menu">
                     {/* Parcela CANCELADA por reparcelamento não se edita nem se
@@ -343,11 +352,11 @@ function InstallmentListPage() {
                         de reparcelamento é da F-1c; aqui a linha apenas não
                         oferece o que o backend não deve aceitar.
 
-                        "Reparcelada" é EXPLICAÇÃO, não ação: fica na célula, e
-                        não dentro do menu — pelo mesmo motivo que a nota "sem
-                        recibo" da listagem de pagamentos. */}
+                        "Reparcelada" é EXPLICAÇÃO, não ação: fica fora do menu,
+                        na coluna do status (DEC-135). Aqui, só o traço de
+                        "nenhuma ação". */}
                     {inst.status === 'cancelado' ? (
-                      <span className="acao-indisponivel">Reparcelada</span>
+                      <span className="acao-indisponivel" title="Parcela reparcelada: sem ações">—</span>
                     ) : (
                       <ActionMenu
                         rotulo={`Ações da ${rotuloDaParcela({ numeroParcela: inst.numeroParcela, totalParcelas: inst.totalParcelas ?? null, totalNoPlanoVigente: inst.totalNoPlano ?? null }).toLowerCase()}`}

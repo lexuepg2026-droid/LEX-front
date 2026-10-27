@@ -207,8 +207,9 @@ describe("Fase 3.4 · item 4 — a lista de processos no padrão da Figura 19 (D
     // URL, com as mesmas chaves.
     assert.match(lista, /useListFilters\(FILTROS_DA_LISTA, \{ naUrl: true, extrasNaLimpeza: EXTRAS_DA_LISTA \}\)/);
     assert.match(lista, /<FinancialFilters[\s\S]*?semBusca\s*pilulas\s*presets=\{PRESETS_DA_LISTA\}\s*ajudaDoPeriodo=\{AJUDA_DO_PERIODO\}/);
-    // Fase 3.7 (DEC-133): + `data-table--primeira-fixa` e `--acoes-sem-nota`.
-    assert.match(lista, /className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa data-table--acoes-sem-nota"/);
+    // Fase 3.7 (DEC-133): + `data-table--primeira-fixa`. Fase 3.8 (DEC-135):
+    // `--acoes-sem-nota` saiu — o ⋮ tem 64 px no celular em todas as listas.
+    assert.match(lista, /className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa"/);
     assert.match(lista, /<Paginador[\s\S]*?rotulo="processo"/);
     assert.match(lista, /fromCache && <OfflineNotice atualizadoEm=\{updatedAt\} \/>/);
   });
