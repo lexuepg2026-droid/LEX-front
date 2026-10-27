@@ -224,3 +224,87 @@ describe("Fase 3.7 · item 2 — a situação do registro em Parcelas (DEC-132)"
     assert.doesNotMatch(semComentarios(ler("src/styles/modules.css")), /\.filter-toggle/);
   });
 });
+
+// ── Item 3 — primeira coluna fixa e prioridade de colunas (DEC-133) ───────
+describe("Fase 3.7 · item 3 — a primeira coluna fixa e a prioridade das colunas (DEC-133)", () => {
+  const css = semComentarios(ler("src/styles/modules.css"));
+  const prioDe = (attrs) => (attrs.match(/\bprio-([23])\b/) || [null, "1"])[1];
+
+  // A prioridade esperada de cada coluna, na ordem do cabeçalho. `1` = nunca sai.
+  const ESPERADO = {
+    "src/pages/fees/FeeListPage.jsx": [
+      ["Descrição", "1"], ["Processo", "2"], ["Cliente", "2"], ["Tipo", "3"],
+      ["Valor", "1"], ["Status", "1"], ["Vencimento", "1"], ["Ações", "1"],
+    ],
+    "src/pages/installments/InstallmentListPage.jsx": [
+      ["Honorário", "1"], ["Processo", "2"], ["Cliente", "2"], ["Nº Parcela", "1"],
+      ["Valor", "1"], ["Recebido", "1"], ["Em aberto", "1"], ["Vencimento", "1"],
+      ["Status", "1"], ["Quitação", "1"], ["Ações", "1"],
+    ],
+    "src/pages/payments/PaymentListPage.jsx": [
+      ["Honorário", "1"], ["Processo", "2"], ["Cliente", "2"], ["Aplicado em", "3"],
+      ["Valor", "1"], ["Líquido", "1"], ["Data", "1"], ["Forma", "3"], ["Ações", "1"],
+    ],
+    "src/pages/processes/ProcessListPage.jsx": [
+      ["Nº Processo", "1"], ["Título", "1"], ["Cliente", "2"], ["Tipo de ação", "3"],
+      ["Fase", "2"], ["Status", "1"], ["Distribuição", "1"], ["Ações", "1"],
+    ],
+    "src/pages/clients/ClientListPage.jsx": [
+      ["Nome / Razão social", "1"], ["Tipo", "3"], ["CPF / CNPJ", "1"],
+      ["E-mail", "2"], ["Telefone", "2"], ["Ações", "1"],
+    ],
+  };
+
+  for (const [arquivo, esperado] of Object.entries(ESPERADO)) {
+    const nome = arquivo.split("/").pop();
+    const fonte = semComentarios(ler(arquivo));
+    const tabela = fonte.slice(fonte.indexOf("<table"), fonte.indexOf("</table>"));
+    const cols = [...tabela.match(/<colgroup>([\s\S]*?)<\/colgroup>/)[1].matchAll(/<col\b([^>]*)\/>/g)].map((m) => m[1]);
+    const ths = [...tabela.match(/<thead>([\s\S]*?)<\/thead>/)[1].matchAll(/<th\b([^>]*)>([^<]+)<\/th>/g)].map((m) => [m[2].trim(), m[1]]);
+    const tds = [...tabela.match(/<tbody>([\s\S]*?)<\/tbody>/)[1].matchAll(/<td\b([^>]*)>/g)].map((m) => m[1]);
+
+    test(`${nome}: a mesma prioridade na <col>, no <th> e no <td> de cada coluna`, () => {
+      assert.deepEqual(ths.map(([t, a]) => [t, prioDe(a)]), esperado);
+      assert.deepEqual(cols.map(prioDe), esperado.map(([, p]) => p), "colgroup");
+      assert.deepEqual(tds.map(prioDe), esperado.map(([, p]) => p), "células");
+    });
+
+    test(`${nome}: primeira coluna fixa e ⋮ fixo, e nenhuma coluna de dinheiro, data ou status sai`, () => {
+      assert.match(tabela, /className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa/);
+      assert.equal(esperado[0][1], "1", "a primeira coluna nunca sai — é ela que fica fixa");
+      assert.equal(esperado.at(-1)[0], "Ações");
+      cols.forEach((c, i) => {
+        if (/col-money|col-data|col-status/.test(c)) assert.equal(prioDe(c), "1", `${esperado[i][0]} é dinheiro, data ou status`);
+      });
+    });
+  }
+
+  test("as listas sem nota na célula de ações encolhem o ⋮ no celular; as com nota, não", () => {
+    for (const arquivo of ["src/pages/fees/FeeListPage.jsx", "src/pages/processes/ProcessListPage.jsx", "src/pages/clients/ClientListPage.jsx"]) {
+      assert.match(semComentarios(ler(arquivo)), /data-table--acoes-sem-nota/, arquivo);
+    }
+    for (const arquivo of ["src/pages/installments/InstallmentListPage.jsx", "src/pages/payments/PaymentListPage.jsx"]) {
+      assert.doesNotMatch(semComentarios(ler(arquivo)), /data-table--acoes-sem-nota/, `${arquivo}: tem "Reparcelada"/"sem recibo"`);
+    }
+  });
+
+  test("o CSS: os dois pontos de troca, a irmã da coluna de ações e o celular", () => {
+    assert.match(css, /@media \(max-width: 1439\.98px\) \{\s*\.data-table \.prio-3 \{ display: none; \}\s*\}/);
+    assert.match(css, /@media \(max-width: 1279\.98px\) \{\s*\.data-table \.prio-2 \{ display: none; \}\s*\}/);
+    assert.match(css, /\.data-table--primeira-fixa th:first-child,\s*\.data-table--primeira-fixa td:first-child \{[^}]*position: sticky;[^}]*left: 0;[^}]*z-index: 1;[^}]*background-color: var\(--color-bg\);[^}]*box-shadow:/);
+    assert.match(css, /\.lista-balao \.data-table--primeira-fixa td:first-child \{\s*background-color: var\(--color-surface\);/);
+    assert.match(css, /\.lista-balao \.data-table--primeira-fixa tbody tr:hover > td:first-child \{[^}]*background-color: var\(--color-surface-raised\);/);
+    assert.match(css, /\.data-table--primeira-fixa tbody tr:hover > td:first-child \{\s*background-image: linear-gradient\(var\(--color-accent-muted\), var\(--color-accent-muted\)\);/);
+    assert.match(css, /@media \(max-width: 480px\) \{\s*\.data-table--primeira-fixa col:first-child \{ width: 128px; \}/);
+    assert.match(css, /@media \(max-width: 480px\) \{\s*\.data-table--acoes-sem-nota col:last-child \{ width: 64px; \}/);
+    assert.match(css, /\.data-table\.data-table--primeira-fixa \{ min-width: 0; \}/);
+    // `col-money` continua com a largura que garante o valor inteiro (F-1b.2).
+    assert.match(css, /\.col-money \{ width: 150px; \}/);
+  });
+
+  test("nenhum `transform` nem `filter` nas regras novas (DEC-046: o ⋮ é `fixed` em portal)", () => {
+    const bloco = css.slice(css.indexOf(".data-table--primeira-fixa th:first-child"), css.indexOf(".data-table.data-table--primeira-fixa { min-width: 0; }"));
+    assert.ok(bloco.length > 200);
+    assert.doesNotMatch(bloco, /\btransform\s*:|\bfilter\s*:/);
+  });
+});

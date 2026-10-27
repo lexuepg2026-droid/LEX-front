@@ -370,7 +370,8 @@ describe("F-1b.2 — nenhuma coluna de dinheiro trunca", () => {
     const colgroup = codigo.match(/<colgroup>([\s\S]*?)<\/colgroup>/)[1];
     const cols = [...colgroup.matchAll(/<col(?:\s+className="([^"]*)")?\s*\/>/g)]
       .map((m) => m[1] ?? "auto");
-    const cabecalhos = [...codigo.matchAll(/<th>([^<]+)<\/th>/g)].map((m) => m[1].trim());
+    // Fase 3.7 (DEC-133): os <th> ganharam a classe de prioridade (`prio-2`/`prio-3`); a trava passa a aceitá-la e continua exigindo os mesmos nomes, na mesma ordem e alinhados ao colgroup.
+    const cabecalhos = [...codigo.matchAll(/<th(?:\s+className="[^"]*")?>([^<]+)<\/th>/g)].map((m) => m[1].trim());
 
     assert.equal(cols.length, cabecalhos.length,
       "colgroup e cabeçalho têm de ter o mesmo número de colunas — foi o desalinho que escondeu o defeito");

@@ -282,10 +282,11 @@ describe("3.2 · item 3 — as três listas", () => {
 
     test(`${nome}: coluna Cliente, e o colgroup acompanha os <th>`, () => {
       const fonte = semComentarios(ler(arquivo));
-      assert.match(fonte, /<th>Processo<\/th>\s*<th>Cliente<\/th>/);
+      // Fase 3.7 (DEC-133): os <th> ganharam a classe de prioridade (`prio-2`/`prio-3`); a trava passa a aceitá-la e continua exigindo os mesmos nomes, na mesma ordem e alinhados ao colgroup.
+      assert.match(fonte, /<th className="prio-2">Processo<\/th>\s*<th className="prio-2">Cliente<\/th>/);
       const colgroup = fonte.match(/<colgroup>([\s\S]*?)<\/colgroup>/)[1];
       const thead = fonte.match(/<thead>([\s\S]*?)<\/thead>/)[1];
-      assert.equal((colgroup.match(/<col\b/g) || []).length, (thead.match(/<th>/g) || []).length);
+      assert.equal((colgroup.match(/<col\b/g) || []).length, (thead.match(/<th\b/g) || []).length);
       assert.match(fonte, /data-table data-table--fixed/);
       assert.match(fonte, /col-money/);
     });

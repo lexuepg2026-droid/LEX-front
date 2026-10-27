@@ -26,9 +26,10 @@ describe("3.3 · item 1 — a coluna de ações fixa à direita (DEC-107)", () =
   test("as três listas usam a tabela com ações fixas, e o ⋮ continua sendo a última coluna", () => {
     for (const arquivo of LISTAS) {
       const fonte = semComentarios(ler(arquivo));
-      assert.match(fonte, /className="data-table data-table--fixed data-table--acoes-fixas"/, arquivo);
+      // Fase 3.7 (DEC-133): os <th> ganharam a classe de prioridade (`prio-2`/`prio-3`); a trava passa a aceitá-la e continua exigindo os mesmos nomes, na mesma ordem e alinhados ao colgroup. A tabela ganhou `data-table--primeira-fixa` depois das três classes.
+      assert.match(fonte, /className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa[ "]/, arquivo);
       const thead = fonte.match(/<thead>([\s\S]*?)<\/thead>/)[1];
-      const ths = [...thead.matchAll(/<th>([^<]+)<\/th>/g)].map((m) => m[1]);
+      const ths = [...thead.matchAll(/<th(?:\s+className="[^"]*")?>([^<]+)<\/th>/g)].map((m) => m[1]);
       assert.equal(ths.at(-1), "Ações", arquivo);
       const colgroup = fonte.match(/<colgroup>([\s\S]*?)<\/colgroup>/)[1];
       const cols = [...colgroup.matchAll(/<col\b[^>]*>/g)].map((m) => m[0]);
@@ -57,7 +58,9 @@ describe("3.3 · item 1 — a coluna de ações fixa à direita (DEC-107)", () =
     const fonte = semComentarios(ler("src/pages/fees/FeeListPage.jsx"));
     assert.doesNotMatch(fonte, /<th>Percentual<\/th>|<th>Valor base<\/th>/);
     assert.doesNotMatch(fonte, /formatPercent|fee\.valorBase/);
-    assert.match(fonte, /<th>Tipo<\/th>\s*<th>Valor<\/th>/);
+    // Fase 3.7 (DEC-133): o Tipo é `prio-3` e a Descrição passou a ser a
+    // primeira coluna; o Valor continua logo depois do Tipo.
+    assert.match(fonte, /<th className="prio-3">Tipo<\/th>\s*<th>Valor<\/th>/);
   });
 });
 

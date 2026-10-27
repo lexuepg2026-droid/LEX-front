@@ -223,7 +223,7 @@ function PaymentListPage() {
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`.
               "Observações" é texto livre digitado pela advogada, sem teto: era
               a coluna mais exposta ao defeito que a fase corrigiu. */}
-          <table className="data-table data-table--fixed data-table--acoes-fixas">
+          <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa">
             {/* ── As larguras, e o que a F-1b.2 corrigiu ──────────────────
                 "Honorário" era `col-xs` (100 px) e cortava em ~8 caracteres:
                 como quase toda descrição começa por "Honorários advocatícios",
@@ -247,13 +247,16 @@ function PaymentListPage() {
                   de dentro do processo populado. As colunas de texto ganharam
                   largura: a 768 px as `auto` colapsavam para 0 (medido). A
                   tabela rola dentro do `.table-wrapper`. */}
-              <col className="col-md" />
-              <col className="col-md" />
-              <col className="col-md" />
+              {/* Fase 3.7 (DEC-133): o honorário é a coluna fixa à esquerda;
+                  processo e cliente `prio-2`; "Aplicado em" e a forma
+                  `prio-3` (as duas estão no detalhe do pagamento). */}
+              <col className="col-md prio-2" />
+              <col className="col-md prio-2" />
+              <col className="col-md prio-3" />
               <col className="col-money" />
               <col className="col-money" />
               <col className="col-data" />
-              <col className="col-xs" />
+              <col className="col-xs prio-3" />
               <col className="col-acoes-menu" />
             </colgroup>
             <thead>
@@ -262,13 +265,13 @@ function PaymentListPage() {
                     deixou de pertencer a UMA parcela (DEC-032). Quais parcelas
                     ele tocou sai na coluna "Aplicado em", que pode dizer duas. */}
                 <th>Honorário</th>
-                <th>Processo</th>
-                <th>Cliente</th>
-                <th>Aplicado em</th>
+                <th className="prio-2">Processo</th>
+                <th className="prio-2">Cliente</th>
+                <th className="prio-3">Aplicado em</th>
                 <th>Valor</th>
                 <th>Líquido</th>
                 <th>Data</th>
-                <th>Forma</th>
+                <th className="prio-3">Forma</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -295,9 +298,9 @@ function PaymentListPage() {
                       </Link>
                     ) : '—'}
                   </td>
-                  <td className="cell-truncate" title={p.honorarioId?.processoId?.titulo ?? undefined}>{p.honorarioId?.processoId?.titulo ?? '—'}</td>
-                  <td className="cell-truncate" title={clienteDoPagamento(p) ?? undefined}>{clienteDoPagamento(p) ?? '—'}</td>
-                  <td className="cell-truncate" title={rotuloDasParcelas(p)}>{rotuloDasParcelas(p)}</td>
+                  <td className="cell-truncate prio-2" title={p.honorarioId?.processoId?.titulo ?? undefined}>{p.honorarioId?.processoId?.titulo ?? '—'}</td>
+                  <td className="cell-truncate prio-2" title={clienteDoPagamento(p) ?? undefined}>{clienteDoPagamento(p) ?? '—'}</td>
+                  <td className="cell-truncate prio-3" title={rotuloDasParcelas(p)}>{rotuloDasParcelas(p)}</td>
                   <td className="cell-num">{formatCurrency(p.valor)}</td>
                   {/* O líquido é o que ainda vale depois dos estornos. Exibido
                       ao lado do bruto, e não no lugar dele: os dois números são
@@ -315,7 +318,7 @@ function PaymentListPage() {
                     )}
                   </td>
                   <td>{formatDate(p.data)}</td>
-                  <td className="cell-truncate">{labelDe(FORMA_PAGAMENTO_OPTIONS, p.formaPagamento)}</td>
+                  <td className="cell-truncate prio-3">{labelDe(FORMA_PAGAMENTO_OPTIONS, p.formaPagamento)}</td>
                   <td className="actions-cell actions-cell--menu">
                     {/* ── A NOTA "sem recibo" FICA FORA DO MENU (F-1b.3) ──
                         Pagamento integralmente estornado não tem recibo: a

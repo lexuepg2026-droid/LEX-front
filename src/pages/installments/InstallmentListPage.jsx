@@ -239,7 +239,7 @@ function InstallmentListPage() {
       ) : (
         <div className="table-wrapper" aria-busy={carregando || undefined}>
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
-          <table className="data-table data-table--fixed data-table--acoes-fixas">
+          <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa">
             {/* Dinheiro em `col-money`, data em `col-data`, status em
                 `col-status` (F-1b.2). "Valor", "Recebido" e "Em aberto"
                 estavam em `col-sm`, que só aguenta até a casa dos milhares;
@@ -250,9 +250,12 @@ function InstallmentListPage() {
                   largura pelo mesmo motivo da lista de honorários: a 1280 px
                   as três `auto` ficavam com 14 px (medido). A tabela rola
                   dentro do `.table-wrapper`. */}
+              {/* Fase 3.7 (DEC-133): o honorário é a coluna fixa à esquerda;
+                  processo e cliente são `prio-2`. Todo o resto é `prio-1`
+                  (parcela, três valores, duas datas e o status). */}
               <col className="col-md" />
-              <col className="col-md" />
-              <col className="col-md" />
+              <col className="col-md prio-2" />
+              <col className="col-md prio-2" />
               {/* `col-parcela`, e não `col-xxs`: a coluna mostrava "Parce…"
                   desde que a DEC-048 trocou o ordinal nu por "Parcela 1 de 3"
                   e a largura de 80 px continuou sendo a de um número. Ver a
@@ -271,8 +274,8 @@ function InstallmentListPage() {
             <thead>
               <tr>
                 <th>Honorário</th>
-                <th>Processo</th>
-                <th>Cliente</th>
+                <th className="prio-2">Processo</th>
+                <th className="prio-2">Cliente</th>
                 <th>Nº Parcela</th>
                 <th>Valor</th>
                 {/* `valorPago` e o que falta: as duas colunas que a advogada
@@ -305,10 +308,10 @@ function InstallmentListPage() {
                       </Link>
                     ) : '—'}
                   </td>
-                  <td className="cell-truncate" title={rotuloDoProcesso(inst.processo) ?? undefined}>
+                  <td className="cell-truncate prio-2" title={rotuloDoProcesso(inst.processo) ?? undefined}>
                     {rotuloDoProcesso(inst.processo) ?? '—'}
                   </td>
-                  <td className="cell-truncate" title={inst.processo?.clientePrincipalNome ?? undefined}>
+                  <td className="cell-truncate prio-2" title={inst.processo?.clientePrincipalNome ?? undefined}>
                     {inst.processo?.clientePrincipalNome ?? '—'}
                   </td>
                   {/* DEC-048: a coluna deixou de ser o ordinal nu. "Parcela 3"

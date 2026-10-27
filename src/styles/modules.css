@@ -585,3 +585,99 @@
   background-image: none;
   background-color: var(--color-surface-raised);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   A PRIMEIRA COLUNA FIXA À ESQUERDA — Fase 3.7 (DEC-133)
+   ═══════════════════════════════════════════════════════════════════════════
+
+   A irmã da coluna de ações (DEC-107): a coluna que IDENTIFICA a linha (o
+   nome, o número ou a descrição) fica `sticky` à esquerda, e a tabela que
+   rola mostra sempre "de quem é" esta linha e o ⋮ dela. Decisão 3 da fase:
+   tabela que rola, e não cartões.
+
+   Os mesmos fundos, o mesmo `z-index` e a mesma sombra (agora à direita) da
+   coluna de ações — no fundo da página e no balão, com e sem hover. A
+   primeira coluna é sempre `prio-1`: nunca se esconde, então `:first-child`
+   continua sendo ela. Nenhum `transform`/`filter` aqui (DEC-046). */
+.data-table--primeira-fixa th:first-child,
+.data-table--primeira-fixa td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: var(--color-bg);
+  box-shadow: 8px 0 8px -8px rgba(0, 0, 0, 0.45);
+}
+
+.data-table--primeira-fixa th:first-child {
+  background-color: var(--color-surface-raised);
+}
+
+.data-table--primeira-fixa tbody tr:hover > td:first-child {
+  background-image: linear-gradient(var(--color-accent-muted), var(--color-accent-muted));
+}
+
+.lista-balao .data-table--primeira-fixa td:first-child {
+  background-color: var(--color-surface);
+}
+
+.lista-balao .data-table--primeira-fixa tbody tr:hover > td:first-child {
+  background-image: none;
+  background-color: var(--color-surface-raised);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   A PRIORIDADE DAS COLUNAS — Fase 3.7 (DEC-133)
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Cada coluna das cinco listas (Honorários, Parcelas, Pagamentos, Processos e
+   Clientes) tem uma prioridade, na `<col>`, no `<th>` e em cada `<td>` — a
+   MESMA classe nos três, para a coluna sumir inteira (largura, cabeçalho e
+   célula) e o leitor de tela continuar lendo uma tabela coerente:
+
+   - `prio-1` (sem classe): nunca sai. Identificação, VALOR, DATA, STATUS e
+     ações. Dinheiro nunca trunca e nunca some (F-1b.2).
+   - `prio-3`: sai abaixo de **1440 px**.
+   - `prio-2`: sai abaixo de **1280 px**.
+
+   Os pontos vêm das medidas (relatório da 3.7, seção 2). A área útil da
+   tabela é a largura da janela menos 88 px (1280 → 1192). Com tudo à mostra
+   as listas pedem de 1.192 a 1.660 px; sem as `prio-3`, Honorários (1.120),
+   Pagamentos (1.110) e Processos (1.160) cabem em 1.192 — é o que faz a lista
+   de Processos caber sem rolar a 1280. Abaixo de 1280 nem com as `prio-2` elas
+   cabem (a 1024 a área é 936), e só as `prio-1` ficam. Parcelas, com cinco
+   colunas de dinheiro e datas, rola em qualquer largura menor que 1.748 px:
+   o que rola passa por baixo da primeira coluna e do ⋮, que ficam à vista.
+
+   O que sai da tabela continua no detalhe do registro. */
+@media (max-width: 1439.98px) {
+  .data-table .prio-3 { display: none; }
+}
+
+@media (max-width: 1279.98px) {
+  .data-table .prio-2 { display: none; }
+}
+
+/* No celular a primeira coluna encolhe: duas colunas fixas de 220 + 120 px
+   não caberiam nos 304 px de área a 360. O texto corta com reticências e o
+   inteiro está no `title` e no destino do link (F-1b.2: a coluna de texto
+   cede; a de dinheiro, nunca). */
+@media (max-width: 480px) {
+  .data-table--primeira-fixa col:first-child { width: 128px; }
+}
+
+/* Os `min-width` genéricos de `.data-table` (600 px abaixo de 1024, 480 abaixo
+   de 768, mais acima) são de antes das larguras por coluna: esticavam a tabela
+   além da soma das `<col>` — Clientes a 360 px media 480 com 362 de colunas.
+   Nas listas com prioridade, a largura é a soma das colunas visíveis. */
+@media (max-width: 1023px) {
+  .data-table.data-table--primeira-fixa { min-width: 0; }
+}
+
+/* E nas listas cuja célula de ações NÃO tem nota (Honorários, Processos e
+   Clientes), a coluna de ações encolhe para a largura do botão. Os 120 px de
+   `col-acoes-menu` são a medida da NOTA ("Reparcelada", "sem recibo",
+   F-1b.3.1), que só existe em Parcelas e Pagamentos. Medido a 360 px: a
+   janela entre as duas colunas fixas vai de 56 para 112 px. */
+@media (max-width: 480px) {
+  .data-table--acoes-sem-nota col:last-child { width: 64px; }
+}
