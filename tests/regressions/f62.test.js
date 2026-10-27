@@ -27,6 +27,10 @@ const ler = (caminho) =>
   readFileSync(fileURLToPath(new URL(`../../${caminho}`, import.meta.url)), "utf8");
 
 const tela = ler("src/pages/clients/ClientFormPage.jsx");
+// Fase 3.5 (DEC-125): o payload saiu da tela para `utils/clientePayload.js`,
+// que a suíte EXECUTA. As travas do payload abaixo seguem para lá.
+const modulo = ler("src/utils/clientePayload.js");
+import { montarPayloadCliente } from "../../src/utils/clientePayload.js";
 const css = ler("src/pages/clients/ClientPage.css");
 
 // Os campos exclusivos de cada tipo — os mesmos de `clientValidation.js`
@@ -39,22 +43,24 @@ const CAMPOS_PJ = ["razaoSocial", "nomeFantasia", "cnpj", "representanteLegal"];
 
 // O trecho de `handleSubmit` que monta o payload de cada tipo.
 const ramosDoPayload = () => {
-  const inicio = tela.indexOf("if (tipoPessoa === 'fisica') {\n      payload.");
+  const inicio = modulo.indexOf("if (tipoPessoa === 'fisica') {\n    payload.");
   assert.ok(inicio !== -1, "não achei o ramo de PF que monta o payload");
-  const separador = tela.indexOf("} else {", inicio);
-  const fim = tela.indexOf("try {", separador);
+  const separador = modulo.indexOf("} else {", inicio);
+  const fim = modulo.indexOf("return payload;", separador);
   assert.ok(separador !== -1 && fim !== -1, "não achei o ramo de PJ que monta o payload");
-  return { pf: tela.slice(inicio, separador), pj: tela.slice(separador, fim) };
+  return { pf: modulo.slice(inicio, separador), pj: modulo.slice(separador, fim) };
 };
 
 describe("F-6.2 — o seletor de tipo na edição", () => {
   test("o seletor NÃO está preso à criação", () => {
     assert.doesNotMatch(
       tela,
-      /!isEditing\s*&&\s*\(\s*<div className="form-group tipo-pessoa-seletor"/,
+      /!isEditing\s*&&\s*\(\s*<div className="form-group tipo-pessoa-seletor/,
       "o seletor voltou a aparecer só fora da edição — a troca de tipo deixou de ser possível"
     );
-    assert.match(tela, /className="form-group tipo-pessoa-seletor"/);
+    // Fase 3.5 (DEC-125): o seletor entrou na seção "Identificação", e ocupa a
+    // largura toda da grade (`span-3`). Continua fora de qualquer condição.
+    assert.match(tela, /className="form-group tipo-pessoa-seletor( span-3)?"/);
   });
 
   test("os rádios são UM ponto só, e trocam pelo handler da troca", () => {
@@ -99,6 +105,15 @@ describe("F-6.2 — saber quando há troca, e avisar o que será removido", () =
   });
 });
 
+const ESTADO_COMPLETO = {
+  nomeCompleto: "Ana Lima", cpf: "123.456.789-09", rg: "1", dataNascimento: "1990-01-01", sexo: "feminino",
+  estadoCivil: "solteiro", profissao: "engenheira", nacionalidade: "brasileira",
+  razaoSocial: "X Ltda", nomeFantasia: "X", cnpj: "11.222.333/0001-81",
+  repNome: "Rep", repCpf: "123.456.789-09", repCargo: "sócia",
+  email: "", telefone: "", cep: "", logradouro: "", numero: "", complemento: "", bairro: "",
+  cidade: "", estado: "", pais: "", observacoes: "", senhaPortal: ""
+};
+
 describe("F-6.2 — o payload leva só os campos do tipo escolhido", () => {
   test("PF: manda os campos de PF e NENHUM de PJ", () => {
     const { pf } = ramosDoPayload();
@@ -127,7 +142,16 @@ describe("F-6.2 — o payload leva só os campos do tipo escolhido", () => {
   });
 
   test("o payload SEMPRE leva o tipo escolhido", () => {
-    assert.match(tela, /const payload = \{\s*tipoPessoa,/);
+    assert.match(modulo, /const payload = \{\s*tipoPessoa,/);
+    assert.match(tela, /const payload = montarPayloadCliente\(formData, \{ tipoPessoa, isEditing \}\)/);
+    // Executado (Fase 3.5): os dois tipos, com o estado inteiro na mão — os
+    // campos do outro tipo estão no estado e NÃO vão.
+    for (const tipoPessoa of ["fisica", "juridica"]) {
+      const payload = montarPayloadCliente(ESTADO_COMPLETO, { tipoPessoa, isEditing: true });
+      assert.equal(payload.tipoPessoa, tipoPessoa);
+      const proibidos = tipoPessoa === "fisica" ? CAMPOS_PJ : CAMPOS_PF;
+      for (const campo of proibidos) assert.ok(!(campo in payload), `${tipoPessoa} enviaria ${campo}`);
+    }
   });
 
   test("trocar o rádio não apaga o que a advogada digitou no outro tipo", () => {

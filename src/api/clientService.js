@@ -1,6 +1,6 @@
 import api from './axiosConfig';
 
-const getAllClients = ({ page = 1, limit = 20, busca, situacao, ordem } = {}) => {
+const getAllClients = ({ page = 1, limit = 20, busca, situacao, ordem, tipoPessoa, portal } = {}) => {
   const params = { page, limit };
   // DEC-052: sem `situacao`, o padrão do backend é só ativos — nada muda.
   if (situacao) params.situacao = situacao;
@@ -8,6 +8,9 @@ const getAllClients = ({ page = 1, limit = 20, busca, situacao, ordem } = {}) =>
   // DEC-062: sem `ordem`, o padrão do backend é `nome_asc` — a tela manda o
   // valor explícito para não depender de os dois padrões continuarem iguais.
   if (ordem) params.ordem = ordem;
+  // Fase 3.5 (DEC-119): `PF`/`PJ` e `com_acesso`/`sem_acesso`/`nao_liberado`.
+  if (tipoPessoa) params.tipoPessoa = tipoPessoa;
+  if (portal) params.portal = portal;
   return api.get('/clients', { params });
 };
 

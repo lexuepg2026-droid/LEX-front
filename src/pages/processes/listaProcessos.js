@@ -22,6 +22,11 @@ export const FILTROS_DA_LISTA = Object.freeze({
   portal: '',
 });
 
+// Fase 3.5 (DEC-124): o `?clienteId=` da aba "Processos" do cliente não é uma
+// pílula — é o chip "Filtro: só este cliente ×" —, mas o "Limpar filtros" o
+// tira junto, na mesma escrita (DEC-103), e trocá-lo volta à página 1.
+export const EXTRAS_DA_LISTA = Object.freeze(['clienteId']);
+
 export const STATUS_PROCESSO = Object.freeze(['ativo', 'encerrado', 'suspenso']);
 
 // DEC-052: "" é "Somente ativos" — o padrão do back sem `situacao` —, e por
@@ -52,9 +57,10 @@ export const AJUDA_DO_PERIODO =
   'O período é pela data de distribuição. Processo sem essa data só aparece em “Qualquer período”.';
 
 // O estado da tela → os parâmetros de `GET /processes`. Vazio não vai.
-export const consultaDaLista = (filtros, { page, limit, busca }) => {
+export const consultaDaLista = (filtros, { page, limit, busca, clienteId }) => {
   const consulta = { page, limit };
   if (busca) consulta.busca = busca;
+  if (clienteId) consulta.clienteId = clienteId;
   if (filtros.andamento) consulta.status = filtros.andamento;
   if (filtros.fase) consulta.fase = filtros.fase;
   if (filtros.liminar) consulta.liminar = filtros.liminar;
@@ -79,10 +85,13 @@ export const opcoesDeTipo = (tipos, atual) => {
 };
 
 // "Filtros aplicados: …" em português, como a das listas financeiras.
-export const descricaoDoRecorteDeProcessos = ({ filtros = {}, busca = '' } = {}) => {
+export const descricaoDoRecorteDeProcessos = ({ filtros = {}, busca = '', cliente = null } = {}) => {
   const trechos = [];
   const termo = (busca ?? '').trim();
   if (termo) trechos.push(`com "${termo}"`);
+  // DEC-124: sem o nome (ainda carregando, ou sem sinal e sem espelho),
+  // "deste cliente" continua verdadeiro; inventar um nome, não.
+  if (cliente) trechos.push(cliente.nome ? `do cliente "${cliente.nome}"` : 'deste cliente');
   if (filtros.andamento) trechos.push(`com status "${rotuloDoStatus(filtros.andamento)}"`);
   if (filtros.fase) trechos.push(`na fase "${labelDe(FASE_PROCESSO_OPTIONS, filtros.fase)}"`);
   if (filtros.liminar) trechos.push(labelDe(FILTRO_LIMINAR_OPTIONS, filtros.liminar).toLowerCase());
@@ -107,6 +116,7 @@ export const destinoDaLinha = (processo) =>
 
 export default {
   FILTROS_DA_LISTA,
+  EXTRAS_DA_LISTA,
   STATUS_PROCESSO,
   SITUACAO_OPTIONS,
   PORTAL_OPTIONS,

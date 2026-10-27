@@ -179,6 +179,30 @@
      ganhou 240 px; acima disto o conteúdo centraliza em vez de esticar. */
   --largura-conteudo:       1280px;
 
+  /* ── O avatar do cliente (Fase 3.5, DEC-120) ─────────────────────────────
+     Oito fundos fixos, IGUAIS nos dois modos, como a marca: a cor é a
+     identidade do cliente, e mudá-la com o tema faria a mesma pessoa ter duas
+     cores. As 12 da Raniele falhavam com a inicial branca (até 1,9:1); estas
+     passam 4,5:1 com a inicial em branco (os cinco escuros) ou em #01261F (os
+     três claros). A inicial é TEXTO, e os oito pares estão em
+     `tests/css/contrastePares.js`. Não são redefinidos em `body.light-mode`. */
+  --color-avatar-1:         #174034;
+  --color-on-avatar-1:      #FFFFFF;
+  --color-avatar-2:         #1F5C7A;
+  --color-on-avatar-2:      #FFFFFF;
+  --color-avatar-3:         #6B3F8F;
+  --color-on-avatar-3:      #FFFFFF;
+  --color-avatar-4:         #8A3B2E;
+  --color-on-avatar-4:      #FFFFFF;
+  --color-avatar-5:         #4E5D23;
+  --color-on-avatar-5:      #FFFFFF;
+  --color-avatar-6:         #8CC7AC;
+  --color-on-avatar-6:      #01261F;
+  --color-avatar-7:         #E3B873;
+  --color-on-avatar-7:      #01261F;
+  --color-avatar-8:         #EDE3CF;
+  --color-on-avatar-8:      #01261F;
+
   /* Legado — compatibilidade com CSS existente dos módulos */
   --bg-color:    var(--color-bg);
   --text-color:  var(--color-text-primary);

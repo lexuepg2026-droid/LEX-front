@@ -23,6 +23,7 @@ import {
   ORDEM_CLIENTE_PADRAO,
   VALORES_ORDEM_CLIENTE
 } from "../../src/utils/ordemCliente.js";
+import { ORDEM_OPTIONS, consultaDaLista } from "../../src/pages/clients/listaClientes.js";
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const RAIZ = resolve(AQUI, "..", "..");
@@ -36,6 +37,9 @@ const semComentarios = (codigo) =>
   codigo.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
 const LISTA_CLIENTES = "src/pages/clients/ClientListPage.jsx";
+// Fase 3.5 (DEC-121): as opções, o padrão e a consulta da lista saíram da tela
+// para `listaClientes.js`, em função pura — e passaram a ser EXECUTADOS aqui.
+const REGRAS_DA_LISTA = "src/pages/clients/listaClientes.js";
 const LOGIN = "src/pages/auth/LoginPage.jsx";
 const CADASTRO = "src/pages/auth/RegisterPage.jsx";
 
@@ -61,29 +65,44 @@ describe("DEC-062 — a ordenação na tela", () => {
     }
   });
 
+  // Reescrito na Fase 3.5 (DEC-121): o seletor passou a ser montado de
+  // `ORDEM_OPTIONS`, que `listaClientes.js` deriva de `ORDENS_CLIENTE`. A
+  // regra travada é a mesma — as opções saem do vocabulário, nenhuma é
+  // escrita à mão —, agora nos dois arquivos, e as opções são EXECUTADAS.
   test("a listagem monta o seletor a partir da fonte única", () => {
+    const regras = semComentarios(ler(REGRAS_DA_LISTA));
     const codigo = semComentarios(ler(LISTA_CLIENTES));
-    assert.match(codigo, /ORDENS_CLIENTE\.map/, "o seletor sai do vocabulário, não do JSX");
+    assert.match(regras, /ORDENS_CLIENTE\.map/, "o seletor sai do vocabulário, não do JSX");
+    assert.match(codigo, /ORDEM_OPTIONS\.map/, "a tela monta as opções da lista derivada");
     assert.match(codigo, /aria-label="Ordenação da lista"/, "o seletor é anunciado");
+    assert.deepEqual(ORDEM_OPTIONS.map((o) => o.label), ORDENS_CLIENTE.map((o) => o.rotulo));
 
     // Nenhum `<option value="nome_asc">` escrito à mão: seria a segunda lista,
     // livre para divergir — o defeito que `statusVisual.js` existe para não
     // repetir desde a 4.3.
-    assert.doesNotMatch(
-      codigo,
-      /<option value="nome_(asc|desc)"/,
-      "🚨 opção de ordenação escrita à mão no JSX — é a segunda lista"
-    );
+    for (const fonte of [codigo, regras]) {
+      assert.doesNotMatch(
+        fonte,
+        /<option value="nome_(asc|desc)"/,
+        "🚨 opção de ordenação escrita à mão no JSX — é a segunda lista"
+      );
+    }
   });
 
+  // Reescrito na Fase 3.5 (DEC-121): com a URL (DEC-103), o padrão é o valor
+  // VAZIO — fora da URL de quem não mexeu —, e quem o traduz para a API é
+  // `consultaDaLista`, com a constante. O teste passou a EXECUTAR a tradução.
   test("o padrão da tela é o padrão declarado, e não uma string solta", () => {
-    const codigo = semComentarios(ler(LISTA_CLIENTES));
+    const regras = semComentarios(ler(REGRAS_DA_LISTA));
     assert.match(
-      codigo,
-      /ordem: ORDEM_CLIENTE_PADRAO/,
+      regras,
+      /ordem: filtros\.ordem \|\| ORDEM_CLIENTE_PADRAO/,
       "o inicial vem da constante — uma string aqui divergiria no dia em que o padrão mudasse"
     );
-    assert.doesNotMatch(codigo, /ordem: 'nome_asc'/, "padrão escrito à mão");
+    assert.doesNotMatch(regras, /ordem: 'nome_asc'/, "padrão escrito à mão");
+    assert.equal(consultaDaLista({ ordem: '' }, { page: 1, limit: 20 }).ordem, ORDEM_CLIENTE_PADRAO);
+    assert.equal(consultaDaLista({ ordem: 'nome_desc' }, { page: 1, limit: 20 }).ordem, 'nome_desc');
+    assert.equal(ORDEM_OPTIONS.find((o) => o.value === '').label, ORDENS_CLIENTE[0].rotulo);
   });
 
   test("a ordenação vai para a API", () => {
@@ -129,17 +148,23 @@ describe("DEC-062 — a página volta para 1, e a ordem sobrevive à paginação
     assert.match(corpo, /setPage\(1\)/, "`definirFiltro` precisa reiniciar a página");
   });
 
+  // Reescrito na Fase 3.5 (DEC-121): a consulta é montada por
+  // `consultaDaLista`, e a tela a passa ao espelho e ao `fetcher`. O teste
+  // EXECUTA a função: os quatro campos saem no mesmo objeto.
   test("a página entra na consulta — a ordem sobrevive à navegação", () => {
     const codigo = semComentarios(ler(LISTA_CLIENTES));
-    const consulta = codigo.slice(codigo.indexOf("const consulta = {"));
-    const objeto = consulta.slice(0, consulta.indexOf("};"));
+    assert.match(codigo, /const consulta = consultaDaLista\(filtros, \{ page, limit: POR_PAGINA/);
+    assert.match(codigo, /params: consulta/);
+    assert.match(codigo, /getAllClients\(consulta\)/);
 
     // Os quatro juntos no MESMO objeto é o que faz trocar de página não perder
     // filtro nem ordem: a página é mais um campo da consulta, não um estado
     // paralelo.
-    for (const campo of ["page", "limit", "ordem", "situacao"]) {
-      assert.match(objeto, new RegExp(campo), `\`${campo}\` precisa estar na consulta`);
-    }
+    const consulta = consultaDaLista({ ordem: 'nome_desc', situacao: 'todos' }, { page: 4, limit: 20 });
+    assert.deepEqual(
+      { page: consulta.page, limit: consulta.limit, ordem: consulta.ordem, situacao: consulta.situacao },
+      { page: 4, limit: 20, ordem: 'nome_desc', situacao: 'todos' }
+    );
   });
 
   test("o paginador está montado, com o rótulo no singular", () => {

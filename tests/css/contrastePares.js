@@ -203,6 +203,13 @@ export const PARES = [
   { nome: "lista de processos: ajuda do período / balão", texto: "--color-text-secondary", fundo: "--color-surface", limite: TEXTO },
   { nome: "lista de processos: tipo de ação na célula / linha em hover", texto: "--color-text-primary", fundo: "--color-surface-raised", limite: TEXTO },
 
+  // O avatar do cliente (Fase 3.5, DEC-120): a inicial é TEXTO sobre cada um
+  // dos oito fundos fixos. Os fundos não mudam com o tema, então os dois modos
+  // medem o mesmo par — e o teste continua cobrando se alguém os redefinir.
+  ...[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+    { nome: `avatar: inicial / fundo ${n}`, texto: `--color-on-avatar-${n}`, fundo: `--color-avatar-${n}`, limite: TEXTO }
+  )),
+
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
   { nome: "borda de campo / --color-surface", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },

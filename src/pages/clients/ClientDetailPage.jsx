@@ -1,29 +1,59 @@
 import React from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Copy } from 'lucide-react';
 import clientService from '../../api/clientService';
-import { formatCPF, formatCNPJ, formatPhone, formatCEP, formatDate } from '../../utils/formatters';
-import { labelDe, SEXO_OPTIONS, ESTADO_CIVIL_OPTIONS } from '../../utils/enums';
+import { toast } from '../../utils/toast';
 import Loading from '../../components/common/Loading';
+import ActionMenu from '../../components/ui/ActionMenu';
+import Avatar from '../../components/ui/Avatar';
+import Modal from '../../components/ui/Modal';
 import OfflineNotice from '../../components/ui/OfflineNotice';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import ClientTabs from '../../components/clients/ClientTabs';
+import ClientProcessesTab from '../../components/clients/ClientProcessesTab';
+import ClientPortalTab from '../../components/clients/ClientPortalTab';
 import useCachedResource from '../../hooks/useCachedResource';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
-import AcessoPortalResumo from '../../components/clients/AcessoPortalResumo';
+import useDesativacaoCliente from '../../hooks/useDesativacaoCliente';
+import { blockReason } from '../../offline/offlineMessages';
+import {
+  abaDaUrl,
+  documentoDoCabecalho,
+  gruposDeDados,
+  nomeDoCliente,
+  tipoPorExtenso,
+} from './detalheCliente.js';
+import '../processes/ProcessDetailPage.css';
 import './ClientPage.css';
 import { usePublicarContexto } from '../../contexts/ContextoContext';
 
+// ═══════════════════════════════════════════════════════════════════════════
+// O DETALHE DO CLIENTE — Fase 3.5 (DEC-123), Figura 21
+//
+// O cabeçalho de identidade em balão (avatar grande, nome, "Pessoa física" ou
+// "Pessoa jurídica", o documento com o botão de copiar do número do processo,
+// o selo "Desativado" e o ⋮) e as abas em pílulas na URL: Detalhes (os dados
+// em balões por grupo, só leitura — editar continua no formulário), Processos
+// (apontamento 3 da banca) e Portal (a pendência da 2.5). A aba "Pagamentos"
+// da Figura 21 não entra: o financeiro é por processo (decisão 5).
+//
+// Os balões, o cabeçalho e o botão de copiar são os do detalhe do processo
+// (`ProcessDetailPage.css`, DEC-111): o mesmo desenho para o mesmo papel.
+// Nenhum `transform` nem `filter` nas folhas: os ⋮ abrem em portal (DEC-046).
+// ═══════════════════════════════════════════════════════════════════════════
 function ClientDetailPage() {
   const { id } = useParams();
   // Fase 2b (DEC-085): publica para a faixa de contexto o cliente.
   // DEC-109: o aviso de idade é o desta tela, do mesmo cliente.
   usePublicarContexto({ clienteId: id, avisoProprio: true });
   const navigate = useNavigate();
+  const location = useLocation();
   const online = useOnlineStatus();
+  const aba = abaDaUrl(location.search);
 
   // DEC-058: o detalhe que ela já abriu continua legível sem sinal, com a
-  // idade do dado no topo. A mensagem de erro continua vindo do helper —
-  // `useCachedResource` chama `getApiErrorMessage` por dentro, com este mesmo
-  // fallback, e o genérico só aparece quando o servidor não manda mensagem.
+  // idade do dado no topo. As abas Processos e Portal não têm espelho (ver os
+  // componentes): sem sinal, dizem que não sabem.
   const { data: cliente, loading, error, updatedAt, fromCache } = useCachedResource({
     resource: 'client',
     params: { id },
@@ -31,112 +61,113 @@ function ClientDetailPage() {
     fallbackError: 'Não foi possível carregar o cliente.'
   });
 
-  // Padrão de carregamento do projeto (varredura B.5 da Fase 4.3): era um
-  // <p> escrito à mão, sem o spinner que todas as outras telas usam.
+  // DEC-052/053 (DEC-122): o mesmo hook da lista. Desativado, o cliente não
+  // tem detalhe (o back responde 404): a tela vai para a lista.
+  const desativacao = useDesativacaoCliente({
+    aoConcluir: ({ acao, recusado }) => {
+      if (acao === 'desativar' && !recusado) navigate('/dashboard/clientes');
+    },
+  });
+
+  // Padrão de carregamento do projeto (varredura B.5 da Fase 4.3).
   if (loading) return <Loading />;
   if (error) return <p className="error-message">{error}</p>;
   if (!cliente) return <p className="error-message">Não foi possível carregar o cliente.</p>;
 
-  const {
-    tipoPessoa, nomeCompleto, cpf,
-    rg, dataNascimento, sexo, estadoCivil, profissao, nacionalidade,
-    razaoSocial, nomeFantasia, cnpj, representanteLegal,
-    email, telefone, endereco, observacoes
-  } = cliente;
+  const nome = nomeDoCliente(cliente);
+  const documento = documentoDoCabecalho(cliente);
+  const desativado = cliente.ativo === false;
+  const motivoSemSinal = blockReason(null, { online });
 
-  const temRepresentante = Boolean(
-    representanteLegal && (representanteLegal.nome || representanteLegal.cpf || representanteLegal.cargo)
-  );
+  // A área de transferência pode estar bloqueada; o documento continua na
+  // tela, selecionável de uma vez (`user-select: all`), e a mensagem diz isso.
+  const copiarDocumento = async () => {
+    try {
+      await navigator.clipboard.writeText(documento.valor);
+      toast.success(`${documento.rotulo} copiado.`);
+    } catch {
+      toast.error(`Não foi possível copiar. Selecione o ${documento.rotulo} e copie à mão.`);
+    }
+  };
 
   return (
-    <div className="cliente-page-container">
-      <div className="page-header">
-        <h1 className="page-title">Detalhe do Cliente</h1>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {/* Sem sinal, "Editar" continua visível e anunciado como
-              desabilitado (DEC-053: `aria-disabled`, não `disabled` — o motivo
-              precisa ser alcançável por quem depende de leitor de tela). */}
-          {online ? (
-            <Link to={`/dashboard/clientes/editar/${id}`} className="btn-action btn-edit">Editar</Link>
-          ) : (
-            <button
-              type="button"
-              className="btn-action btn-edit"
-              aria-disabled="true"
-              title={undefined}
-              onClick={(e) => e.preventDefault()}
-            >
-              Editar
-            </button>
-          )}
-          <button onClick={() => navigate('/dashboard/clientes')} className="btn-action btn-view">Voltar</button>
-        </div>
-      </div>
-
+    <div className="page-container processo-detalhe">
       {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
       {!online && <OfflineWriteReason />}
 
-      <div className="detail-section">
-        <h3>{tipoPessoa === 'fisica' ? 'Pessoa Física' : 'Pessoa Jurídica'}</h3>
-        {tipoPessoa === 'fisica' ? (
-          <>
-            <p><strong>Nome Completo:</strong> {nomeCompleto || '—'}</p>
-            <p><strong>CPF:</strong> {formatCPF(cpf)}</p>
-            <p><strong>RG:</strong> {rg || '—'}</p>
-            <p><strong>Data de Nascimento:</strong> {formatDate(dataNascimento)}</p>
-            <p><strong>Sexo:</strong> {labelDe(SEXO_OPTIONS, sexo)}</p>
-            <p><strong>Estado Civil:</strong> {labelDe(ESTADO_CIVIL_OPTIONS, estadoCivil)}</p>
-            <p><strong>Profissão:</strong> {profissao || '—'}</p>
-            <p><strong>Nacionalidade:</strong> {nacionalidade || '—'}</p>
-          </>
-        ) : (
-          <>
-            <p><strong>Razão Social:</strong> {razaoSocial || '—'}</p>
-            <p><strong>Nome Fantasia:</strong> {nomeFantasia || '—'}</p>
-            <p><strong>CNPJ:</strong> {formatCNPJ(cnpj)}</p>
-          </>
-        )}
-      </div>
+      {/* ── O cabeçalho de identidade (DEC-123) ─────────────────────────── */}
+      <section className="processo-balao processo-cabecalho" aria-labelledby="cliente-titulo">
+        <div className="processo-cabecalho__topo">
+          <div className="processo-cabecalho__identidade cliente-cabecalho__identidade">
+            <Avatar id={cliente._id} nome={nome} tamanho="grande" />
+            <div className="processo-cabecalho__textos">
+              <h1 id="cliente-titulo" className="processo-cabecalho__titulo">
+                {nome}
+                {desativado && <span className="tag-desativado processo-cabecalho__selo">Desativado</span>}
+              </h1>
+              <p className="processo-cabecalho__subtitulo">{tipoPorExtenso(cliente)}</p>
+              {documento && (
+                <p className="processo-cabecalho__numero">
+                  <span className="processo-cabecalho__numero-valor">
+                    {documento.rotulo} {documento.valor}
+                  </span>
+                  <button
+                    type="button"
+                    className="processo-cabecalho__copiar"
+                    aria-label={`Copiar o ${documento.rotulo}`}
+                    title={`Copiar o ${documento.rotulo}`}
+                    onClick={copiarDocumento}
+                  >
+                    <Copy size={16} aria-hidden="true" />
+                  </button>
+                </p>
+              )}
+            </div>
+          </div>
 
-      {tipoPessoa === 'juridica' && temRepresentante && (
-        <div className="detail-section">
-          <h3>Representante Legal</h3>
-          <p><strong>Nome:</strong> {representanteLegal.nome || '—'}</p>
-          <p><strong>CPF:</strong> {formatCPF(representanteLegal.cpf)}</p>
-          <p><strong>Cargo:</strong> {representanteLegal.cargo || '—'}</p>
+          <ActionMenu
+            rotulo={`Ações do cliente ${nome}`}
+            itens={
+              cliente.ativo === false
+                ? [{ rotulo: 'Reativar', motivo: motivoSemSinal, onSelecionar: () => desativacao.abrir(id, 'reativar') }]
+                : [
+                    { rotulo: 'Editar', to: `/dashboard/clientes/editar/${id}`, motivo: motivoSemSinal },
+                    { rotulo: 'Desativar', destrutivo: true, motivo: motivoSemSinal, onSelecionar: () => desativacao.abrir(id, 'desativar') },
+                  ]
+            }
+          />
+        </div>
+
+        <ClientTabs aba={aba} />
+      </section>
+
+      {aba === 'detalhes' && (
+        <div className="cliente-grade">
+          {gruposDeDados(cliente).map((grupo) => (
+            <section
+              key={grupo.id}
+              className={`processo-balao${grupo.largo ? ' cliente-grade__largo' : ''}`}
+              aria-labelledby={`grupo-${grupo.id}`}
+            >
+              <h2 id={`grupo-${grupo.id}`} className="processo-balao__titulo">{grupo.titulo}</h2>
+              <dl className="processo-dados cliente-dados">
+                {grupo.itens.map(([rotulo, valor]) => (
+                  <div key={rotulo} className="processo-dados__item">
+                    <dt>{rotulo}</dt>
+                    <dd>{valor}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          ))}
         </div>
       )}
 
-      <div className="detail-section">
-        <h3>Contato</h3>
-        <p><strong>Email:</strong> {email || '—'}</p>
-        <p><strong>Telefone:</strong> {formatPhone(telefone)}</p>
-      </div>
+      {aba === 'processos' && <ClientProcessesTab clienteId={id} online={online} />}
 
-      {endereco && Object.values(endereco).some(Boolean) && (
-        <div className="detail-section">
-          <h3>Endereço</h3>
-          {endereco.logradouro && <p><strong>Logradouro:</strong> {endereco.logradouro}{endereco.numero ? `, nº ${endereco.numero}` : ''}</p>}
-          {endereco.complemento && <p><strong>Complemento:</strong> {endereco.complemento}</p>}
-          {endereco.bairro && <p><strong>Bairro:</strong> {endereco.bairro}</p>}
-          {(endereco.cidade || endereco.estado) && (
-            <p><strong>Cidade/Estado:</strong> {[endereco.cidade, endereco.estado].filter(Boolean).join('/')}</p>
-          )}
-          {endereco.cep && <p><strong>CEP:</strong> {formatCEP(endereco.cep)}</p>}
-          {endereco.pais && <p><strong>País:</strong> {endereco.pais}</p>}
-        </div>
-      )}
+      {aba === 'portal' && <ClientPortalTab clienteId={id} nomeCliente={nome} online={online} />}
 
-      {/* Fase 2.5 (DEC-097): o código pessoal, a senha e "N de M processos
-          liberados". Só com sinal — ver o componente. */}
-      <AcessoPortalResumo clienteId={id} />
-
-      {observacoes && (
-        <div className="detail-section">
-          <h3>Observações</h3>
-          <p>{observacoes}</p>
-        </div>
-      )}
+      <Modal {...desativacao.propsDoModal} />
     </div>
   );
 }

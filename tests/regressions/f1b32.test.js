@@ -298,7 +298,10 @@ describe("F-1b.3.2 — DEC-047: o ⋮ em toda listagem", () => {
     const ESPERADO = {
       // DEC-052: "Excluir" virou "Desativar", e "Reativar" nasceu ao lado —
       // as duas são mutuamente exclusivas, e a que aparece depende de `ativo`.
-      "src/pages/clients/ClientListPage.jsx": ["Ver", "Editar", "Desativar", "Reativar"],
+      // Fase 3.5 (DEC-121): "Ver" saiu do menu da lista de clientes pelo mesmo
+      // caminho do "Gerenciar" na 3.4 — virou o link do nome e a linha
+      // inteira. A trava confere as duas pontas logo abaixo.
+      "src/pages/clients/ClientListPage.jsx": ["Editar", "Desativar", "Reativar"],
       // Fase 3.4 (DEC-116): "Gerenciar" (o caminho do detalhe) saiu do menu,
       // e não se perdeu — virou o link do título e a linha inteira, como nas
       // listas da 3.2. No lugar entrou "Editar". A trava confere as duas
@@ -320,6 +323,12 @@ describe("F-1b.3.2 — DEC-047: o ⋮ em toda listagem", () => {
     const processos = semComentarios(ler("src/pages/processes/ProcessListPage.jsx"));
     assert.match(processos, /<Link to=\{destino\} className="link-interno">\{p\.titulo\}<\/Link>/);
     assert.match(processos, /onClick=\{clicarNaLinha\(destino\)\}/);
+    // E o do cliente, a partir da lista de clientes.
+    const clientes = semComentarios(ler("src/pages/clients/ClientListPage.jsx"));
+    assert.match(clientes, /<Link to=\{destino\} className="link-interno">\{nome\}<\/Link>/);
+    assert.match(clientes, /onClick=\{clicarNaLinha\(destino\)\}/);
+    const regras = semComentarios(ler("src/pages/clients/listaClientes.js"));
+    assert.match(regras, /\/dashboard\/clientes\/detalhe\/\$\{cliente\._id\}/);
   });
 
   test("o estado `baixando` sobreviveu, e desabilita o item", () => {

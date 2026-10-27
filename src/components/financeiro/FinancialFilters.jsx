@@ -51,6 +51,9 @@ function FinancialFilters({
   // sempre — as listas financeiras não mudam.
   presets = Object.values(PRESETS_PERIODO),
   ajudaDoPeriodo = null,
+  // Fase 3.5 (DEC-121): a lista de clientes não tem período — cliente não é
+  // lançamento datado. Sem a prop, a barra continua com o período.
+  semPeriodo = false,
   children
 }) {
   // Um intervalo da URL que bate com um preset que esta barra não oferece
@@ -100,6 +103,7 @@ function FinancialFilters({
 
         {children}
 
+        {!semPeriodo && (
         <select
           value={presetMostrado}
           onChange={(e) => aplicarPreset(e.target.value)}
@@ -109,11 +113,12 @@ function FinancialFilters({
             <option key={p} value={p}>{ROTULO_PRESET[p]}</option>
           ))}
         </select>
+        )}
 
         {/* As duas datas só aparecem no modo personalizado. Nos presets elas
             seriam dois campos preenchidos que não se pode editar — e um campo
             que parece editável e não é ensina a pessoa a desconfiar da tela. */}
-        {personalizado && (
+        {!semPeriodo && personalizado && (
           <>
             <input
               type="date"
@@ -131,7 +136,7 @@ function FinancialFilters({
         )}
       </div>
 
-      {ajudaDoPeriodo && presetMostrado !== PRESETS_PERIODO.TODOS && (
+      {!semPeriodo && ajudaDoPeriodo && presetMostrado !== PRESETS_PERIODO.TODOS && (
         <p className="filtros-financeiros__ajuda">{ajudaDoPeriodo}</p>
       )}
 

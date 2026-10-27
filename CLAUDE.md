@@ -5116,6 +5116,121 @@ os textos e as props do `<Modal>`. A lista refaz a consulta depois de agir; o
 
 ---
 
+## DEC-119 (frontend) — o consumo dos filtros de cliente (Fase 3.5)
+
+> O contrato é a DEC-119 do back. `clientService.getAllClients` repassa
+> `tipoPessoa` e `portal`; `processService.listProcesses`, `clienteId`.
+
+## DEC-120 (frontend) — o avatar do cliente (Fase 3.5)
+
+`components/ui/Avatar.jsx` + `avatar.js`: a inicial (primeira letra, com
+acento, maiúscula; "?" sem letra) num círculo, **decorativo** (`aria-hidden`:
+o nome está escrito ao lado), `pequeno` (32 px, lista) e `grande` (64 px,
+cabeçalho do detalhe). A cor é **determinística pelo `_id`** (hash com peso de
+posição, 1 a 8), não pelo nome.
+
+As 12 cores da Raniele falhavam com a inicial branca (até 1,9:1). No lugar,
+**oito fundos fixos**, `--color-avatar-1..8` com `--color-on-avatar-1..8`, só
+no `:root` (iguais nos dois modos, como a marca) e com par em
+`contrastePares.js`:
+
+| # | fundo | inicial | contraste |
+|---|---|---|---|
+| 1 | `#174034` | `#FFFFFF` | 11,54:1 |
+| 2 | `#1F5C7A` | `#FFFFFF` | 7,32:1 |
+| 3 | `#6B3F8F` | `#FFFFFF` | 7,68:1 |
+| 4 | `#8A3B2E` | `#FFFFFF` | 7,65:1 |
+| 5 | `#4E5D23` | `#FFFFFF` | 7,21:1 |
+| 6 | `#8CC7AC` | `#01261F` | 8,38:1 |
+| 7 | `#E3B873` | `#01261F` | 8,76:1 |
+| 8 | `#EDE3CF` | `#01261F` | 12,70:1 |
+
+O contorno de 1 px (`--color-border`) desenha o círculo do bege no claro.
+
+## DEC-121 (frontend) — a lista de clientes no padrão da Figura 19 (Fase 3.5)
+
+- O molde da 3.4: `CabecalhoDeLista`, `FinancialFilters` com `semBusca`,
+  `pilulas` e a prop nova **`semPeriodo`** (sem ela a barra é a de sempre),
+  `useListFilters` com `naUrl`, linha clicável, ações fixas, paginador,
+  espelho offline. **Sem seleção em massa.**
+- **Colunas:** nome (com o avatar), tipo, CPF/CNPJ formatado, e-mail, telefone
+  formatado, ações. O endereço foi para o detalhe. A 1280 px a tabela cabe
+  (1.192 de 1.192); a 768 e a 360 rola dentro do balão, com o ⋮ fixo.
+- **Filtros na URL**, regras em `pages/clients/listaClientes.js`: `tipoPessoa`
+  (`PF`/`PJ`), `portal` (com acesso, sem acesso, com processo não liberado),
+  `situacao` ("" = só ativos) e `ordem` ("" = A–Z, DEC-062; a ordem não entra
+  em "Filtros aplicados").
+- **`situacao` aqui é a própria chave**: a lista não tem `status`, que
+  `filtrosNaUrl` escreveria como `?situacao=`. Há teste.
+- **Desativado:** esmaecido, com a etiqueta, sem link e sem linha clicável (o
+  back responde 404 ao detalhe de inativo); o ⋮ tem "Reativar".
+- ⋮ do ativo: **Editar** e **Desativar**. "Ver" saiu do menu: virou o link do
+  nome e a linha (como o "Gerenciar" na 3.4).
+
+## DEC-122 (frontend) — desativar e reativar o cliente num hook (Fase 3.5)
+
+`hooks/useDesativacaoCliente.js`, usado pela lista e pelo ⋮ do detalhe. É um
+**irmão** de `useDesativacaoProcesso`, e não uma generalização: as duas
+desativações fazem perguntas diferentes (o processo tem prévia de cascata e
+impedimento ao REATIVAR; o cliente não cascateia e tem impedimento ao
+DESATIVAR). Um hook só teria um `if (tipo)` em cada passo.
+
+- **A prévia do cliente** lê `GET /processes?clienteId=&situacao=todos` no
+  instante do clique (a contagem do 409). Havendo processo, o modal não abre:
+  toast com a frase de `motivoDeNaoDesativarCliente` (nomeia os processos, o
+  papel quando não é o principal, e "desvincule-o… não é preciso desativar o
+  processo") e a tela refeita. O 409 continua a autoridade.
+- Reativar abre direto, com a frase de que os processos NÃO voltam.
+- As travas `dec052` e `dec053` cobram o hook e os dois usos.
+
+## DEC-123 (frontend) — o detalhe do cliente com abas (Fase 3.5)
+
+- **Cabeçalho de identidade** (o balão do processo, DEC-111): avatar grande,
+  nome, "Pessoa física/jurídica", documento formatado com o botão de copiar do
+  número do processo, selo "Desativado", ⋮ (Editar, Desativar/Reativar).
+- **Abas em pílulas** (`ClientTabs`, a folha de `ProcessTabs`), **na URL**
+  (`?aba=detalhes|processos|portal`, "Detalhes" sem parâmetro); cada troca é
+  uma entrada do histórico. **A aba "Pagamentos" da Figura 21 não entra:** o
+  financeiro é por processo, e a ficha do processo já o mostra.
+- **Detalhes:** balões por grupo (`gruposDeDados`): Identificação, Contato,
+  Endereço, Dados profissionais (PF), Representante legal (PJ), Observações;
+  grade de 3 colunas (2 a 768, 1 no celular). Só leitura.
+- **Processos:** `GET /processes?clienteId=`, tabela compacta (Nº, título,
+  papel com o selo "Principal", fase, status), linha para o processo e o link
+  "Ver na lista de processos".
+- **Portal:** `AcessoPortalResumo` (agora recebe o `acesso`), a lista dos
+  processos no visual dos participantes do detalhe do processo, cada um com o
+  `LiberacaoPortal` e o último acesso, a entrega (`AccessDelivery`) no ⋮ da
+  linha e a revogação (`RevogacaoPortal`, extraída do formulário, uma só).
+  Sem senha: "Sem acesso ao portal" com o link para definir.
+- **As abas Processos e Portal não têm espelho**: o detalhe já serve o
+  cliente do espelho com o aviso dele (DEC-109), e um segundo espelho daria um
+  segundo aviso; o portal é metade de credencial. Sem sinal, "indisponível sem
+  conexão" — nunca "nenhum processo" ou "sem acesso".
+
+## DEC-124 (frontend) — `?clienteId=` na lista de processos (Fase 3.5)
+
+`hooks/useClienteFiltrado.js` (o irmão de `useProcessoFiltrado`): lê o
+cliente pela chave do detalhe (`resource: 'client'`), publica `{ clienteId,
+avisoProprio }` para a faixa, e o `ProcessFilterChip` ganhou `alvo`
+("Filtro: só este cliente ×"; o padrão continua "processo"). O "Limpar
+filtros" tira o `clienteId` junto (`extrasNaLimpeza`). `paiDaRota` leva a
+lista filtrada de volta a `…/clientes/detalhe/:id?aba=processos`. Quando só o
+cliente veio do espelho, a lista mostra o aviso com a hora dele.
+
+## DEC-125 (frontend) — o formulário de cliente em seções (Fase 3.5)
+
+Identificação (com o tipo de pessoa), Contato, Endereço, Dados profissionais
+(PF), Representante legal (PJ), Acesso ao portal e Observações, no padrão do
+formulário de processo da 3.4. O payload saiu para `utils/clientePayload.js`
+(`montarPayloadCliente`), **sem mudar regra**, e a suíte cria PF e PJ e troca o
+tipo sem perder nada. Mantidos: DEC-057, troca PF↔PJ guardada, CEP, senha
+provisória, revogação (agora o componente), erro por campo. Criar e editar
+cliente continuam **fora da fila** (F-5b): sem sinal, o Salvar é anunciado
+como desabilitado, o clique é barrado e o motivo aparece.
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:

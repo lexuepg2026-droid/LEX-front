@@ -1,323 +1,291 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import clientService from '../../api/clientService';
-import PageHeader from '../../components/ui/PageHeader';
 import ActionMenu from '../../components/ui/ActionMenu';
+import Avatar from '../../components/ui/Avatar';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import Paginador from '../../components/ui/Paginador';
+import CabecalhoDeLista from '../../components/financeiro/CabecalhoDeLista';
+import FinancialFilters from '../../components/financeiro/FinancialFilters';
+import useLinhaClicavel from '../../components/financeiro/useLinhaClicavel';
 import useListFilters from '../../hooks/useListFilters';
-import { ORDENS_CLIENTE, ORDEM_CLIENTE_PADRAO } from '../../utils/ordemCliente';
-import { toast } from '../../utils/toast';
+import {
+  FILTROS_DA_LISTA,
+  ORDEM_OPTIONS,
+  PORTAL_OPTIONS,
+  SITUACAO_OPTIONS,
+  TIPO_PESSOA_OPTIONS_FILTRO,
+  consultaDaLista,
+  descricaoDoRecorteDeClientes,
+  destinoDaLinha,
+  documentoNaLista,
+  nomeDoCliente,
+  telefoneNaLista,
+  temRecorte,
+  tipoDoCliente,
+} from './listaClientes.js';
 import Loading from '../../components/common/Loading';
 import OfflineNotice from '../../components/ui/OfflineNotice';
 import useCachedResource from '../../hooks/useCachedResource';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
-import { MENSAGEM_ESCRITA_OFFLINE } from '../../offline/offlineMessages';
-import { getApiErrorMessage } from '../../utils/apiError';
-import {
-  mensagemDesativarCliente,
-  mensagemReativarCliente
-} from '../../utils/activationMessages';
+import { blockReason, MENSAGEM_ESCRITA_OFFLINE } from '../../offline/offlineMessages';
+import useDesativacaoCliente from '../../hooks/useDesativacaoCliente';
 import '../../styles/modules.css';
-import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
+import './ClientPage.css';
 
-// 20 por página, o mesmo das listagens financeiras. Não é número escolhido
-// aqui: é o que `POR_PAGINA` já significa nas outras telas, e um valor
-// diferente faria a advogada aprender dois ritmos de navegação no mesmo
-// sistema.
+// 20 por página, o mesmo das outras listas: um valor diferente faria a
+// advogada aprender dois ritmos de navegação no mesmo sistema.
 const POR_PAGINA = 20;
 
+// ═══════════════════════════════════════════════════════════════════════════
+// A LISTA DE CLIENTES — Fase 3.5 (DEC-121), no padrão da Figura 19
+//
+// O balão das listas da 3.2/3.4: `CabecalhoDeLista` com o total, a busca em
+// pílula e o "+"; os filtros em pílulas, todos na URL (DEC-103); a linha
+// inteira abre o detalhe; o ⋮ fixo à direita (DEC-107); a paginação; o
+// espelho offline com o aviso de idade (DEC-058).
+//
+// Colunas: nome (com o avatar), tipo, CPF/CNPJ, e-mail, telefone e ações. O
+// endereço saiu: está no detalhe. **Sem seleção em massa** (a da Raniele não
+// entra, decisão 1 da fase).
+//
+// ── A busca não perde o foco (F-1a.1) ────────────────────────────────────
+// Nada aqui troca a árvore pelo `<Loading/>`: a busca mora no cabeçalho, que
+// nunca desmonta, e o indicador fica ABAIXO dos controles, só na PRIMEIRA
+// carga. A recarga por filtro mantém a tabela, esmaecida (DEC-102). **Não se
+// corrige com `autoFocus` nem `.focus()` em efeito.**
+// ═══════════════════════════════════════════════════════════════════════════
 function ClienteListPage() {
-  // DEC-052: um modal só para as duas ações — ver a nota em `ProcessListPage`.
-  const [ativacaoModal, setAtivacaoModal] = useState({ open: false, id: null, acao: null });
   const online = useOnlineStatus();
+  const clicarNaLinha = useLinhaClicavel();
 
-  // ── A-1: o estado dos filtros passou a vir do hook (F-1b.3) ─────────────
-  //
-  // Esta tela mantinha `busca`, `situacao` e o debounce em `useState` próprio,
-  // porque não tinha página nenhuma para reiniciar. Com a ordenação e o
-  // paginador, ela passa a ter — e a REGRA 1 do hook (mudar filtro volta para
-  // a página 1) é exatamente o defeito que o passo 175 existe para pegar.
-  //
-  // Escrever o `setPage(1)` à mão aqui seria a quarta cópia da regra, e o
-  // comentário do próprio hook diz por que isso dá errado: a tela escrita por
-  // último copia a anterior e esquece.
-  //
-  // `honorarioId`, `preset`, `de` e `ate` vêm no estado do hook e ficam
-  // INERTES nesta tela: são recorte financeiro, e cliente não tem período. O
-  // hook é de listagem, não do módulo financeiro.
   const {
-    filtros, buscaDebounced, page, setPage, definirFiltro
-  } = useListFilters({ situacao: 'ativos', ordem: ORDEM_CLIENTE_PADRAO });
+    filtros, buscaDebounced, page, setPage, definirFiltro, aplicarPreset, limpar
+  } = useListFilters(FILTROS_DA_LISTA, { naUrl: true });
 
-  // ── DEC-058: a listagem tem espelho local, escopado por usuário (F-5a) ──
-  //
-  // Com sinal, nada muda: busca no servidor e exibe. Sem sinal, exibe o que
-  // ESTA advogada já tinha consultado, com o aviso de idade no topo — e nunca
-  // o que outra pessoa consultou neste mesmo navegador, porque a chave do que
-  // se guarda carrega o id do usuário (`offline/cacheKey.js`).
-  //
-  // Os parâmetros da consulta são os MESMOS do `fetcher`: é o que faz a chave
-  // do cache distinguir "ativos" de "todos" e cada busca da anterior.
-  //
-  // `page` e `ordem` entram na consulta, e por isso entram na CHAVE do cache:
-  // cada página e cada sentido têm espelho próprio, e voltar para uma página
-  // já vista funciona sem sinal.
-  const consulta = {
-    page,
-    limit: POR_PAGINA,
-    busca: buscaDebounced || undefined,
-    situacao: filtros.situacao,
-    ordem: filtros.ordem
-  };
-  const { data, loading, error, updatedAt, fromCache, reload } = useCachedResource({
+  // DEC-058 (F-5a): a mesma consulta, com espelho local escopado por usuário.
+  // Os parâmetros são os MESMOS do `fetcher` — é o que faz a chave do espelho
+  // distinguir cada filtro, cada página e cada ordem. Guarda-se o ENVELOPE:
+  // sem o `total`, a tela sem sinal mostraria 20 clientes sem dizer que há 242.
+  const consulta = consultaDaLista(filtros, { page, limit: POR_PAGINA, busca: buscaDebounced || undefined });
+  const { data, loading: carregando, error, updatedAt, fromCache, reload } = useCachedResource({
     resource: 'clients',
     params: consulta,
-    // Guarda-se o ENVELOPE inteiro, e não só o array: é ele que traz o
-    // `total`, e sem o total o paginador sumiria sem nada dizer que há mais
-    // clientes. Mesma razão escrita em `InstallmentListPage`.
     fetcher: () => clientService.getAllClients(consulta).then((res) => res.data),
     fallbackError: 'Falha ao buscar clientes.'
   });
   const clientes = data?.data ?? (Array.isArray(data) ? data : []);
   const total = typeof data?.total === 'number' ? data.total : 0;
+  const totalConhecido = typeof data?.total === 'number' ? data.total : null;
+  const loading = carregando && !data;
 
-  // O cliente NÃO cascateia — `deleteClient` só aceita desativar quem não
-  // participa de processo ativo —, então não há contagem a buscar antes de
-  // abrir o modal. A frase é fixa, e a da reativação carrega o aviso que
-  // importa: os processos dele não voltam.
-  const abrirAtivacao = (id, acao) => setAtivacaoModal({ open: true, id, acao });
+  // DEC-052/053 (DEC-122): a prévia, a recusa e as frases moram no hook, o
+  // mesmo do ⋮ do detalhe. Depois de agir, a lista refaz a consulta: o
+  // registro pode ou não continuar visível, conforme o filtro de situação.
+  const desativacao = useDesativacaoCliente({ aoConcluir: reload });
 
-  const fecharAtivacao = () => setAtivacaoModal({ open: false, id: null, acao: null });
+  // A ordem não recorta (DEC-062): fica fora de "Filtros aplicados".
+  const temFiltro = temRecorte(filtros, buscaDebounced);
+  const recorte = descricaoDoRecorteDeClientes({ filtros, busca: buscaDebounced });
+  const motivoSemSinal = blockReason(null, { online });
 
-  const confirmarAtivacao = async () => {
-    const { id, acao } = ativacaoModal;
-    fecharAtivacao();
-    try {
-      if (acao === 'desativar') {
-        await clientService.deleteClient(id);
-        toast.success('Cliente desativado. Você pode reativá-lo quando quiser.');
-      } else {
-        await clientService.reactivateClient(id);
-        toast.success('Cliente reativado. Os processos dele continuam como estavam.');
-      }
-      // Refaz a busca: o cliente pode ou não continuar visível conforme o
-      // filtro de situação, e adivinhar isso aqui duplicaria a regra do filtro.
-      reload();
-    } catch (err) {
-      if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(
-        err,
-        acao === 'desativar' ? 'Erro ao desativar cliente.' : 'Erro ao reativar cliente.'
-      ));
-    }
-  };
-
-  const formatEndereco = (endereco) => {
-    if (!endereco?.logradouro) return '—';
-    return [
-      endereco.logradouro,
-      endereco.numero ? `nº ${endereco.numero}` : null,
-      endereco.bairro,
-      [endereco.cidade, endereco.estado].filter(Boolean).join('/'),
-    ].filter(Boolean).join(', ');
-  };
-
-  // ── O `return <Loading/>` ANTECIPADO saiu daqui (F-1a.1) ─────────────────
-  //
-  // Era `if (loading) return <Loading />;`, e era a causa da perda de foco na
-  // busca. Cada tecla digitada refazia a consulta (com debounce), o efeito
-  // punha `loading` em `true`, e o return antecipado trocava a ÁRVORE INTEIRA
-  // por `<Loading/>` — o React desmontava o `<input>` e montava outro quando a
-  // resposta chegava. Foco perdido, cursor no começo, e a advogada clicando de
-  // novo no campo a cada palavra.
-  //
-  // A correção é estrutural: o indicador de carregamento passa a viver ABAIXO
-  // dos controles, dentro do JSX, e o input nunca desmonta. É o padrão que
-  // `SecaoListPage` já usava — esta tela é que estava fora dele.
-  //
-  // **Não se corrige com `autoFocus` nem `.focus()` em efeito**: os dois
-  // tratam o sintoma e roubam o foco de quem está navegando por teclado, que é
-  // um defeito pior que o original.
   return (
     <div className="module-container">
-      {/* Sem sinal o botão CONTINUA na tela, atenuado e com o motivo ao lado
-          (DEC-053, generalizada na F-5a): botão ausente faz procurar, botão
-          desabilitado com explicação ensina. */}
-      <PageHeader
-        title="Clientes Registrados"
-        actionLabel="Novo Cliente"
-        actionTo="/dashboard/clientes/novo"
-        actionMotivo={online ? undefined : MENSAGEM_ESCRITA_OFFLINE}
-      />
-      {/* O aviso de idade fica ACIMA do erro e dos filtros: a primeira coisa a
-          saber sobre esta tela é de quando é o que ela mostra. */}
-      {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
-      {error && <p className="error-message">{error}</p>}
-
-      <div className="filter-bar">
-        <input
-          type="text"
-          placeholder="Buscar por nome, razão social ou email..."
-          value={filtros.busca}
-          onChange={e => definirFiltro('busca', e.target.value)}
-          maxLength={80}
+      <section className="lista-balao" aria-labelledby="titulo-lista-clientes">
+        <CabecalhoDeLista
+          id="titulo-lista-clientes"
+          titulo="Clientes"
+          total={totalConhecido}
+          busca={filtros.busca}
+          onBusca={(v) => definirFiltro('busca', v)}
+          placeholderBusca="Buscar por nome, razão social, CPF/CNPJ ou e-mail…"
+          rotuloBusca="Buscar clientes"
+          novoRotulo="Novo cliente"
+          novoDestino="/dashboard/clientes/novo"
+          novoMotivo={online ? null : MENSAGEM_ESCRITA_OFFLINE}
         />
-        {/* DEC-052 — é por este seletor que um cliente desativado volta a ser
-            alcançável. Sem ele, um cliente desativado por engano ficava
-            desativado para sempre. */}
-        <select
-          value={filtros.situacao}
-          onChange={e => definirFiltro('situacao', e.target.value)}
-          aria-label="Situação do registro"
-        >
-          <option value="ativos">Somente ativos</option>
-          <option value="inativos">Somente desativados</option>
-          <option value="todos">Ativos e desativados</option>
-        </select>
-        {/* DEC-062 — o padrão é A–Z, e `definirFiltro` é o que devolve a
-            lista para a página 1 ao trocar o sentido. Sem isso, quem está na
-            página 4 e inverte a ordem continua na página 4 de uma lista que
-            acabou de virar do avesso: os nomes mudam, a posição não, e não há
-            nada na tela explicando o que aconteceu.
 
-            A ordenação NÃO entra em "Filtros aplicados" — ordenar não recorta
-            o conjunto, e anunciá-la ali faria a advogada procurar por que a
-            lista está curta quando ela não está. */}
-        <select
-          value={filtros.ordem}
-          onChange={e => definirFiltro('ordem', e.target.value)}
-          aria-label="Ordenação da lista"
-        >
-          {ORDENS_CLIENTE.map((o) => (
-            <option key={o.valor} value={o.valor}>{o.rotulo}</option>
-          ))}
-        </select>
-      </div>
+        {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
+        {error && <p className="error-message">{error}</p>}
 
-      {loading ? (
-        <Loading />
-      ) : clientes.length === 0 ? (
-        <EmptyState title="Nenhum cliente encontrado." description="Tente ajustar os filtros ou cadastre um novo cliente." />
-      ) : (
-        <div className="table-wrapper">
-          {/* Larguras estáveis (Fase 4.3). Nome, e-mail e endereço são texto
-              livre sem teto: sem `<colgroup>` eles decidem a largura da tabela
-              e empurram a coluna de ações para fora da tela. */}
-          <table className="data-table data-table--fixed">
-            <colgroup>
-              <col />
-              <col className="col-md" />
-              <col className="col-xs" />
-              <col />
-              <col className="col-sm" />
-              <col />
-              <col className="col-acoes-menu" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>Nome / Razão Social</th>
-                <th>CPF / CNPJ</th>
-                <th>Tipo</th>
-                <th>Email</th>
-                <th>Telefone</th>
-                <th>Endereço</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clientes.map(cliente => {
-                const nome = cliente.tipoPessoa === 'fisica' ? cliente.nomeCompleto : cliente.razaoSocial;
-                const endereco = formatEndereco(cliente.endereco);
-                return (
-                <tr key={cliente._id} className={cliente.ativo === false ? 'linha-desativada' : undefined}>
-                  <td className="cell-truncate" title={nome}>
-                    {cliente.ativo === false && <span className="tag-desativado">Desativado</span>}
-                    {nome}
-                  </td>
-                  <td>{cliente.tipoPessoa === 'fisica' ? cliente.cpf : cliente.cnpj}</td>
-                  <td>{cliente.tipoPessoa === 'fisica' ? 'Física' : 'Jurídica'}</td>
-                  <td className="cell-truncate" title={cliente.email || undefined}>{cliente.email || '—'}</td>
-                  <td>{cliente.telefone || '—'}</td>
-                  <td className="cell-truncate" title={endereco}>{endereco}</td>
-                  {/* DEC-047: a coluna de ações é o menu ⋮, aqui como em toda
-                      listagem. As três ações são as mesmas de antes — nenhuma
-                      foi perdida na migração —, agora com largura de UM botão.
-                      A destrutiva por último e em vermelho — hoje é
-                      "Desativar", não mais "Excluir" (ver a nota abaixo). */}
-                  <td className="actions-cell actions-cell--menu">
-                    <ActionMenu
-                      rotulo={`Ações de ${cliente.nome}`}
-                      itens={[
-                        { rotulo: 'Ver', to: `/dashboard/clientes/detalhe/${cliente._id}` },
-                        /* Sem sinal, tudo que leva a gravar fica desabilitado
-                           COM o motivo. "Editar" entra na conta: o formulário
-                           existe para salvar, e abri-lo para recusar o envio no
-                           fim perderia o que foi digitado (Parte 4 da F-5a). */
-                        {
-                          rotulo: 'Editar',
-                          to: `/dashboard/clientes/editar/${cliente._id}`,
-                          motivo: online ? undefined : MENSAGEM_ESCRITA_OFFLINE
-                        },
-                        /* DEC-052: as duas ações são mutuamente exclusivas — a
-                           que aparece é a que o estado do registro permite.
-                           "Excluir" virou "Desativar": sempre foi soft delete,
-                           e agora que a volta existe o nome antigo mente. */
-                        cliente.ativo === false
-                          ? {
-                              rotulo: 'Reativar',
-                              onSelecionar: () => abrirAtivacao(cliente._id, 'reativar'),
-                              motivo: online ? undefined : MENSAGEM_ESCRITA_OFFLINE
-                            }
-                          : {
-                              rotulo: 'Desativar',
-                              destrutivo: true,
-                              onSelecionar: () => abrirAtivacao(cliente._id, 'desativar'),
-                              motivo: online ? undefined : MENSAGEM_ESCRITA_OFFLINE
-                            }
-                      ]}
-                    />
-                  </td>
+        <FinancialFilters
+          filtros={filtros}
+          definirFiltro={definirFiltro}
+          aplicarPreset={aplicarPreset}
+          limpar={limpar}
+          temFiltro={temFiltro}
+          honorarios={null}
+          descricaoDoRecorte={recorte}
+          semBusca
+          pilulas
+          semPeriodo
+        >
+          <select
+            value={filtros.tipoPessoa}
+            onChange={e => definirFiltro('tipoPessoa', e.target.value)}
+            aria-label="Tipo de pessoa"
+          >
+            {TIPO_PESSOA_OPTIONS_FILTRO.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          {/* DEC-119 — "Com processo não liberado" é a regra do cartão do
+              Início (DEC-108), contada por cliente. */}
+          <select
+            value={filtros.portal}
+            onChange={e => definirFiltro('portal', e.target.value)}
+            aria-label="Acesso ao portal"
+          >
+            {PORTAL_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          {/* DEC-052 — se o REGISTRO existe para o sistema. É por aqui que um
+              cliente desativado volta a ser alcançável. */}
+          <select
+            value={filtros.situacao}
+            onChange={e => definirFiltro('situacao', e.target.value)}
+            aria-label="Situação do registro"
+          >
+            {SITUACAO_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          {/* DEC-062 — A–Z é o padrão; trocar o sentido volta à página 1 (o
+              `definirFiltro`). Ordenar não recorta, e não entra em "Filtros
+              aplicados". */}
+          <select
+            value={filtros.ordem}
+            onChange={e => definirFiltro('ordem', e.target.value)}
+            aria-label="Ordenação da lista"
+          >
+            {ORDEM_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </FinancialFilters>
+
+        {loading ? (
+          <Loading />
+        ) : clientes.length === 0 ? (
+          <EmptyState
+            title="Nenhum cliente encontrado"
+            description={
+              temFiltro
+                ? `Nenhum cliente ${recorte}. Limpe os filtros para ver a lista inteira.`
+                : 'Cadastre um novo cliente para vê-lo aqui.'
+            }
+          />
+        ) : (
+          <div className="table-wrapper" aria-busy={carregando || undefined}>
+            {/* Larguras estáveis (Fase 4.3); a última coluna fica fixa à
+                direita (DEC-107) e a tabela rola dentro do wrapper. */}
+            <table className="data-table data-table--fixed data-table--acoes-fixas">
+              <colgroup>
+                <col className="col-lg" />
+                <col className="col-sm" />
+                <col className="col-md" />
+                <col className="col-lg" />
+                <col className="col-sm" />
+                <col className="col-acoes-menu" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Nome / Razão social</th>
+                  <th>Tipo</th>
+                  <th>CPF / CNPJ</th>
+                  <th>E-mail</th>
+                  <th>Telefone</th>
+                  <th>Ações</th>
                 </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {clientes.map(cliente => {
+                  const destino = destinoDaLinha(cliente);
+                  const desativado = cliente.ativo === false;
+                  const nome = nomeDoCliente(cliente);
+                  return (
+                    <tr
+                      key={cliente._id}
+                      className={`${destino ? 'linha-clicavel' : ''}${desativado ? ' linha-desativada' : ''}`.trim() || undefined}
+                      onClick={clicarNaLinha(destino)}
+                    >
+                      <td className="cell-truncate" title={nome}>
+                        <span className="cliente-nome-celula">
+                          <Avatar id={cliente._id} nome={nome} tamanho="pequeno" />
+                          <span className="cliente-nome-celula__texto">
+                            {/* DEC-052: a tag vem ANTES do nome — é ela que muda
+                                como o resto da linha deve ser lido. */}
+                            {desativado && <span className="tag-desativado">Desativado</span>}
+                            {/* O link do nome é o alvo de Tab da linha
+                                (DEC-102); o desativado não tem detalhe. */}
+                            {destino ? (
+                              <Link to={destino} className="link-interno">{nome}</Link>
+                            ) : (
+                              nome
+                            )}
+                          </span>
+                        </span>
+                      </td>
+                      <td className="cell-truncate">{tipoDoCliente(cliente)}</td>
+                      <td className="cell-truncate">{documentoNaLista(cliente)}</td>
+                      <td className="cell-truncate" title={cliente.email || undefined}>{cliente.email || '—'}</td>
+                      <td className="cell-truncate">{telefoneNaLista(cliente)}</td>
+                      {/* DEC-047: a coluna de ações é o menu ⋮. */}
+                      <td className="actions-cell actions-cell--menu">
+                        <ActionMenu
+                          rotulo={`Ações de ${nome}`}
+                          itens={
+                            /* DEC-052: as duas ações são MUTUAMENTE exclusivas,
+                               e a que aparece é a que o estado permite. Sem
+                               sinal, tudo que grava fica desabilitado COM o
+                               motivo (F-5a, Parte 4). */
+                            cliente.ativo === false
+                              ? [{
+                                  rotulo: 'Reativar',
+                                  motivo: motivoSemSinal,
+                                  onSelecionar: () => desativacao.abrir(cliente._id, 'reativar')
+                                }]
+                              : [
+                                  {
+                                    rotulo: 'Editar',
+                                    to: `/dashboard/clientes/editar/${cliente._id}`,
+                                    motivo: motivoSemSinal
+                                  },
+                                  {
+                                    rotulo: 'Desativar',
+                                    destrutivo: true,
+                                    motivo: motivoSemSinal,
+                                    onSelecionar: () => desativacao.abrir(cliente._id, 'desativar')
+                                  }
+                                ]
+                          }
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-      {/* O paginador fica FORA do `loading`: sumi-lo durante a consulta faria
-          a página pular a cada clique em "Próxima".
+        {/* O paginador fica FORA do `loading` — ver a nota em `PaymentListPage`.
+            Com a ordem alfabética (DEC-062), sem ele o fim do alfabeto não
+            existiria na tela. */}
+        {!loading && total > 0 && (
+          <Paginador
+            page={page}
+            limit={POR_PAGINA}
+            total={total}
+            rotulo="cliente"
+            onMudarPagina={setPage}
+          />
+        )}
+      </section>
 
-          Ele entra nesta tela na A-1, e não por simetria: com a ordem
-          alfabética como padrão, a listagem pedia 20 e mostrava os 20
-          PRIMEIROS do alfabeto, em silêncio. Antes disso o recorte também
-          existia, mas por data de cadastro — e escondia os mais antigos, que
-          é a metade que ninguém procura. Ordenado por nome, o recorte passa a
-          esconder o fim do alfabeto: um cliente chamado "Zeca" simplesmente
-          não existiria na tela. */}
-      {!loading && total > 0 && (
-        <Paginador
-          page={page}
-          limit={POR_PAGINA}
-          total={total}
-          rotulo="cliente"
-          onMudarPagina={setPage}
-        />
-      )}
-
-      <Modal
-        open={ativacaoModal.open}
-        title={ativacaoModal.acao === 'reativar' ? 'Reativar cliente' : 'Desativar cliente'}
-        message={
-          ativacaoModal.acao === 'reativar'
-            ? mensagemReativarCliente()
-            : mensagemDesativarCliente()
-        }
-        variant={ativacaoModal.acao === 'reativar' ? 'default' : 'danger'}
-        confirmLabel={ativacaoModal.acao === 'reativar' ? 'Reativar' : 'Desativar'}
-        onConfirm={confirmarAtivacao}
-        onCancel={fecharAtivacao}
-      />
+      <Modal {...desativacao.propsDoModal} />
     </div>
   );
 }

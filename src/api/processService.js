@@ -2,7 +2,7 @@ import api from './axiosConfig';
 import { cabecalhoDeVersao } from '../offline/versionHeader';
 
 const listProcesses = ({
-  page = 1, limit = 20, busca, status, situacao, fase, liminar, tipoAcao, de, ate, portal
+  page = 1, limit = 20, busca, status, situacao, fase, liminar, tipoAcao, de, ate, portal, clienteId
 } = {}) => {
   const params = { page, limit };
   if (busca) params.busca = busca;
@@ -20,6 +20,9 @@ const listProcesses = ({
   if (de) params.de = de;
   if (ate) params.ate = ate;
   if (portal) params.portal = portal;
+  // Fase 3.5 (DEC-119): os processos de UM cliente (vínculo ativo, principal
+  // ou não) — a aba "Processos" do detalhe do cliente e o `?clienteId=` da lista.
+  if (clienteId) params.clienteId = clienteId;
   return api.get('/processes', { params });
 };
 
