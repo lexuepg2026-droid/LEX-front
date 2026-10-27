@@ -215,7 +215,8 @@ export const PARES = [
   // --color-surface", acima); na seção "Dados da conta", no fundo da página.
   // As linhas de ajuda são o texto secundário sobre o fundo (par de cima).
   { nome: "perfil: e-mail confirmado / --color-bg", texto: "--color-success-text", fundo: "--color-bg", limite: TEXTO },
-  { nome: "perfil: e-mail não confirmado / --color-bg", texto: "--color-warning-text", fundo: "--color-bg", limite: TEXTO },
+  // O mesmo amarelo diz "Salve para ver as mudanças no exemplo." (DEC-129).
+  { nome: "perfil: e-mail não confirmado e aviso do exemplo / --color-bg", texto: "--color-warning-text", fundo: "--color-bg", limite: TEXTO },
 
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },

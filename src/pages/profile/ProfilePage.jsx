@@ -11,6 +11,9 @@ import { toast } from '../../utils/toast';
 import '../processes/ProcessDetailPage.css';
 import './ProfilePage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import '../../components/ui/OfflineNotice.css';
+import { MENSAGEM_DOWNLOAD_OFFLINE, offlineErrorMessage } from '../../offline/offlineMessages';
+import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 import Avatar from '../../components/ui/Avatar';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
 import useConfirmacaoEmail from '../../hooks/useConfirmacaoEmail';
@@ -201,6 +204,27 @@ function ProfilePage() {
     else if (!resultado.jaAvisado) toast.error(resultado.texto);
   };
 
+  // ── O exemplo do timbrado (DEC-129) ────────────────────────────────────
+  // Sai do servidor, pelo mesmo renderizador dos documentos e recibos — a
+  // prévia nunca diverge do papel real. Usa os dados SALVOS: com alteração
+  // pendente o botão continua ativo, e a tela avisa. É download (leitura): sem
+  // sinal não há arquivo guardado, e o motivo é o dos outros downloads.
+  const [baixandoExemplo, setBaixandoExemplo] = useState(false);
+
+  const handleExemploTimbrado = async () => {
+    if (!online || baixandoExemplo) return;
+    setBaixandoExemplo(true);
+    try {
+      const { nome } = await authService.baixarEsalvarExemploTimbrado();
+      toast.success(`Exemplo baixado: ${nome}`);
+    } catch (err) {
+      const mensagem = offlineErrorMessage(err, { online }) ?? getApiErrorMessage(err, 'Não foi possível gerar o exemplo do timbrado.');
+      if (!jaAvisadoPeloToastGlobal(err)) toast.error(mensagem);
+    } finally {
+      setBaixandoExemplo(false);
+    }
+  };
+
   const oab = user?.oab?.numero && user?.oab?.estado ? `OAB ${user.oab.estado} ${user.oab.numero}` : '';
 
   return (
@@ -352,6 +376,26 @@ function ProfilePage() {
                 )}
               </div>
             </div>
+          </div>
+
+          <div className="form-group span-3 perfil-exemplo" role="group" aria-labelledby="perfil-exemplo-titulo">
+            <p id="perfil-exemplo-titulo" className="perfil-campo-titulo">Como fica no papel</p>
+            <div className="perfil-exemplo__acoes">
+              <button type="button" className="btn-secundario" onClick={handleExemploTimbrado}
+                      disabled={baixandoExemplo} aria-disabled={online ? undefined : 'true'}
+                      aria-describedby={online ? 'perfil-exemplo-ajuda' : 'perfil-exemplo-ajuda perfil-exemplo-offline'}>
+                {baixandoExemplo ? 'Gerando…' : 'Ver exemplo do timbrado'}
+              </button>
+            </div>
+            <small id="perfil-exemplo-ajuda" className="perfil-ajuda">
+              Baixa uma folha em PDF com o timbrado dos documentos e recibos, montada com os dados salvos.
+            </small>
+            {/* Região viva sempre montada, vazia quando não há aviso: a que
+                nasce junto com o texto nem sempre é anunciada (DEC-083). */}
+            <p className="perfil-exemplo__aviso" role="status">
+              {semAlteracao ? '' : 'Salve para ver as mudanças no exemplo.'}
+            </p>
+            {!online && <p id="perfil-exemplo-offline" className="offline-write-reason">{MENSAGEM_DOWNLOAD_OFFLINE}</p>}
           </div>
         </div>
 

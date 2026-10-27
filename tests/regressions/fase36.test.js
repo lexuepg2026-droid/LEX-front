@@ -187,3 +187,40 @@ describe("Fase 3.6 · item 3 — o payload do perfil (DEC-128)", () => {
     assert.match(perfil, /if \(!user \|\| user\.id === contaSincronizada\.current\) return;/);
   });
 });
+
+// ── Item 4 — o exemplo do timbrado na tela (DEC-129) ─────────────────────
+describe("Fase 3.6 · item 4 — o exemplo do timbrado (DEC-129)", () => {
+  const auth = semComentarios(ler("src/api/authService.js"));
+
+  test("baixa a rota nova como blob, com o nome pelo utilitário dos downloads e o revoke garantido", () => {
+    assert.match(auth, /baixarExemploTimbrado = \(\) =>\s*api\.get\('\/auth\/me\/timbrado-exemplo', \{ responseType: 'blob' \}\)/);
+    assert.match(auth, /import \{ nomeDoAnexo \} from '\.\.\/utils\/download';/);
+    assert.match(auth, /nomeDoAnexo\(response, 'exemplo-timbrado\.pdf'\)/);
+    assert.match(auth, /finally \{\s*URL\.revokeObjectURL\(url\);\s*\}/);
+  });
+
+  test("o botão fica na seção do escritório, e não desenha timbrado em HTML", () => {
+    const escritorio = perfil.slice(perfil.indexOf('id="perfil-secao-escritorio"'), perfil.indexOf('id="perfil-secao-endereco"'));
+    assert.match(escritorio, /Ver exemplo do timbrado/);
+    assert.match(escritorio, /onClick=\{handleExemploTimbrado\}/);
+    assert.doesNotMatch(perfil, /montarTimbrado|timbradoTitulo|<iframe/, "a prévia é o PDF do servidor, nunca um desenho");
+  });
+
+  test("com alteração não salva o botão continua ativo e a tela avisa", () => {
+    assert.match(perfil, /disabled=\{baixandoExemplo\}/, "o botão não depende de `semAlteracao`");
+    assert.match(perfil, /\{semAlteracao \? '' : 'Salve para ver as mudanças no exemplo\.'\}/);
+    assert.match(perfil, /<p className="perfil-exemplo__aviso" role="status">/);
+  });
+
+  test("sem sinal: anunciado como desabilitado, clique barrado e o motivo do download", () => {
+    const corpo = perfil.slice(perfil.indexOf("const handleExemploTimbrado"), perfil.indexOf("const oab = user"));
+    assert.match(corpo, /if \(!online \|\| baixandoExemplo\) return;/);
+    assert.match(perfil, /onClick=\{handleExemploTimbrado\}\s*disabled=\{baixandoExemplo\} aria-disabled=\{online \? undefined : 'true'\}/);
+    assert.match(perfil, /\{!online && <p id="perfil-exemplo-offline" className="offline-write-reason">\{MENSAGEM_DOWNLOAD_OFFLINE\}<\/p>\}/);
+  });
+
+  test("o erro segue a política do toast global (DEC-084): um toast só", () => {
+    const corpo = perfil.slice(perfil.indexOf("const handleExemploTimbrado"), perfil.indexOf("const oab = user"));
+    assert.match(corpo, /if \(!jaAvisadoPeloToastGlobal\(err\)\)/);
+  });
+});
