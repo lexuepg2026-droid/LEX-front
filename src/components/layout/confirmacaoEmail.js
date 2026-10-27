@@ -14,6 +14,18 @@
 
 export const emailPendente = (user) => Boolean(user) && user.emailConfirmadoEm === null;
 
+// A situação por extenso, para o perfil (Fase 3.6, DEC-127). A data sai daqui
+// pela mesma razão da regra acima: este é o único arquivo que lê o campo.
+// `undefined` (servidor sem o campo) não afirma nada — devolve null. O dia é o
+// do fuso do escritório: a confirmação é um instante, não uma data sem hora.
+export const situacaoDoEmail = (user) => {
+  if (!user || user.emailConfirmadoEm === undefined) return null;
+  if (user.emailConfirmadoEm === null) return 'Não confirmado';
+  const data = new Date(user.emailConfirmadoEm);
+  if (Number.isNaN(data.getTime())) return null;
+  return `Confirmado em ${data.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
+};
+
 // ── "Dispensar" esconde a FAIXA até o próximo login ───────────────────────
 // Por `sessionStorage`, com a chave do usuário: some ao fechar a aba e é
 // apagada no login (`limparDispensaDoAviso`, chamada pelo `AuthContext`). O

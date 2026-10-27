@@ -1,4 +1,5 @@
 import api from './axiosConfig';
+import { nomeDoAnexo } from '../utils/download';
 
 const register = (payload) => api.post('/auth/register', payload);
 
@@ -37,7 +38,36 @@ const forgotPassword = (email) => api.post('/auth/forgot-password', { email }, S
 const resetPassword = (token, novaSenha) =>
   api.post('/auth/reset-password', { token, novaSenha });
 
+// ── O exemplo do timbrado (Fase 3.6, DEC-129) ─────────────────────────────
+// Uma folha em PDF montada pelo MESMO renderizador dos documentos, com os
+// dados SALVOS. Baixada como o recibo e o documento: blob + <a download>
+// temporário, nome do `Content-Disposition` por `utils/download.js`, e o
+// revoke no `finally`. `responseType: 'blob'` é obrigatório — sem ele o axios
+// decodifica o PDF como texto e o arquivo sai corrompido.
+const baixarExemploTimbrado = () =>
+  api.get('/auth/me/timbrado-exemplo', { responseType: 'blob' });
+
+const baixarEsalvarExemploTimbrado = async () => {
+  const response = await baixarExemploTimbrado();
+  const nome = nomeDoAnexo(response, 'exemplo-timbrado.pdf');
+  const url = URL.createObjectURL(response.data);
+
+  try {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nome;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+
+  return { nome, tamanho: response.data?.size ?? 0 };
+};
+
 export default {
   register, login, logout, getMe, updateMe, changePassword,
   confirmEmail, resendConfirmation, forgotPassword, resetPassword,
+  baixarExemploTimbrado, baixarEsalvarExemploTimbrado,
 };

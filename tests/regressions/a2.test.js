@@ -181,6 +181,11 @@ describe("A-2 — o aviso de e-mail não confirmado NÃO bloqueia", () => {
 
     // E quem pergunta pela regra é só o AVISO — a faixa, o menu do usuário,
     // o "Mais" e o hook do reenvio (Fase 2b, DEC-088). Nenhum portão.
+    //
+    // Fase 3.6 (DEC-127): o PERFIL entrou na lista. Ele mostra a situação
+    // ("Confirmado em…" / "Não confirmado") e oferece "Reenviar confirmação" —
+    // é mais um lugar do aviso, não um portão: nada na tela fica bloqueado pelo
+    // e-mail. A lista continua FECHADA: um sexto arquivo derruba o teste.
     const perguntam = arquivosDeSrc()
       .filter((caminho) => /emailPendente\(|\bpendente\b.*useConfirmacaoEmail|useConfirmacaoEmail\(\)/.test(readFileSync(caminho, "utf8")))
       .map((caminho) => caminho.slice(RAIZ.length))
@@ -190,7 +195,13 @@ describe("A-2 — o aviso de e-mail não confirmado NÃO bloqueia", () => {
       "src/components/layout/EmailConfirmationBanner.jsx",
       "src/components/layout/MenuUsuario.jsx",
       "src/hooks/useConfirmacaoEmail.js",
+      "src/pages/profile/ProfilePage.jsx",
     ]);
+
+    // O perfil pergunta e não barra: nenhum `return`, `disabled` ou
+    // `<Navigate` condicionado à situação do e-mail.
+    const perfil = readFileSync(join(RAIZ, "src/pages/profile/ProfilePage.jsx"), "utf8");
+    assert.doesNotMatch(perfil, /if \(pendente\)\s*return|disabled=\{pendente|pendente\s*&&\s*<Navigate/);
   });
 
   test("oferece reenviar e 'já confirmei' (a confirmação acontece em outra aba)", () => {
