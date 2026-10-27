@@ -594,7 +594,10 @@ function DashboardHomePage() {
               cor={CARTAO_VENCIDO_HOJE.color}
               Icon={AlertCircle}
               valor={formatCurrency(resumoFinanceiro[CARTAO_VENCIDO_HOJE.key] ?? 0)}
-              nota={notaDasVencidas(vencidas)}
+              // Fase 3.7: sem a resposta do sino (sem sinal, falha), a nota
+              // dizia "nenhuma parcela vencida" ao lado de um valor vencido —
+              // contava zero de uma resposta que não chegou. Sem sino, sem nota.
+              nota={avisos ? notaDasVencidas(vencidas) : null}
             />
           </div>
         )}

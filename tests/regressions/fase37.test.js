@@ -308,3 +308,10 @@ describe("Fase 3.7 · item 3 — a primeira coluna fixa e a prioridade das colun
     assert.doesNotMatch(bloco, /\btransform\s*:|\bfilter\s*:/);
   });
 });
+
+describe("Fase 3.7 · a nota das vencidas só com a resposta do sino", () => {
+  test("Início e Visão geral não dizem \"nenhuma parcela vencida\" sem ter perguntado ao sino", () => {
+    assert.match(inicio, /nota=\{avisos \? notaDasVencidas\(vencidas\) : null\}/);
+    assert.match(visao, /nota=\{avisos \? notaDasVencidas\(quantasVencidas\) : null\}/);
+  });
+});
