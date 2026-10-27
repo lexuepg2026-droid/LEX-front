@@ -228,3 +228,52 @@ describe("Fase 3.8 · item 3 — a fiação da tela (DEC-136)", () => {
     assert.doesNotMatch(semComentarios(ler("src/components/dashboard/LinhaDeData.css")), /opacity\s*:/);
   });
 });
+
+// ── Item 4 — o formulário de compromisso (DEC-137) ───────────────────────
+import { rotuloDoProcessoNoSeletor } from "../../src/utils/feeLabel.js";
+
+describe("Fase 3.8 · item 4 — o formulário de compromisso em seções, com o seletor por busca (DEC-137)", () => {
+  const form = semComentarios(ler("src/pages/calendar/EventFormPage.jsx"));
+  const seletor = semComentarios(ler("src/components/ui/SeletorComBusca.jsx"));
+
+  test("as quatro seções, nesta ordem, e a Conclusão na edição", () => {
+    const titulos = [...form.matchAll(/<h3>([^<]+)<\/h3>/g)].map((m) => m[1]);
+    assert.deepEqual(titulos, ["O que é", "Quando e onde", "Processo vinculado", "Observações", "Conclusão"]);
+  });
+
+  test("o seletor de processo não tem mais teto: busca no servidor (DEC-101)", () => {
+    assert.doesNotMatch(form, /listProcesses|limit: 100|<option value="">Sem processo<\/option>/);
+    assert.match(form, /<SeletorComBusca\s+id="evento-processo"/);
+    assert.match(form, /buscar=\{buscarProcessos\}/);
+    assert.match(form, /processService\.buscarProcessos\(termo\)/);
+    assert.match(form, /rotulo=\{rotuloDoProcessoNoSeletor\}/);
+    assert.match(form, /obrigatorio=\{false\}/);
+    assert.equal(
+      rotuloDoProcessoNoSeletor({ numeroProcesso: "0001", titulo: "Cobrança", clientePrincipalId: { tipoPessoa: "fisica", nomeCompleto: "Ana Souza" } }),
+      "0001 — Cobrança — Ana Souza",
+    );
+  });
+
+  test("o seletor anuncia 'obrigatório' só quando é (o padrão continua obrigatório)", () => {
+    assert.match(seletor, /obrigatorio = true,/);
+    assert.match(seletor, /aria-required=\{obrigatorio \? 'true' : undefined\}/);
+  });
+
+  test("o contexto é publicado quando a escolha muda (DEC-085)", () => {
+    assert.match(form, /usePublicarContexto\(\{ processoId: formData\.processoId \}\)/);
+    assert.match(form, /onMudar=\{\(pid\) => \{\s*setFormData\(\(atual\) => \(\{ \.\.\.atual, processoId: pid \}\)\);/);
+  });
+
+  test("mantidos: os rótulos com htmlFor, concluir e reabrir, o 409, a fila com o aviso", () => {
+    for (const id of ["evento-tipo", "evento-titulo", "evento-data", "evento-hora", "evento-local", "evento-processo", "evento-descricao"]) {
+      assert.match(form, new RegExp(`<label htmlFor="${id}">`), id);
+      assert.match(form, new RegExp(`id="${id}"`), id);
+    }
+    assert.match(form, /eventService\.concludeEvent\(id, !concluido, \{ versaoVista \}\)/);
+    assert.match(form, /\{concluido \? 'Reabrir' : 'Marcar como concluído'\}/);
+    assert.match(form, /setError\(getApiErrorMessage\(err, 'Erro ao salvar o compromisso\.'\)\)/);
+    assert.match(form, /if \(err\?\.enfileirado\) \{\s*toast\.info\(err\.message\);/);
+    assert.match(form, /\{!online && <OfflineQueueNotice \/>\}/);
+    assert.match(form, /processoId: ouNulo\(formData\.processoId\)/);
+  });
+});
