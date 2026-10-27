@@ -161,3 +161,63 @@ describe("DEC-053 — o item desabilitado ENSINA, e o teclado alcança", () => {
     );
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Fase 3.5 (DEC-122) — os casos de CLIENTE passam a cobrar o hook e os dois usos
+//
+// O cliente não tem pai inativo que segure a reativação; a recusa dele é na
+// DESATIVAÇÃO (participa de processo ativo — 409 `dependencia: "processos"`).
+// As mesmas duas barreiras, na forma dele: o 409 continua a autoridade, e o
+// hook lê os processos ativos do cliente no instante do clique — a aba velha
+// não abre um modal cujo botão levaria ao 409. Havendo impedimento, a
+// frase NOMEIA os processos e diz o caminho (desvincular, não desativar), e a
+// tela é refeita.
+// ═══════════════════════════════════════════════════════════════════════════
+import { motivoDeNaoDesativarCliente } from "../../src/utils/activationMessages.js";
+
+describe("DEC-053 — a recusa de desativar cliente (Fase 3.5)", () => {
+  test("sem processo ativo, não há motivo", () => {
+    assert.equal(motivoDeNaoDesativarCliente(0, []), null);
+  });
+
+  test("nomeia o processo, o papel quando não é o principal, e o caminho", () => {
+    const frase = motivoDeNaoDesativarCliente(2, [
+      { titulo: "Cobrança", papelDoCliente: "Autor", principalDoCliente: true },
+      { titulo: "Inventário", papelDoCliente: "Litisconsorte", principalDoCliente: false },
+    ]);
+    assert.match(frase, /participa de 2 processos ativos — Cobrança e Inventário \(Litisconsorte\)\./);
+    assert.match(frase, /Desvincule-o dos processos antes; não é preciso desativar o processo\./);
+  });
+
+  test("um só concorda no singular; mais que a página vira 'e mais N'", () => {
+    assert.match(motivoDeNaoDesativarCliente(1, [{ titulo: "A" }]), /de 1 processo ativo — A\. Desvincule-o do processo antes/);
+    assert.match(
+      motivoDeNaoDesativarCliente(7, [{ titulo: "A" }, { titulo: "B" }, { titulo: "C" }, { titulo: "D" }, { titulo: "E" }]),
+      /— A, B, C e mais 4\./
+    );
+  });
+
+  const hook = semComentarios(ler("src/hooks/useDesativacaoCliente.js"));
+
+  test("a segunda barreira: o impedimento vira toast e a tela é refeita", () => {
+    assert.match(hook, /if \(impedimento\) \{\s*setModal\(FECHADO\);\s*toast\.error\(`Não é possível desativar\. \$\{impedimento\}`\);\s*aoConcluir\?\.\(\{ acao, id, recusado: true \}\);\s*return;/);
+    // A contagem é a do 409: vínculos ativos, com o processo em qualquer
+    // situação (`situacao: 'todos'`).
+    assert.match(hook, /clienteId: id, situacao: 'todos'/);
+  });
+
+  test("os DOIS usos: a lista e o ⋮ do detalhe, com o modal do hook e nenhuma cópia", () => {
+    for (const [tela, aoConcluir] of [
+      ["src/pages/clients/ClientListPage.jsx", /useDesativacaoCliente\(\{ aoConcluir: reload \}\)/],
+      ["src/pages/clients/ClientDetailPage.jsx", /useDesativacaoCliente\(\{\s*aoConcluir: \(\{ acao, recusado \}\) => \{\s*if \(acao === 'desativar' && !recusado\) navigate\('\/dashboard\/clientes'\);/],
+    ]) {
+      const codigo = semComentarios(ler(tela));
+      assert.match(codigo, aoConcluir, `${tela}: não usa o hook`);
+      assert.match(codigo, /<Modal \{\.\.\.desativacao\.propsDoModal\} \/>/, `${tela}: o modal não é o do hook`);
+      assert.match(codigo, /desativacao\.abrir\([^,]+, 'desativar'\)/, `${tela}: o Desativar não passa pelo hook`);
+      for (const copia of [/deleteClient/, /reactivateClient/, /motivoDeNaoDesativarCliente/, /mensagemDesativarCliente/]) {
+        assert.doesNotMatch(codigo, copia, `${tela}: segunda cópia do que é do hook`);
+      }
+    }
+  });
+});

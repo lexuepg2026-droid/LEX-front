@@ -178,7 +178,7 @@ describe("DEC-052 — a contagem vem antes da confirmação", () => {
   // frases saem das funções compartilhadas, e nenhuma tela tem cópia —, e a
   // trava passa a cobrar o hook, a prévia ANTES do modal (a forma da DEC-052
   // para o cliente, que não cascateia: os processos que IMPEDEM a ação) e o
-  // uso pela lista. O uso pelo ⋮ do detalhe entra no bloco "dois usos", abaixo.
+  // uso pela lista e pelo ⋮ do detalhe.
   test("o cliente usa as frases compartilhadas, pelo hook", () => {
     const hook = semComentarios(ler("src/hooks/useDesativacaoCliente.js"));
     assert.match(hook, /mensagemDesativarCliente\(\)/);
@@ -191,11 +191,14 @@ describe("DEC-052 — a contagem vem antes da confirmação", () => {
       /setModal\(\{ open: true, id, acao, mensagem: '', carregando: true \}\);\s*try \{\s*const \{ data \} = await processService\.listProcesses\(\{\s*clienteId: id, situacao: 'todos'/,
       "sem a prévia, o modal pediria confirmação de uma ação que o back vai recusar"
     );
-    const lista = semComentarios(ler("src/pages/clients/ClientListPage.jsx"));
-    assert.match(lista, /useDesativacaoCliente\(\{ aoConcluir: reload \}\)/);
-    assert.match(lista, /<Modal \{\.\.\.desativacao\.propsDoModal\} \/>/);
-    for (const frase of [/mensagemDesativarCliente/, /mensagemReativarCliente/, /deleteClient/, /reactivateClient/]) {
-      assert.doesNotMatch(lista, frase, "a lista tem cópia do que é do hook");
+    // Os dois usos: a lista e o ⋮ do detalhe (DEC-122).
+    for (const tela of ["src/pages/clients/ClientListPage.jsx", "src/pages/clients/ClientDetailPage.jsx"]) {
+      const codigo = semComentarios(ler(tela));
+      assert.match(codigo, /useDesativacaoCliente\(\{\s*aoConcluir:/, `${tela}: não usa o hook`);
+      assert.match(codigo, /<Modal \{\.\.\.desativacao\.propsDoModal\} \/>/, `${tela}: o modal não é o do hook`);
+      for (const frase of [/mensagemDesativarCliente/, /mensagemReativarCliente/, /deleteClient/, /reactivateClient/]) {
+        assert.doesNotMatch(codigo, frase, `${tela}: cópia do que é do hook`);
+      }
     }
   });
 
