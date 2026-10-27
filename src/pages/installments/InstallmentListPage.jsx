@@ -28,6 +28,8 @@ import '../../styles/modules.css';
 import { rotuloDaParcela } from '../../components/financeiro/installmentLabel';
 import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
+import { REGISTRO_PARCELA_OPTIONS, registroDaUrl, inativosDaConsulta, trechoDoRegistro } from './listaParcelas.js';
+
 const POR_PAGINA = 20;
 
 function InstallmentListPage() {
@@ -49,7 +51,7 @@ function InstallmentListPage() {
   const {
     filtros, buscaDebounced, page, setPage,
     definirFiltro, aplicarPreset, limpar, temFiltro
-  } = useListFilters({ status: '', inativos: '' }, FILTROS_DAS_FINANCEIRAS);
+  } = useListFilters({ status: '', registro: '' }, FILTROS_DAS_FINANCEIRAS);
 
   useEffect(() => {
     let ativo = true;
@@ -70,7 +72,7 @@ function InstallmentListPage() {
     processoId,
     honorarioId: filtros.honorarioId || undefined,
     status: filtros.status || undefined,
-    inativos: filtros.inativos || undefined,
+    inativos: inativosDaConsulta(filtros.registro),
     busca: buscaDebounced || undefined,
     de: filtros.de || undefined,
     ate: filtros.ate || undefined
@@ -133,7 +135,9 @@ function InstallmentListPage() {
   // desmontava e remontava o input, perdendo o foco. O indicador passou para
   // baixo dos controles. Ver a nota longa em `ClientListPage`.
 
-  const verInativos = filtros.inativos === 'true';
+  // DEC-132: a situação do registro, lida da URL (`?registro=`).
+  const registro = registroDaUrl(filtros.registro);
+  const verInativos = registro === 'inativos';
 
   const recorte = descricaoDoRecorteFinanceiro({
     filtros,
@@ -141,7 +145,7 @@ function InstallmentListPage() {
     honorarios,
     extras: [
       filtros.status ? `com status "${labelDe(STATUS_PARCELA_OPTIONS, filtros.status)}"` : null,
-      verInativos ? 'entre as desativadas' : null
+      trechoDoRegistro(registro)
     ],
     processo: processoId ? { rotulo: filtroProcesso.rotulo } : null
   });
@@ -193,14 +197,18 @@ function InstallmentListPage() {
           ))}
         </select>
 
-        <label className="filter-toggle">
-          <input
-            type="checkbox"
-            checked={verInativos}
-            onChange={(e) => definirFiltro('inativos', e.target.checked ? 'true' : '')}
-          />
-          Mostrar desativadas
-        </label>
+        {/* DEC-132 — se o REGISTRO existe para o sistema, como em Clientes e
+            Processos. Era o checkbox "Mostrar desativadas". `?registro=` e não
+            `?situacao=`, que aqui já é o status da parcela. */}
+        <select
+          value={registro}
+          onChange={e => definirFiltro('registro', e.target.value)}
+          aria-label="Situação do registro"
+        >
+          {REGISTRO_PARCELA_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
       </FinancialFilters>
 
       {/* Fase 3.2: o `<Loading />` só na PRIMEIRA carga. Trocar um filtro com

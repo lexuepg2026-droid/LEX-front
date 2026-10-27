@@ -166,3 +166,61 @@ describe("Fase 3.7 · item 1 — a Visão geral é um painel (DEC-130)", () => {
     assert.doesNotMatch(visao, /semToastGlobal/);
   });
 });
+
+// ── Item 2 — "Situação do registro" em Parcelas (DEC-132) ─────────────────
+import {
+  REGISTRO_PARCELA_OPTIONS, registroDaUrl, inativosDaConsulta, trechoDoRegistro,
+} from "../../src/pages/installments/listaParcelas.js";
+import { filtrosDaUrl, paramsComFiltros, paramsSemFiltros } from "../../src/utils/filtrosNaUrl.js";
+import { descricaoDoRecorteFinanceiro } from "../../src/components/financeiro/filterSummary.js";
+
+describe("Fase 3.7 · item 2 — a situação do registro em Parcelas (DEC-132)", () => {
+  const CAMPOS = ["busca", "status", "registro", "honorarioId", "de", "ate"];
+  const parcelas = semComentarios(ler("src/pages/installments/InstallmentListPage.jsx"));
+
+  test("duas opções: \"Somente ativas\" é o padrão (sem parâmetro) e \"Somente desativadas\"", () => {
+    assert.deepEqual(REGISTRO_PARCELA_OPTIONS.map((o) => [o.value, o.label]), [
+      ["", "Somente ativas"], ["inativos", "Somente desativadas"],
+    ]);
+    assert.ok(!REGISTRO_PARCELA_OPTIONS.some((o) => o.value === "todos"), "o modo do back é exclusivo (4.5)");
+  });
+
+  test("a URL: `?registro=inativos`; sem parâmetro, só as ativas; valor torto abre as ativas", () => {
+    assert.equal(registroDaUrl(filtrosDaUrl(new URLSearchParams("registro=inativos"), CAMPOS).registro), "inativos");
+    assert.equal(registroDaUrl(filtrosDaUrl(new URLSearchParams(""), CAMPOS).registro), "");
+    assert.equal(registroDaUrl("todos"), "");
+    assert.equal(registroDaUrl("x"), "");
+    assert.equal(paramsComFiltros(new URLSearchParams(), { registro: "inativos" }).toString(), "registro=inativos");
+    assert.equal(paramsComFiltros(new URLSearchParams("registro=inativos"), { registro: "" }).toString(), "");
+  });
+
+  test("não colide com o status: `?situacao=vencido&registro=inativos` lê os dois", () => {
+    const lidos = filtrosDaUrl(new URLSearchParams("situacao=vencido&registro=inativos"), CAMPOS);
+    assert.equal(lidos.status, "vencido");
+    assert.equal(lidos.registro, "inativos");
+  });
+
+  test("o \"Limpar filtros\" alcança a pílula", () => {
+    const limpo = paramsSemFiltros(new URLSearchParams("registro=inativos&situacao=vencido&processoId=p1"), CAMPOS, ["processoId"]);
+    assert.equal(limpo.toString(), "");
+  });
+
+  test("a API recebe o modo do back; a frase de \"Filtros aplicados\" diz a situação", () => {
+    assert.equal(inativosDaConsulta("inativos"), "true");
+    assert.equal(inativosDaConsulta(""), undefined);
+    assert.equal(inativosDaConsulta("todos"), undefined);
+    assert.equal(trechoDoRegistro("inativos"), "somente desativadas");
+    assert.equal(trechoDoRegistro(""), null);
+    const frase = descricaoDoRecorteFinanceiro({ filtros: {}, extras: [trechoDoRegistro("inativos")] });
+    assert.match(frase, /somente desativadas/);
+  });
+
+  test("a tela: a pílula no lugar do checkbox, com o estado e a consulta pela regra", () => {
+    assert.match(parcelas, /useListFilters\(\{ status: '', registro: '' \}, FILTROS_DAS_FINANCEIRAS\)/);
+    assert.match(parcelas, /inativos: inativosDaConsulta\(filtros\.registro\)/);
+    assert.match(parcelas, /aria-label="Situação do registro"/);
+    assert.match(parcelas, /REGISTRO_PARCELA_OPTIONS\.map/);
+    assert.doesNotMatch(parcelas, /filter-toggle|type="checkbox"|Mostrar desativadas/);
+    assert.doesNotMatch(semComentarios(ler("src/styles/modules.css")), /\.filter-toggle/);
+  });
+});
