@@ -104,3 +104,86 @@ describe("Fase 3.6 · item 2 — o cabeçalho e as seções (DEC-127)", () => {
     assert.match(perfil, /authService\.changePassword\(senhaAtual, novaSenha\)/);
   });
 });
+
+// ── Item 3 — salvar só o que mudou (DEC-128) ─────────────────────────────
+import { formularioDoPerfil, montarPayloadPerfil, semAlteracoes } from "../../src/utils/perfilPayload.js";
+
+const USUARIO = {
+  id: "u1",
+  nomeCompleto: "Laís Exemplo",
+  cpf: "52998224725",
+  telefone: "42999991234",
+  oab: { numero: "12345", estado: "PR" },
+  advocacia: {
+    nome: "Escritório Exemplo", chavePix: "pix@exemplo.dev",
+    instagram: "@exemplo", site: "https://exemplo.dev",
+    logoBase64: "data:image/png;base64,AAAA",
+  },
+  endereco: {
+    cep: "84010200", logradouro: "Rua XV", numero: "10", complemento: "Sala 2",
+    bairro: "Centro", cidade: "Ponta Grossa", estado: "PR", pais: "Brasil",
+  },
+};
+
+describe("Fase 3.6 · item 3 — o payload do perfil (DEC-128)", () => {
+  const inicial = formularioDoPerfil(USUARIO);
+
+  test("nada mudou → payload vazio", () => {
+    const p = montarPayloadPerfil(inicial, formularioDoPerfil(USUARIO));
+    assert.deepEqual(p, {});
+    assert.equal(semAlteracoes(p), true);
+  });
+
+  test("um campo mudou → só ele (também dentro do subdocumento)", () => {
+    assert.deepEqual(montarPayloadPerfil(inicial, { ...inicial, nomeCompleto: "Laís Nova" }), { nomeCompleto: "Laís Nova" });
+    assert.deepEqual(montarPayloadPerfil(inicial, { ...inicial, advSite: "https://novo.dev" }), { advocacia: { site: "https://novo.dev" } });
+    assert.deepEqual(montarPayloadPerfil(inicial, { ...inicial, cidade: "Castro" }), { endereco: { cidade: "Castro" } });
+    assert.deepEqual(montarPayloadPerfil(inicial, { ...inicial, oabEstado: "SC" }), { oab: { estado: "SC" } });
+    assert.equal(semAlteracoes(montarPayloadPerfil(inicial, { ...inicial, oabEstado: "SC" })), false);
+  });
+
+  test("campo apagado → null (e não string vazia nem ausente)", () => {
+    assert.deepEqual(montarPayloadPerfil(inicial, { ...inicial, advInstagram: "" }), { advocacia: { instagram: null } });
+    assert.deepEqual(montarPayloadPerfil(inicial, { ...inicial, telefone: "" }), { telefone: null });
+    assert.deepEqual(montarPayloadPerfil(inicial, { ...inicial, complemento: "   " }), { endereco: { complemento: null } });
+  });
+
+  test("máscara não conta como mudança: o mesmo CPF, telefone e CEP com e sem pontuação", () => {
+    assert.equal(inicial.cpf, "529.982.247-25");
+    const mesmo = { ...inicial, cpf: "52998224725", telefone: "42999991234", cep: "84010200" };
+    assert.deepEqual(montarPayloadPerfil(inicial, mesmo), {});
+    assert.deepEqual(montarPayloadPerfil(inicial, { ...inicial, nomeCompleto: "  Laís Exemplo  " }), {}, "espaço nas pontas também não");
+  });
+
+  test("CPF, telefone e CEP mudados vão SEM máscara", () => {
+    const p = montarPayloadPerfil(inicial, { ...inicial, cpf: "111.444.777-35", telefone: "(42) 3222-1111", cep: "84010-000" });
+    assert.deepEqual(p, { cpf: "11144477735", telefone: "4232221111", endereco: { cep: "84010000" } });
+  });
+
+  test("o logo removido → null", () => {
+    assert.deepEqual(montarPayloadPerfil(inicial, { ...inicial, advLogo: "" }), { advocacia: { logoBase64: null } });
+    const semLogo = formularioDoPerfil({ ...USUARIO, advocacia: { ...USUARIO.advocacia, logoBase64: null } });
+    assert.deepEqual(montarPayloadPerfil(semLogo, { ...semLogo, advLogo: "data:image/png;base64,BBBB" }),
+      { advocacia: { logoBase64: "data:image/png;base64,BBBB" } });
+  });
+
+  test("o país ausente vira \"Brasil\" dos dois lados e não gera envio", () => {
+    const semPais = formularioDoPerfil({ ...USUARIO, endereco: { ...USUARIO.endereco, pais: null } });
+    assert.deepEqual(montarPayloadPerfil(semPais, { ...semPais }), {});
+  });
+
+  test("a tela usa o módulo, desabilita o Salvar sem alteração e diz o motivo", () => {
+    assert.match(perfil, /const payload = montarPayloadPerfil\(inicial, form\);/);
+    assert.match(perfil, /const semAlteracao = semAlteracoes\(payload\);/);
+    assert.match(perfil, /disabled=\{saving \|\| semAlteracao\}/);
+    assert.match(perfil, />Nenhuma alteração</);
+    assert.match(perfil, /if \(semAlteracao\) return;/, "o Enter num campo também não envia");
+    assert.match(perfil, /authService\.updateMe\(payload\)/);
+    assert.doesNotMatch(perfil, /const buildPayload|const buildForm/, "a regra mora num lugar só");
+  });
+
+  test("depois de salvar o \"inicial\" passa a ser o salvo; um checkAuth não apaga a edição", () => {
+    assert.match(perfil, /updateUser\(res\.data\.usuario\);\s*resync\(res\.data\.usuario\);/);
+    assert.match(perfil, /if \(!user \|\| user\.id === contaSincronizada\.current\) return;/);
+  });
+});

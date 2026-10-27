@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import authService from '../../api/authService';
 import { useAuth } from '../../contexts/AuthContext';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { maskCPF, maskCEP, maskPhone, unmask } from '../../utils/masks';
+import { formularioDoPerfil, montarPayloadPerfil, semAlteracoes } from '../../utils/perfilPayload';
 import { buscarEnderecoPorCEP } from '../../utils/viacep';
 import { UFS } from '../../utils/enums';
 import { prepararLogo, formatarTamanho } from '../../utils/imagem';
@@ -15,31 +16,6 @@ import useOnlineStatus from '../../hooks/useOnlineStatus';
 import useConfirmacaoEmail from '../../hooks/useConfirmacaoEmail';
 import { situacaoDoEmail } from '../../components/layout/confirmacaoEmail.js';
 
-// Espelho plano do usuário. Guardamos o valor MASCARADO (é o que aparece no
-// input) e desmascaramos só na hora de montar o payload.
-const buildForm = (u) => ({
-  nomeCompleto: u?.nomeCompleto || '',
-  cpf: maskCPF(u?.cpf || ''),
-  telefone: maskPhone(u?.telefone || ''),
-  oabNumero: u?.oab?.numero || '',
-  oabEstado: u?.oab?.estado || '',
-  advNome: u?.advocacia?.nome || '',
-  advChavePix: u?.advocacia?.chavePix || '',
-  advInstagram: u?.advocacia?.instagram || '',
-  advSite: u?.advocacia?.site || '',
-  // String vazia representa "sem logo" no formulário; vira null no payload,
-  // que é como o backend remove o campo.
-  advLogo: u?.advocacia?.logoBase64 || '',
-  cep: maskCEP(u?.endereco?.cep || ''),
-  logradouro: u?.endereco?.logradouro || '',
-  numero: u?.endereco?.numero || '',
-  complemento: u?.endereco?.complemento || '',
-  bairro: u?.endereco?.bairro || '',
-  cidade: u?.endereco?.cidade || '',
-  estado: u?.endereco?.estado || '',
-  pais: u?.endereco?.pais || 'Brasil',
-});
-
 const SENHA_FRACA = 'A nova senha deve ter no mínimo 8 caracteres, com ao menos uma letra e um número.';
 
 const senhaForte = (senha) => senha.length >= 8 && /[a-zA-Z]/.test(senha) && /\d/.test(senha);
@@ -48,8 +24,8 @@ function ProfilePage() {
   const { user, updateUser } = useAuth();
 
   // `inicial` é a fotografia do que veio da API: o PATCH envia só o que difere.
-  const [form, setForm] = useState(() => buildForm(user));
-  const [inicial, setInicial] = useState(() => buildForm(user));
+  const [form, setForm] = useState(() => formularioDoPerfil(user));
+  const [inicial, setInicial] = useState(() => formularioDoPerfil(user));
   const [error, setError] = useState('');
   const [hint, setHint] = useState('');
   const [saving, setSaving] = useState(false);
@@ -60,15 +36,22 @@ function ProfilePage() {
   const [senhaError, setSenhaError] = useState('');
   const [senhaSaving, setSenhaSaving] = useState(false);
 
-  // Ressincroniza quando o contexto troca de usuário (bootstrap do /me e após
-  // salvar). Reposiciona também a fotografia, zerando o diff.
+  // Reposiciona o formulário E a fotografia, zerando o diff. Chamado depois
+  // de salvar (o "inicial" passa a ser o salvo) e quando a CONTA muda.
   const resync = useCallback((usuario) => {
-    setForm(buildForm(usuario));
-    setInicial(buildForm(usuario));
+    setForm(formularioDoPerfil(usuario));
+    setInicial(formularioDoPerfil(usuario));
   }, []);
 
+  // Fase 3.6: só quando muda a conta (o bootstrap do /me, outro login). Um
+  // `checkAuth()` qualquer — o "já confirmado" do reenvio do e-mail — troca o
+  // objeto `user` sem mudar a conta, e ressincronizar ali apagaria a edição
+  // que ela ainda não salvou.
+  const contaSincronizada = useRef(null);
   useEffect(() => {
-    if (user) resync(user);
+    if (!user || user.id === contaSincronizada.current) return;
+    contaSincronizada.current = user.id;
+    resync(user);
   }, [user, resync]);
 
   const setField = (name, value) => {
@@ -139,48 +122,12 @@ function ProfilePage() {
     setHint('Logo removido. Clique em "Salvar alterações" para gravar.');
   };
 
-  // Campo alterado entra no payload; se ficou vazio vai como null, porque
-  // `undefined` some no JSON e o merge parcial do backend não apagaria nada.
-  const buildPayload = () => {
-    const payload = {};
-
-    const compara = (destino, chave, atual, base) => {
-      if (atual === base) return;
-      destino[chave] = atual === '' ? null : atual;
-    };
-
-    compara(payload, 'nomeCompleto', form.nomeCompleto.trim(), inicial.nomeCompleto.trim());
-    compara(payload, 'cpf', unmask(form.cpf), unmask(inicial.cpf));
-    compara(payload, 'telefone', unmask(form.telefone), unmask(inicial.telefone));
-
-    const oab = {};
-    compara(oab, 'numero', unmask(form.oabNumero), unmask(inicial.oabNumero));
-    compara(oab, 'estado', form.oabEstado, inicial.oabEstado);
-    if (Object.keys(oab).length > 0) payload.oab = oab;
-
-    const advocacia = {};
-    compara(advocacia, 'nome', form.advNome.trim(), inicial.advNome.trim());
-    compara(advocacia, 'chavePix', form.advChavePix.trim(), inicial.advChavePix.trim());
-    compara(advocacia, 'instagram', form.advInstagram.trim(), inicial.advInstagram.trim());
-    compara(advocacia, 'site', form.advSite.trim(), inicial.advSite.trim());
-    compara(advocacia, 'logoBase64', form.advLogo, inicial.advLogo);
-    if (Object.keys(advocacia).length > 0) payload.advocacia = advocacia;
-
-    const endereco = {};
-    compara(endereco, 'cep', unmask(form.cep), unmask(inicial.cep));
-    compara(endereco, 'pais', form.pais.trim(), inicial.pais.trim());
-    compara(endereco, 'estado', form.estado, inicial.estado);
-    compara(endereco, 'cidade', form.cidade.trim(), inicial.cidade.trim());
-    compara(endereco, 'bairro', form.bairro.trim(), inicial.bairro.trim());
-    compara(endereco, 'logradouro', form.logradouro.trim(), inicial.logradouro.trim());
-    compara(endereco, 'numero', form.numero.trim(), inicial.numero.trim());
-    compara(endereco, 'complemento', form.complemento.trim(), inicial.complemento.trim());
-    if (Object.keys(endereco).length > 0) payload.endereco = endereco;
-
-    return payload;
-  };
-
   const online = useOnlineStatus();
+
+  // Só o que mudou vai no PATCH (DEC-128). Recalculado a cada render: é o
+  // mesmo cálculo que decide o botão e o aviso do exemplo do timbrado.
+  const payload = montarPayloadPerfil(inicial, form);
+  const semAlteracao = semAlteracoes(payload);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -191,11 +138,9 @@ function ProfilePage() {
     setError('');
     setHint('');
 
-    const payload = buildPayload();
-    if (Object.keys(payload).length === 0) {
-      setHint('Nenhuma alteração para salvar.');
-      return;
-    }
+    // O botão já está desabilitado sem alteração; a guarda cobre o Enter
+    // num campo, que submete o formulário mesmo assim.
+    if (semAlteracao) return;
 
     setSaving(true);
     try {
@@ -458,7 +403,11 @@ function ProfilePage() {
         {hint && <p className="form-hint">{hint}</p>}
 
         <div className="form-actions">
-          <button type="submit" disabled={saving} aria-disabled={online ? undefined : 'true'} className="btn-primary">
+          {semAlteracao && !saving && (
+            <span id="perfil-salvar-motivo" className="perfil-sem-alteracao">Nenhuma alteração</span>
+          )}
+          <button type="submit" disabled={saving || semAlteracao} aria-disabled={online ? undefined : 'true'}
+                  aria-describedby={semAlteracao ? 'perfil-salvar-motivo' : undefined} className="btn-primary">
             {saving ? 'Salvando...' : 'Salvar alterações'}
           </button>
         </div>
