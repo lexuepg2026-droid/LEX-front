@@ -224,3 +224,12 @@ describe("Fase 3.6 · item 4 — o exemplo do timbrado (DEC-129)", () => {
     assert.match(corpo, /if \(!jaAvisadoPeloToastGlobal\(err\)\)/);
   });
 });
+
+// ── Achado da verificação no navegador — a página rolava de lado ─────────
+describe("Fase 3.6 · o input de arquivo escondido não vaza", () => {
+  test("a regra do input escondido vence a dos campos, e o bloco contém o absoluto", () => {
+    const css = ler("src/pages/profile/ProfilePage.css").replace(/\/\*[\s\S]*?\*\//g, "");
+    assert.match(css, /\.profile-page-container \.form-group input\.input-arquivo,\s*\.profile-page-container \.input-arquivo \{[^}]*width: 1px;/);
+    assert.match(css, /\.profile-page-container \.logo-acoes \{\s*position: relative;\s*\}/);
+  });
+});

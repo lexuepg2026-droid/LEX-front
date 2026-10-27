@@ -44,6 +44,11 @@
   font-size: var(--font-size-sm);
 }
 
+/* O e-mail ocupa a linha inteira; o campo não precisa de tudo isso. */
+.profile-page-container #perfil-email {
+  max-width: 560px;
+}
+
 .profile-page-container .perfil-email-situacao {
   display: flex;
   flex-wrap: wrap;
@@ -230,7 +235,19 @@
 }
 
 /* Escondido de forma acessível: continua alcançável por teclado através da
-   label, ao contrário de display:none. */
+   label, ao contrário de display:none.
+
+   Fase 3.6: o seletor leva `.form-group input` junto. Sem isso a regra dos
+   campos (`.form-group input { width: 100%; padding… }`, mais específica)
+   vencia o `width: 1px`, e o input "escondido" tinha a largura de um campo
+   inteiro — posicionado em absoluto, vazava 156 px à direita e a PÁGINA
+   rolava de lado em todas as larguras. A `.logo-acoes` passa a conter o
+   absoluto, para ele nunca escapar do bloco. */
+.profile-page-container .logo-acoes {
+  position: relative;
+}
+
+.profile-page-container .form-group input.input-arquivo,
 .profile-page-container .input-arquivo {
   position: absolute;
   width: 1px;

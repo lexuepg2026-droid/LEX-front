@@ -267,7 +267,7 @@ function ProfilePage() {
                    placeholder="000.000.000-00" inputMode="numeric" aria-describedby="perfil-cpf-ajuda" required />
             <small id="perfil-cpf-ajuda" className="perfil-ajuda">Identifica a sua conta.</small>
           </div>
-          <div className="form-group span-2">
+          <div className="form-group span-3">
             <label htmlFor="perfil-email">E-mail</label>
             {/* Só leitura, e não `disabled`: o campo continua focável, o rótulo
                 o alcança e o leitor de tela lê a situação junto. */}
