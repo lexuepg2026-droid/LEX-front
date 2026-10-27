@@ -1,16 +1,84 @@
 /* Segue o mesmo desenho de formulário de ClientPage.css / ProcessPage.css:
-   grid de 3 colunas em seções com borda, spans de 1 a 3. */
+   grid de 3 colunas em seções com borda, spans de 1 a 3.
+
+   Fase 3.6 (DEC-127): o cabeçalho de identidade em balão vem de
+   `ProcessDetailPage.css` (as classes do processo e do cliente, DEC-111 e
+   DEC-123); aqui ficam só os acertos dele e as linhas de ajuda. Pares medidos
+   em `tests/css/contrastePares.js` ("perfil: …"). */
+
+/* ── O cabeçalho de identidade ───────────────────────────────────────────── */
+
+/* Sem abas embaixo: o balão fecha com o respiro inteiro. */
+.profile-page-container .perfil-cabecalho {
+  padding-bottom: var(--space-4);
+}
+
+.profile-page-container .perfil-cabecalho__identidade {
+  align-items: center;
+}
+
+.profile-page-container .perfil-cabecalho__email {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  overflow-wrap: anywhere;
+}
+
+/* A situação é palavra, não só cor: "Confirmado em…" / "Não confirmado". */
+.profile-page-container .perfil-situacao-email {
+  white-space: nowrap;
+}
+
+.profile-page-container .perfil-situacao-email--ok {
+  color: var(--color-success-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.profile-page-container .perfil-situacao-email--pendente {
+  color: var(--color-warning-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.profile-page-container .btn-secundario.perfil-email-reenviar {
+  padding: 4px 12px;
+  font-size: var(--font-size-sm);
+}
+
+.profile-page-container .perfil-email-situacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+/* ── Linhas de ajuda: ONDE o dado aparece ────────────────────────────────── */
+
+.profile-page-container .perfil-ajuda {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.profile-page-container .perfil-ajuda--antes {
+  margin: 0 0 10px;
+}
+
+.profile-page-container .perfil-ajuda--secao {
+  grid-column: 1 / -1;
+  margin: -8px 0 0;
+}
+
+.profile-page-container .perfil-campo-titulo {
+  color: var(--text-color);
+  margin: 0 0 5px;
+  font-size: 14px;
+}
 
 .profile-page-container {
   width: 100%;
-}
-
-.profile-page-container .page-title {
-  color: var(--text-color);
-  font-weight: 500;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 15px;
-  margin-top: 0;
 }
 
 .profile-page-container .data-form { margin-top: 20px; }
@@ -62,16 +130,9 @@
   color: var(--text-color);
 }
 
-.profile-page-container .form-group input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.profile-page-container .field-note {
-  color: var(--text-color);
-  opacity: 0.6;
-  font-size: 12px;
-  margin-top: 4px;
+.profile-page-container .form-group input[readonly] {
+  background: transparent;
+  cursor: default;
 }
 
 .profile-page-container .cep-hint {
@@ -121,13 +182,6 @@
 /* Reaproveita os tokens e o .btn-primary já existentes nesta folha. O input
    de arquivo nativo é escondido e acionado pela <label>, porque ele não aceita
    estilo e sairia destoando de todos os outros controles do formulário. */
-
-.profile-page-container .campo-ajuda {
-  font-size: 12px;
-  color: var(--text-color);
-  opacity: 0.7;
-  margin: 0 0 10px;
-}
 
 .profile-page-container .logo-bloco {
   display: flex;

@@ -7,9 +7,13 @@ import { buscarEnderecoPorCEP } from '../../utils/viacep';
 import { UFS } from '../../utils/enums';
 import { prepararLogo, formatarTamanho } from '../../utils/imagem';
 import { toast } from '../../utils/toast';
+import '../processes/ProcessDetailPage.css';
 import './ProfilePage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
+import Avatar from '../../components/ui/Avatar';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
+import useConfirmacaoEmail from '../../hooks/useConfirmacaoEmail';
+import { situacaoDoEmail } from '../../components/layout/confirmacaoEmail.js';
 
 // Espelho plano do usuário. Guardamos o valor MASCARADO (é o que aparece no
 // input) e desmascaramos só na hora de montar o payload.
@@ -238,78 +242,142 @@ function ProfilePage() {
     }
   };
 
+  // ── E-mail: a situação e o reenvio (DEC-127) ────────────────────────────
+  // O mesmo hook da faixa, do menu e do "Mais" (DEC-088): o mesmo POST e os
+  // mesmos textos. O resultado sai num toast só — o reenvio leva
+  // `semToastGlobal` (`SO_A_TELA_AVISA`), então o global não repete.
+  const { pendente, enviando, reenviar } = useConfirmacaoEmail();
+  const situacao = situacaoDoEmail(user);
+
+  const handleReenviar = async () => {
+    if (!online) return;
+    const resultado = await reenviar();
+    if (resultado.tipo === 'ok') toast.success(resultado.texto);
+    else if (!resultado.jaAvisado) toast.error(resultado.texto);
+  };
+
+  const oab = user?.oab?.numero && user?.oab?.estado ? `OAB ${user.oab.estado} ${user.oab.numero}` : '';
+
   return (
     <div className="profile-page-container">
-      <h1 className="page-title">Meu Perfil</h1>
+      {/* ── O cabeçalho de identidade (DEC-127), no molde do cliente (DEC-123).
+          Mostra o que está SALVO: o formulário abaixo é o rascunho. ───────── */}
+      <section className="processo-balao processo-cabecalho perfil-cabecalho" aria-labelledby="perfil-titulo">
+        <div className="processo-cabecalho__identidade perfil-cabecalho__identidade">
+          <Avatar id={user?.id} nome={user?.nomeCompleto} tamanho="grande" cor={1} />
+          <div className="processo-cabecalho__textos">
+            <h1 id="perfil-titulo" className="processo-cabecalho__titulo">{user?.nomeCompleto || 'Meu perfil'}</h1>
+            {oab && <p className="processo-cabecalho__subtitulo">{oab}</p>}
+            <p className="processo-cabecalho__subtitulo perfil-cabecalho__email">
+              <span>{user?.email}</span>
+              {situacao && (
+                <span className={`perfil-situacao-email ${pendente ? 'perfil-situacao-email--pendente' : 'perfil-situacao-email--ok'}`}>
+                  {situacao}
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+      </section>
 
       <form onSubmit={handleSubmit} className="data-form">
         {!online && <OfflineWriteReason />}
 
-        <div className="form-grid section">
-          <h3>Dados pessoais</h3>
+        {/* ── 1. Dados da conta ─────────────────────────────────────────── */}
+        <div className="form-grid section" role="group" aria-labelledby="perfil-secao-conta">
+          <h3 id="perfil-secao-conta">Dados da conta</h3>
           <div className="form-group span-2">
-            <label>Nome completo*</label>
-            <input type="text" name="nomeCompleto" value={form.nomeCompleto} onChange={handleChange} required />
+            <label htmlFor="perfil-nomeCompleto">Nome completo*</label>
+            <input id="perfil-nomeCompleto" type="text" name="nomeCompleto" value={form.nomeCompleto}
+                   onChange={handleChange} aria-describedby="perfil-nomeCompleto-ajuda" required />
+            <small id="perfil-nomeCompleto-ajuda" className="perfil-ajuda">Também sai no timbrado e na assinatura do recibo.</small>
           </div>
           <div className="form-group span-1">
-            <label>CPF*</label>
-            <input type="text" name="cpf" value={form.cpf} onChange={handleMaskedChange(maskCPF)}
-                   placeholder="000.000.000-00" inputMode="numeric" required />
+            <label htmlFor="perfil-cpf">CPF*</label>
+            <input id="perfil-cpf" type="text" name="cpf" value={form.cpf} onChange={handleMaskedChange(maskCPF)}
+                   placeholder="000.000.000-00" inputMode="numeric" aria-describedby="perfil-cpf-ajuda" required />
+            <small id="perfil-cpf-ajuda" className="perfil-ajuda">Identifica a sua conta.</small>
           </div>
           <div className="form-group span-2">
-            <label>E-mail</label>
-            <input type="email" value={user?.email || ''} disabled />
-            <small className="field-note">O e-mail não pode ser alterado por aqui.</small>
+            <label htmlFor="perfil-email">E-mail</label>
+            {/* Só leitura, e não `disabled`: o campo continua focável, o rótulo
+                o alcança e o leitor de tela lê a situação junto. */}
+            <input id="perfil-email" type="email" value={user?.email || ''} readOnly
+                   aria-describedby="perfil-email-situacao perfil-email-ajuda" />
+            <div id="perfil-email-situacao" className="perfil-email-situacao">
+              {situacao && (
+                <span className={pendente ? 'perfil-situacao-email--pendente' : 'perfil-situacao-email--ok'}>{situacao}</span>
+              )}
+              {pendente && (
+                <button type="button" className="btn-secundario perfil-email-reenviar" onClick={handleReenviar}
+                        disabled={enviando} aria-disabled={online ? undefined : 'true'}>
+                  {enviando ? 'Enviando…' : 'Reenviar confirmação'}
+                </button>
+              )}
+            </div>
+            {pendente && !online && <OfflineWriteReason />}
+            <small id="perfil-email-ajuda" className="perfil-ajuda">
+              Não pode ser alterado por aqui. Também sai no timbrado, ao lado do telefone.
+            </small>
           </div>
           <div className="form-group span-1">
-            <label>Telefone</label>
-            <input type="tel" name="telefone" value={form.telefone} onChange={handleMaskedChange(maskPhone)}
-                   placeholder="(00) 00000-0000" inputMode="numeric" />
-          </div>
-        </div>
-
-        <div className="form-grid section">
-          <h3>OAB</h3>
-          <div className="form-group span-1">
-            <label>Número*</label>
-            <input type="text" name="oabNumero" value={form.oabNumero}
+            <label htmlFor="perfil-oabNumero">Número da OAB*</label>
+            <input id="perfil-oabNumero" type="text" name="oabNumero" value={form.oabNumero}
                    onChange={(e) => setField('oabNumero', unmask(e.target.value).slice(0, 6))}
-                   inputMode="numeric" required />
+                   inputMode="numeric" aria-describedby="perfil-oab-ajuda" required />
           </div>
           <div className="form-group span-1">
-            <label>UF*</label>
-            <select name="oabEstado" value={form.oabEstado} onChange={handleChange} required>
+            <label htmlFor="perfil-oabEstado">UF da OAB*</label>
+            <select id="perfil-oabEstado" name="oabEstado" value={form.oabEstado} onChange={handleChange}
+                    aria-describedby="perfil-oab-ajuda" required>
               <option value="" disabled>Selecione…</option>
               {UFS.map((uf) => <option key={uf.value} value={uf.value}>{uf.label}</option>)}
             </select>
           </div>
+          <p id="perfil-oab-ajuda" className="perfil-ajuda span-3">A OAB sai no timbrado, ao lado do seu nome.</p>
         </div>
 
-        <div className="form-grid section">
-          <h3>Advocacia</h3>
+        {/* ── 2. Dados do escritório ────────────────────────────────────── */}
+        <div className="form-grid section" role="group" aria-labelledby="perfil-secao-escritorio">
+          <h3 id="perfil-secao-escritorio">Dados do escritório — aparecem nos documentos</h3>
           <div className="form-group span-2">
-            <label>Nome*</label>
-            <input type="text" name="advNome" value={form.advNome} onChange={handleChange} maxLength={100} required />
+            <label htmlFor="perfil-advNome">Nome do escritório (no timbrado)*</label>
+            <input id="perfil-advNome" type="text" name="advNome" value={form.advNome} onChange={handleChange}
+                   maxLength={100} aria-describedby="perfil-advNome-ajuda" required />
+            <small id="perfil-advNome-ajuda" className="perfil-ajuda">A primeira linha do timbrado, em destaque, nos documentos e recibos.</small>
           </div>
           <div className="form-group span-1">
-            <label>Chave PIX</label>
-            <input type="text" name="advChavePix" value={form.advChavePix} onChange={handleChange} maxLength={120} />
+            <label htmlFor="perfil-telefone">Telefone</label>
+            <input id="perfil-telefone" type="tel" name="telefone" value={form.telefone}
+                   onChange={handleMaskedChange(maskPhone)} placeholder="(00) 00000-0000" inputMode="numeric"
+                   aria-describedby="perfil-telefone-ajuda" />
+            <small id="perfil-telefone-ajuda" className="perfil-ajuda">No timbrado, com o e-mail.</small>
           </div>
           <div className="form-group span-1">
-            <label>Instagram</label>
-            <input type="text" name="advInstagram" value={form.advInstagram} onChange={handleChange} maxLength={50} />
+            <label htmlFor="perfil-advChavePix">Chave PIX</label>
+            <input id="perfil-advChavePix" type="text" name="advChavePix" value={form.advChavePix}
+                   onChange={handleChange} maxLength={120} aria-describedby="perfil-advChavePix-ajuda" />
+            <small id="perfil-advChavePix-ajuda" className="perfil-ajuda">Não sai no timbrado: entra no texto dos documentos que usam {'{{chavePix}}'}.</small>
           </div>
-          <div className="form-group span-2">
-            <label>Site</label>
-            <input type="text" name="advSite" value={form.advSite} onChange={handleChange} maxLength={200} />
+          <div className="form-group span-1">
+            <label htmlFor="perfil-advInstagram">Instagram</label>
+            <input id="perfil-advInstagram" type="text" name="advInstagram" value={form.advInstagram}
+                   onChange={handleChange} maxLength={50} aria-describedby="perfil-advInstagram-ajuda" />
+            <small id="perfil-advInstagram-ajuda" className="perfil-ajuda">Com ou sem @. Hoje não sai no timbrado nem no recibo.</small>
+          </div>
+          <div className="form-group span-1">
+            <label htmlFor="perfil-advSite">Site</label>
+            <input id="perfil-advSite" type="text" name="advSite" value={form.advSite}
+                   onChange={handleChange} maxLength={200} aria-describedby="perfil-advSite-ajuda" />
+            <small id="perfil-advSite-ajuda" className="perfil-ajuda">Hoje não sai no timbrado nem no recibo.</small>
           </div>
 
-          <div className="form-group span-3">
-            <label>Logo do escritório</label>
-            <p className="campo-ajuda">
-              Aparece no cabeçalho dos documentos gerados em PDF e DOCX.
+          <div className="form-group span-3" role="group" aria-labelledby="perfil-logo-titulo" aria-describedby="perfil-logo-ajuda">
+            <p id="perfil-logo-titulo" className="perfil-campo-titulo">Logo do escritório</p>
+            <small id="perfil-logo-ajuda" className="perfil-ajuda perfil-ajuda--antes">
+              À esquerda do timbrado, nos documentos (PDF e DOCX) e nos recibos.
               PNG ou JPEG. Imagens grandes são reduzidas automaticamente.
-            </p>
+            </small>
 
             <div className="logo-bloco">
               <div className="logo-preview">
@@ -342,43 +410,47 @@ function ProfilePage() {
           </div>
         </div>
 
-        <div className="form-grid section">
-          <h3>Endereço</h3>
+        {/* ── 3. Endereço do escritório ─────────────────────────────────── */}
+        <div className="form-grid section" role="group" aria-labelledby="perfil-secao-endereco" aria-describedby="perfil-endereco-ajuda">
+          <h3 id="perfil-secao-endereco">Endereço do escritório</h3>
+          <p id="perfil-endereco-ajuda" className="perfil-ajuda perfil-ajuda--secao">
+            Sai numa linha do timbrado. A cidade é também a da data e da assinatura dos documentos.
+          </p>
           <div className="form-group span-1">
-            <label>CEP {cepLoading && <span className="cep-hint">buscando…</span>}</label>
-            <input type="text" name="cep" value={form.cep} onChange={handleCepChange}
+            <label htmlFor="perfil-cep">CEP {cepLoading && <span className="cep-hint">buscando…</span>}</label>
+            <input id="perfil-cep" type="text" name="cep" value={form.cep} onChange={handleCepChange}
                    placeholder="00000-000" inputMode="numeric" />
           </div>
           <div className="form-group span-2">
-            <label>Logradouro</label>
-            <input type="text" name="logradouro" value={form.logradouro} onChange={handleChange} />
+            <label htmlFor="perfil-logradouro">Logradouro</label>
+            <input id="perfil-logradouro" type="text" name="logradouro" value={form.logradouro} onChange={handleChange} />
           </div>
           <div className="form-group span-1">
-            <label>Número</label>
-            <input type="text" name="numero" value={form.numero} onChange={handleChange} />
+            <label htmlFor="perfil-numero">Número</label>
+            <input id="perfil-numero" type="text" name="numero" value={form.numero} onChange={handleChange} />
           </div>
           <div className="form-group span-1">
-            <label>Complemento</label>
-            <input type="text" name="complemento" value={form.complemento} onChange={handleChange} />
+            <label htmlFor="perfil-complemento">Complemento</label>
+            <input id="perfil-complemento" type="text" name="complemento" value={form.complemento} onChange={handleChange} />
           </div>
           <div className="form-group span-1">
-            <label>Bairro</label>
-            <input type="text" name="bairro" value={form.bairro} onChange={handleChange} />
+            <label htmlFor="perfil-bairro">Bairro</label>
+            <input id="perfil-bairro" type="text" name="bairro" value={form.bairro} onChange={handleChange} />
           </div>
           <div className="form-group span-1">
-            <label>Cidade</label>
-            <input type="text" name="cidade" value={form.cidade} onChange={handleChange} />
+            <label htmlFor="perfil-cidade">Cidade</label>
+            <input id="perfil-cidade" type="text" name="cidade" value={form.cidade} onChange={handleChange} />
           </div>
           <div className="form-group span-1">
-            <label>Estado (UF)</label>
-            <select name="estado" value={form.estado} onChange={handleChange}>
+            <label htmlFor="perfil-estado">Estado (UF)</label>
+            <select id="perfil-estado" name="estado" value={form.estado} onChange={handleChange}>
               <option value="">Selecione…</option>
               {UFS.map((uf) => <option key={uf.value} value={uf.value}>{uf.label}</option>)}
             </select>
           </div>
           <div className="form-group span-1">
-            <label>País</label>
-            <input type="text" name="pais" value={form.pais} onChange={handleChange} />
+            <label htmlFor="perfil-pais">País</label>
+            <input id="perfil-pais" type="text" name="pais" value={form.pais} onChange={handleChange} />
           </div>
         </div>
 
@@ -392,23 +464,25 @@ function ProfilePage() {
         </div>
       </form>
 
+      {/* ── 4. Segurança: a troca de senha, à parte e como antes ─────────── */}
       <form onSubmit={handleSenhaSubmit} className="data-form">
         {!online && <OfflineWriteReason />}
-        <div className="form-grid section">
-          <h3>Segurança</h3>
+        <div className="form-grid section" role="group" aria-labelledby="perfil-secao-seguranca">
+          <h3 id="perfil-secao-seguranca">Segurança</h3>
           <div className="form-group span-1">
-            <label>Senha atual*</label>
-            <input type="password" name="senhaAtual" value={senhas.senhaAtual}
+            <label htmlFor="perfil-senhaAtual">Senha atual*</label>
+            <input id="perfil-senhaAtual" type="password" name="senhaAtual" value={senhas.senhaAtual}
                    onChange={handleSenhaChange} autoComplete="current-password" required />
           </div>
           <div className="form-group span-1">
-            <label>Nova senha* (mín. 8, com letra e número)</label>
-            <input type="password" name="novaSenha" value={senhas.novaSenha}
-                   onChange={handleSenhaChange} autoComplete="new-password" required />
+            <label htmlFor="perfil-novaSenha">Nova senha*</label>
+            <input id="perfil-novaSenha" type="password" name="novaSenha" value={senhas.novaSenha}
+                   onChange={handleSenhaChange} autoComplete="new-password" aria-describedby="perfil-novaSenha-ajuda" required />
+            <small id="perfil-novaSenha-ajuda" className="perfil-ajuda">Mínimo de 8 caracteres, com letra e número.</small>
           </div>
           <div className="form-group span-1">
-            <label>Confirmar nova senha*</label>
-            <input type="password" name="confirmarNovaSenha" value={senhas.confirmarNovaSenha}
+            <label htmlFor="perfil-confirmarNovaSenha">Confirmar nova senha*</label>
+            <input id="perfil-confirmarNovaSenha" type="password" name="confirmarNovaSenha" value={senhas.confirmarNovaSenha}
                    onChange={handleSenhaChange} autoComplete="new-password" required />
           </div>
 

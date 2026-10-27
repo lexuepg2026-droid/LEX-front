@@ -210,6 +210,13 @@ export const PARES = [
     { nome: `avatar: inicial / fundo ${n}`, texto: `--color-on-avatar-${n}`, fundo: `--color-avatar-${n}`, limite: TEXTO }
   )),
 
+  // O perfil (Fase 3.6, DEC-127): a situação do e-mail é texto verde ou
+  // amarelo. No cabeçalho ela pousa no balão (pares "success/warning texto /
+  // --color-surface", acima); na seção "Dados da conta", no fundo da página.
+  // As linhas de ajuda são o texto secundário sobre o fundo (par de cima).
+  { nome: "perfil: e-mail confirmado / --color-bg", texto: "--color-success-text", fundo: "--color-bg", limite: TEXTO },
+  { nome: "perfil: e-mail não confirmado / --color-bg", texto: "--color-warning-text", fundo: "--color-bg", limite: TEXTO },
+
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
   { nome: "borda de campo / --color-surface", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },

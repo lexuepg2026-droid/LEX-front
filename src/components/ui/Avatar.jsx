@@ -10,11 +10,13 @@ import './Avatar.css';
 // também não tem `title` nem `role="img"`.
 //
 // `tamanho`: "pequeno" na lista, "grande" no cabeçalho do detalhe.
+// `cor` (1 a 8) fixa a cor em vez de derivá-la do id: a advogada é sempre a
+// cor 1, o verde da marca (Fase 3.6, DEC-127).
 // ═══════════════════════════════════════════════════════════════════════════
-function Avatar({ id, nome, tamanho = 'pequeno' }) {
+function Avatar({ id, nome, tamanho = 'pequeno', cor }) {
   return (
     <span
-      className={`avatar avatar--${tamanho} avatar--cor-${indiceDaCor(id)}`}
+      className={`avatar avatar--${tamanho} avatar--cor-${cor ?? indiceDaCor(id)}`}
       aria-hidden="true"
     >
       {inicialDoNome(nome)}
