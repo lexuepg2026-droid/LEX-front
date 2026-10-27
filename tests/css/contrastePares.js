@@ -226,6 +226,22 @@ export const PARES = [
   { nome: "Visão geral: botão primário no atalho", texto: "--color-on-primary", fundo: "--color-primary", limite: TEXTO },
   { nome: "Visão geral: borda do botão primário / --color-surface-card", texto: "--color-btn-primario-borda", fundo: "--color-surface-card", limite: NAO_TEXTO, modos: ["escuro"] },
 
+  // A Agenda na pele nova (Fase 3.8, DEC-134 e DEC-136). As pílulas da grade
+  // pousam na célula (`--color-surface-raised`). Texto do tom sobre o fundo
+  // do tom (as três naturezas) e, no vencimento e na vencida — que são
+  // LISTRADOS —, também sobre a faixa transparente, isto é, sobre a própria
+  // célula. A borda tracejada e o listrado na cor plena do tom (não texto)
+  // sobre a célula. O "hoje": o anel e a palavra no destaque, sobre a célula.
+  ...["warning", "danger", "info"].map((s) => (
+    { nome: `Agenda: pílula ${s} / célula da grade`, texto: `--color-${s}-text`, fundo: `--color-${s}-bg`, sobre: ["--color-surface-raised"], limite: TEXTO }
+  )),
+  ...["warning", "danger"].flatMap((s) => [
+    { nome: `Agenda: pílula ${s} listrada, faixa vazia / célula da grade`, texto: `--color-${s}-text`, fundo: "--color-surface-raised", limite: TEXTO },
+    { nome: `Agenda: listrado e borda ${s} / célula da grade`, texto: `--color-${s}`, fundo: "--color-surface-raised", limite: NAO_TEXTO }
+  ]),
+  { nome: "Agenda: anel do hoje / célula da grade", texto: "--color-accent", fundo: "--color-surface-raised", limite: NAO_TEXTO },
+  { nome: "Agenda: palavra hoje / célula da grade", texto: "--color-accent", fundo: "--color-surface-raised", limite: TEXTO },
+
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
   { nome: "borda de campo / --color-surface", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },

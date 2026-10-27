@@ -118,3 +118,113 @@ describe("Fase 3.8 · item 2 — natureza → tom, uma fonte só (DEC-134)", () 
     assert.deepEqual(LEGENDA.map((n) => [n.tipo, n.rotulo]), [["compromisso", "Compromisso"], ["vencimento", "Vencimento"], ["vencida", "Vencida"]]);
   });
 });
+
+// ── Item 3 — a Agenda na pele nova (DEC-136) ─────────────────────────────
+import {
+  NOMES_DOS_MESES, anosDoSeletor, situacaoDoItem, itemRiscado, rotuloDoItemNaGrade, linhaDaAgenda,
+} from "../../src/pages/calendar/agenda.js";
+import { VISTAS } from "../../src/pages/calendar/monthGrid.js";
+import { MOTIVO_DA_DERIVADA_NAO_EDITAVEL } from "../../src/utils/calendarLabels.js";
+
+describe("Fase 3.8 · item 3 — as regras da Agenda, executadas (DEC-136)", () => {
+  const evento = (extra = {}) => ({
+    natureza: "evento", _id: "e1", data: "2026-10-27", hora: "14:30", titulo: "Audiência de instrução",
+    subtitulo: "Audiência", concluido: false, processo: { numeroProcesso: "0001", titulo: "Cobrança", clientePrincipalNome: "Ana" }, ...extra,
+  });
+  const parcela = (extra = {}) => ({
+    natureza: "derivada", origem: "parcela", _id: "p1", data: "2026-10-27", hora: null, titulo: "Parcela 2 de 3",
+    subtitulo: "Honorários contratuais", valor: 1000, status: "pendente", processo: { numeroProcesso: "0002", titulo: "Indenização" }, ...extra,
+  });
+
+  test("os seletores: doze meses e o ano à vista sempre na lista", () => {
+    assert.equal(NOMES_DOS_MESES.length, 12);
+    assert.equal(NOMES_DOS_MESES[9], "Outubro");
+    const anos = anosDoSeletor(2026);
+    assert.equal(anos.length, 11);
+    assert.ok(anos.includes(2026));
+    assert.deepEqual([anos[0], anos.at(-1)], [2021, 2031]);
+  });
+
+  test("só as duas vistas: Mês e Agenda (a semana dela não entra)", () => {
+    assert.deepEqual([...VISTAS], ["mes", "agenda"]);
+  });
+
+  test("riscado: compromisso concluído e parcela paga; o resto, não", () => {
+    assert.equal(situacaoDoItem(evento({ concluido: true })), "Concluído");
+    assert.equal(situacaoDoItem(parcela({ status: "pago" })), "Pago");
+    assert.equal(itemRiscado(evento()), false);
+    assert.equal(itemRiscado(parcela({ status: "vencido" })), false);
+  });
+
+  test("o rótulo acessível da pílula diz a natureza, o texto inteiro e a situação", () => {
+    assert.equal(rotuloDoItemNaGrade(evento()), "Compromisso: 14:30, Audiência de instrução, Audiência");
+    assert.equal(rotuloDoItemNaGrade(evento({ concluido: true })), "Compromisso: 14:30, Audiência de instrução, Audiência, concluído");
+    assert.equal(rotuloDoItemNaGrade(parcela()), "Vencimento: Parcela 2 de 3, Honorários contratuais");
+    assert.equal(rotuloDoItemNaGrade(parcela({ status: "vencido" })), "Vencida: Parcela 2 de 3, Honorários contratuais");
+    assert.equal(rotuloDoItemNaGrade(parcela({ status: "pago" })), "Vencimento: Parcela 2 de 3, Honorários contratuais, pago");
+  });
+
+  test("a linha da vista Agenda: o tom, o destino e a situação", () => {
+    const l = linhaDaAgenda(evento({ concluido: true }));
+    assert.equal(l.tipo, "compromisso");
+    assert.equal(l.destino, "/dashboard/agenda/editar/e1");
+    assert.equal(l.subtitulo, "Audiência · 14:30");
+    assert.equal(l.contexto, "0001 — Cobrança · Ana");
+    assert.equal(l.situacao, "Concluído");
+    assert.equal(l.derivada, false);
+    const v = linhaDaAgenda(parcela({ status: "vencido" }));
+    assert.equal(v.tipo, "vencida");
+    assert.equal(v.titulo, "Honorários contratuais — Parcela 2 de 3");
+    assert.equal(v.destino, "/dashboard/parcelas/editar/p1");
+    assert.equal(v.derivada, true);
+    assert.match(v.subtitulo, /1\.000,00/);
+  });
+});
+
+describe("Fase 3.8 · item 3 — a fiação da tela (DEC-136)", () => {
+  const tela = semComentarios(ler("src/pages/calendar/CalendarPage.jsx"));
+  const css = semComentarios(ler("src/pages/calendar/CalendarPage.css"));
+
+  test("o balão com o título, Hoje, setas com rótulo, mês e ano, vistas e o +", () => {
+    assert.match(tela, /<section className="cal-balao" aria-labelledby="cal-titulo">/);
+    assert.match(tela, /<h1 id="cal-titulo" className="cal-titulo">Agenda<\/h1>/);
+    assert.match(tela, /aria-label="Mês anterior"/);
+    assert.match(tela, /aria-label="Próximo mês"/);
+    assert.match(tela, /<label htmlFor="cal-mes"[^>]*>Mês<\/label>\s*<select\s+id="cal-mes"/);
+    assert.match(tela, /<label htmlFor="cal-ano"[^>]*>Ano<\/label>\s*<select\s+id="cal-ano"/);
+    assert.match(tela, /onChange=\{\(e\) => irPara\(\{ ano, mes: Number\(e\.target\.value\) \}\)\}/);
+    assert.match(tela, /onChange=\{\(e\) => irPara\(\{ ano: Number\(e\.target\.value\), mes \}\)\}/);
+    assert.match(tela, /to="\/dashboard\/agenda\/novo"\s+className="cal-novo"\s+aria-label="Novo compromisso"/);
+    assert.doesNotMatch(tela, /PageHeader/);
+  });
+
+  test("sem busca e sem 'fins de semana'", () => {
+    assert.doesNotMatch(tela, /type="search"|busca|Buscar|fins de semana|finsDeSemana/i);
+  });
+
+  test("a grade: hoje pela forma e pela palavra, 'Mais N' abrindo o dia, pílula com rótulo completo", () => {
+    assert.match(tela, /\{ehHoje && <span className="cal-celula__hoje">hoje<\/span>\}/);
+    assert.match(tela, /Mais \{ocultos\}/);
+    assert.match(tela, /onClick=\{\(\) => onAbrirDia\(celula\.chave\)\}/);
+    assert.match(tela, /aria-label=\{rotulo\} title=\{rotulo\}/);
+    assert.match(tela, /itemRiscado\(item\) \? 'cal-item--concluido'/);
+    assert.match(css, /\.cal-celula--hoje \.cal-celula__numero \{[^}]*background: var\(--color-primary\);[^}]*color: var\(--color-on-primary\);/);
+    assert.match(css, /\.cal-item--concluido \.cal-item__titulo,\s*\.cal-item--concluido \.cal-item__hora \{ text-decoration: line-through; \}/);
+    assert.match(css, /\.cal-item__titulo \{[^}]*text-overflow: ellipsis;/);
+  });
+
+  test("a vista Agenda é a LinhaDeData agrupada por dia, e a derivada diz a frase", () => {
+    assert.match(tela, /<LinhaDeData key=\{linha\.chave\} item=\{linha\} onAbrir=\{onAbrirLinha\} \/>/);
+    assert.match(tela, /if \(linha\.derivada\) toast\.info\(MOTIVO_DA_DERIVADA_NAO_EDITAVEL\);/);
+    assert.match(MOTIVO_DA_DERIVADA_NAO_EDITAVEL, /não se edita na agenda/);
+    const linha = semComentarios(ler("src/components/dashboard/LinhaDeData.jsx"));
+    assert.match(linha, /onClick=\{onAbrir \? \(\) => onAbrir\(item\) : undefined\}/);
+    assert.match(linha, /\{item\.situacao && <span className="datas-item__situacao">\{item\.situacao\}<\/span>\}/);
+  });
+
+  test("nenhuma opacidade em item, célula ou linha (o contraste é o medido), nenhum transform/filter", () => {
+    assert.doesNotMatch(css, /opacity\s*:/);
+    assert.doesNotMatch(css, /(^|[\s;{])(transform|filter)\s*:/m, "`text-transform` não conta; `transform` e `filter`, sim");
+    assert.doesNotMatch(semComentarios(ler("src/components/dashboard/LinhaDeData.css")), /opacity\s*:/);
+  });
+});

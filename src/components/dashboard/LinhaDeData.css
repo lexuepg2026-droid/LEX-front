@@ -104,6 +104,19 @@ a.datas-item:hover {
   color: var(--tom-texto);
 }
 
+/* Fase 3.8 (DEC-136): na vista Agenda, o compromisso concluído e a parcela
+   paga. O título riscado é a forma; a situação escrita, o texto. Sem
+   opacidade: o contraste do título continua o do par medido. */
+.datas-item--riscado .datas-item__titulo {
+  text-decoration: line-through;
+}
+
+.datas-item__situacao {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
 @media (max-width: 480px) {
   .datas-item { grid-template-columns: auto minmax(0, 1fr); }
   .datas-item__pilula { grid-column: 2; justify-self: start; }
