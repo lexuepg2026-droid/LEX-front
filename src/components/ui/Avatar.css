@@ -1,0 +1,70 @@
+/* O avatar do cliente — Fase 3.5 (DEC-120).
+
+   Os fundos são os oito `--color-avatar-N` de `variables.css`, iguais nos
+   dois modos; a inicial é `--color-on-avatar-N`, medida em
+   `tests/css/contrastePares.js` ("avatar: …"). O contorno é decorativo: no
+   claro, o bege some sobre o balão, e o fio desenha o círculo. */
+
+.avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  user-select: none;
+}
+
+.avatar--pequeno {
+  width: 32px;
+  height: 32px;
+  font-size: var(--font-size-sm);
+}
+
+.avatar--grande {
+  width: 64px;
+  height: 64px;
+  font-size: 1.75rem;
+}
+
+.avatar--cor-1 {
+  background-color: var(--color-avatar-1);
+  color: var(--color-on-avatar-1);
+}
+
+.avatar--cor-2 {
+  background-color: var(--color-avatar-2);
+  color: var(--color-on-avatar-2);
+}
+
+.avatar--cor-3 {
+  background-color: var(--color-avatar-3);
+  color: var(--color-on-avatar-3);
+}
+
+.avatar--cor-4 {
+  background-color: var(--color-avatar-4);
+  color: var(--color-on-avatar-4);
+}
+
+.avatar--cor-5 {
+  background-color: var(--color-avatar-5);
+  color: var(--color-on-avatar-5);
+}
+
+.avatar--cor-6 {
+  background-color: var(--color-avatar-6);
+  color: var(--color-on-avatar-6);
+}
+
+.avatar--cor-7 {
+  background-color: var(--color-avatar-7);
+  color: var(--color-on-avatar-7);
+}
+
+.avatar--cor-8 {
+  background-color: var(--color-avatar-8);
+  color: var(--color-on-avatar-8);
+}
