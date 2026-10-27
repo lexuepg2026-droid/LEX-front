@@ -181,22 +181,26 @@ function ClienteListPage() {
           <div className="table-wrapper" aria-busy={carregando || undefined}>
             {/* Larguras estáveis (Fase 4.3); a última coluna fica fixa à
                 direita (DEC-107) e a tabela rola dentro do wrapper. */}
-            <table className="data-table data-table--fixed data-table--acoes-fixas">
+            <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa data-table--acoes-sem-nota">
               <colgroup>
+                {/* Fase 3.7 (DEC-133): o nome é a coluna fixa à esquerda, e o
+                    documento fica (é o que distingue dois homônimos). E-mail e
+                    telefone `prio-2`; o tipo (PF/PJ) `prio-3` — o documento já
+                    diz se é CPF ou CNPJ. */}
                 <col className="col-lg" />
-                <col className="col-sm" />
+                <col className="col-sm prio-3" />
                 <col className="col-md" />
-                <col className="col-lg" />
-                <col className="col-sm" />
+                <col className="col-lg prio-2" />
+                <col className="col-sm prio-2" />
                 <col className="col-acoes-menu" />
               </colgroup>
               <thead>
                 <tr>
                   <th>Nome / Razão social</th>
-                  <th>Tipo</th>
+                  <th className="prio-3">Tipo</th>
                   <th>CPF / CNPJ</th>
-                  <th>E-mail</th>
-                  <th>Telefone</th>
+                  <th className="prio-2">E-mail</th>
+                  <th className="prio-2">Telefone</th>
                   <th>Ações</th>
                 </tr>
               </thead>
@@ -228,10 +232,10 @@ function ClienteListPage() {
                           </span>
                         </span>
                       </td>
-                      <td className="cell-truncate">{tipoDoCliente(cliente)}</td>
+                      <td className="cell-truncate prio-3">{tipoDoCliente(cliente)}</td>
                       <td className="cell-truncate">{documentoNaLista(cliente)}</td>
-                      <td className="cell-truncate" title={cliente.email || undefined}>{cliente.email || '—'}</td>
-                      <td className="cell-truncate">{telefoneNaLista(cliente)}</td>
+                      <td className="cell-truncate prio-2" title={cliente.email || undefined}>{cliente.email || '—'}</td>
+                      <td className="cell-truncate prio-2">{telefoneNaLista(cliente)}</td>
                       {/* DEC-047: a coluna de ações é o menu ⋮. */}
                       <td className="actions-cell actions-cell--menu">
                         <ActionMenu

@@ -157,7 +157,8 @@ describe("Fase 3.5 · item 3 — a lista de clientes (DEC-121)", () => {
     assert.match(tela, /useCachedResource\(\{\s*resource: 'clients'/);
     assert.match(tela, /fromCache && <OfflineNotice/);
     assert.match(tela, /<Avatar id=\{cliente\._id\} nome=\{nome\} tamanho="pequeno" \/>/);
-    const cabecalhos = [...tela.matchAll(/<th>([^<]+)<\/th>/g)].map((m) => m[1]);
+    // Fase 3.7 (DEC-133): os <th> ganharam a classe de prioridade (`prio-2`/`prio-3`); a trava passa a aceitá-la e continua exigindo os mesmos nomes, na mesma ordem e alinhados ao colgroup.
+    const cabecalhos = [...tela.matchAll(/<th(?:\s+className="[^"]*")?>([^<]+)<\/th>/g)].map((m) => m[1]);
     assert.deepEqual(cabecalhos, ["Nome / Razão social", "Tipo", "CPF / CNPJ", "E-mail", "Telefone", "Ações"]);
     assert.doesNotMatch(tela, /Endereço|formatEndereco/, "o endereço saiu da lista");
     // F-1a.1: nada de trocar a árvore pelo <Loading/>, nem de devolver o foco à força.

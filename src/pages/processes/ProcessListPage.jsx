@@ -252,13 +252,17 @@ function ProcessoListPage() {
           <div className="table-wrapper" aria-busy={carregando || undefined}>
             {/* Larguras estáveis (Fase 4.3); a última coluna fica fixa à
                 direita (DEC-107) e a tabela rola dentro do wrapper. */}
-            <table className="data-table data-table--fixed data-table--acoes-fixas">
+            <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa data-table--acoes-sem-nota">
               <colgroup>
+                {/* Fase 3.7 (DEC-133): o número é a coluna fixa à esquerda, e o
+                    título fica (os dois identificam o processo). Cliente e fase
+                    `prio-2`, tipo de ação `prio-3`: sem o tipo, a lista cabe
+                    sem rolar a 1280 px (1.160 de 1.192). */}
                 <col className="col-lg" />
                 <col className="col-lg" />
-                <col className="col-md" />
-                <col className="col-md" />
-                <col className="col-md" />
+                <col className="col-md prio-2" />
+                <col className="col-md prio-3" />
+                <col className="col-md prio-2" />
                 <col className="col-sm" />
                 <col className="col-data" />
                 <col className="col-acoes-menu" />
@@ -267,11 +271,11 @@ function ProcessoListPage() {
                 <tr>
                   <th>Nº Processo</th>
                   <th>Título</th>
-                  <th>Cliente</th>
-                  <th>Tipo de ação</th>
+                  <th className="prio-2">Cliente</th>
+                  <th className="prio-3">Tipo de ação</th>
                   {/* DEC-054: a fase entra ao lado do status, não no lugar
                       dele. São eixos diferentes. */}
-                  <th>Fase</th>
+                  <th className="prio-2">Fase</th>
                   <th>Status</th>
                   <th>Distribuição</th>
                   <th>Ações</th>
@@ -311,10 +315,10 @@ function ProcessoListPage() {
                           p.titulo
                         )}
                       </td>
-                      <td className="cell-truncate" title={nomeCliente(p)}>{nomeCliente(p)}</td>
-                      <td className="cell-truncate" title={p.tipoAcao || undefined}>{p.tipoAcao || '—'}</td>
+                      <td className="cell-truncate prio-2" title={nomeCliente(p)}>{nomeCliente(p)}</td>
+                      <td className="cell-truncate prio-3" title={p.tipoAcao || undefined}>{p.tipoAcao || '—'}</td>
                       {/* O rótulo vem de `rotuloDaFase`, nunca montado aqui. */}
-                      <td className="cell-truncate">{rotuloDaFase(p.fase)}</td>
+                      <td className="cell-truncate prio-2">{rotuloDaFase(p.fase)}</td>
                       {/* A bolinha e a palavra, as mesmas do cabeçalho do
                           detalhe (DEC-111). */}
                       <td>

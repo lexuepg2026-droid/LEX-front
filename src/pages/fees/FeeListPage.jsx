@@ -10,7 +10,7 @@ import Paginador from '../../components/ui/Paginador';
 import ActionMenu from '../../components/ui/ActionMenu';
 import FinancialFilters from '../../components/financeiro/FinancialFilters';
 import { descricaoDoRecorteFinanceiro } from '../../components/financeiro/filterSummary.js';
-import useListFilters, { FILTROS_NA_URL } from '../../hooks/useListFilters';
+import useListFilters, { FILTROS_DAS_FINANCEIRAS } from '../../hooks/useListFilters';
 import useProcessoFiltrado from '../../hooks/useProcessoFiltrado';
 import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
 import { formatDate, formatCurrency } from '../../utils/formatters';
@@ -33,7 +33,7 @@ import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 const POR_PAGINA = 20;
 
-function FeeListPage({ embedded = false }) {
+function FeeListPage() {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
   // `?processoId=` vem das abas do processo. A lista filtrava por ele sem
   // dizer; agora ele aparece num chip e na frase do recorte (DEC-070).
@@ -44,7 +44,7 @@ function FeeListPage({ embedded = false }) {
   const {
     filtros, buscaDebounced, page, setPage,
     definirFiltro, aplicarPreset, limpar, temFiltro
-  } = useListFilters({ tipo: '', status: '' }, FILTROS_NA_URL(embedded));
+  } = useListFilters({ tipo: '', status: '' }, FILTROS_DAS_FINANCEIRAS);
 
   // ── DEC-058 (F-5a): espelho local da listagem, escopado por usuário ─────
   //
@@ -120,12 +120,10 @@ function FeeListPage({ embedded = false }) {
   // barra e para o estado vazio, e o "Limpar filtros" o remove junto — senão a
   // frase diria "do processo X" e o botão deixaria o processo de pé.
   const filtrado = temFiltro || Boolean(processoId);
-  // Na página própria o `processoId` sai no mesmo `limpar` (uma escrita só
-  // na URL — duas seguidas se atropelariam); embutida, pelo chip.
-  const limparTudo = () => {
-    limpar();
-    if (processoId && embedded) filtroProcesso.remover();
-  };
+  // O `processoId` sai no mesmo `limpar` da URL (uma escrita só — duas
+  // seguidas se atropelariam). Desde a 3.7 a lista só existe na página
+  // própria: o Financeiro deixou de embuti-la (DEC-130).
+  const limparTudo = limpar;
 
   const body = (
     <>
@@ -154,8 +152,8 @@ function FeeListPage({ embedded = false }) {
         honorarios={null}
         placeholderBusca="Buscar por descrição, processo ou cliente…"
         descricaoDoRecorte={recorte}
-        semBusca={!embedded}
-        pilulas={!embedded}
+        semBusca
+        pilulas
       >
         <select
           value={filtros.tipo}
@@ -199,7 +197,7 @@ function FeeListPage({ embedded = false }) {
       ) : (
         <div className="table-wrapper" aria-busy={carregando || undefined}>
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
-          <table className="data-table data-table--fixed data-table--acoes-fixas">
+          <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa data-table--acoes-sem-nota">
             {/* Dinheiro em `col-money`, data em `col-data`, status em
                 `col-status` (F-1b.2). "Valor" carrega o honorário sobre
                 monte-mor, que é o maior número do sistema — era a coluna com
@@ -211,10 +209,13 @@ function FeeListPage({ embedded = false }) {
                   útil, e as de texto colapsavam para 0 px a 768 e ~100 a 1280
                   (medido no navegador). Agora a tabela rola DENTRO do
                   `.table-wrapper` e nenhuma coluna some. */}
-              <col className="col-md" />
-              <col className="col-md" />
+              {/* Fase 3.7 (DEC-133): a Descrição passou a ser a PRIMEIRA coluna —
+                  é ela que identifica a linha, e é a coluna fixa à esquerda.
+                  Processo e cliente são `prio-2`; o tipo, `prio-3`. */}
               <col className="col-lg" />
-              <col className="col-xs" />
+              <col className="col-md prio-2" />
+              <col className="col-md prio-2" />
+              <col className="col-xs prio-3" />
               {/* Fase 3.3 (DEC-107): saíram "Percentual" e "Valor base" — os
                   dois estão no detalhe do honorário, e eram 230 px que
                   empurravam o ⋮ para fora da vista. Fica o "Valor". */}
@@ -227,10 +228,10 @@ function FeeListPage({ embedded = false }) {
             </colgroup>
             <thead>
               <tr>
-                <th>Processo</th>
-                <th>Cliente</th>
                 <th>Descrição</th>
-                <th>Tipo</th>
+                <th className="prio-2">Processo</th>
+                <th className="prio-2">Cliente</th>
+                <th className="prio-3">Tipo</th>
                 <th>Valor</th>
                 <th>Status</th>
                 <th>Vencimento</th>
@@ -248,8 +249,6 @@ function FeeListPage({ embedded = false }) {
                   className={`linha-clicavel${fee.status === STATUS_CANCELADO ? ' row-inativa' : ''}`}
                   onClick={clicarNaLinha(`/dashboard/honorarios/${fee._id}`)}
                 >
-                  <td className="cell-truncate" title={fee.processoId?.titulo ?? undefined}>{fee.processoId?.titulo ?? '—'}</td>
-                  <td className="cell-truncate" title={clienteDaLinha(fee) ?? undefined}>{clienteDaLinha(fee) ?? '—'}</td>
                   {/* O nome do honorário leva à página dele (F-1b). É o
                       caminho principal para a tela nova, e o que responde
                       "quanto já entrou nesta cobrança" sem passar pela
@@ -259,7 +258,9 @@ function FeeListPage({ embedded = false }) {
                       {fee.descricao}
                     </Link>
                   </td>
-                  <td>{labelDe(TIPO_HONORARIO_OPTIONS, fee.tipo)}</td>
+                  <td className="cell-truncate prio-2" title={fee.processoId?.titulo ?? undefined}>{fee.processoId?.titulo ?? '—'}</td>
+                  <td className="cell-truncate prio-2" title={clienteDaLinha(fee) ?? undefined}>{clienteDaLinha(fee) ?? '—'}</td>
+                  <td className="prio-3">{labelDe(TIPO_HONORARIO_OPTIONS, fee.tipo)}</td>
                   <td className="cell-num">{formatCurrency(fee.valor)}</td>
                   <td><StatusBadge status={fee.status} /></td>
                   <td>{formatDate(fee.dataVencimento)}</td>
@@ -311,7 +312,6 @@ function FeeListPage({ embedded = false }) {
     </>
   );
 
-  if (embedded) return body;
 
   return (
     <div className="module-container">

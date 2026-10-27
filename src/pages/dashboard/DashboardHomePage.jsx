@@ -6,6 +6,14 @@ import financeiroService from '../../api/financeiroService';
 import installmentService from '../../api/installmentService';
 import calendarService from '../../api/calendarService';
 import BlocoDoPainel from '../../components/dashboard/BlocoDoPainel';
+import CartaoDeResumo from '../../components/dashboard/CartaoDeResumo';
+import LinhaDeData from '../../components/dashboard/LinhaDeData';
+import {
+  CARTOES_DO_ACUMULADO,
+  CARTAO_VENCIDO_HOJE,
+  notaDasVencidas,
+  notaDoSaldoAdiantado,
+} from '../../components/dashboard/resumoFinanceiro.js';
 import {
   contarParcelasVencidas,
   parcelasVencidasDoAviso,
@@ -32,10 +40,8 @@ import {
   mesVizinhoNaFaixa,
   paramsDoMes,
   rotuloDoMes,
-  seloDaData,
   datasProximas,
   janelaDasDatas,
-  TIPOS_DE_DATA,
   destinoDasConfirmacoes,
   destinoDasConfirmacoesDoProcesso,
   rotuloDaConfirmacaoPorProcesso,
@@ -143,11 +149,10 @@ const CARDS_DO_MES = [
   },
 ];
 
-const CARDS_ACUMULADOS = [
-  { key: 'valorContratado', label: 'Valor Contratado (total)', icone: 'documento', color: 'primary' },
-  { key: 'recebido',        label: 'Recebido (total)',         icone: 'dinheiro',  color: 'success' },
-  { key: 'pendente',        label: 'Em Aberto (total)',        icone: 'relogio',   color: 'warning' },
-];
+// Os acumulados, o vencido de hoje e a nota do saldo adiantado vêm de
+// `components/dashboard/resumoFinanceiro.js` desde a Fase 3.7 (DEC-131): a
+// Visão geral do Financeiro mostra os mesmos números, e uma definição só
+// impede os dois painéis de discordarem.
 
 // Os blocos de estatística, que nascem fechados.
 const PADRAO_FECHADO = new Set(['acumulado', 'resumo', 'graficos']);
@@ -547,34 +552,7 @@ function DashboardHomePage() {
           />
         ) : (
           <ul className="datas-lista">
-            {datas.map((item) => {
-              const selo = seloDaData(item.data);
-              const conteudo = (
-                <>
-                  <span className="datas-item__selo">
-                    <span className="datas-item__dia">{selo.dia}</span>
-                    <span className="datas-item__mes">{selo.mes}</span>
-                  </span>
-                  <span className="datas-item__texto">
-                    <span className="datas-item__titulo">{item.titulo}</span>
-                    {item.subtitulo && <span className="datas-item__subtitulo">{item.subtitulo}</span>}
-                    {item.contexto && <span className="datas-item__contexto">{item.contexto}</span>}
-                  </span>
-                  <span className={`datas-item__pilula datas-item__pilula--${item.tipo}`}>
-                    {TIPOS_DE_DATA[item.tipo].rotulo}
-                  </span>
-                </>
-              );
-              return (
-                <li key={item.chave}>
-                  {item.destino ? (
-                    <Link to={item.destino} className="datas-item">{conteudo}</Link>
-                  ) : (
-                    <div className="datas-item">{conteudo}</div>
-                  )}
-                </li>
-              );
-            })}
+            {datas.map((item) => <LinhaDeData key={item.chave} item={item} />)}
           </ul>
         )}
         {agendaFalhou && resumoFixo && (
@@ -600,16 +578,10 @@ function DashboardHomePage() {
           <div className="summary-grid">
             {CARDS_DO_MES.map(({ key, label, icone, color, vazio }) => {
               const valor = resumoFinanceiro[key] ?? 0;
+              // Zero REAL diz por extenso que é zero.
               return (
-                <div key={key} className={`summary-card summary-card--${color}`}>
-                  <p className="card-label">
-                    <IconeDoCartao icone={icone} />
-                    {label(rotuloMesDoServidor)}
-                  </p>
-                  <p className="card-value">{formatCurrency(valor)}</p>
-                  {/* Zero REAL diz por extenso que é zero. */}
-                  {valor === 0 && <p className="card-note">{vazio}</p>}
-                </div>
+                <CartaoDeResumo key={key} rotulo={label(rotuloMesDoServidor)} icone={icone} cor={color}
+                                valor={formatCurrency(valor)} nota={valor === 0 ? vazio : null} />
               );
             })}
 
@@ -617,16 +589,16 @@ function DashboardHomePage() {
                 financeiro (o sino não expõe dinheiro); a CONTAGEM vem do sino,
                 que é a fonte única deste número. É de HOJE, e não do mês
                 escolhido — o rótulo diz isso. */}
-            <div className="summary-card summary-card--danger">
-              <p className="card-label">
-                <IconeDoCartao Icon={AlertCircle} />
-                Total vencido hoje
-              </p>
-              <p className="card-value">{formatCurrency(resumoFinanceiro.valorVencido ?? 0)}</p>
-              <p className="card-note">
-                {vencidas > 0 ? pluralParcelas(vencidas) : 'nenhuma parcela vencida'}
-              </p>
-            </div>
+            <CartaoDeResumo
+              rotulo={CARTAO_VENCIDO_HOJE.label}
+              cor={CARTAO_VENCIDO_HOJE.color}
+              Icon={AlertCircle}
+              valor={formatCurrency(resumoFinanceiro[CARTAO_VENCIDO_HOJE.key] ?? 0)}
+              // Fase 3.7: sem a resposta do sino (sem sinal, falha), a nota
+              // dizia "nenhuma parcela vencida" ao lado de um valor vencido —
+              // contava zero de uma resposta que não chegou. Sem sino, sem nota.
+              nota={avisos ? notaDasVencidas(vencidas) : null}
+            />
           </div>
         )}
       </BlocoDoPainel>
@@ -641,26 +613,17 @@ function DashboardHomePage() {
           aoAlternar={alternarBloco}
         >
           <div className="summary-grid">
-            {CARDS_ACUMULADOS.map(({ key, label, icone, color }) => (
-              <div key={key} className={`summary-card summary-card--${color}`}>
-                <p className="card-label">
-                  <IconeDoCartao icone={icone} />
-                  {label}
-                </p>
-                <p className="card-value">{formatCurrency(resumoFixo[key] ?? 0)}</p>
-              </div>
+            {CARTOES_DO_ACUMULADO.map(({ key, label, icone, color }) => (
+              <CartaoDeResumo key={key} rotulo={label} icone={icone} cor={color}
+                              valor={formatCurrency(resumoFixo[key] ?? 0)} />
             ))}
           </div>
 
-          {/* O terceiro termo, dito em uma linha (F-1a): `pendente` é
-              `contratado − recebido − saldoAdiantado`. Sem esta nota a
-              subtração dos dois cartões de cima não chega ao terceiro. */}
+          {/* O crédito do cliente, nomeado (DEC-040). A frase antiga dizia que
+              ele "já está abatido do total em aberto", o que deixou de ser
+              verdade na DEC-040 — ver `notaDoSaldoAdiantado`. */}
           {(resumoFixo.saldoAdiantado ?? 0) > 0 && (
-            <p className="summary-nota">
-              Inclui {formatCurrency(resumoFixo.saldoAdiantado)} recebidos
-              como adiantamento, ainda sem parcela correspondente. Esse valor já
-              está abatido do total em aberto.
-            </p>
+            <p className="summary-nota">{notaDoSaldoAdiantado(resumoFixo.saldoAdiantado)}</p>
           )}
         </BlocoDoPainel>
       )}

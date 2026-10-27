@@ -40,10 +40,18 @@ const classesDeclaradas = (css) => {
   let texto = css.replace(/\/\*[\s\S]*?\*\//g, " ");
 
   // Remove blocos mais internos repetidamente até sobrarem só os seletores.
+  //
+  // Fase 3.7: o bloco de DECLARAÇÕES some; o bloco que, depois da passada
+  // anterior, só tem SELETORES (o corpo de um `@media`) devolve os seletores.
+  // Antes os dois sumiam: `@media (…) { .a .prio-3 { display: none } }` virava
+  // `@media (…) { .a .prio-3 }` e, na passada seguinte, nada — e uma classe que
+  // só existe dentro de `@media` era acusada de não ter regra.
+  // Declaração é "propriedade:" no começo do bloco (`display: none`, `--x: 1`).
+  const DECLARACAO = /^\s*-{0,2}[a-z][a-z-]*\s*:/i;
   let anterior;
   do {
     anterior = texto;
-    texto = texto.replace(/\{[^{}]*\}/g, " ");
+    texto = texto.replace(/\{([^{}]*)\}/g, (_, dentro) => (DECLARACAO.test(dentro) || !dentro.trim() ? " " : ` ${dentro} `));
   } while (texto !== anterior);
 
   // Sobrou seletor (e prelúdio de at-rule). Fora aspas e url(), o que vem

@@ -24,10 +24,13 @@ const arquivos = (dir, exts) => readdirSync(dir).flatMap((nome) => {
 
 // ── Item 8 — DEC-080 ──────────────────────────────────────────────────────
 describe("Fase 2a · vocabulário único no financeiro (DEC-080)", () => {
-  test("o Financeiro tem as seções Honorários, Parcelas e Pagamentos", () => {
-    const fonte = semComentarios(ler("src/pages/financeiro/FinanceiroPage.jsx"));
+  // Fase 3.7 (DEC-130): o Financeiro deixou de embutir as três listas e virou
+  // um painel; os nomes moram nos ATALHOS da Visão geral. O vocabulário que a
+  // DEC-080 protege continua exigido, agora onde ele aparece.
+  test("o Financeiro chama os atalhos de Honorários, Parcelas e Pagamentos", () => {
+    const fonte = semComentarios(ler("src/pages/financeiro/visaoGeral.js"));
     for (const titulo of ["Honorários", "Parcelas", "Pagamentos"]) {
-      assert.match(fonte, new RegExp(`title: '${titulo}'`));
+      assert.match(fonte, new RegExp(`rotulo: '${titulo}'`));
     }
   });
 

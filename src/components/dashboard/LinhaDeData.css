@@ -1,0 +1,119 @@
+/* A linha das Datas próximas — Fase 3.7 (DEC-131).
+
+   As regras saíram de `pages/dashboard/DashboardPage.css` SEM mudar um valor:
+   a linha passou a ser o componente `LinhaDeData`, usado pelo Início e pela
+   Visão geral do Financeiro. Novo só o tom "Vencida" da pílula. */
+
+.datas-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.datas-lista > li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+/* A linha inteira é o link. Selo | texto | pílula; em 360 px a pílula desce
+   para baixo do texto em vez de espremer o título. */
+.datas-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+a.datas-item:hover {
+  background-color: var(--color-surface-raised);
+}
+
+/* O selo: o dia grande e o mês abreviado, verde pleno com o texto creme — o
+   mesmo par do botão primário, já medido. */
+.datas-item__selo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  line-height: 1;
+}
+
+.datas-item__dia {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.datas-item__mes {
+  margin-top: 2px;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.datas-item__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.datas-item__titulo {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.datas-item__subtitulo {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.datas-item__contexto {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-discreto);
+  overflow-wrap: anywhere;
+}
+
+/* A pílula com os pares de badge do tema, e não o branco sobre #42A5F5 dela
+   (2,65:1). Vencimento é dinheiro a receber: âmbar. Compromisso: azul. */
+.datas-item__pilula {
+  justify-self: end;
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.datas-item__pilula--vencimento {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.datas-item__pilula--compromisso {
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
+}
+
+/* Fase 3.7: a parcela que já venceu. Vermelho de badge (não o sólido): é o
+   mesmo par do selo "Vencido" das listas, medido sobre o balão e o hover. */
+.datas-item__pilula--vencida {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+@media (max-width: 480px) {
+  .datas-item { grid-template-columns: auto minmax(0, 1fr); }
+  .datas-item__pilula { grid-column: 2; justify-self: start; }
+}

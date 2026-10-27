@@ -10,7 +10,7 @@ import Paginador from '../../components/ui/Paginador';
 import ActionMenu from '../../components/ui/ActionMenu';
 import FinancialFilters from '../../components/financeiro/FinancialFilters';
 import { descricaoDoRecorteFinanceiro } from '../../components/financeiro/filterSummary.js';
-import useListFilters, { FILTROS_NA_URL } from '../../hooks/useListFilters';
+import useListFilters, { FILTROS_DAS_FINANCEIRAS } from '../../hooks/useListFilters';
 import useProcessoFiltrado from '../../hooks/useProcessoFiltrado';
 import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
 import { formatDate, formatCurrency } from '../../utils/formatters';
@@ -34,7 +34,7 @@ import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 const POR_PAGINA = 20;
 
-function PaymentListPage({ embedded = false }) {
+function PaymentListPage() {
   // `?processoId=` vem das abas do processo. A lista filtrava por ele sem
   // dizer; agora ele aparece num chip e na frase do recorte (DEC-070).
   const filtroProcesso = useProcessoFiltrado({ avisoProprio: true });
@@ -65,7 +65,7 @@ function PaymentListPage({ embedded = false }) {
   const {
     filtros, buscaDebounced, page, setPage,
     definirFiltro, aplicarPreset, limpar, temFiltro
-  } = useListFilters({ formaPagamento: '' }, FILTROS_NA_URL(embedded));
+  } = useListFilters({ formaPagamento: '' }, FILTROS_DAS_FINANCEIRAS);
 
   useEffect(() => {
     let ativo = true;
@@ -157,12 +157,10 @@ function PaymentListPage({ embedded = false }) {
   // barra e para o estado vazio, e o "Limpar filtros" o remove junto — senão a
   // frase diria "do processo X" e o botão deixaria o processo de pé.
   const filtrado = temFiltro || Boolean(processoId);
-  // Na página própria o `processoId` sai no mesmo `limpar` (uma escrita só
-  // na URL — duas seguidas se atropelariam); embutida, pelo chip.
-  const limparTudo = () => {
-    limpar();
-    if (processoId && embedded) filtroProcesso.remover();
-  };
+  // O `processoId` sai no mesmo `limpar` da URL (uma escrita só — duas
+  // seguidas se atropelariam). Desde a 3.7 a lista só existe na página
+  // própria: o Financeiro deixou de embuti-la (DEC-130).
+  const limparTudo = limpar;
 
   const body = (
     <>
@@ -187,8 +185,8 @@ function PaymentListPage({ embedded = false }) {
         temFiltro={filtrado}
         honorarios={honorarios}
         descricaoDoRecorte={recorte}
-        semBusca={!embedded}
-        pilulas={!embedded}
+        semBusca
+        pilulas
       >
         <select
           value={filtros.formaPagamento}
@@ -225,7 +223,7 @@ function PaymentListPage({ embedded = false }) {
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`.
               "Observações" é texto livre digitado pela advogada, sem teto: era
               a coluna mais exposta ao defeito que a fase corrigiu. */}
-          <table className="data-table data-table--fixed data-table--acoes-fixas">
+          <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa">
             {/* ── As larguras, e o que a F-1b.2 corrigiu ──────────────────
                 "Honorário" era `col-xs` (100 px) e cortava em ~8 caracteres:
                 como quase toda descrição começa por "Honorários advocatícios",
@@ -249,13 +247,16 @@ function PaymentListPage({ embedded = false }) {
                   de dentro do processo populado. As colunas de texto ganharam
                   largura: a 768 px as `auto` colapsavam para 0 (medido). A
                   tabela rola dentro do `.table-wrapper`. */}
-              <col className="col-md" />
-              <col className="col-md" />
-              <col className="col-md" />
+              {/* Fase 3.7 (DEC-133): o honorário é a coluna fixa à esquerda;
+                  processo e cliente `prio-2`; "Aplicado em" e a forma
+                  `prio-3` (as duas estão no detalhe do pagamento). */}
+              <col className="col-md prio-2" />
+              <col className="col-md prio-2" />
+              <col className="col-md prio-3" />
               <col className="col-money" />
               <col className="col-money" />
               <col className="col-data" />
-              <col className="col-xs" />
+              <col className="col-xs prio-3" />
               <col className="col-acoes-menu" />
             </colgroup>
             <thead>
@@ -264,13 +265,13 @@ function PaymentListPage({ embedded = false }) {
                     deixou de pertencer a UMA parcela (DEC-032). Quais parcelas
                     ele tocou sai na coluna "Aplicado em", que pode dizer duas. */}
                 <th>Honorário</th>
-                <th>Processo</th>
-                <th>Cliente</th>
-                <th>Aplicado em</th>
+                <th className="prio-2">Processo</th>
+                <th className="prio-2">Cliente</th>
+                <th className="prio-3">Aplicado em</th>
                 <th>Valor</th>
                 <th>Líquido</th>
                 <th>Data</th>
-                <th>Forma</th>
+                <th className="prio-3">Forma</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -297,9 +298,9 @@ function PaymentListPage({ embedded = false }) {
                       </Link>
                     ) : '—'}
                   </td>
-                  <td className="cell-truncate" title={p.honorarioId?.processoId?.titulo ?? undefined}>{p.honorarioId?.processoId?.titulo ?? '—'}</td>
-                  <td className="cell-truncate" title={clienteDoPagamento(p) ?? undefined}>{clienteDoPagamento(p) ?? '—'}</td>
-                  <td className="cell-truncate" title={rotuloDasParcelas(p)}>{rotuloDasParcelas(p)}</td>
+                  <td className="cell-truncate prio-2" title={p.honorarioId?.processoId?.titulo ?? undefined}>{p.honorarioId?.processoId?.titulo ?? '—'}</td>
+                  <td className="cell-truncate prio-2" title={clienteDoPagamento(p) ?? undefined}>{clienteDoPagamento(p) ?? '—'}</td>
+                  <td className="cell-truncate prio-3" title={rotuloDasParcelas(p)}>{rotuloDasParcelas(p)}</td>
                   <td className="cell-num">{formatCurrency(p.valor)}</td>
                   {/* O líquido é o que ainda vale depois dos estornos. Exibido
                       ao lado do bruto, e não no lugar dele: os dois números são
@@ -317,7 +318,7 @@ function PaymentListPage({ embedded = false }) {
                     )}
                   </td>
                   <td>{formatDate(p.data)}</td>
-                  <td className="cell-truncate">{labelDe(FORMA_PAGAMENTO_OPTIONS, p.formaPagamento)}</td>
+                  <td className="cell-truncate prio-3">{labelDe(FORMA_PAGAMENTO_OPTIONS, p.formaPagamento)}</td>
                   <td className="actions-cell actions-cell--menu">
                     {/* ── A NOTA "sem recibo" FICA FORA DO MENU (F-1b.3) ──
                         Pagamento integralmente estornado não tem recibo: a
@@ -407,7 +408,6 @@ function PaymentListPage({ embedded = false }) {
     />
   );
 
-  if (embedded) return <>{body}{modal}</>;
 
   return (
     <div className="module-container">

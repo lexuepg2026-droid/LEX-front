@@ -186,12 +186,17 @@ describe("Fase 0 · item 5 — o filtro de processo da URL é visível", () => {
       assert.match(codigo, /processo: processoId \? \{ rotulo: filtroProcesso\.rotulo \} : null/);
       assert.match(codigo, /limpar=\{limparTudo\}/);
       assert.match(codigo, /temFiltro=\{filtrado\}/);
-      // Fase 3.2 (DEC-103): na página própria o `processoId` sai no mesmo
-      // `limpar` da URL (`FILTROS_NA_URL` → `extrasNaLimpeza`); embutida no
-      // Financeiro, pelo chip, como antes. As duas metades continuam travadas.
-      assert.match(codigo, /if \(processoId && embedded\) filtroProcesso\.remover\(\)/);
-      assert.match(codigo, /FILTROS_NA_URL\(embedded\)/);
-      assert.match(semComentarios(ler("src/hooks/useListFilters.js")), /EXTRAS_DAS_FINANCEIRAS = Object\.freeze\(\['processoId'\]\)/);
+      // Fase 3.2 (DEC-103): o `processoId` sai no mesmo `limpar` da URL
+      // (`extrasNaLimpeza`). Fase 3.7 (DEC-130): a metade "embutida no
+      // Financeiro, pelo chip" deixou de existir — o Financeiro não embute
+      // mais as listas, e o prop `embedded` saiu. O que se protegia continua:
+      // o "Limpar" tira o processo, numa escrita só, e o chip ainda o remove.
+      assert.match(codigo, /const limparTudo = limpar;/);
+      assert.match(codigo, /useListFilters\(\{[^}]*\}, FILTROS_DAS_FINANCEIRAS\)/);
+      assert.doesNotMatch(codigo, /\bembedded\b/);
+      const hook = semComentarios(ler("src/hooks/useListFilters.js"));
+      assert.match(hook, /EXTRAS_DAS_FINANCEIRAS = Object\.freeze\(\['processoId'\]\)/);
+      assert.match(hook, /FILTROS_DAS_FINANCEIRAS = Object\.freeze\(\{ naUrl: true, extrasNaLimpeza: EXTRAS_DAS_FINANCEIRAS \}\)/);
     });
   }
 

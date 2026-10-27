@@ -233,7 +233,10 @@ describe("Fase 3.1 · a página", () => {
 });
 
 describe("Fase 3.1 · 360 px e balões", () => {
-  const css = ler("src/pages/dashboard/DashboardPage.css");
+  // Fase 3.7 (DEC-131): as regras da linha das Datas próximas saíram para a
+  // folha do componente `LinhaDeData` (Início e Visão geral do Financeiro), sem
+  // mudar um valor. As travas leem as duas folhas.
+  const css = ler("src/pages/dashboard/DashboardPage.css") + "\n" + ler("src/components/dashboard/LinhaDeData.css");
 
   test("as ações rápidas encolhem em três colunas, sem rolagem", () => {
     assert.match(css, /\.inicio-acoes__lista \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);

@@ -11,7 +11,7 @@ import Paginador from '../../components/ui/Paginador';
 import ActionMenu from '../../components/ui/ActionMenu';
 import FinancialFilters from '../../components/financeiro/FinancialFilters';
 import { descricaoDoRecorteFinanceiro } from '../../components/financeiro/filterSummary.js';
-import useListFilters, { FILTROS_NA_URL } from '../../hooks/useListFilters';
+import useListFilters, { FILTROS_DAS_FINANCEIRAS } from '../../hooks/useListFilters';
 import useProcessoFiltrado from '../../hooks/useProcessoFiltrado';
 import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
 import { formatDate, formatCurrency } from '../../utils/formatters';
@@ -28,9 +28,11 @@ import '../../styles/modules.css';
 import { rotuloDaParcela } from '../../components/financeiro/installmentLabel';
 import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
+import { REGISTRO_PARCELA_OPTIONS, registroDaUrl, inativosDaConsulta, trechoDoRegistro } from './listaParcelas.js';
+
 const POR_PAGINA = 20;
 
-function InstallmentListPage({ embedded = false }) {
+function InstallmentListPage() {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
   // `?processoId=` vem das abas do processo. A lista filtrava por ele sem
   // dizer; agora ele aparece num chip e na frase do recorte (DEC-070).
@@ -49,7 +51,7 @@ function InstallmentListPage({ embedded = false }) {
   const {
     filtros, buscaDebounced, page, setPage,
     definirFiltro, aplicarPreset, limpar, temFiltro
-  } = useListFilters({ status: '', inativos: '' }, FILTROS_NA_URL(embedded));
+  } = useListFilters({ status: '', registro: '' }, FILTROS_DAS_FINANCEIRAS);
 
   useEffect(() => {
     let ativo = true;
@@ -70,7 +72,7 @@ function InstallmentListPage({ embedded = false }) {
     processoId,
     honorarioId: filtros.honorarioId || undefined,
     status: filtros.status || undefined,
-    inativos: filtros.inativos || undefined,
+    inativos: inativosDaConsulta(filtros.registro),
     busca: buscaDebounced || undefined,
     de: filtros.de || undefined,
     ate: filtros.ate || undefined
@@ -133,7 +135,9 @@ function InstallmentListPage({ embedded = false }) {
   // desmontava e remontava o input, perdendo o foco. O indicador passou para
   // baixo dos controles. Ver a nota longa em `ClientListPage`.
 
-  const verInativos = filtros.inativos === 'true';
+  // DEC-132: a situação do registro, lida da URL (`?registro=`).
+  const registro = registroDaUrl(filtros.registro);
+  const verInativos = registro === 'inativos';
 
   const recorte = descricaoDoRecorteFinanceiro({
     filtros,
@@ -141,7 +145,7 @@ function InstallmentListPage({ embedded = false }) {
     honorarios,
     extras: [
       filtros.status ? `com status "${labelDe(STATUS_PARCELA_OPTIONS, filtros.status)}"` : null,
-      verInativos ? 'entre as desativadas' : null
+      trechoDoRegistro(registro)
     ],
     processo: processoId ? { rotulo: filtroProcesso.rotulo } : null
   });
@@ -150,12 +154,10 @@ function InstallmentListPage({ embedded = false }) {
   // barra e para o estado vazio, e o "Limpar filtros" o remove junto — senão a
   // frase diria "do processo X" e o botão deixaria o processo de pé.
   const filtrado = temFiltro || Boolean(processoId);
-  // Na página própria o `processoId` sai no mesmo `limpar` (uma escrita só
-  // na URL — duas seguidas se atropelariam); embutida, pelo chip.
-  const limparTudo = () => {
-    limpar();
-    if (processoId && embedded) filtroProcesso.remover();
-  };
+  // O `processoId` sai no mesmo `limpar` da URL (uma escrita só — duas
+  // seguidas se atropelariam). Desde a 3.7 a lista só existe na página
+  // própria: o Financeiro deixou de embuti-la (DEC-130).
+  const limparTudo = limpar;
 
   const body = (
     <>
@@ -181,8 +183,8 @@ function InstallmentListPage({ embedded = false }) {
         honorarios={honorarios}
         placeholderBusca="Buscar por honorário, processo ou cliente…"
         descricaoDoRecorte={recorte}
-        semBusca={!embedded}
-        pilulas={!embedded}
+        semBusca
+        pilulas
       >
         <select
           value={filtros.status}
@@ -195,14 +197,18 @@ function InstallmentListPage({ embedded = false }) {
           ))}
         </select>
 
-        <label className="filter-toggle">
-          <input
-            type="checkbox"
-            checked={verInativos}
-            onChange={(e) => definirFiltro('inativos', e.target.checked ? 'true' : '')}
-          />
-          Mostrar desativadas
-        </label>
+        {/* DEC-132 — se o REGISTRO existe para o sistema, como em Clientes e
+            Processos. Era o checkbox "Mostrar desativadas". `?registro=` e não
+            `?situacao=`, que aqui já é o status da parcela. */}
+        <select
+          value={registro}
+          onChange={e => definirFiltro('registro', e.target.value)}
+          aria-label="Situação do registro"
+        >
+          {REGISTRO_PARCELA_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
       </FinancialFilters>
 
       {/* Fase 3.2: o `<Loading />` só na PRIMEIRA carga. Trocar um filtro com
@@ -233,7 +239,7 @@ function InstallmentListPage({ embedded = false }) {
       ) : (
         <div className="table-wrapper" aria-busy={carregando || undefined}>
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
-          <table className="data-table data-table--fixed data-table--acoes-fixas">
+          <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa">
             {/* Dinheiro em `col-money`, data em `col-data`, status em
                 `col-status` (F-1b.2). "Valor", "Recebido" e "Em aberto"
                 estavam em `col-sm`, que só aguenta até a casa dos milhares;
@@ -244,9 +250,12 @@ function InstallmentListPage({ embedded = false }) {
                   largura pelo mesmo motivo da lista de honorários: a 1280 px
                   as três `auto` ficavam com 14 px (medido). A tabela rola
                   dentro do `.table-wrapper`. */}
+              {/* Fase 3.7 (DEC-133): o honorário é a coluna fixa à esquerda;
+                  processo e cliente são `prio-2`. Todo o resto é `prio-1`
+                  (parcela, três valores, duas datas e o status). */}
               <col className="col-md" />
-              <col className="col-md" />
-              <col className="col-md" />
+              <col className="col-md prio-2" />
+              <col className="col-md prio-2" />
               {/* `col-parcela`, e não `col-xxs`: a coluna mostrava "Parce…"
                   desde que a DEC-048 trocou o ordinal nu por "Parcela 1 de 3"
                   e a largura de 80 px continuou sendo a de um número. Ver a
@@ -265,8 +274,8 @@ function InstallmentListPage({ embedded = false }) {
             <thead>
               <tr>
                 <th>Honorário</th>
-                <th>Processo</th>
-                <th>Cliente</th>
+                <th className="prio-2">Processo</th>
+                <th className="prio-2">Cliente</th>
                 <th>Nº Parcela</th>
                 <th>Valor</th>
                 {/* `valorPago` e o que falta: as duas colunas que a advogada
@@ -299,10 +308,10 @@ function InstallmentListPage({ embedded = false }) {
                       </Link>
                     ) : '—'}
                   </td>
-                  <td className="cell-truncate" title={rotuloDoProcesso(inst.processo) ?? undefined}>
+                  <td className="cell-truncate prio-2" title={rotuloDoProcesso(inst.processo) ?? undefined}>
                     {rotuloDoProcesso(inst.processo) ?? '—'}
                   </td>
-                  <td className="cell-truncate" title={inst.processo?.clientePrincipalNome ?? undefined}>
+                  <td className="cell-truncate prio-2" title={inst.processo?.clientePrincipalNome ?? undefined}>
                     {inst.processo?.clientePrincipalNome ?? '—'}
                   </td>
                   {/* DEC-048: a coluna deixou de ser o ordinal nu. "Parcela 3"
@@ -389,7 +398,6 @@ function InstallmentListPage({ embedded = false }) {
     </>
   );
 
-  if (embedded) return body;
 
   return (
     <div className="module-container">

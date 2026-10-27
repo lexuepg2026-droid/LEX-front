@@ -218,6 +218,14 @@ export const PARES = [
   // O mesmo amarelo diz "Salve para ver as mudanças no exemplo." (DEC-129).
   { nome: "perfil: e-mail não confirmado e aviso do exemplo / --color-bg", texto: "--color-warning-text", fundo: "--color-bg", limite: TEXTO },
 
+  // A Visão geral do Financeiro (Fase 3.7, DEC-130): a pílula "Vencida" das
+  // linhas (o par de badge danger, translúcido) sobre o balão e sobre a linha
+  // em hover; e o "+" dos atalhos, cujo cartão é a `--color-surface-card`.
+  { nome: "Visão geral: pílula Vencida / balão", texto: "--color-danger-text", fundo: "--color-danger-bg", sobre: ["--color-surface"], limite: TEXTO },
+  { nome: "Visão geral: pílula Vencida / linha em hover", texto: "--color-danger-text", fundo: "--color-danger-bg", sobre: ["--color-surface-raised"], limite: TEXTO },
+  { nome: "Visão geral: botão primário no atalho", texto: "--color-on-primary", fundo: "--color-primary", limite: TEXTO },
+  { nome: "Visão geral: borda do botão primário / --color-surface-card", texto: "--color-btn-primario-borda", fundo: "--color-surface-card", limite: NAO_TEXTO, modos: ["escuro"] },
+
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
   { nome: "borda de campo / --color-surface", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },

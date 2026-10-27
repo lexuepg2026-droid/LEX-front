@@ -260,7 +260,10 @@ describe("os dois eixos ficam separados na tela", () => {
     // "Suspenso" não é uma fase, e "execução" não é um status. A coluna que
     // sumisse levaria junto o filtro que a advogada usa desde a Fase 2.
     const codigo = ler(LISTAGEM);
-    assert.match(codigo, /<th>Fase<\/th>/);
+    // Fase 3.7 (DEC-133): a Fase é `prio-2` (sai abaixo de 1280 px; o filtro
+    // de fase continua na barra e a fase, no detalhe) e o Status é `prio-1`.
+    // As DUAS colunas continuam na listagem.
+    assert.match(codigo, /<th className="prio-2">Fase<\/th>/);
     assert.match(codigo, /<th>Status<\/th>/);
   });
 

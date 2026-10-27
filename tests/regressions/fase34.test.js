@@ -207,13 +207,15 @@ describe("Fase 3.4 · item 4 — a lista de processos no padrão da Figura 19 (D
     // URL, com as mesmas chaves.
     assert.match(lista, /useListFilters\(FILTROS_DA_LISTA, \{ naUrl: true, extrasNaLimpeza: EXTRAS_DA_LISTA \}\)/);
     assert.match(lista, /<FinancialFilters[\s\S]*?semBusca\s*pilulas\s*presets=\{PRESETS_DA_LISTA\}\s*ajudaDoPeriodo=\{AJUDA_DO_PERIODO\}/);
-    assert.match(lista, /className="data-table data-table--fixed data-table--acoes-fixas"/);
+    // Fase 3.7 (DEC-133): + `data-table--primeira-fixa` e `--acoes-sem-nota`.
+    assert.match(lista, /className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa data-table--acoes-sem-nota"/);
     assert.match(lista, /<Paginador[\s\S]*?rotulo="processo"/);
     assert.match(lista, /fromCache && <OfflineNotice atualizadoEm=\{updatedAt\} \/>/);
   });
 
   test("as colunas, na ordem pedida", () => {
-    const ths = [...lista.matchAll(/<th>([^<]+)<\/th>/g)].map((m) => m[1]);
+    // Fase 3.7 (DEC-133): os <th> ganharam a classe de prioridade (`prio-2`/`prio-3`); a trava passa a aceitá-la e continua exigindo os mesmos nomes, na mesma ordem e alinhados ao colgroup.
+    const ths = [...lista.matchAll(/<th(?:\s+className="[^"]*")?>([^<]+)<\/th>/g)].map((m) => m[1]);
     assert.deepEqual(ths, ["Nº Processo", "Título", "Cliente", "Tipo de ação", "Fase", "Status", "Distribuição", "Ações"]);
   });
 

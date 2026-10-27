@@ -19,8 +19,10 @@ const RAIZ = new URL("../../src", import.meta.url).pathname;
 
 const PERMITIDOS = {
   "components/dashboard/BlocoDoPainel.css .bloco__icone": "ícone decorativo ao lado do título",
-  "pages/dashboard/DashboardPage.css .card-icon": "ícone decorativo do cartão",
-  "pages/dashboard/DashboardPage.css .summary-card--neutral .card-icon": "ícone decorativo do cartão neutro",
+  // Fase 3.7 (DEC-131): os dois usos mudaram de ARQUIVO (o cartão virou o
+  // componente `CartaoDeResumo`), não de natureza: continuam ícone decorativo.
+  "components/dashboard/CartaoDeResumo.css .card-icon": "ícone decorativo do cartão",
+  "components/dashboard/CartaoDeResumo.css .summary-card--neutral .card-icon": "ícone decorativo do cartão neutro",
   "components/ui/EmptyState.css .empty-state__icon": "ícone decorativo, já esmaecido",
   "components/secoes/VariableSelector.css .var-selector__search-icon": "lupa decorativa dentro do campo",
   "components/documents/SecaoLibraryPanel.css .biblioteca__busca": "o wrapper só pinta a lupa; o input tem cor própria",

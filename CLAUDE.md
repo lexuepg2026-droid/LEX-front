@@ -5292,6 +5292,95 @@ exemplo." Sem sinal: `aria-disabled`, clique barrado e o motivo dos downloads
 tinha a largura de um campo inteiro (`.form-group input` vencia o `width: 1px`)
 e fazia a página do perfil rolar 156 px de lado em todas as larguras.
 
+## DEC-130 (frontend) — a Visão geral do Financeiro é um painel (Fase 3.7)
+
+`pages/financeiro/FinanceiroPage.jsx` deixou de embutir as três listas (elas
+têm página própria, no padrão da 3.2, a um clique no submenu; embutidas eram
+uma segunda cópia de cada uma). Quatro balões, nesta ordem:
+
+1. **Resumo** — os cartões do Início (DEC-131), do MESMO `GET /financeiro/resumo`
+   sem mês: Valor Contratado, Recebido e Em Aberto (total), Total vencido hoje
+   e Saldo adiantado, com a nota. O mês fica no Início.
+2. **Parcelas vencidas** — de `GET /calendar/avisos` (a fonte única, DEC-057;
+   o back ganhou `clientePrincipalNome` e `emAberto`, DEC-130 do back), até 8,
+   na linha das Datas próximas com a pílula "Vencida" (vermelho de badge). A
+   linha leva à parcela; **"Ver todas"** leva a
+   `/dashboard/parcelas?situacao=vencido` (o filtro de status da DEC-103).
+3. **Próximos vencimentos** — `proximosVencimentos` pela `datasProximas` do
+   Início, só vencimentos, até 8, com "processo · cliente".
+4. **Atalhos** — Honorários, Parcelas e Pagamentos com o total da consulta-
+   padrão de cada lista (`limit: 1`: é o "(N)" do título dela) e os três "+".
+
+Regras em `pages/financeiro/visaoGeral.js`. Sem donut (somava bases
+diferentes, inventário 3.24), sem busca, filtro nem paginação. O prop
+`embedded` saiu das três listas e do `useListFilters`
+(`FILTROS_DAS_FINANCEIRAS`, sempre na URL).
+
+**Offline:** só o resumo tem espelho — um aviso de idade (DEC-109). Vencidas e
+totais dizem "indisponível sem conexão", nunca "nenhuma". Os "+" ficam
+`aria-disabled`, com o motivo (financeiro fora da fila, DEC-059). **Erros:** a
+tela não emite toast; com o servidor fora (ou 500), o global sai uma vez.
+
+## DEC-131 (frontend) — o cartão e a linha do Início, compartilhados (Fase 3.7)
+
+- `components/dashboard/CartaoDeResumo.jsx` e `LinhaDeData.jsx`, com as regras
+  de CSS movidas de `DashboardPage.css` **sem mudar um valor** (as travas
+  da 3.1 e do passo 181 seguem as regras até as folhas novas).
+- `components/dashboard/resumoFinanceiro.js`: rótulos, campos e notas que o
+  Início e a Visão geral leem em comum (`CAMPOS_EM_COMUM`). Há teste exigindo
+  que as duas telas usem as definições, e conferência no navegador: os quatro
+  valores e as notas iguais nos dois painéis, no mesmo banco.
+- **A nota do saldo adiantado mudou de texto.** Dizia que o crédito "já está
+  abatido do total em aberto" — verdade na F-1a, falso desde a DEC-040 (o
+  crédito sai nomeado e não entra em conta nenhuma). Agora: "É crédito do
+  cliente: não entra no 'Recebido' nem abate o 'Em aberto'." Conferido no
+  navegador: com R$ 450,50 de crédito, recebido e em aberto não mudaram.
+
+## DEC-132 (frontend) — "Situação do registro" em Parcelas (Fase 3.7)
+
+O checkbox "Mostrar desativadas" virou a pílula de Clientes e Processos, na
+URL e alcançada pelo "Limpar filtros". Regras em
+`pages/installments/listaParcelas.js`.
+
+- **A chave é `?registro=inativos`, e não `?situacao=`**: nas listas
+  financeiras `?situacao=` já é o STATUS da parcela (DEC-103), e o "Ver todas"
+  das vencidas depende disso. Decisão do Daniel.
+- **Duas opções — "Somente ativas" (padrão, sem parâmetro) e "Somente
+  desativadas".** O "Ativas e desativadas" fica de fora em Parcelas por causa
+  da decisão da Fase 4.5: o back só tem o modo exclusivo `?inativos=true`
+  (misturar os conjuntos faria a tabela somar o removido sem dizer). O back
+  não mudou. Valor torto na URL abre as ativas.
+- `.filter-toggle`, sem uso, saiu de `styles/modules.css`.
+
+## DEC-133 (frontend) — listas em telas estreitas: primeira coluna fixa e prioridade (Fase 3.7)
+
+**Tabela que rola, não cartões**, em Honorários, Parcelas, Pagamentos,
+Processos e Clientes (Documentos e Seções na 3.9).
+
+- **`data-table--primeira-fixa`** (`styles/modules.css`): a coluna que
+  identifica a linha, `sticky` à esquerda — irmã da `--acoes-fixas` (DEC-107),
+  com os mesmos fundos (página e balão, com e sem hover), `z-index` e sombra.
+  Honorários passou a abrir pela **Descrição**.
+- **`prio-2`** sai abaixo de **1280 px**; **`prio-3`**, abaixo de **1440 px**;
+  sem classe = `prio-1`, nunca sai (identificação, dinheiro, data, status e
+  ações). A classe vai na `<col>`, no `<th>` e em cada `<td>` — a coluna some
+  inteira, e a tabela continua coerente para o leitor de tela (há teste por
+  coluna). A tabela "lista → coluna → prioridade → motivo" e as medidas estão
+  no relatório da 3.7.
+- **Resultado medido:** a 1280 px Processos, Honorários, Pagamentos e Clientes
+  cabem sem rolar; Parcelas (cinco colunas de dinheiro e datas, todas
+  `prio-1`) rola em qualquer largura, com a primeira coluna e o ⋮ à vista. A
+  768 e a 360 px a primeira coluna e o ⋮ ficam à vista em todas. Nenhum valor
+  truncado, nenhuma rolagem da página.
+- **No celular** (≤ 480 px) a primeira coluna tem 128 px, e o ⋮ das listas sem
+  nota na célula (Honorários, Processos, Clientes: `data-table--acoes-sem-nota`)
+  encolhe para 64 px. Os `min-width` antigos da `.data-table` não esticam estas
+  listas.
+- **Achado de passagem:** `tests/helpers/cssScan.js` apagava os seletores de
+  dentro de `@media` e acusava "classe sem regra" para quem só existe ali.
+  Corrigido (bloco de declaração some; bloco de seletores devolve os
+  seletores).
+
 ---
 
 ## Rotina de encerramento de sessão
