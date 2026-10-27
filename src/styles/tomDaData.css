@@ -1,0 +1,25 @@
+/* O tom de cada data — Fase 3.8 (DEC-134). A regra está em
+   `utils/tomDaData.js`; aqui, só os tokens de cada tom, em variáveis locais
+   que a pílula da `LinhaDeData` e os itens e a legenda da Agenda leem.
+
+   `--tom-fundo` e `--tom-texto` são o par de badge do tema (medido em
+   `tests/css/contrastePares.js`); `--tom-forte` é a cor plena, usada só no
+   que não é texto (o listrado e a borda tracejada da derivada). */
+
+.tom-data--warning {
+  --tom-fundo: var(--color-warning-bg);
+  --tom-texto: var(--color-warning-text);
+  --tom-forte: var(--color-warning);
+}
+
+.tom-data--danger {
+  --tom-fundo: var(--color-danger-bg);
+  --tom-texto: var(--color-danger-text);
+  --tom-forte: var(--color-danger);
+}
+
+.tom-data--info {
+  --tom-fundo: var(--color-info-bg);
+  --tom-texto: var(--color-info-text);
+  --tom-forte: var(--color-info);
+}

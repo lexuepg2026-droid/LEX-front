@@ -62,7 +62,20 @@ export const NATUREZAS = Object.freeze({
   },
 });
 
-export const LEGENDA = [NATUREZAS.evento, NATUREZAS.derivada];
+// A legenda (Fase 3.8, DEC-134): as duas naturezas, e o vencimento em dois
+// tons — a vencer (âmbar) e vencida (vermelho). `tipo` é a chave de
+// `utils/tomDaData.js`, a mesma regra de cores do Início e da Visão geral.
+// O nome está escrito em cada entrada: a cor nunca é a única informação.
+export const LEGENDA = [
+  { ...NATUREZAS.evento, tipo: 'compromisso' },
+  { ...NATUREZAS.derivada, tipo: 'vencimento' },
+  {
+    ...NATUREZAS.derivada,
+    tipo: 'vencida',
+    rotulo: 'Vencida',
+    legenda: 'Vencimento que passou sem pagamento integral. Também leva à parcela.',
+  },
+];
 
 export const classeDaNatureza = (natureza) =>
   NATUREZAS[natureza]?.classe ?? NATUREZAS.evento.classe;

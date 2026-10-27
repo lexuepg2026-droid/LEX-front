@@ -326,27 +326,30 @@
 
 /* ── AS DUAS NATUREZAS ────────────────────────────────────────────────── */
 
-/* Evento próprio: verde primário, barra CHEIA. É o fato que a advogada
-   registrou, e é o que ela edita aqui. */
+/* Fase 3.8 (DEC-134): a COR sai de `utils/tomDaData.js` (a classe
+   `tom-data--…` põe `--tom-forte` e `--tom-fundo`), a mesma regra do Início e
+   da Visão geral: compromisso azul, vencimento âmbar, vencida vermelho. A
+   FORMA continua sendo desta folha — cheia no fato, listrada no derivado.
+
+   Evento próprio: barra CHEIA. É o fato que a advogada registrou, e é o que
+   ela edita aqui. */
 .cal-item--evento .cal-item__marca,
 .cal-legenda__marca.cal-item--evento {
-  background: var(--color-primary-light);
+  background: var(--tom-forte);
 }
 
-/* Data derivada: azul de informação, barra LISTRADA. O listrado é o segundo
-   sinal, para a distinção não depender de enxergar cor — e o azul é o tom de
-   `info`, não o de `danger`: um vencimento não deu errado, ele só vem de outro
-   lugar. */
+/* Data derivada: barra LISTRADA. O listrado é o segundo sinal, para a
+   distinção não depender de enxergar cor (DEC-055). */
 .cal-item--derivada .cal-item__marca,
 .cal-legenda__marca.cal-item--derivada {
   background: repeating-linear-gradient(
     45deg,
-    var(--color-info),
-    var(--color-info) 3px,
+    var(--tom-forte),
+    var(--tom-forte) 3px,
     transparent 3px,
     transparent 6px
   );
-  background-color: var(--color-info-bg);
+  background-color: var(--tom-fundo);
 }
 
 .cal-item--derivada { border-style: dashed; }

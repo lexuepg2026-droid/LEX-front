@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { seloDaData, TIPOS_DE_DATA } from '../../pages/dashboard/inicio.js';
+import { classeDoTom } from '../../utils/tomDaData.js';
+import '../../styles/tomDaData.css';
 import './LinhaDeData.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -27,7 +29,8 @@ function LinhaDeData({ item }) {
         {item.subtitulo && <span className="datas-item__subtitulo">{item.subtitulo}</span>}
         {item.contexto && <span className="datas-item__contexto">{item.contexto}</span>}
       </span>
-      <span className={`datas-item__pilula datas-item__pilula--${item.tipo}`}>
+      {/* Fase 3.8 (DEC-134): o tom sai de `tomDaData`, a mesma fonte da Agenda. */}
+      <span className={`datas-item__pilula ${classeDoTom(item.tipo)}`}>
         {TIPOS_DE_DATA[item.tipo].rotulo}
       </span>
     </>

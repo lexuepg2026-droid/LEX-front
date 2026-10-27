@@ -116,10 +116,16 @@ describe('DEC-055 — as duas naturezas se distinguem no relance, com LEGENDA', 
     assert.notEqual(classeDaNatureza('evento'), classeDaNatureza('derivada'));
   });
 
-  test('a legenda tem as duas, e cada uma diz o que é', () => {
-    assert.equal(LEGENDA.length, 2);
-    const valores = LEGENDA.map((n) => n.valor).sort();
+  // Fase 3.8 (DEC-134): reescrita. A legenda tinha uma entrada por natureza;
+  // agora tem uma por TOM (a regra única de cores): compromisso, vencimento e
+  // vencida — esta última também derivada. As duas naturezas continuam
+  // presentes, cada entrada continua com nome e explicação.
+  test('a legenda tem as duas naturezas e os três tons, e cada entrada diz o que é', () => {
+    assert.deepEqual(LEGENDA.map((n) => n.tipo), ['compromisso', 'vencimento', 'vencida']);
+    const valores = [...new Set(LEGENDA.map((n) => n.valor))].sort();
     assert.deepEqual(valores, ['derivada', 'evento']);
+    assert.equal(LEGENDA.find((n) => n.tipo === 'compromisso').valor, 'evento');
+    assert.equal(LEGENDA.find((n) => n.tipo === 'vencida').valor, 'derivada');
 
     for (const n of LEGENDA) {
       assert.ok(n.rotulo && n.rotulo.length > 0, 'toda natureza tem nome');

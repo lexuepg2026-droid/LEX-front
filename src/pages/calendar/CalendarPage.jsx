@@ -20,6 +20,8 @@ import {
   mesDaChave, vistaPadrao, recortarCelula, agruparPorDia, diasComItens,
 } from './monthGrid';
 import { toast } from '../../utils/toast';
+import { classeDoTom, tipoDaDataDoItem } from '../../utils/tomDaData.js';
+import '../../styles/tomDaData.css';
 import './CalendarPage.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -229,8 +231,8 @@ function CalendarPage() {
           formulário e a outra a leva embora. */}
       <ul className="cal-legenda">
         {LEGENDA.map((n) => (
-          <li key={n.valor} className="cal-legenda__item">
-            <span className={`cal-legenda__marca ${n.classe}`} aria-hidden="true" />
+          <li key={n.tipo} className="cal-legenda__item">
+            <span className={`cal-legenda__marca ${n.classe} ${classeDoTom(n.tipo)}`} aria-hidden="true" />
             <strong>{n.rotulo}</strong>
             <span className="cal-legenda__texto">{n.legenda}</span>
           </li>
@@ -279,6 +281,8 @@ function ItemDoCalendario({ item, onAbrir, compacto = false }) {
   const classe = [
     'cal-item',
     classeDaNatureza(item.natureza),
+    // Fase 3.8 (DEC-134): o tom da mesma fonte da `LinhaDeData`.
+    classeDoTom(tipoDaDataDoItem(item)),
     compacto ? 'cal-item--compacto' : '',
     item.concluido ? 'cal-item--concluido' : '',
   ].filter(Boolean).join(' ');

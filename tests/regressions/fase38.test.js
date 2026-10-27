@@ -64,3 +64,57 @@ describe("Fase 3.8 · item 1 — no celular só o ⋮ fica fixo, e as notas muda
     assert.match(css, /\.data-table \.nota-da-celula \{[^}]*display: block;[^}]*font-style: italic;[^}]*color: var\(--color-text-secondary\);[^}]*white-space: nowrap;/);
   });
 });
+
+// ── Item 2 — uma regra de cores para as naturezas (DEC-134) ──────────────
+import { TOM_DA_DATA, classeDoTom, tipoDaDataDoItem } from "../../src/utils/tomDaData.js";
+import { TIPOS_DE_DATA } from "../../src/pages/dashboard/inicio.js";
+import { LEGENDA } from "../../src/utils/calendarLabels.js";
+
+describe("Fase 3.8 · item 2 — natureza → tom, uma fonte só (DEC-134)", () => {
+  test("a regra: vencimento âmbar, vencida vermelho, compromisso azul", () => {
+    assert.deepEqual({ ...TOM_DA_DATA }, { vencimento: "warning", vencida: "danger", compromisso: "info" });
+    assert.deepEqual(Object.keys(TOM_DA_DATA).sort(), Object.keys(TIPOS_DE_DATA).sort(), "as mesmas chaves dos rótulos");
+    assert.equal(classeDoTom("vencimento"), "tom-data--warning");
+    assert.equal(classeDoTom("vencida"), "tom-data--danger");
+    assert.equal(classeDoTom("compromisso"), "tom-data--info");
+  });
+
+  test("o item da Agenda vira o tipo de data pelo que o servidor diz", () => {
+    assert.equal(tipoDaDataDoItem({ natureza: "evento" }), "compromisso");
+    assert.equal(tipoDaDataDoItem({ natureza: "evento", concluido: true }), "compromisso");
+    assert.equal(tipoDaDataDoItem({ natureza: "derivada", status: "pendente" }), "vencimento");
+    assert.equal(tipoDaDataDoItem({ natureza: "derivada", status: "pago" }), "vencimento");
+    assert.equal(tipoDaDataDoItem({ natureza: "derivada", status: "vencido" }), "vencida");
+  });
+
+  test("a Agenda e a LinhaDeData usam a MESMA fonte, e a mesma folha de tons", () => {
+    for (const arquivo of ["src/components/dashboard/LinhaDeData.jsx", "src/pages/calendar/CalendarPage.jsx"]) {
+      const fonte = semComentarios(ler(arquivo));
+      assert.match(fonte, /import \{[^}]*\bclasseDoTom\b[^}]*\} from '[./]+utils\/tomDaData\.js';/, arquivo);
+      assert.match(fonte, /import '[./]+styles\/tomDaData\.css';/, arquivo);
+      assert.match(fonte, /classeDoTom\(/, `${arquivo}: aplica o tom`);
+    }
+    assert.match(semComentarios(ler("src/pages/calendar/CalendarPage.jsx")), /classeDoTom\(tipoDaDataDoItem\(item\)\)/);
+  });
+
+  test("nenhuma das duas folhas nomeia o tom por conta própria", () => {
+    const tons = semComentarios(ler("src/styles/tomDaData.css"));
+    for (const [classe, sem] of [["warning", "warning"], ["danger", "danger"], ["info", "info"]]) {
+      assert.match(tons, new RegExp(`\\.tom-data--${classe} \\{[^}]*--tom-fundo: var\\(--color-${sem}-bg\\);[^}]*--tom-texto: var\\(--color-${sem}-text\\);[^}]*--tom-forte: var\\(--color-${sem}\\);`));
+    }
+    const linha = semComentarios(ler("src/components/dashboard/LinhaDeData.css"));
+    assert.doesNotMatch(linha, /--color-(warning|info|danger)/);
+    assert.match(linha, /\.datas-item__pilula \{[^}]*background-color: var\(--tom-fundo\);[^}]*color: var\(--tom-texto\);/);
+    // Na Agenda, nenhuma regra de item, marca, pílula ou legenda nomeia o tom.
+    const agenda = semComentarios(ler("src/pages/calendar/CalendarPage.css"));
+    for (const regra of agenda.match(/[^{}]+\{[^}]*\}/g)) {
+      if (/\.cal-(item|legenda|celula__item)/.test(regra.split("{")[0])) {
+        assert.doesNotMatch(regra, /--color-(warning|info|danger|primary-light)/, regra.split("{")[0].trim());
+      }
+    }
+  });
+
+  test("a legenda da Agenda tem os três tons, com nome escrito", () => {
+    assert.deepEqual(LEGENDA.map((n) => [n.tipo, n.rotulo]), [["compromisso", "Compromisso"], ["vencimento", "Vencimento"], ["vencida", "Vencida"]]);
+  });
+});
