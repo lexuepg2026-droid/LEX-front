@@ -319,3 +319,89 @@ describe("Fase 3.5 · item 4 — a lista de processos com `?clienteId=` (DEC-124
     assert.match(chip, /só este \{nome\}/);
   });
 });
+
+// ── Item 5 — o formulário em seções (DEC-125) ─────────────────────────────
+import { montarPayloadCliente } from "../../src/utils/clientePayload.js";
+
+describe("Fase 3.5 · item 5 — o formulário de cliente (DEC-125)", () => {
+  const VAZIO = {
+    nomeCompleto: "", cpf: "", rg: "", dataNascimento: "", sexo: "", estadoCivil: "", profissao: "", nacionalidade: "brasileira",
+    razaoSocial: "", nomeFantasia: "", cnpj: "", repNome: "", repCpf: "", repCargo: "",
+    email: "", telefone: "", cep: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", pais: "",
+    observacoes: "", senhaPortal: ""
+  };
+
+  test("criar PF: os campos de PF, os vazios fora (o schema aplica os padrões)", () => {
+    const p = montarPayloadCliente(
+      { ...VAZIO, nomeCompleto: "Ana Lima", cpf: "123.456.789-09", telefone: "(42) 99111-2233", cep: "84010-000", cidade: "Ponta Grossa" },
+      { tipoPessoa: "fisica", isEditing: false }
+    );
+    assert.equal(p.tipoPessoa, "fisica");
+    assert.equal(p.cpf, "12345678909");
+    assert.equal(p.telefone, "42991112233");
+    assert.equal(p.endereco.cep, "84010000");
+    assert.equal(p.rg, undefined, "na criação o vazio vai `undefined`");
+    assert.equal(p.nacionalidade, "brasileira");
+    assert.ok(!("senhaPortal" in p), "senha em branco não vai");
+    assert.ok(!("razaoSocial" in p) && !("representanteLegal" in p));
+  });
+
+  test("criar PJ com representante; sem representante, o subdocumento não vai", () => {
+    const com = montarPayloadCliente(
+      { ...VAZIO, razaoSocial: "X Ltda", nomeFantasia: "X", cnpj: "11.222.333/0001-81", repNome: "Rep", repCpf: "123.456.789-09", senhaPortal: "Provisoria1" },
+      { tipoPessoa: "juridica", isEditing: false }
+    );
+    assert.equal(com.cnpj, "11222333000181");
+    assert.deepEqual(com.representanteLegal, { nome: "Rep", cpf: "12345678909", cargo: undefined });
+    assert.equal(com.senhaPortal, "Provisoria1");
+    assert.ok(!("nomeCompleto" in com) && !("cpf" in com));
+    const sem = montarPayloadCliente({ ...VAZIO, razaoSocial: "Y" }, { tipoPessoa: "juridica", isEditing: false });
+    assert.equal(sem.representanteLegal, undefined);
+  });
+
+  test("editar trocando o tipo e voltando: nada se perde, e o salvo é o do tipo escolhido", () => {
+    // O estado da tela guarda os dois tipos (a troca não apaga — F-6.2).
+    const estado = {
+      ...VAZIO, nomeCompleto: "Ana Lima", cpf: "123.456.789-09", profissao: "engenheira",
+      razaoSocial: "Ana ME", nomeFantasia: "Ana", cnpj: "11.222.333/0001-81", email: "ana@x.com"
+    };
+    const pf1 = montarPayloadCliente(estado, { tipoPessoa: "fisica", isEditing: true });
+    const pj = montarPayloadCliente(estado, { tipoPessoa: "juridica", isEditing: true });
+    const pf2 = montarPayloadCliente(estado, { tipoPessoa: "fisica", isEditing: true });
+    assert.deepEqual(pf2, pf1, "voltar ao tipo anterior devolve o mesmo payload");
+    assert.equal(pj.razaoSocial, "Ana ME");
+    assert.equal(pj.email, "ana@x.com", "o comum vai nos dois");
+    assert.equal(pj.representanteLegal, null, "na edição, o representante vazio vai null (remove)");
+    assert.equal(pf1.rg, null, "na edição, o opcional vazio vai null (apaga)");
+    assert.equal(pf1.profissao, "engenheira");
+  });
+
+  test("as seções, na ordem, e a lógica de antes continua", () => {
+    const tela = semComentarios(ler("src/pages/clients/ClientFormPage.jsx"));
+    const titulos = [...tela.matchAll(/<h3>([^<]+)<\/h3>/g)].map((m) => m[1]);
+    assert.deepEqual(titulos, [
+      "Identificação", "Contato", "Endereço", "Dados profissionais", "Representante legal", "Acesso ao portal", "Observações"
+    ]);
+    assert.match(tela, /\{tipoPessoa === 'fisica' && \(\s*<div className="form-grid section">\s*<h3>Dados profissionais<\/h3>/);
+    assert.match(tela, /\{tipoPessoa === 'juridica' && \(\s*<div className="form-grid section">\s*<h3>Representante legal<\/h3>/);
+    // DEC-057, CEP, troca de tipo, senha, revogação e erro por campo.
+    assert.equal((tela.match(/<CampoComSugestoes/g) ?? []).length, 2);
+    assert.match(tela, /onChange=\{handleCepChange\}/);
+    assert.match(tela, /onChange=\{\(\) => trocarTipoPessoa\(value\)\}/);
+    assert.match(tela, /name="senhaPortal"/);
+    assert.match(tela, /<RevogacaoPortal clienteId=\{id\} online=\{online\} onRevogado=\{aoRevogar\} \/>/);
+    assert.doesNotMatch(tela, /revogarSenhaPortal/, "a revogação é a do componente, uma só");
+    for (const campo of ["cpf", "cnpj", "email", "senhaPortal"]) {
+      assert.match(tela, new RegExp(`campoComErro === '${campo}' \\? 'input-erro'`));
+    }
+    assert.match(tela, /setCampoComErro\(getApiErrorField\(err\)\)/);
+  });
+
+  test("offline: o formulário continua fora da fila, recusando com o motivo", () => {
+    const tela = semComentarios(ler("src/pages/clients/ClientFormPage.jsx"));
+    assert.match(tela, /if \(!online\) return;/);
+    assert.match(tela, /aria-disabled=\{online \? undefined : 'true'\}/);
+    const fila = ler("src/offline/outboxOperations.js");
+    assert.doesNotMatch(fila, /clients/, "criar e editar cliente não entram na fila (F-5b)");
+  });
+});

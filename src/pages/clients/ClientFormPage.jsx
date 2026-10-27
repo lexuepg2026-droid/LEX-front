@@ -5,6 +5,8 @@ import clientService from '../../api/clientService';
 import { toast } from '../../utils/toast';
 import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
 import { maskCPF, maskCNPJ, maskCEP, maskPhone, unmask } from '../../utils/masks';
+import { montarPayloadCliente } from '../../utils/clientePayload';
+import RevogacaoPortal from '../../components/clients/RevogacaoPortal';
 import { UFS, SEXO_OPTIONS, ESTADO_CIVIL_OPTIONS, TIPO_PESSOA_OPTIONS } from '../../utils/enums';
 import { buscarEnderecoPorCEP } from '../../utils/viacep';
 import { emailValido, MENSAGEM_EMAIL_INVALIDO } from '../../utils/email';
@@ -48,8 +50,6 @@ function ClienteFormPage() {
   //   provisória   — a advogada gravou uma senha e o cliente ainda não trocou.
   //   própria      — o cliente trocou, na data registrada.
   const [portal, setPortal] = useState({ provisoria: false, definidaEm: null });
-  const [revogando, setRevogando] = useState(false);
-  const [confirmandoRevogacao, setConfirmandoRevogacao] = useState(false);
   const [error, setError] = useState('');
   // Campo apontado pelo backend no 409 ("cpf" | "cnpj" | "email"), para
   // destacar o input em vez de só exibir a mensagem no rodapé.
@@ -245,70 +245,10 @@ function ClienteFormPage() {
 
     setLoading(true);
 
-    // Campo opcional esvaziado precisa ir como `null` na edição: `undefined`
-    // some no JSON.stringify, a chave nem chega ao backend e o merge parcial
-    // preserva o valor antigo — era impossível apagar um telefone digitado
-    // errado. Na criação `undefined` é o certo, para o schema aplicar os
-    // defaults (ex.: nacionalidade "brasileira") em vez de gravar null.
-    const opcional = (valor) => {
-      const v = typeof valor === 'string' ? valor.trim() : valor;
-      if (v) return v;
-      return isEditing ? null : undefined;
-    };
-
-    const endereco = {
-      cep: opcional(unmask(formData.cep)),
-      logradouro: opcional(formData.logradouro),
-      numero: opcional(formData.numero),
-      complemento: opcional(formData.complemento),
-      bairro: opcional(formData.bairro),
-      cidade: opcional(formData.cidade),
-      estado: opcional(formData.estado),
-      pais: opcional(formData.pais),
-    };
-
-    const payload = {
-      tipoPessoa,
-      email: opcional(formData.email),
-      telefone: opcional(unmask(formData.telefone)),
-      observacoes: opcional(formData.observacoes),
-      endereco,
-    };
-
-    // A senha só entra no payload quando a advogada DIGITOU algo. Mandá-la
-    // vazia na edição regravaria o acesso a cada salvamento do formulário —
-    // e como toda gravação volta `senhaPortalProvisoria` para `true`, trocar
-    // o telefone de um cliente derrubaria a senha que ele já tinha definido.
-    // Campo em branco significa "não mexer no acesso", não "apagar".
-    if (formData.senhaPortal !== '') {
-      payload.senhaPortal = formData.senhaPortal;
-    }
-
-    if (tipoPessoa === 'fisica') {
-      payload.nomeCompleto = formData.nomeCompleto;
-      payload.cpf = unmask(formData.cpf);
-      // Enum vazio nunca vai como string vazia: '' reprova no enum do schema,
-      // null passa (o validador do Mongoose ignora null) e limpa o campo.
-      payload.rg = opcional(formData.rg);
-      payload.dataNascimento = opcional(formData.dataNascimento);
-      payload.sexo = opcional(formData.sexo);
-      payload.estadoCivil = opcional(formData.estadoCivil);
-      payload.profissao = opcional(formData.profissao);
-      payload.nacionalidade = opcional(formData.nacionalidade);
-    } else {
-      payload.razaoSocial = formData.razaoSocial;
-      payload.nomeFantasia = formData.nomeFantasia;
-      payload.cnpj = unmask(formData.cnpj);
-
-      const repNome = formData.repNome.trim();
-      const repCpf = unmask(formData.repCpf);
-      const repCargo = formData.repCargo.trim();
-      // Com algum dado preenchido manda o trio (campo vazio como null, para
-      // limpar); com os três vazios manda null, que remove o subdocumento.
-      payload.representanteLegal = (repNome || repCpf || repCargo)
-        ? { nome: opcional(repNome), cpf: opcional(repCpf), cargo: opcional(repCargo) }
-        : (isEditing ? null : undefined);
-    }
+    // Fase 3.5 (DEC-125): o payload sai de `utils/clientePayload.js`, que a
+    // suíte executa — `null` para campo apagado na edição, só os campos do
+    // tipo escolhido, e a senha só quando digitada. As regras estão lá.
+    const payload = montarPayloadCliente(formData, { tipoPessoa, isEditing });
 
     try {
       if (isEditing) {
@@ -341,97 +281,176 @@ function ClienteFormPage() {
       ? `o cliente definiu a própria senha em ${new Date(portal.definidaEm).toLocaleDateString('pt-BR')}`
       : 'sem acesso ao portal';
 
-  const revogarAcessoPortal = async () => {
-    setRevogando(true);
-    setError('');
-    try {
-      await clientService.revogarSenhaPortal(id);
-      setPortal({ provisoria: false, definidaEm: null });
-      setFormData((prev) => ({ ...prev, senhaPortal: '' }));
-      setConfirmandoRevogacao(false);
-      toast.success('Acesso ao portal revogado. O cliente não consegue mais entrar.');
-    } catch (err) {
-      setError(getApiErrorMessage(err, 'Não foi possível revogar o acesso ao portal.'));
-    } finally {
-      setRevogando(false);
-    }
+  // A revogação é a de `RevogacaoPortal` (Fase 3.5), a mesma da aba "Portal"
+  // do detalhe. Revogado, o estado da tela volta a "sem acesso".
+  const aoRevogar = () => {
+    setPortal({ provisoria: false, definidaEm: null });
+    setFormData((prev) => ({ ...prev, senhaPortal: '' }));
   };
 
   if (carregandoRegistro) return <Loading />;
 
+  // ── As seções (Fase 3.5, DEC-125) ─────────────────────────────────────────
+  // No padrão do formulário de processo da 3.4 (`form-grid section`):
+  // Identificação (o tipo de pessoa e os dados de cada tipo), Contato,
+  // Endereço, Dados profissionais (PF), Representante legal (PJ), Acesso ao
+  // portal e Observações. A lógica é a de antes — só a ordem e os títulos
+  // mudaram, e os campos do tipo que não está escolhido continuam guardados no
+  // estado (F-6.2).
   return (
     <div className="cliente-page-container">
-      <h1 className="page-title">{isEditing ? 'Editar Cliente' : 'Registrar Novo Cliente'}</h1>
-
-      {/* O seletor aparece na criação E na edição (F-6.2). Na edição ele troca
-          o tipo de um cliente já cadastrado — o `_id` não muda, então processos
-          e honorários continuam ligados a ele. */}
-      <div className="form-group tipo-pessoa-seletor">
-        <label>Tipo de Pessoa:</label>
-        <div className="radio-group">
-          {TIPO_PESSOA_OPTIONS.map(({ value, label }) => (
-            <React.Fragment key={value}>
-              <input type="radio" id={`tipo_${value}`} name="tipoPessoa" value={value}
-                     checked={tipoPessoa === value} onChange={() => trocarTipoPessoa(value)} />
-              <label htmlFor={`tipo_${value}`}>{label}</label>
-            </React.Fragment>
-          ))}
-        </div>
-        {trocandoTipo && (
-          <p className="tipo-pessoa-aviso" role="status">
-            Ao salvar, os dados de {perdaNaTroca.remove} deste cliente serão
-            removidos. Preencha {perdaNaTroca.preencha} abaixo. Processos e
-            honorários continuam ligados ao cliente; documentos já gerados
-            mantêm o texto de quando foram criados. Para desistir, escolha o
-            tipo anterior antes de salvar.
-          </p>
-        )}
-      </div>
+      <h1 className="page-title">{isEditing ? 'Editar cliente' : 'Novo cliente'}</h1>
 
       <form onSubmit={handleSubmit} className="data-form">
         {!online && <OfflineWriteReason />}
 
+        <div className="form-grid section">
+          <h3>Identificação</h3>
+
+          {/* O seletor aparece na criação E na edição (F-6.2). Na edição ele
+              troca o tipo de um cliente já cadastrado — o `_id` não muda,
+              então processos e honorários continuam ligados a ele. */}
+          <div className="form-group tipo-pessoa-seletor span-3">
+            <label>Tipo de pessoa</label>
+            <div className="radio-group">
+              {TIPO_PESSOA_OPTIONS.map(({ value, label }) => (
+                <React.Fragment key={value}>
+                  <input type="radio" id={`tipo_${value}`} name="tipoPessoa" value={value}
+                         checked={tipoPessoa === value} onChange={() => trocarTipoPessoa(value)} />
+                  <label htmlFor={`tipo_${value}`}>{label}</label>
+                </React.Fragment>
+              ))}
+            </div>
+            {trocandoTipo && (
+              <p className="tipo-pessoa-aviso" role="status">
+                Ao salvar, os dados de {perdaNaTroca.remove} deste cliente serão
+                removidos. Preencha {perdaNaTroca.preencha} abaixo. Processos e
+                honorários continuam ligados ao cliente; documentos já gerados
+                mantêm o texto de quando foram criados. Para desistir, escolha o
+                tipo anterior antes de salvar.
+              </p>
+            )}
+          </div>
+
+          {tipoPessoa === 'fisica' ? (
+            <>
+              <div className="form-group span-2">
+                <label htmlFor="nomeCompleto">Nome completo*</label>
+                <input id="nomeCompleto" type="text" name="nomeCompleto" value={formData.nomeCompleto} onChange={handleChange} required />
+              </div>
+              <div className="form-group span-1">
+                <label htmlFor="cpf">CPF*</label>
+                <input id="cpf" type="text" name="cpf" value={formData.cpf} onChange={handleMaskedChange(maskCPF)}
+                       placeholder="000.000.000-00" inputMode="numeric" required
+                       className={campoComErro === 'cpf' ? 'input-erro' : undefined} />
+              </div>
+
+              <p className="form-note span-3">
+                Campos usados na geração automática de documentos (procuração, contrato).
+                Opcionais, mas recomendados.
+              </p>
+
+              <div className="form-group span-1">
+                <label htmlFor="rg">RG</label>
+                <input id="rg" type="text" name="rg" value={formData.rg} onChange={handleChange} maxLength={20} />
+              </div>
+              <div className="form-group span-1">
+                <label htmlFor="dataNascimento">Data de nascimento</label>
+                <input id="dataNascimento" type="date" name="dataNascimento" value={formData.dataNascimento} onChange={handleChange} />
+              </div>
+              <div className="form-group span-1">
+                <label htmlFor="sexo">Sexo</label>
+                <select id="sexo" name="sexo" value={formData.sexo} onChange={handleChange}>
+                  <option value="">Selecione…</option>
+                  {SEXO_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div className="form-group span-1">
+                <label htmlFor="estadoCivil">Estado civil</label>
+                <select id="estadoCivil" name="estadoCivil" value={formData.estadoCivil} onChange={handleChange}>
+                  <option value="">Selecione…</option>
+                  {ESTADO_CIVIL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="form-group span-1">
+                <label htmlFor="cnpj">CNPJ*</label>
+                <input id="cnpj" type="text" name="cnpj" value={formData.cnpj} onChange={handleMaskedChange(maskCNPJ)}
+                       placeholder="00.000.000/0000-00" inputMode="numeric" required
+                       className={campoComErro === 'cnpj' ? 'input-erro' : undefined} />
+              </div>
+              <div className="form-group span-2">
+                <label htmlFor="razaoSocial">Razão social*</label>
+                <input id="razaoSocial" type="text" name="razaoSocial" value={formData.razaoSocial} onChange={handleChange} required />
+              </div>
+              <div className="form-group span-3">
+                <label htmlFor="nomeFantasia">Nome fantasia*</label>
+                <input id="nomeFantasia" type="text" name="nomeFantasia" value={formData.nomeFantasia} onChange={handleChange} required />
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="form-grid section">
+          <h3>Contato</h3>
+          <div className="form-group span-2">
+            <label htmlFor="email">E-mail</label>
+            <input type="email" name="email" id="email" value={formData.email} onChange={handleChange}
+                   className={campoComErro === 'email' ? 'input-erro' : undefined} />
+          </div>
+          <div className="form-group span-1">
+            <label htmlFor="telefone">Telefone</label>
+            <input id="telefone" type="tel" name="telefone" value={formData.telefone} onChange={handleMaskedChange(maskPhone)}
+                   placeholder="(00) 00000-0000" inputMode="numeric" />
+          </div>
+        </div>
+
+        <div className="form-grid section">
+          <h3>Endereço</h3>
+          <div className="form-group span-1">
+            <label htmlFor="cep">CEP {cepLoading && <span className="cep-hint">buscando…</span>}</label>
+            <input id="cep" type="text" name="cep" value={formData.cep} onChange={handleCepChange}
+                   placeholder="00000-000" inputMode="numeric" />
+          </div>
+          <div className="form-group span-2">
+            <label htmlFor="logradouro">Logradouro</label>
+            <input id="logradouro" type="text" name="logradouro" value={formData.logradouro} onChange={handleChange} />
+          </div>
+          <div className="form-group span-1">
+            <label htmlFor="numero">Número</label>
+            <input id="numero" type="text" name="numero" value={formData.numero} onChange={handleChange} />
+          </div>
+          <div className="form-group span-1">
+            <label htmlFor="complemento">Complemento</label>
+            <input id="complemento" type="text" name="complemento" value={formData.complemento} onChange={handleChange} />
+          </div>
+          <div className="form-group span-1">
+            <label htmlFor="bairro">Bairro</label>
+            <input id="bairro" type="text" name="bairro" value={formData.bairro} onChange={handleChange} />
+          </div>
+          <div className="form-group span-1">
+            <label htmlFor="cidade">Cidade</label>
+            <input id="cidade" type="text" name="cidade" value={formData.cidade} onChange={handleChange} />
+          </div>
+          <div className="form-group span-1">
+            <label htmlFor="estado">Estado (UF)</label>
+            {/* Select, não texto livre: o backend tem enum de UF e texto solto gera 400. */}
+            <select id="estado" name="estado" value={formData.estado} onChange={handleChange}>
+              <option value="">Selecione…</option>
+              {UFS.map(uf => <option key={uf.value} value={uf.value}>{uf.label}</option>)}
+            </select>
+          </div>
+          <div className="form-group span-1">
+            <label htmlFor="pais">País</label>
+            <input id="pais" type="text" name="pais" value={formData.pais} onChange={handleChange} />
+          </div>
+        </div>
+
         {tipoPessoa === 'fisica' && (
           <div className="form-grid section">
-            <h3>Dados Pessoais</h3>
-            <div className="form-group span-2">
-              <label>Nome Completo*</label>
-              <input type="text" name="nomeCompleto" value={formData.nomeCompleto} onChange={handleChange} required />
-            </div>
-            <div className="form-group span-1">
-              <label>CPF*</label>
-              <input type="text" name="cpf" value={formData.cpf} onChange={handleMaskedChange(maskCPF)}
-                     placeholder="000.000.000-00" inputMode="numeric" required
-                     className={campoComErro === 'cpf' ? 'input-erro' : undefined} />
-            </div>
-
-            <p className="form-note span-3">
-              Campos usados na geração automática de documentos (procuração, contrato).
-              Opcionais, mas recomendados.
-            </p>
-
-            <div className="form-group span-1">
-              <label>RG</label>
-              <input type="text" name="rg" value={formData.rg} onChange={handleChange} maxLength={20} />
-            </div>
-            <div className="form-group span-1">
-              <label>Data de nascimento</label>
-              <input type="date" name="dataNascimento" value={formData.dataNascimento} onChange={handleChange} />
-            </div>
-            <div className="form-group span-1">
-              <label>Sexo</label>
-              <select name="sexo" value={formData.sexo} onChange={handleChange}>
-                <option value="">Selecione…</option>
-                {SEXO_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-            <div className="form-group span-1">
-              <label>Estado civil</label>
-              <select name="estadoCivil" value={formData.estadoCivil} onChange={handleChange}>
-                <option value="">Selecione…</option>
-                {ESTADO_CIVIL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
+            <h3>Dados profissionais</h3>
             <div className="form-group span-1">
               <label htmlFor="profissao">Profissão</label>
               <CampoComSugestoes
@@ -467,101 +486,26 @@ function ClienteFormPage() {
 
         {tipoPessoa === 'juridica' && (
           <div className="form-grid section">
-            <h3>Dados Empresariais</h3>
-            <div className="form-group span-1">
-              <label>CNPJ*</label>
-              <input type="text" name="cnpj" value={formData.cnpj} onChange={handleMaskedChange(maskCNPJ)}
-                     placeholder="00.000.000/0000-00" inputMode="numeric" required
-                     className={campoComErro === 'cnpj' ? 'input-erro' : undefined} />
-            </div>
+            <h3>Representante legal</h3>
+            <p className="form-note span-3">
+              Quem assina pela empresa em procuração e contrato.
+              Opcional, mas recomendado.
+            </p>
             <div className="form-group span-2">
-              <label>Razão Social*</label>
-              <input type="text" name="razaoSocial" value={formData.razaoSocial} onChange={handleChange} required />
+              <label htmlFor="repNome">Nome</label>
+              <input id="repNome" type="text" name="repNome" value={formData.repNome} onChange={handleChange} maxLength={255} />
             </div>
-            <div className="form-group span-3">
-              <label>Nome Fantasia*</label>
-              <input type="text" name="nomeFantasia" value={formData.nomeFantasia} onChange={handleChange} required />
+            <div className="form-group span-1">
+              <label htmlFor="repCpf">CPF</label>
+              <input id="repCpf" type="text" name="repCpf" value={formData.repCpf} onChange={handleMaskedChange(maskCPF)}
+                     placeholder="000.000.000-00" inputMode="numeric" />
             </div>
-
-            <fieldset className="form-fieldset span-3">
-              <legend>Representante legal</legend>
-              <p className="form-note">
-                Quem assina pela empresa em procuração e contrato.
-                Opcional, mas recomendado.
-              </p>
-              <div className="form-grid-inner">
-                <div className="form-group span-2">
-                  <label>Nome</label>
-                  <input type="text" name="repNome" value={formData.repNome} onChange={handleChange} maxLength={255} />
-                </div>
-                <div className="form-group span-1">
-                  <label>CPF</label>
-                  <input type="text" name="repCpf" value={formData.repCpf} onChange={handleMaskedChange(maskCPF)}
-                         placeholder="000.000.000-00" inputMode="numeric" />
-                </div>
-                <div className="form-group span-1">
-                  <label>Cargo</label>
-                  <input type="text" name="repCargo" value={formData.repCargo} onChange={handleChange} maxLength={60} />
-                </div>
-              </div>
-            </fieldset>
+            <div className="form-group span-1">
+              <label htmlFor="repCargo">Cargo</label>
+              <input id="repCargo" type="text" name="repCargo" value={formData.repCargo} onChange={handleChange} maxLength={60} />
+            </div>
           </div>
         )}
-
-        <div className="form-grid section">
-          <h3>Contato</h3>
-          <div className="form-group span-2">
-            <label>Email</label>
-            <input type="email" name="email" value={formData.email} onChange={handleChange}
-                   className={campoComErro === 'email' ? 'input-erro' : undefined} />
-          </div>
-          <div className="form-group span-1">
-            <label>Telefone</label>
-            <input type="tel" name="telefone" value={formData.telefone} onChange={handleMaskedChange(maskPhone)}
-                   placeholder="(00) 00000-0000" inputMode="numeric" />
-          </div>
-        </div>
-
-        <div className="form-grid section">
-          <h3>Endereço</h3>
-          <div className="form-group span-1">
-            <label>CEP {cepLoading && <span className="cep-hint">buscando…</span>}</label>
-            <input type="text" name="cep" value={formData.cep} onChange={handleCepChange}
-                   placeholder="00000-000" inputMode="numeric" />
-          </div>
-          <div className="form-group span-2">
-            <label>Logradouro</label>
-            <input type="text" name="logradouro" value={formData.logradouro} onChange={handleChange} />
-          </div>
-          <div className="form-group span-1">
-            <label>Número</label>
-            <input type="text" name="numero" value={formData.numero} onChange={handleChange} />
-          </div>
-          <div className="form-group span-1">
-            <label>Complemento</label>
-            <input type="text" name="complemento" value={formData.complemento} onChange={handleChange} />
-          </div>
-          <div className="form-group span-1">
-            <label>Bairro</label>
-            <input type="text" name="bairro" value={formData.bairro} onChange={handleChange} />
-          </div>
-          <div className="form-group span-1">
-            <label>Cidade</label>
-            <input type="text" name="cidade" value={formData.cidade} onChange={handleChange} />
-          </div>
-          <div className="form-group span-1">
-            <label>Estado (UF)</label>
-            {/* Select, não texto livre: o backend tem enum de UF e texto solto gera 400. */}
-            <select name="estado" value={formData.estado} onChange={handleChange}>
-              <option value="">Selecione…</option>
-              {UFS.map(uf => <option key={uf.value} value={uf.value}>{uf.label}</option>)}
-            </select>
-          </div>
-          <div className="form-group span-1">
-            <label>País</label>
-            <input type="text" name="pais" value={formData.pais} onChange={handleChange} />
-          </div>
-        </div>
 
         {/* ── Acesso ao portal do cliente ────────────────────────────────────
             Bloco opcional. Cliente que não usa o portal não precisa de senha,
@@ -574,10 +518,7 @@ function ClienteFormPage() {
               <strong>Situação:</strong> {textoDoEstadoDoPortal}
             </p>
             {/* A senha NUNCA é exibida depois de gravada — é hash, não existe
-                como texto em lugar nenhum. A tela mostra estado, não valor.
-                Isto está escrito porque a pergunta "onde vejo a senha dele?"
-                é inevitável, e a resposta precisa estar na tela, não numa
-                conversa. */}
+                como texto em lugar nenhum. A tela mostra estado, não valor. */}
             <p className="cep-hint">
               A senha não pode ser consultada depois de salva — o sistema guarda
               só uma versão embaralhada dela. Se o cliente esquecer, cadastre uma
@@ -586,8 +527,9 @@ function ClienteFormPage() {
           </div>
 
           <div className="form-group span-2">
-            <label>{temAcesso ? 'Cadastrar nova senha (redefinir)' : 'Senha inicial do portal'}</label>
+            <label htmlFor="senhaPortal">{temAcesso ? 'Cadastrar nova senha (redefinir)' : 'Senha inicial do portal'}</label>
             <input
+              id="senhaPortal"
               type="password"
               name="senhaPortal"
               value={formData.senhaPortal}
@@ -599,46 +541,14 @@ function ClienteFormPage() {
             <span className="cep-hint">
               {temAcesso
                 ? 'Gravar uma senha nova volta o acesso para "provisória": o cliente terá de trocá-la de novo no próximo acesso. É o caminho para quando ele esquece.'
-                : 'Opcional. Entregue-a ao cliente junto com o código de acesso do processo — ele será obrigado a trocá-la no primeiro acesso.'}
+                : 'Opcional. Ela cria o código de acesso pessoal do cliente; entregue os dois, por canais diferentes — ele será obrigado a trocar a senha no primeiro acesso.'}
             </span>
           </div>
 
           {isEditing && temAcesso && (
             <div className="form-group span-1">
-              <label>Revogar acesso</label>
-              {confirmandoRevogacao ? (
-                <div className="portal-revogar-confirma">
-                  <p className="cep-hint">
-                    O cliente perde o acesso ao portal imediatamente. As
-                    confirmações que ele já registrou <strong>não</strong> são
-                    apagadas.
-                  </p>
-                  <button
-                    type="button"
-                    className="btn-portal-revogar"
-                    onClick={revogarAcessoPortal}
-                    disabled={revogando}
-                  >
-                    {revogando ? 'Revogando…' : 'Confirmar revogação'}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-portal-cancelar"
-                    onClick={() => setConfirmandoRevogacao(false)}
-                    disabled={revogando}
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className="btn-portal-revogar"
-                  onClick={() => setConfirmandoRevogacao(true)}
-                >
-                  Revogar acesso ao portal
-                </button>
-              )}
+              <span className="form-group__rotulo">Revogar acesso</span>
+              <RevogacaoPortal clienteId={id} online={online} onRevogado={aoRevogar} />
             </div>
           )}
         </div>
@@ -646,7 +556,7 @@ function ClienteFormPage() {
         <div className="form-grid section">
           <h3>Observações</h3>
           <div className="form-group span-3">
-            <textarea name="observacoes" value={formData.observacoes} onChange={handleChange} rows={3} />
+            <textarea id="observacoes" aria-label="Observações" name="observacoes" value={formData.observacoes} onChange={handleChange} rows={3} />
           </div>
         </div>
 

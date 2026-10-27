@@ -61,6 +61,8 @@
 /* Filhos do grid que não são .form-group (notas, fieldsets) */
 .form-note.span-3, .form-fieldset.span-3 { grid-column: span 3; }
 .form-group label { color: var(--text-color); margin-bottom: 5px; font-size: 14px; }
+/* O rótulo de um grupo que não é campo (a revogação do portal, Fase 3.5). */
+.form-group__rotulo { color: var(--text-color); margin-bottom: 5px; font-size: 14px; }
 .form-group input, .form-group select, .form-group textarea {
   width: 100%;
   padding: 10px 14px;
