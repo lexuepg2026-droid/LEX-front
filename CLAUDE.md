@@ -5229,6 +5229,69 @@ provisória, revogação (agora o componente), erro por campo. Criar e editar
 cliente continuam **fora da fila** (F-5b): sem sinal, o Salvar é anunciado
 como desabilitado, o clique é barrado e o motivo aparece.
 
+## DEC-126 (frontend) — o exemplo do timbrado vem do servidor (Fase 3.6)
+
+A rota é do back (`GET /auth/me/timbrado-exemplo`, DEC-126 no `CLAUDE.md` do
+backend): um PDF de uma página montado pelo **mesmo** `renderizarPdf` dos
+documentos, com os dados **salvos**. A tela **não desenha timbrado em HTML** —
+há teste. Uma prévia desenhada aqui seria a segunda regra para o mesmo papel.
+
+## DEC-127 (frontend) — o perfil em "Dados da conta" × "Dados do escritório" (Fase 3.6)
+
+Apontamento 8 da banca. `pages/profile/ProfilePage.jsx`:
+
+- **Cabeçalho de identidade em balão** (as classes do processo e do cliente,
+  DEC-111/123): `Avatar` grande, **cor 1 fixa** (o verde da marca — prop nova
+  `cor`; sem ela o cliente continua pela cor do id), nome, "OAB {UF} {número}"
+  e o e-mail com a situação. Mostra o que está **salvo**.
+- **Seções, nesta ordem:** Dados da conta (nome, CPF, e-mail, OAB); Dados do
+  escritório — aparecem nos documentos (nome do escritório, telefone, PIX,
+  Instagram, site, logo e o exemplo do timbrado); Endereço do escritório;
+  Segurança (a troca de senha, como antes).
+- **Todo rótulo com `htmlFor`/`id`**, e cada ajuda por `aria-describedby`. As
+  ajudas dizem **onde o dado aparece — ou que não aparece**: Instagram e site
+  hoje não saem em timbrado nem recibo, e a chave PIX entra só pelo texto dos
+  documentos que usam `{{chavePix}}`. Prometer o timbrado onde ele não está
+  seria o tipo de frase que a advogada confere e perde a confiança.
+- **E-mail só leitura** (`readOnly`, não `disabled`: focável, o rótulo o
+  alcança) com "Confirmado em dd/mm/aaaa" (dia do fuso de Brasília) ou "Não
+  confirmado" e, nesse caso, "Reenviar confirmação" pelo `useConfirmacaoEmail`
+  (DEC-088), num toast só (o reenvio continua `semToastGlobal`). A troca de
+  e-mail continua fora.
+- **`situacaoDoEmail`** mora em `components/layout/confirmacaoEmail.js`, o
+  único leitor de `emailConfirmadoEm` (A-2). A trava da A-2 passou a listar o
+  perfil entre os que perguntam — é mais um lugar do aviso, não um portão.
+- Cidade e país continuam texto livre; CPF continua editável ("Identifica a
+  sua conta"); o perfil continua **fora da fila e sem espelho** (o usuário vem
+  do `AuthContext`).
+
+## DEC-128 (frontend) — salvar só o que mudou (Fase 3.6)
+
+`utils/perfilPayload.js` (`formularioDoPerfil`, `montarPayloadPerfil`,
+`semAlteracoes`), no padrão do `clientePayload.js`, **sem mudar a regra** que a
+tela já tinha (a do `Perfil.jsx:129-164` da Raniele): só os campos diferentes
+da fotografia `inicial`; `null` para o apagado; comparação sem máscara (CPF,
+telefone, CEP, OAB) e sem espaço nas pontas. O back aceita o parcial e mescla
+campo a campo — travado em `tests/auth/perfilParcial.test.js` do backend.
+
+- **Salvar desabilitado sem alteração**, com "Nenhuma alteração" ao lado; o
+  Enter num campo também não envia.
+- **Depois de salvar, o `inicial` é o salvo.** O formulário só se
+  ressincroniza quando muda a **conta** (`user.id`): um `checkAuth()` — o "já
+  confirmado" do reenvio — troca o objeto `user` e apagaria a edição não salva.
+
+## DEC-129 (frontend) — "Ver exemplo do timbrado" (Fase 3.6)
+
+Na seção do escritório. Baixa o PDF da DEC-126 como o recibo (blob +
+`nomeDoAnexo` + revoke no `finally`). Com alteração não salva o botão continua
+ativo e uma região viva **sempre montada** diz "Salve para ver as mudanças no
+exemplo." Sem sinal: `aria-disabled`, clique barrado e o motivo dos downloads
+(`MENSAGEM_DOWNLOAD_OFFLINE`), ligado ao botão por `aria-describedby`.
+
+**Achado de passagem, corrigido:** o `<input type=file>` escondido do logo
+tinha a largura de um campo inteiro (`.form-group input` vencia o `width: 1px`)
+e fazia a página do perfil rolar 156 px de lado em todas as larguras.
+
 ---
 
 ## Rotina de encerramento de sessão
