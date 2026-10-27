@@ -20,6 +20,7 @@ import { rotuloDoStatus, tomDoStatus } from '../../utils/statusVisual';
 import { classeDaBolinha } from '../../components/processes/detalheProcesso.js';
 import {
   AJUDA_DO_PERIODO,
+  EXTRAS_DA_LISTA,
   FILTROS_DA_LISTA,
   PORTAL_OPTIONS,
   PRESETS_DA_LISTA,
@@ -37,6 +38,8 @@ import useOnlineStatus from '../../hooks/useOnlineStatus';
 import { MENSAGEM_ESCRITA_OFFLINE, blockReason } from '../../offline/offlineMessages';
 import { motivoDeNaoReativar } from '../../utils/activationMessages';
 import useDesativacaoProcesso from '../../hooks/useDesativacaoProcesso';
+import useClienteFiltrado from '../../hooks/useClienteFiltrado';
+import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
 import '../../styles/modules.css';
 import './ProcessPage.css';
 
@@ -60,12 +63,18 @@ function ProcessoListPage() {
   const {
     filtros, buscaDebounced, page, setPage,
     definirFiltro, aplicarPreset, limpar, temFiltro
-  } = useListFilters(FILTROS_DA_LISTA, { naUrl: true });
+  } = useListFilters(FILTROS_DA_LISTA, { naUrl: true, extrasNaLimpeza: EXTRAS_DA_LISTA });
+
+  // Fase 3.5 (DEC-124): `?clienteId=`, vindo da aba "Processos" do cliente. O
+  // chip diz o recorte e o desfaz; a faixa mostra o cliente e volta à aba.
+  const filtroCliente = useClienteFiltrado({ avisoProprio: true });
 
   // DEC-058 (F-5a): a mesma consulta, com espelho local escopado por usuário.
   // Guarda-se o ENVELOPE: sem o `total`, a tela sem sinal mostraria 20
   // processos sem dizer que há 35.
-  const consulta = consultaDaLista(filtros, { page, limit: POR_PAGINA, busca: buscaDebounced || undefined });
+  const consulta = consultaDaLista(filtros, {
+    page, limit: POR_PAGINA, busca: buscaDebounced || undefined, clienteId: filtroCliente.clienteId
+  });
   const { data, loading: carregando, error, updatedAt, fromCache, reload } = useCachedResource({
     resource: 'processes',
     params: consulta,
@@ -95,7 +104,12 @@ function ProcessoListPage() {
   // registro pode ou não continuar visível, conforme o filtro de situação.
   const desativacao = useDesativacaoProcesso({ aoConcluir: reload });
 
-  const recorte = descricaoDoRecorteDeProcessos({ filtros, busca: buscaDebounced });
+  const recorte = descricaoDoRecorteDeProcessos({
+    filtros,
+    busca: buscaDebounced,
+    cliente: filtroCliente.clienteId ? { nome: filtroCliente.rotulo } : null,
+  });
+  const comRecorte = temFiltro || Boolean(filtroCliente.clienteId);
 
   // Mostra o principal e, havendo litisconsórcio, quantos mais existem — a
   // coluna é estreita e a lista inteira de participantes não cabe. O detalhe
@@ -127,14 +141,26 @@ function ProcessoListPage() {
         />
 
         {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
+        {/* DEC-109: a faixa dispensa o aviso dela; quando só o CLIENTE do
+            filtro veio do espelho, a hora é a dele. */}
+        {!fromCache && filtroCliente.fromCache && <OfflineNotice atualizadoEm={filtroCliente.updatedAt} />}
         {error && <p className="error-message">{error}</p>}
+
+        {filtroCliente.clienteId && (
+          <ProcessFilterChip
+            alvo="cliente"
+            rotulo={filtroCliente.rotulo}
+            carregando={filtroCliente.carregando}
+            onRemover={filtroCliente.remover}
+          />
+        )}
 
         <FinancialFilters
           filtros={filtros}
           definirFiltro={definirFiltro}
           aplicarPreset={aplicarPreset}
           limpar={limpar}
-          temFiltro={temFiltro}
+          temFiltro={comRecorte}
           honorarios={null}
           descricaoDoRecorte={recorte}
           semBusca
@@ -217,7 +243,7 @@ function ProcessoListPage() {
           <EmptyState
             title="Nenhum processo encontrado"
             description={
-              temFiltro
+              comRecorte
                 ? `Nenhum processo ${recorte}. Limpe os filtros para ver a lista inteira.`
                 : 'Cadastre um novo processo para vê-lo aqui.'
             }

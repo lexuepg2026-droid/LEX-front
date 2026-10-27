@@ -142,9 +142,9 @@
   color: var(--color-text-primary);
 }
 
-.acesso-portal__nota {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+/* Fase 3.5: o bloco mora na aba "Portal", sobre o balão. */
+.acesso-portal p {
+  margin: var(--space-1) 0;
 }
 
 
@@ -358,6 +358,19 @@
   cursor: not-allowed;
 }
 
+/* Fase 3.5: sem sinal o botão continua focável e diz o motivo ao lado
+   (DEC-053); não é atenuado, para o texto dele continuar medindo o par. */
+.btn-portal-revogar[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+.portal-revogar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
 /* ── A lista de clientes (Fase 3.5, DEC-121) ──────────────────────────────
    O avatar e o nome na mesma célula: o avatar não encolhe, o nome corta com
    reticências (a célula tem `title` com o nome inteiro). */
@@ -373,4 +386,62 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ── O detalhe do cliente (Fase 3.5, DEC-123) ─────────────────────────────
+   O balão, o cabeçalho e os dados são os do detalhe do processo
+   (`ProcessDetailPage.css`). Aqui fica só o que é do cliente: o avatar
+   centrado no bloco de identidade e a grade dos balões da aba "Detalhes" —
+   três colunas no desktop, uma no celular. Sem `transform` nem `filter`: os
+   ⋮ abrem em portal (DEC-046). */
+.cliente-cabecalho__identidade {
+  align-items: center;
+}
+
+.cliente-grade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.cliente-grade__largo {
+  grid-column: 1 / -1;
+}
+
+/* Dentro de um balão de um terço, um dado por linha. */
+.cliente-dados {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.cliente-aba__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.cliente-aba__topo .processo-balao__titulo {
+  margin: 0;
+}
+
+.cliente-aba__subtitulo {
+  margin: var(--space-5) 0 var(--space-2);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 1023px) {
+  .cliente-grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .cliente-grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

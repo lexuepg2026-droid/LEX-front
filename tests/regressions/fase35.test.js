@@ -175,3 +175,147 @@ describe("Fase 3.5 · item 3 — a lista de clientes (DEC-121)", () => {
     assert.match(barra, /\{!semPeriodo && personalizado && \(/);
   });
 });
+
+// ── Item 4 — o detalhe do cliente (DEC-123) e o `?clienteId=` (DEC-124) ───
+import {
+  ABAS,
+  abaDaUrl,
+  queryDaAba,
+  documentoDoCabecalho,
+  gruposDeDados,
+  vinculoDoCliente,
+  listaDeProcessosDoCliente,
+  situacaoDoProcessoNoPortal,
+  rotuloDoProcesso,
+} from "../../src/pages/clients/detalheCliente.js";
+import { consultaDaLista as consultaDosProcessos, descricaoDoRecorteDeProcessos, EXTRAS_DA_LISTA } from "../../src/pages/processes/listaProcessos.js";
+import { paiDaRota } from "../../src/components/layout/contexto.js";
+
+describe("Fase 3.5 · item 4 — o detalhe do cliente (DEC-123)", () => {
+  test("três abas, sem Pagamentos; a URL decide, e a padrão sai da URL", () => {
+    assert.deepEqual(ABAS.map((a) => a.id), ["detalhes", "processos", "portal"]);
+    assert.ok(!ABAS.some((a) => /pagamento/i.test(a.rotulo)), "a aba Pagamentos da Figura 21 não entra");
+    assert.equal(abaDaUrl(""), "detalhes");
+    assert.equal(abaDaUrl("?aba=portal"), "portal");
+    assert.equal(abaDaUrl("?aba=pagamentos"), "detalhes");
+    assert.equal(queryDaAba("?aba=portal", "detalhes"), "");
+    assert.equal(queryDaAba("", "processos"), "?aba=processos");
+    assert.equal(queryDaAba("?x=1", "portal"), "?x=1&aba=portal");
+  });
+
+  test("o documento do cabeçalho é formatado e diz o que é", () => {
+    assert.deepEqual(documentoDoCabecalho({ tipoPessoa: "fisica", cpf: "12345678909" }), { rotulo: "CPF", valor: "123.456.789-09" });
+    assert.deepEqual(documentoDoCabecalho({ tipoPessoa: "juridica", cnpj: "11222333000181" }), { rotulo: "CNPJ", valor: "11.222.333/0001-81" });
+    assert.equal(documentoDoCabecalho({ tipoPessoa: "fisica" }), null);
+  });
+
+  test("os grupos de dados: PF tem dados profissionais; PJ tem representante", () => {
+    const pf = gruposDeDados({ tipoPessoa: "fisica", nomeCompleto: "Ana", profissao: "engenheira", endereco: { cidade: "Ponta Grossa", estado: "PR", cep: "84010000" } });
+    assert.deepEqual(pf.map((g) => g.id), ["identificacao", "contato", "endereco", "profissional"]);
+    assert.deepEqual(pf.find((g) => g.id === "endereco").itens.find(([r]) => r === "CEP"), ["CEP", "84010-000"]);
+    const pj = gruposDeDados({ tipoPessoa: "juridica", razaoSocial: "X Ltda", representanteLegal: { nome: "Rep", cpf: "12345678909" }, observacoes: "nota" });
+    assert.deepEqual(pj.map((g) => g.id), ["identificacao", "contato", "endereco", "representante", "observacoes"]);
+    assert.equal(pj.find((g) => g.id === "observacoes").largo, true);
+    const semRep = gruposDeDados({ tipoPessoa: "juridica" }).find((g) => g.id === "representante");
+    assert.deepEqual(semRep.itens, [["Representante", "Não informado"]]);
+  });
+
+  test("o papel deste cliente no processo, sem inventar", () => {
+    const p = { participantes: [{ clienteId: { _id: "c1" }, papel: "litisconsorte", principal: false }, { clienteId: "c2", papel: "autor", principal: true }] };
+    assert.deepEqual(vinculoDoCliente(p, "c1"), { papel: "Litisconsorte", principal: false });
+    assert.deepEqual(vinculoDoCliente(p, "c2"), { papel: "Autor", principal: true });
+    assert.equal(vinculoDoCliente(p, "c9"), null);
+    assert.equal(listaDeProcessosDoCliente("c1"), "/dashboard/processos?clienteId=c1");
+  });
+
+  test("a situação no portal: o interruptor só onde a liberação alcança", () => {
+    const base = { vinculoAtivo: true, processoAtivo: true };
+    assert.deepEqual(situacaoDoProcessoNoPortal({ ...base, liberadoNoPortal: true }, { temSenhaPortal: true }), { status: "portal_liberado", texto: null, interruptor: true });
+    assert.deepEqual(situacaoDoProcessoNoPortal({ ...base, liberadoNoPortal: false }, { temSenhaPortal: true }), { status: "portal_nao_liberado", texto: null, interruptor: true });
+    assert.equal(situacaoDoProcessoNoPortal(base, { temSenhaPortal: false }).status, "portal_sem_acesso");
+    assert.equal(situacaoDoProcessoNoPortal({ ...base, vinculoAtivo: false }, { temSenhaPortal: true }).interruptor, false);
+    assert.equal(situacaoDoProcessoNoPortal({ ...base, processoAtivo: false }, { temSenhaPortal: true }).texto, "Processo desativado");
+    assert.equal(rotuloDoProcesso({ numeroProcesso: "001", titulo: "T" }), "001 — T");
+    assert.equal(rotuloDoProcesso({ titulo: "T" }), "T");
+  });
+
+  test("a página: cabeçalho de identidade, ⋮ pelo hook, abas e o contexto", () => {
+    const tela = semComentarios(ler("src/pages/clients/ClientDetailPage.jsx"));
+    assert.match(tela, /<Avatar id=\{cliente\._id\} nome=\{nome\} tamanho="grande" \/>/);
+    assert.match(tela, /\{tipoPorExtenso\(cliente\)\}/);
+    assert.match(tela, /className="processo-cabecalho__copiar"/);
+    assert.match(tela, /navigator\.clipboard\.writeText\(documento\.valor\)/);
+    assert.match(tela, /desativado && <span className="tag-desativado processo-cabecalho__selo">Desativado<\/span>/);
+    assert.match(tela, /usePublicarContexto\(\{ clienteId: id, avisoProprio: true \}\)/);
+    assert.match(tela, /<ClientTabs aba=\{aba\} \/>/);
+    assert.match(tela, /const aba = abaDaUrl\(location\.search\)/);
+    assert.match(tela, /aba === 'processos' && <ClientProcessesTab/);
+    assert.match(tela, /aba === 'portal' && <ClientPortalTab/);
+    // Só leitura: nada de formulário nem de gravação na aba Detalhes.
+    assert.doesNotMatch(tela, /<form|<input|updateClient/);
+    const abas = semComentarios(ler("src/components/clients/ClientTabs.jsx"));
+    assert.match(abas, /aria-current="page"/);
+    assert.match(abas, /to=\{\{ search: queryDaAba\(location\.search, id\) \}\}/);
+    assert.doesNotMatch(abas, /replace/, "cada troca de aba é uma entrada do histórico — o voltar funciona");
+  });
+
+  test("a grade: três colunas no desktop, uma no celular", () => {
+    const folha = ler("src/pages/clients/ClientPage.css").replace(/\/\*[\s\S]*?\*\//g, "");
+    assert.match(folha, /\.cliente-grade \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+    assert.match(folha, /@media \(max-width: 767px\) \{\s*\.cliente-grade \{\s*grid-template-columns: minmax\(0, 1fr\)/);
+    assert.doesNotMatch(folha, /(^|[\s;{])(transform|filter)\s*:/m, "os ⋮ abrem em portal (DEC-046)");
+  });
+
+  test("as abas sem espelho dizem que não sabem", () => {
+    const processos = semComentarios(ler("src/components/clients/ClientProcessesTab.jsx"));
+    const portal = semComentarios(ler("src/components/clients/ClientPortalTab.jsx"));
+    for (const aba of [processos, portal]) {
+      assert.doesNotMatch(aba, /useCachedResource/, "um segundo espelho daria um segundo aviso de idade (DEC-109)");
+    }
+    assert.match(processos, /indisponíveis sem conexão/);
+    assert.match(portal, /indisponível sem conexão/);
+    assert.match(processos, /processService\s*\.listProcesses\(\{ clienteId, page, limit: POR_PAGINA \}\)/);
+    assert.match(processos, /<Link to=\{listaDeProcessosDoCliente\(clienteId\)\}/);
+  });
+
+  test("a aba Portal: o código pela rota dedicada, os interruptores, a entrega e a revogação", () => {
+    const portal = semComentarios(ler("src/components/clients/ClientPortalTab.jsx"));
+    assert.match(portal, /getAcessoPortal\(clienteId\)/);
+    assert.match(portal, /\{situacao\.interruptor && \(\s*<LiberacaoPortal/);
+    assert.match(portal, /<AccessDelivery/);
+    assert.match(portal, /<RevogacaoPortal clienteId=\{clienteId\}/);
+    const resumo = semComentarios(ler("src/components/clients/AcessoPortalResumo.jsx"));
+    assert.match(resumo, /Sem acesso ao portal\./);
+    assert.match(resumo, /\/dashboard\/clientes\/editar\/\$\{clienteId\}/);
+  });
+});
+
+describe("Fase 3.5 · item 4 — a lista de processos com `?clienteId=` (DEC-124)", () => {
+  test("a consulta leva o cliente, e o recorte o nomeia", () => {
+    assert.equal(consultaDosProcessos({}, { page: 1, limit: 20, clienteId: "c1" }).clienteId, "c1");
+    assert.ok(!("clienteId" in consultaDosProcessos({}, { page: 1, limit: 20 })));
+    assert.equal(descricaoDoRecorteDeProcessos({ cliente: { nome: "Ana" } }), 'do cliente "Ana"');
+    assert.equal(descricaoDoRecorteDeProcessos({ cliente: { nome: null } }), "deste cliente");
+    assert.deepEqual([...EXTRAS_DA_LISTA], ["clienteId"]);
+  });
+
+  test("a faixa: a lista filtrada volta à aba Processos do cliente; sem filtro, nada", () => {
+    assert.equal(paiDaRota("/dashboard/processos", "?clienteId=c1"), "/dashboard/clientes/detalhe/c1?aba=processos");
+    assert.equal(paiDaRota("/dashboard/processos", ""), null);
+    assert.equal(paiDaRota("/dashboard/processos", "?status=ativo"), null);
+  });
+
+  test("o chip, o hook e o aviso do cliente do filtro", () => {
+    const lista = semComentarios(ler("src/pages/processes/ProcessListPage.jsx"));
+    assert.match(lista, /useClienteFiltrado\(\{ avisoProprio: true \}\)/);
+    assert.match(lista, /<ProcessFilterChip\s+alvo="cliente"/);
+    assert.match(lista, /!fromCache && filtroCliente\.fromCache && <OfflineNotice atualizadoEm=\{filtroCliente\.updatedAt\} \/>/);
+    const hook = semComentarios(ler("src/hooks/useClienteFiltrado.js"));
+    assert.match(hook, /resource: 'client',\s*params: \{ id: clienteId \}/);
+    assert.match(hook, /usePublicarContexto\(\{ clienteId, avisoProprio \}\)/);
+    assert.match(hook, /proximo\.delete\('clienteId'\)/);
+    const chip = semComentarios(ler("src/components/ui/ProcessFilterChip.jsx"));
+    assert.match(chip, /cliente: \{ titulo: 'Cliente'/);
+    assert.match(chip, /só este \{nome\}/);
+  });
+});

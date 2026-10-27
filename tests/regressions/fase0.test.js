@@ -205,7 +205,12 @@ describe("Fase 0 · item 5 — o filtro de processo da URL é visível", () => {
 
   test("o × tem rótulo acessível, e o chip importa a própria folha", () => {
     const chip = ler("src/components/ui/ProcessFilterChip.jsx");
-    assert.match(chip, /aria-label="Remover o filtro de processo"/);
+    // Fase 3.5 (DEC-124): o chip serve também ao filtro de cliente, e o rótulo
+    // passou a ser montado de `alvo` — cujo padrão continua "processo". A
+    // regra é a mesma: o × tem nome próprio, que diz o QUE ele remove.
+    assert.match(chip, /aria-label=\{`Remover o filtro de \$\{nome\}`\}/);
+    assert.match(chip, /alvo = 'processo'/);
+    assert.match(chip, /processo: \{ titulo: 'Processo'/);
     assert.match(chip, /import '\.\/ProcessFilterChip\.css'/);
   });
 });

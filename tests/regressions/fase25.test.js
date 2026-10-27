@@ -147,9 +147,17 @@ describe("Fase 2.5 · o lado da advogada (DEC-097)", () => {
     assert.match(c, /ainda não tem acesso ao portal/, "sem senha, diz o caminho");
   });
 
+  // REESCRITO na Fase 3.5 (DEC-123), e não afrouxado: o bloco foi para a aba
+  // "Portal" do detalhe, que lê `acesso-portal` UMA vez (pela rota dedicada) e
+  // o entrega ao bloco e à lista dos processos. A regra é a mesma — o detalhe
+  // do cliente mostra o código pessoal, a senha como estado e "N de M" —, e a
+  // trava passa a seguir o caminho: página → aba → bloco, com a rota dedicada.
   test("o detalhe do cliente tem o bloco Acesso ao portal, sem a senha", () => {
     const pagina = semComentarios(ler("src/pages/clients/ClientDetailPage.jsx"));
-    assert.match(pagina, /<AcessoPortalResumo clienteId=\{id\} \/>/);
+    assert.match(pagina, /<ClientPortalTab clienteId=\{id\}/);
+    const aba = semComentarios(ler("src/components/clients/ClientPortalTab.jsx"));
+    assert.match(aba, /clientService\s*\.getAcessoPortal\(clienteId\)/);
+    assert.match(aba, /<AcessoPortalResumo clienteId=\{clienteId\} acesso=\{acesso\} \/>/);
     const bloco = semComentarios(ler("src/components/clients/AcessoPortalResumo.jsx"));
     assert.match(bloco, /acesso\.codigoAcessoPessoal/);
     assert.match(bloco, /acesso\.processosLiberados\} de \{acesso\.processosAtivos\}/);

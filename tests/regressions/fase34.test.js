@@ -202,7 +202,10 @@ describe("Fase 3.4 · item 4 — a lista de processos no padrão da Figura 19 (D
 
   test("o balão da 3.2: cabeçalho, filtros em pílulas na URL, ações fixas e paginador", () => {
     assert.match(lista, /<CabecalhoDeLista[\s\S]*?total=\{totalConhecido\}[\s\S]*?novoDestino="\/dashboard\/processos\/novo"/);
-    assert.match(lista, /useListFilters\(FILTROS_DA_LISTA, \{ naUrl: true \}\)/);
+    // Fase 3.5 (DEC-124): o "Limpar filtros" tira também o `?clienteId=` da
+    // aba "Processos" do cliente (`extrasNaLimpeza`). Os filtros continuam na
+    // URL, com as mesmas chaves.
+    assert.match(lista, /useListFilters\(FILTROS_DA_LISTA, \{ naUrl: true, extrasNaLimpeza: EXTRAS_DA_LISTA \}\)/);
     assert.match(lista, /<FinancialFilters[\s\S]*?semBusca\s*pilulas\s*presets=\{PRESETS_DA_LISTA\}\s*ajudaDoPeriodo=\{AJUDA_DO_PERIODO\}/);
     assert.match(lista, /className="data-table data-table--fixed data-table--acoes-fixas"/);
     assert.match(lista, /<Paginador[\s\S]*?rotulo="processo"/);

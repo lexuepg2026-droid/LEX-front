@@ -20,19 +20,31 @@ import './ProcessFilterChip.css';
 // recorte. O rótulo do processo fica no `title`, para quem passar o mouse.
 // ═══════════════════════════════════════════════════════════════════════════
 
-export default function ProcessFilterChip({ rotulo, carregando = false, onRemover }) {
-  const dica = rotulo || (carregando ? 'carregando…' : 'processo selecionado');
+// ── Fase 3.5 (DEC-124): o mesmo chip para o filtro de CLIENTE ─────────────
+// A lista de processos aberta pela aba "Processos" do cliente
+// (`?clienteId=`) diz o recorte do mesmo jeito: "Filtro: só este cliente ×",
+// com o nome no `title` e o cliente na faixa. `alvo` só troca a palavra; o
+// padrão continua sendo o processo, e as quatro listas não mudam.
+const ALVOS = {
+  processo: { titulo: 'Processo', padrao: 'processo selecionado' },
+  cliente: { titulo: 'Cliente', padrao: 'cliente selecionado' },
+};
+
+export default function ProcessFilterChip({ rotulo, carregando = false, onRemover, alvo = 'processo' }) {
+  const { titulo, padrao } = ALVOS[alvo] ?? ALVOS.processo;
+  const dica = rotulo || (carregando ? 'carregando…' : padrao);
+  const nome = ALVOS[alvo] ? alvo : 'processo';
 
   return (
-    <p className="filtro-processo" role="status" title={`Processo: ${dica}`}>
+    <p className="filtro-processo" role="status" title={`${titulo}: ${dica}`}>
       <span className="filtro-processo__rotulo">Filtro:</span>{' '}
-      <span className="filtro-processo__valor">só este processo</span>
+      <span className="filtro-processo__valor">só este {nome}</span>
       <button
         type="button"
         className="filtro-processo__remover"
         onClick={onRemover}
-        aria-label="Remover o filtro de processo"
-        title="Remover o filtro de processo"
+        aria-label={`Remover o filtro de ${nome}`}
+        title={`Remover o filtro de ${nome}`}
       >
         <X size={14} aria-hidden="true" />
       </button>
