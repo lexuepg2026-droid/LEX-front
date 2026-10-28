@@ -13,6 +13,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { consultaDaLarguraMinima } from "../../src/hooks/useLarguraMinima.js";
+import { consultaDoAnteriorVisivel } from "../../src/components/documents/anteriorVisivel.js";
 import {
   POR_PAGINA_DA_BIBLIOTECA,
   acumularSecoes,
@@ -182,5 +183,43 @@ describe("Fase 3.9b · item 3 — o cartão de início (DEC-147)", () => {
   test("o destino de cada modelo é o de sempre, com o processo da lista", () => {
     assert.match(inicio, /navigate\(destinoDaMontagem\(modelo\._id, MODO_DOCUMENTO, processoId\)\)/);
     assert.match(inicio, /navigate\(destinoDaMontagem\(res\.data\._id, modo, processoId\), \{ replace: true \}\)/);
+  });
+});
+
+// ── Item 4 — o aviso de portal sem teto, e o painel em balão (DEC-144) ───
+describe("Fase 3.9b · item 4 — o anterior do aviso de portal sem o teto de 100 (DEC-144)", () => {
+  const painel = semComentarios(ler("src/components/documents/GenerationPanel.jsx"));
+  const api = semComentarios(ler("src/api/documentService.js"));
+
+  test("a consulta pede SÓ a combinação modelo × processo × cliente, visível, sem modelos, uma linha", () => {
+    assert.deepEqual(
+      consultaDoAnteriorVisivel({ processoId: "p1", modeloId: "m1", clienteId: "c1" }),
+      { processoId: "p1", geradoDeModeloId: "m1", clienteId: "c1", visivelPortal: true, ehModelo: false, limit: 1 }
+    );
+    assert.doesNotMatch(painel, /limit: 100/);
+    assert.match(painel, /\.listDocuments\(consultaDoAnteriorVisivel\(\{ processoId, modeloId, clienteId \}\)\)/);
+    // O serviço manda os três filtros novos ao back, como texto.
+    assert.match(api, /if \(geradoDeModeloId\) params\.geradoDeModeloId = geradoDeModeloId;/);
+    assert.match(api, /if \(clienteId\) params\.clienteId = clienteId;/);
+    assert.match(api, /if \(visivelPortal !== undefined\) params\.visivelPortal = String\(visivelPortal\);/);
+  });
+
+  test("a REGRA do aviso é a mesma: o mesmo .find, a mesma combinação, o mesmo visível", () => {
+    assert.match(
+      painel,
+      /d\.ehModelo !== true &&\s*String\(d\.geradoDeModeloId \?\? ''\) === String\(modeloId\) &&\s*String\(d\.clienteId \?\? ''\) === String\(clienteId\) &&\s*d\.visivelPortal === true/
+    );
+    assert.match(painel, /\[modeloId, processoId, clienteId\]/);
+    // A frase do 409 só fala do portal com `sairaDoPortal` (ou a consulta).
+    assert.match(painel, /conflito\?\.sairaDoPortal \|\| anteriorVisivel/);
+    // A falha da consulta continua sem bloquear nem reportar.
+    assert.match(painel, /if \(ativo\) setAnteriorVisivel\(null\);/);
+  });
+
+  test("o painel em balão, sem a borda lateral e sem transform", () => {
+    const css = semComentariosCss(ler("src/components/documents/GenerationPanel.css"));
+    assert.match(css, /\.geracao \{[^}]*border-radius: 24px;/);
+    assert.doesNotMatch(css, /border-left: 4px/);
+    assert.deepEqual(transformacoesForaDeKeyframes(css), []);
   });
 });
