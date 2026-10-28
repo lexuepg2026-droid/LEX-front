@@ -195,7 +195,9 @@ describe("Fase 0 · item 5 — o filtro de processo da URL é visível", () => {
       assert.match(codigo, /useListFilters\(\{[^}]*\}, FILTROS_DAS_FINANCEIRAS\)/);
       assert.doesNotMatch(codigo, /\bembedded\b/);
       const hook = semComentarios(ler("src/hooks/useListFilters.js"));
-      assert.match(hook, /EXTRAS_DAS_FINANCEIRAS = Object\.freeze\(\['processoId'\]\)/);
+      // Fase 4a2 (DEC-167): o `clienteId` da aba "Financeiro" do cliente sai
+      // no mesmo "Limpar". O `processoId` continua lá, como sempre.
+      assert.match(hook, /EXTRAS_DAS_FINANCEIRAS = Object\.freeze\(\['processoId', 'clienteId'\]\)/);
       assert.match(hook, /FILTROS_DAS_FINANCEIRAS = Object\.freeze\(\{ naUrl: true, extrasNaLimpeza: EXTRAS_DAS_FINANCEIRAS \}\)/);
     });
   }

@@ -18,13 +18,15 @@ import { nomeDoAnexo } from '../utils/download';
 // mudar a cada tecla apagada e produziria uma consulta nova para dizer a mesma
 // coisa que a ausência do parâmetro já diz.
 const listPayments = ({
-  page = 1, limit = 20, installmentId, honorarioId, processoId, formaPagamento, tipo,
+  page = 1, limit = 20, installmentId, honorarioId, processoId, clienteId, formaPagamento, tipo,
   busca, de, ate
 } = {}) => {
   const params = { page, limit };
   if (installmentId) params.installmentId = installmentId;
   if (honorarioId) params.honorarioId = honorarioId;
   if (processoId) params.processoId = processoId;
+  // Fase 4a2 (DEC-166/167): os pagamentos dos processos do cliente.
+  if (clienteId) params.clienteId = clienteId;
   if (formaPagamento) params.formaPagamento = formaPagamento;
   if (tipo) params.tipo = tipo;
   if (busca) params.busca = busca;

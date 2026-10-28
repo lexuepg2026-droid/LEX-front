@@ -54,8 +54,9 @@ import {
 // ═══════════════════════════════════════════════════════════════════════════
 
 // As três listas financeiras: filtros na URL, e o `processoId` sai junto no
-// "Limpar filtros" (DEC-070). Era uma função de `embedded` até a 3.7.
-const EXTRAS_DAS_FINANCEIRAS = Object.freeze(['processoId']);
+// "Limpar filtros" (DEC-070). Era uma função de `embedded` até a 3.7. O
+// `clienteId` (Fase 4a2, DEC-167), da aba "Financeiro" do cliente, também.
+const EXTRAS_DAS_FINANCEIRAS = Object.freeze(['processoId', 'clienteId']);
 export const FILTROS_DAS_FINANCEIRAS = Object.freeze({ naUrl: true, extrasNaLimpeza: EXTRAS_DAS_FINANCEIRAS });
 
 const PADROES = { busca: '', honorarioId: '', preset: PRESETS_PERIODO.TODOS, de: '', ate: '' };

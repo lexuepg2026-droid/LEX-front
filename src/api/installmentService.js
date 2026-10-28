@@ -6,10 +6,12 @@ import api from './axiosConfig';
 // rota, obrigaria a tela a lembrar qual é qual. O período recorta por
 // VENCIMENTO.
 const listInstallments = ({
-  page = 1, limit = 20, processoId, honorarioId, status, inativos, busca, de, ate
+  page = 1, limit = 20, processoId, honorarioId, clienteId, status, inativos, busca, de, ate
 } = {}) => {
   const params = { page, limit };
   if (processoId) params.processoId = processoId;
+  // Fase 4a2 (DEC-166/167): as parcelas dos processos do cliente.
+  if (clienteId) params.clienteId = clienteId;
   if (honorarioId) params.honorarioId = honorarioId;
   if (status) params.status = status;
   // `inativos=true` lista SÓ as desativadas — é um modo, não um "incluir".

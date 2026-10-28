@@ -296,3 +296,66 @@ describe("Fase 4a2 · decisão 6 — os dois defeitos de tela da investigação 
     assert.match(servico, /if \(ate\) params\.ate = ate;/);
   });
 });
+
+// ── Decisão 7 — a aba "Financeiro" do cliente (DEC-167) ──────────────────
+import { ABAS, abaDaUrl, listaDeParcelasDoCliente, listaDePagamentosDoCliente } from "../../src/pages/clients/detalheCliente.js";
+import { paiDaRota } from "../../src/components/layout/contexto.js";
+import { descricaoDoRecorteFinanceiro } from "../../src/components/financeiro/filterSummary.js";
+
+describe("Fase 4a2 · decisão 7 — a aba Financeiro do cliente (DEC-167)", () => {
+  const aba = semComentarios(ler("src/components/clients/ClientFinanceTab.jsx"));
+
+  test("a aba entra entre Processos e Portal, na URL", () => {
+    assert.deepEqual(ABAS.map((a) => a.rotulo), ["Detalhes", "Processos", "Financeiro", "Portal"]);
+    assert.equal(abaDaUrl("?aba=financeiro"), "financeiro");
+    const pagina = semComentarios(ler("src/pages/clients/ClientDetailPage.jsx"));
+    assert.match(pagina, /\{aba === 'financeiro' && <ClientFinanceTab clienteId=\{id\} online=\{online\} \/>\}/);
+  });
+
+  test("as duas listas pedem ?clienteId= e têm o link para a lista filtrada", () => {
+    assert.match(aba, /installmentService\.listInstallments\(consulta\)/);
+    assert.match(aba, /paymentService\.listPayments\(consulta\)/);
+    assert.match(aba, /buscar\(\{ clienteId, page, limit: POR_PAGINA \}\)/);
+    assert.match(aba, /<Link to=\{listaDeParcelasDoCliente\(clienteId\)\}[^>]*>\s*Ver na lista de parcelas/);
+    assert.match(aba, /<Link to=\{listaDePagamentosDoCliente\(clienteId\)\}[^>]*>\s*Ver na lista de pagamentos/);
+    assert.equal(listaDeParcelasDoCliente("abc"), "/dashboard/parcelas?clienteId=abc");
+    assert.equal(listaDePagamentosDoCliente("abc"), "/dashboard/pagamentos?clienteId=abc");
+  });
+
+  test("cada lista tem a coluna do processo, e dinheiro nunca trunca", () => {
+    assert.equal((aba.match(/<th>Processo<\/th>/g) || []).length, 2);
+    assert.doesNotMatch(aba, /cell-num[^"]*cell-truncate|cell-truncate[^"]*cell-num/);
+    assert.equal((aba.match(/<col className="col-money" \/>/g) || []).length, 4);
+  });
+
+  test("sem espelho: sem sinal, diz \"indisponível sem conexão\", nunca \"nenhuma\"", () => {
+    assert.doesNotMatch(aba, /useCachedResource/);
+    assert.match(aba, /As parcelas deste cliente estão indisponíveis sem conexão\./);
+    assert.match(aba, /Os pagamentos deste cliente estão indisponíveis sem conexão\./);
+    assert.match(aba, /\{!parcelas\.dados && !online && \(/);
+  });
+
+  test("as listas completas filtram por cliente, com o chip, a frase e o \"Limpar\"", () => {
+    for (const arquivo of ["src/pages/installments/InstallmentListPage.jsx", "src/pages/payments/PaymentListPage.jsx"]) {
+      const lista = semComentarios(ler(arquivo));
+      assert.match(lista, /useClienteFiltrado\(\{ avisoProprio: true, processoId: processoId \?\? null \}\)/, arquivo);
+      assert.ok(lista.indexOf("useProcessoFiltrado(") < lista.indexOf("useClienteFiltrado("), `${arquivo}: o hook do cliente vem depois`);
+      assert.match(lista, /<ProcessFilterChip\s+alvo="cliente"[\s\S]*?onRemover=\{filtroCliente\.remover\}/, arquivo);
+      assert.match(lista, /cliente: clienteId \? \{ nome: filtroCliente\.rotulo \} : null/, arquivo);
+      assert.match(lista, /const filtrado = temFiltro \|\| Boolean\(processoId\) \|\| Boolean\(clienteId\);/, arquivo);
+      assert.match(lista, /filtroCliente\.fromCache && <OfflineNotice atualizadoEm=\{filtroCliente\.updatedAt\} \/>/, arquivo);
+    }
+    for (const servico of ["src/api/installmentService.js", "src/api/paymentService.js"]) {
+      assert.match(semComentarios(ler(servico)), /if \(clienteId\) params\.clienteId = clienteId;/, servico);
+    }
+  });
+
+  test("a frase do recorte nomeia o cliente; o pai da lista filtrada é a aba", () => {
+    assert.equal(descricaoDoRecorteFinanceiro({ cliente: { nome: "Ana" } }), 'do cliente "Ana"');
+    assert.equal(descricaoDoRecorteFinanceiro({ cliente: { nome: null } }), "deste cliente");
+    assert.equal(paiDaRota("/dashboard/parcelas", "?clienteId=c1"), "/dashboard/clientes/detalhe/c1?aba=financeiro");
+    assert.equal(paiDaRota("/dashboard/pagamentos", "?clienteId=c1"), "/dashboard/clientes/detalhe/c1?aba=financeiro");
+    assert.equal(paiDaRota("/dashboard/parcelas", "?processoId=p1&clienteId=c1"), "/dashboard/processos/detalhe/p1");
+    assert.equal(paiDaRota("/dashboard/parcelas", ""), null);
+  });
+});

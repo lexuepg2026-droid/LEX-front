@@ -61,6 +61,12 @@ export function paiDaRota(pathname, search = '') {
     const processoId = new URLSearchParams(search).get('processoId');
     if (processoId) return `${D}/processos/detalhe/${encodeURIComponent(processoId)}`;
   }
+  // Fase 4a2 (DEC-167): parcelas e pagamentos filtrados por `?clienteId=`
+  // voltam à aba "Financeiro" do cliente, de onde o link leva.
+  if (caminho === `${D}/parcelas` || caminho === `${D}/pagamentos`) {
+    const clienteId = new URLSearchParams(search).get('clienteId');
+    if (clienteId) return `${D}/clientes/detalhe/${encodeURIComponent(clienteId)}?aba=financeiro`;
+  }
   // Fase 3.5 (DEC-124): a lista de processos filtrada por `?clienteId=` ganha a
   // faixa, e o pai é a aba "Processos" do cliente — é de lá que o link leva.
   if (caminho === `${D}/processos`) {
