@@ -16,11 +16,9 @@ import {
 } from '../../components/dashboard/resumoFinanceiro.js';
 import {
   contarParcelasVencidas,
-  parcelasVencidasDoAviso,
   lerBlocosFechados,
   gravarBlocosFechados,
 } from '../../utils/painel';
-import StatusBadge from '../../components/ui/StatusBadge';
 import EmptyState from '../../components/ui/EmptyState';
 import Icone from '../../components/ui/Icone';
 import OfflineNotice from '../../components/ui/OfflineNotice';
@@ -28,8 +26,7 @@ import Loading from '../../components/common/Loading';
 import useCachedResource from '../../hooks/useCachedResource';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
 import { MENSAGEM_ESCRITA_OFFLINE, MENSAGEM_LEITURA_SEM_CACHE } from '../../offline/offlineMessages';
-import { formatCurrency, formatDate } from '../../utils/formatters';
-import { destinoDoItem } from '../../utils/calendarLabels';
+import { formatCurrency } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import { getApiErrorMessage } from '../../utils/apiError';
 import {
@@ -46,6 +43,7 @@ import {
   destinoDasConfirmacoesDoProcesso,
   rotuloDaConfirmacaoPorProcesso,
   destinoDosNaoLiberados,
+  parcelaDaSemana,
 } from './inicio.js';
 import { pluralizar } from '../../components/ui/plural.js';
 // `link-interno` (F-1b) mora em `styles/modules.css`, junto das demais
@@ -57,7 +55,7 @@ import '../../styles/modules.css';
 // varredura de classes da Fase 2E.1 existe para pegar.
 import '../../components/ui/Button.css';
 import './DashboardPage.css';
-import { rotuloDaParcela } from '../../components/financeiro/installmentLabel';
+import { vencidasDoAviso } from '../financeiro/visaoGeral.js';
 import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 // Fase 2b (DEC-084): com o servidor fora, os GETs em paralelo desta tela
@@ -164,24 +162,6 @@ const formatCurrentDate = () =>
   new Date().toLocaleDateString('pt-BR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
-
-const daysUntilLabel = (dateStr) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(dateStr);
-  due.setHours(0, 0, 0, 0);
-  const diff = Math.round((due - today) / 86400000);
-  if (diff < 0)   return 'Vencida';
-  if (diff === 0) return 'Vence hoje';
-  if (diff === 1) return 'Vence amanhã';
-  return `Vence em ${diff} dias`;
-};
-
-// O que a advogada ainda tem a receber NESTA parcela. A parcela parcialmente
-// paga é o caso que o valor cheio erraria: 4.000 contratados com 1.000 já
-// recebidos precisam aparecer como 3.000 na lista de cobranças urgentes.
-const emAbertoDaParcela = (inst) =>
-  Math.max(0, Number(inst.valor || 0) - Number(inst.valorPago || 0));
 
 const pluralParcelas = (n) => (n === 1 ? '1 parcela vencida' : `${n} parcelas vencidas`);
 
@@ -336,7 +316,12 @@ function DashboardHomePage() {
     : rotuloMes;
   // Do sino, não do resumo financeiro — uma fonte só para este número.
   const vencidas = contarParcelasVencidas(avisos);
-  const parcelasVencidas = parcelasVencidasDoAviso(avisos);
+  // Fase 4a2 (DEC-164): as linhas das duas listas de "Precisa de atenção" na
+  // forma da `LinhaDeData`, com honorário, em aberto e "processo · cliente".
+  // Todas as vencidas (sem o limite de 8 da Visão geral): o bloco sempre as
+  // listou inteiras, e a contagem ao lado do título é a mesma do sino.
+  const linhasVencidas = vencidasDoAviso(avisos, Infinity);
+  const linhasDaSemana = upcoming.map((inst) => parcelaDaSemana(inst));
   const temAtencao = vencidas + upcoming.length > 0;
 
   const datas = datasProximas({
@@ -421,30 +406,8 @@ function DashboardHomePage() {
           {vencidas > 0 && (
             <>
               <h3 className="bloco__subtitulo">{pluralParcelas(vencidas)}</h3>
-              <ul className="upcoming-list">
-                {parcelasVencidas.map((item) => {
-                  const destino = destinoDoItem(item);
-                  return (
-                    <li key={`vencida-${item._id}`} className="upcoming-item">
-                      <div className="upcoming-info">
-                        <span className="upcoming-desc">
-                          {destino ? (
-                            <Link to={destino} className="link-interno">{item.titulo}</Link>
-                          ) : (
-                            item.titulo
-                          )}
-                        </span>
-                        <span className="upcoming-due">{formatDate(item.data)}</span>
-                      </div>
-                      <div className="upcoming-right">
-                        {item.valor != null && (
-                          <span className="upcoming-value">{formatCurrency(item.valor)}</span>
-                        )}
-                        <StatusBadge status="vencido" />
-                      </div>
-                    </li>
-                  );
-                })}
+              <ul className="datas-lista">
+                {linhasVencidas.map((item) => <LinhaDeData key={item.chave} item={item} />)}
               </ul>
             </>
           )}
@@ -452,32 +415,8 @@ function DashboardHomePage() {
           {upcoming.length > 0 && (
             <>
               <h3 className="bloco__subtitulo">Vencem nos próximos 7 dias</h3>
-              <ul className="upcoming-list">
-                {upcoming.map(inst => (
-                  <li key={inst._id} className="upcoming-item">
-                    <div className="upcoming-info">
-                      {/* O nome leva à cobrança, "Parcela N" leva à parcela. */}
-                      <span className="upcoming-desc">
-                        {inst.feeId?._id ? (
-                          <Link to={`/dashboard/honorarios/${inst.feeId._id}`} className="link-interno">
-                            {inst.feeId.descricao || 'Honorário'}
-                          </Link>
-                        ) : (
-                          inst.feeId?.descricao || 'Honorário'
-                        )}
-                        {' — '}
-                        <Link to={`/dashboard/parcelas/editar/${inst._id}`} className="upcoming-link">
-                          {rotuloDaParcela({ numeroParcela: inst.numeroParcela, totalParcelas: inst.totalParcelas ?? null })}
-                        </Link>
-                      </span>
-                      <span className="upcoming-due">{daysUntilLabel(inst.dataVencimento)}</span>
-                    </div>
-                    <div className="upcoming-right">
-                      <span className="upcoming-value">{formatCurrency(emAbertoDaParcela(inst))}</span>
-                      <StatusBadge status={inst.status} />
-                    </div>
-                  </li>
-                ))}
+              <ul className="datas-lista">
+                {linhasDaSemana.map((item) => <LinhaDeData key={item.chave} item={item} />)}
               </ul>
             </>
           )}

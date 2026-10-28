@@ -436,7 +436,12 @@ describe("F-1b — o nome do honorário leva à página dele", () => {
     ["src/pages/installments/InstallmentListPage.jsx", "listagem de parcelas"],
     ["src/pages/payments/PaymentListPage.jsx", "listagem de pagamentos"],
     ["src/components/financeiro/ProcessFinancialSheet.jsx", "ficha do processo"],
-    ["src/pages/dashboard/DashboardHomePage.jsx", "dashboard"],
+    // Fase 4a2 (DEC-164): o Início saiu desta lista POR DECISÃO da fase. As
+    // linhas de "Precisa de atenção" passaram à `LinhaDeData`, em que a linha
+    // INTEIRA é o link para a parcela — e link dentro de link é HTML
+    // inválido, então o nome do honorário deixa de ser um segundo link ali.
+    // O honorário continua a um clique: a parcela leva a ele. A trava do que
+    // a linha passou a fazer está em `tests/regressions/fase4a2.test.js`.
     ["src/pages/payments/PaymentFormPage.jsx", "formulário de pagamento (modo edição)"]
   ];
 

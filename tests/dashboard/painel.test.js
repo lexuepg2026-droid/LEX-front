@@ -51,7 +51,13 @@ describe("a contagem de vencidas tem UMA fonte", () => {
     const sino = fonte(SINO);
 
     assert.match(painel, /contarParcelasVencidas\(/, "o painel precisa contar pela função compartilhada");
-    assert.match(painel, /parcelasVencidasDoAviso\(/, "o painel precisa ler a lista pela função compartilhada");
+    // Reescrita na Fase 4a2 (DEC-164): o painel lê a lista por
+    // `vencidasDoAviso` (a linha da Visão geral, com honorário e contexto), e
+    // ELA lê pela função compartilhada. O caminho continua sendo um só.
+    assert.match(painel, /vencidasDoAviso\(avisos, Infinity\)/, "o painel lê as linhas pela função da Visão geral");
+    const visao = fonte("pages/financeiro/visaoGeral.js");
+    assert.match(visao, /parcelasVencidasDoAviso\(avisos\)/, "e ela lê a lista pela função compartilhada");
+    assert.ok(!/avisos\??\.\s*parcelasVencidas/.test(visao), "visaoGeral.js não lê a lista na mão");
     assert.match(sino, /parcelasVencidasDoAviso\(/, "o sino precisa ler a lista pela função compartilhada");
 
     for (const [arquivo, texto] of [[PAINEL, painel], [SINO, sino]]) {

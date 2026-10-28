@@ -205,3 +205,67 @@ describe("Fase 4a2 · decisão 4 — as colunas pela largura do conteúdo (DEC-1
     assert.match(semComentarios(ler(LISTAS.secoes)), /<col className="col-xs prio-3" \/>/);
   });
 });
+
+// ── Decisão 5 — "Precisa de atenção" com contexto (DEC-164) ──────────────
+import { parcelaDaSemana, prazoDaParcela, emAbertoDaParcela } from "../../src/pages/dashboard/inicio.js";
+import { vencidasDoAviso } from "../../src/pages/financeiro/visaoGeral.js";
+
+describe("Fase 4a2 · decisão 5 — \"Precisa de atenção\" com honorário, processo e cliente (DEC-164)", () => {
+  const tela = semComentarios(ler("src/pages/dashboard/DashboardHomePage.jsx"));
+  const bloco = tela.slice(tela.indexOf('chave="atencao"'), tela.indexOf('chave="proximos"'));
+
+  test("a linha vencida: \"{honorário} — Parcela N de M\", o em aberto, \"processo · cliente\" e o destino na parcela", () => {
+    const [linha] = vencidasDoAviso({ parcelasVencidas: [{
+      _id: "p1", titulo: "Parcela 4 de 6", subtitulo: "Contrato de honorários", data: "2026-10-01",
+      emAberto: 1234567.89, processo: { numeroProcesso: "0001234-56.2026.8.16.0019", clientePrincipalNome: "Mariana Souza" },
+      natureza: "derivada", origem: "parcela",
+    }] }, Infinity);
+    assert.equal(linha.titulo, "Contrato de honorários — Parcela 4 de 6");
+    assert.equal(linha.subtitulo, "R$ 1.234.567,89 em aberto");
+    assert.equal(linha.contexto, "0001234-56.2026.8.16.0019 · Mariana Souza");
+    assert.equal(linha.destino, "/dashboard/parcelas/editar/p1");
+    assert.equal(linha.tipo, "vencida");
+  });
+
+  test("todas as vencidas entram (sem o limite de 8 da Visão geral)", () => {
+    const muitas = Array.from({ length: 12 }, (_, i) => ({ _id: `p${i}`, titulo: `Parcela ${i + 1}`, data: "2026-10-01", natureza: "derivada", origem: "parcela" }));
+    assert.equal(vencidasDoAviso({ parcelasVencidas: muitas }, Infinity).length, 12);
+  });
+
+  test("a linha da semana: o mesmo formato, a partir de GET /installments", () => {
+    const linha = parcelaDaSemana({
+      _id: "i1", numeroParcela: 2, totalParcelas: 3, dataVencimento: "2026-10-30T12:00:00.000Z",
+      valor: 4000, valorPago: 1000, status: "pendente",
+      feeId: { _id: "f1", descricao: "Honorário de êxito" },
+      processo: { numeroProcesso: "0009999-00.2026.8.16.0019", clientePrincipalNome: "Construtora Alfa" },
+    }, new Date(2026, 9, 28, 10));
+    assert.equal(linha.titulo, "Honorário de êxito — Parcela 2 de 3");
+    assert.equal(linha.subtitulo, "R$ 3.000,00 em aberto · Vence em 2 dias");
+    assert.equal(linha.contexto, "0009999-00.2026.8.16.0019 · Construtora Alfa");
+    assert.equal(linha.destino, "/dashboard/parcelas/editar/i1");
+    assert.equal(linha.data, "2026-10-30");
+    assert.equal(linha.tipo, "vencimento");
+  });
+
+  test("o prazo em palavras é o de antes (saiu do componente sem mudar)", () => {
+    const hoje = new Date(2026, 9, 28, 10);
+    assert.equal(prazoDaParcela("2026-10-27T12:00:00", hoje), "Vencida");
+    assert.equal(prazoDaParcela("2026-10-28T12:00:00", hoje), "Vence hoje");
+    assert.equal(prazoDaParcela("2026-10-29T12:00:00", hoje), "Vence amanhã");
+    assert.equal(prazoDaParcela("2026-11-04T12:00:00", hoje), "Vence em 7 dias");
+    assert.equal(emAbertoDaParcela({ valor: 4000, valorPago: 1000 }), 3000);
+    assert.equal(emAbertoDaParcela({ valor: 100, valorPago: 150 }), 0);
+  });
+
+  test("as duas listas do bloco usam a LinhaDeData; a linha inteira é o link", () => {
+    assert.equal((bloco.match(/<LinhaDeData key=\{item\.chave\} item=\{item\} \/>/g) || []).length, 2);
+    assert.doesNotMatch(bloco, /StatusBadge|upcoming-|link-interno/);
+    assert.equal((bloco.match(/<Link\b/g) || []).length, 1, "só o \"Registrar pagamento\" da ação do bloco");
+    assert.match(tela, /const linhasVencidas = vencidasDoAviso\(avisos, Infinity\);/);
+    assert.match(tela, /const linhasDaSemana = upcoming\.map\(\(inst\) => parcelaDaSemana\(inst\)\);/);
+  });
+
+  test("a fonte e o filtro da semana NÃO mudaram (a decisão 6 depende de resposta)", () => {
+    assert.match(tela, /if \(inst\.status !== 'pendente'\) return false;\s*return new Date\(inst\.dataVencimento\) <= in7Days;/);
+  });
+});

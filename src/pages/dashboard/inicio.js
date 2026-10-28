@@ -144,6 +144,55 @@ const deCompromisso = (evento) => ({
   destino: destinoDoItem(evento),
 });
 
+// ── "Precisa de atenção": a linha da parcela da semana (Fase 4a2, DEC-164) ──
+//
+// O bloco mostrava "Parcela 4" e a data, sem honorário, processo nem cliente
+// (apontamento 3 da banca). Agora as duas listas do bloco usam a `LinhaDeData`
+// (DEC-131), no formato das vencidas da Visão geral (`vencidasDoAviso`):
+// "{honorário} — Parcela N", o em aberto, "processo · cliente", e a linha
+// inteira leva à parcela.
+//
+// A fonte e o filtro da lista da semana NÃO mudaram (`GET /installments`,
+// `status === 'pendente'`, vencimento até daqui a 7 dias): o desencontro
+// "Vencida" × "Pendente" depende de uma decisão de regra (relatório da 4a2,
+// seção 4), e esta função só troca a apresentação.
+
+// O prazo dito em palavras, pelo relógio do navegador. Saiu do componente sem
+// mudar uma linha (era `daysUntilLabel`).
+export const prazoDaParcela = (dateStr, agora = new Date()) => {
+  const today = new Date(agora);
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dateStr);
+  due.setHours(0, 0, 0, 0);
+  const diff = Math.round((due - today) / 86400000);
+  if (diff < 0)   return 'Vencida';
+  if (diff === 0) return 'Vence hoje';
+  if (diff === 1) return 'Vence amanhã';
+  return `Vence em ${diff} dias`;
+};
+
+// O que a advogada ainda tem a receber NESTA parcela. A parcela parcialmente
+// paga é o caso que o valor cheio erraria: 4.000 contratados com 1.000 já
+// recebidos precisam aparecer como 3.000 na lista de cobranças urgentes.
+export const emAbertoDaParcela = (inst) =>
+  Math.max(0, Number(inst?.valor || 0) - Number(inst?.valorPago || 0));
+
+// Uma parcela de `GET /installments` (com `feeId` populado e o `processo`
+// resumido da DEC-102) na forma da `LinhaDeData`.
+export const parcelaDaSemana = (inst, agora = new Date()) => ({
+  chave: `semana-${inst._id}`,
+  data: dataDeCalendario(inst.dataVencimento),
+  hora: null,
+  tipo: TIPOS_DE_DATA.vencimento.valor,
+  titulo: `${inst.feeId?.descricao || 'Honorário'} — ${rotuloDaParcela({
+    numeroParcela: inst.numeroParcela,
+    totalParcelas: inst.totalParcelas ?? null,
+  })}`,
+  subtitulo: `${formatCurrency(emAbertoDaParcela(inst))} em aberto · ${prazoDaParcela(inst.dataVencimento, agora)}`,
+  contexto: contextoDoProcesso(null, inst.processo?.numeroProcesso, inst.processo?.clientePrincipalNome),
+  destino: destinoDoItem({ natureza: 'derivada', origem: 'parcela', _id: inst._id }),
+});
+
 // ── As Datas próximas ────────────────────────────────────────────────────
 //
 // Duas fontes, as duas de rotas que já existiam:
