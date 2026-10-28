@@ -201,7 +201,7 @@ function DocumentListPage() {
           />
         ) : (
           <div className="table-wrapper" aria-busy={carregando || undefined}>
-            <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa">
+            <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa" data-lista="documentos">
               <colgroup>
                 {/* DEC-133/135 (Fase 3.9a): o nome é a coluna fixa à esquerda e
                     a que CEDE (`col-cede`: recebe a sobra a partir de 1024, 220

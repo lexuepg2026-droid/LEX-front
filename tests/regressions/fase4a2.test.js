@@ -130,3 +130,78 @@ describe("Fase 4a2 · decisão 3 — o seletor do mês no bloco do mês (DEC-162
     assert.match(bloco, /\{acao && <div className="bloco__acao">\{acao\}<\/div>\}/);
   });
 });
+
+// ── Decisão 4 — prioridades de coluna pela largura do conteúdo (DEC-163) ──
+describe("Fase 4a2 · decisão 4 — as colunas pela largura do conteúdo (DEC-163)", () => {
+  const css = semComentarios(ler("src/styles/modules.css"));
+  const LISTAS = {
+    honorarios: "src/pages/fees/FeeListPage.jsx",
+    parcelas: "src/pages/installments/InstallmentListPage.jsx",
+    pagamentos: "src/pages/payments/PaymentListPage.jsx",
+    processos: "src/pages/processes/ProcessListPage.jsx",
+    clientes: "src/pages/clients/ClientListPage.jsx",
+    documentos: "src/pages/documents/DocumentListPage.jsx",
+    secoes: "src/pages/secoes/SecaoListPage.jsx",
+  };
+  // As larguras das classes de <col>, lidas do próprio CSS.
+  const larguraDaClasse = (classe) => {
+    if (classe === "col-cede") return 220; // a largura dela quando a tabela rola
+    const m = css.match(new RegExp(`(^|\\n)\\.${classe}\\s*\\{\\s*width: (\\d+)px;`));
+    assert.ok(m, `largura de .${classe}`);
+    return Number(m[2]);
+  };
+  const colunas = (arquivo) => [...semComentarios(ler(arquivo)).matchAll(/<col className="([^"]+)" \/>/g)].map((m) => {
+    const classes = m[1].split(" ");
+    const prio = classes.includes("prio-3") ? 3 : classes.includes("prio-2") ? 2 : 1;
+    return { largura: larguraDaClasse(classes.find((c) => c.startsWith("col-"))), prio };
+  });
+  const ponto = (lista, prio) => {
+    const m = css.match(new RegExp(`@container \\(max-width: ([\\d.]+)px\\) \\{ \\.data-table\\[data-lista="${lista}"\\] \\.prio-${prio} \\{ display: none; \\} \\}`));
+    return m ? Number(m[1]) : null;
+  };
+
+  test("o contêiner é a área da tabela (`.table-wrapper`)", () => {
+    assert.match(css, /\.table-wrapper \{[^}]*container-type: inline-size;/);
+  });
+
+  test("nenhuma prioridade depende mais da largura da janela", () => {
+    assert.doesNotMatch(css, /@media[^{]*\{[^@]*\.prio-[23]/);
+  });
+
+  for (const [lista, arquivo] of Object.entries(LISTAS)) {
+    test(`${lista}: a tabela diz qual lista é, e cada ponto é a soma das colunas que ficam`, () => {
+      assert.match(semComentarios(ler(arquivo)), new RegExp(`data-table--primeira-fixa[^"]*" data-lista="${lista}"`));
+      const cols = colunas(arquivo);
+      const soma = (max) => cols.filter((c) => c.prio <= max).reduce((s, c) => s + c.largura, 0);
+      const tem = (p) => cols.some((c) => c.prio === p);
+      if (lista === "parcelas") {
+        // Não cabe em área nenhuma (DEC-133): o ponto é o de antes, 1.192.
+        assert.equal(ponto(lista, 2), 1191.98);
+        assert.equal(ponto(lista, 3), null);
+        return;
+      }
+      if (tem(3)) assert.equal(ponto(lista, 3), soma(3) - 0.02, `prio-3 de ${lista} sai abaixo de ${soma(3)}`);
+      else assert.equal(ponto(lista, 3), null);
+      if (tem(2)) assert.equal(ponto(lista, 2), soma(2) - 0.02, `prio-2 de ${lista} sai abaixo de ${soma(2)}`);
+      else assert.equal(ponto(lista, 2), null);
+    });
+  }
+
+  test("com a área de 1280 (1.192) e a de 1920 (1.240), só Parcelas passa da área", () => {
+    for (const area of [1192, 1240]) {
+      for (const [lista, arquivo] of Object.entries(LISTAS)) {
+        if (lista === "parcelas") continue;
+        const cols = colunas(arquivo).filter((c) => {
+          const p = ponto(lista, c.prio);
+          return c.prio === 1 || p === null || area > p;
+        });
+        const total = cols.reduce((s, c) => s + c.largura, 0);
+        assert.ok(total <= area, `${lista} a ${area}: ${total}`);
+      }
+    }
+  });
+
+  test("Seções: a coluna Variáveis tem a largura do cabeçalho (col-xs, e não col-xxs)", () => {
+    assert.match(semComentarios(ler(LISTAS.secoes)), /<col className="col-xs prio-3" \/>/);
+  });
+});

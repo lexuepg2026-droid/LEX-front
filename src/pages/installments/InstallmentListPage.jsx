@@ -232,7 +232,7 @@ function InstallmentListPage() {
       ) : (
         <div className="table-wrapper" aria-busy={carregando || undefined}>
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
-          <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa">
+          <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa" data-lista="parcelas">
             {/* Dinheiro em `col-money`, data em `col-data`, status em
                 `col-status` (F-1b.2). "Valor", "Recebido" e "Em aberto"
                 estavam em `col-sm`, que só aguenta até a casa dos milhares;

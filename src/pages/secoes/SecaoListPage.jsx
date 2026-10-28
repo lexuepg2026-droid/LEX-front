@@ -148,7 +148,7 @@ function SecaoListPage() {
           />
         ) : (
           <div className="table-wrapper" aria-busy={carregando || undefined}>
-            <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa">
+            <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa" data-lista="secoes">
               <colgroup>
                 {/* DEC-133/135 (Fase 3.9a): o título é a coluna fixa à
                     esquerda. Tipo e trecho `prio-1` (o trecho distingue duas
@@ -161,7 +161,7 @@ function SecaoListPage() {
                 <col className="col-lg" />
                 <col className="col-sm" />
                 <col className="col-cede" />
-                <col className="col-xxs prio-3" />
+                <col className="col-xs prio-3" />
                 <col className="col-acoes-menu" />
               </colgroup>
               <thead>

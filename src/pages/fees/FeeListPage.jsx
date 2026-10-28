@@ -195,7 +195,7 @@ function FeeListPage() {
       ) : (
         <div className="table-wrapper" aria-busy={carregando || undefined}>
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
-          <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa">
+          <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa" data-lista="honorarios">
             {/* Dinheiro em `col-money`, data em `col-data`, status em
                 `col-status` (F-1b.2). "Valor" carrega o honorário sobre
                 monte-mor, que é o maior número do sistema — era a coluna com
