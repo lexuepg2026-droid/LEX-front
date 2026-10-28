@@ -5652,6 +5652,55 @@ O `AssemblyStartCard` com o cabeçalho e os blocos em balão, a busca do modelo
 mouse. As 20 sugestões e a frase "Mostrando 20 de N modelos…" continuam; o
 destino de cada modelo (`destinoDaMontagem`, com o `?processoId=`) é o mesmo.
 
+
+## DEC-148 (frontend) — o texto final: o cabeçalho em balão (Fase 3.9b2)
+
+Fase de PELE: estados, tratadores, chamadas ao serviço e os dois `Modal`s do
+`DocumentFinalTextPage` são **idênticos ao `main`** (o corpo antes do
+`return`, 244 linhas, conferido por `diff`). O cabeçalho virou balão
+(`--color-surface`, 24 px) com o nome, **"processo · cliente"**
+(`contextoDoDocumento`, em `pages/documents/textoFinal.js`), o tipo e a data
+de geração, os **selos da lista** de Documentos (DEC-139, a mesma regra e as
+mesmas cores: "editado à mão", "no portal", "gerado" só sem os outros; mais o
+"substituído" de antes) e o "alterações não salvas" à direita, com o estado de
+sempre (`sujo`). A faixa de contexto continua (DEC-085).
+
+- **O cliente sem chamada nova:** `GET /documents/:id` traz `clienteId` como
+  id, mas o nome está nas variáveis congeladas na geração
+  (`variaveisResolvidas.nomeCliente`, ou `razaoSocialCliente` da PJ) — o mesmo
+  nome que o texto do documento usa. Modelo e upload não têm: aparece só o
+  processo.
+
+## DEC-149 (frontend) — a barra de ações e o interruptor do portal (Fase 3.9b2)
+
+No balão do cabeçalho, nesta ordem: **Salvar, Baixar PDF, Baixar DOCX,
+Portal, Regerar** — os mesmos tratadores e as mesmas condições (`aria-disabled`
+sem sinal, `disabled` baixando, salvando, regerando; Regerar e a
+`PendenciaList` só sem impedimento, como antes). As explicações que viviam
+nos cartões ("Desligado por padrão…", o que Regerar faz, o impedimento, o
+aviso de texto editado) foram para o balão "Portal e regeração" da lateral; a
+lista do 422 fica logo abaixo da barra, onde está o Regerar.
+
+- **O portal ganhou o visual do `LiberacaoPortal`** (DEC-111): `role="switch"`,
+  `aria-checked`, trilho e botão com os mesmos tokens. **O comportamento é o
+  de hoje:** liga e desliga sem confirmar — a confirmação do `LiberacaoPortal`
+  ao desligar seria regra nova. Durante o pedido o botão continua `disabled`,
+  como antes (e o foco cai para o `body`: registrado como risco).
+- **No celular a barra QUEBRA em linhas**, e nenhuma ação vai para um ⋮: a
+  360 px as cinco cabem em três linhas sem rolagem, uma toque de distância
+  cada, e um ⋮ esconderia o Regerar — a ação que abre diálogos — atrás de mais
+  um toque. Medido: uma linha a 1024 e 1280, duas a 768, três a 360.
+
+## DEC-150 (frontend) — o texto e as lacunas em balões (Fase 3.9b2)
+
+O texto num balão, com a fonte, o tamanho, a entrelinha e a largura de leitura
+de antes (o `textarea` de 100%). A partir de 1024 px a lateral (320 px) fica
+ao lado, com as **lacunas** no primeiro balão — o mesmo conteúdo, a mesma
+ordem, o mesmo "ir até o trecho" desabilitado com texto sujo —, depois
+"Portal e regeração" e "Seções de origem". Abaixo de 1024, a lateral desce
+para depois do texto. Os dois `Modal`s continuam o `Modal` da fase 1, com o
+texto e a ordem das escolhas idênticos (travado).
+
 ---
 
 ## Rotina de encerramento de sessão
