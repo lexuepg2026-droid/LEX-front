@@ -149,6 +149,11 @@ export const STATUS_PARCELA_OPTIONS = [
   { value: 'parcial', label: 'Parcial' },
   { value: 'pago', label: 'Pago' },
   { value: 'vencido', label: 'Vencido' },
+  // Fase 3.9a (DEC-143): a parcela cancelada (a reparcelada, DEC-037) aparece
+  // na lista de sempre, e `?situacao=cancelado` já filtrava no back — mas sem
+  // a opção a frase dos filtros dizia "com status —" e a pílula não a
+  // oferecia. O rótulo é o do badge (`statusVisual`, "Cancelado").
+  { value: 'cancelado', label: 'Cancelado' },
 ];
 
 // Forma de pagamento, do enum do model `Payment`.

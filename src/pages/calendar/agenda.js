@@ -10,6 +10,7 @@ import { formatCurrency } from '../../utils/formatters.js';
 import { destinoDoItem } from '../../utils/calendarLabels.js';
 import { tipoDaDataDoItem } from '../../utils/tomDaData.js';
 import { contextoDoProcesso, TIPOS_DE_DATA } from '../dashboard/inicio.js';
+import { comVoltar } from '../../components/layout/contexto.js';
 
 // ── Os seletores de mês e de ano ──────────────────────────────────────────
 //
@@ -58,6 +59,30 @@ export const rotuloDoItemNaGrade = (item) => {
   return `${natureza}: ${partes.filter(Boolean).join(', ')}`;
 };
 
+// ── O caminho de volta à Agenda (Fase 3.9a, DEC-143) ─────────────────────
+//
+// O "Voltar", o Salvar e o Cancelar do formulário de compromisso levavam à
+// Agenda sem o mês e a vista de onde a pessoa veio: quem abriu um compromisso
+// de março na vista Agenda voltava para o mês de hoje, na grade. O caminho
+// viaja pelo `?voltar=` da DEC-087 (validado na ida e na volta, só
+// `/dashboard/`). O mês e a vista vão SEMPRE escritos — os que a tela está
+// mostrando —, inclusive quando vieram do padrão (o mês de hoje, a vista da
+// largura): a volta mostra o que ela via.
+export const voltarDaAgenda = ({ ano, mes, vista }) => {
+  const params = new URLSearchParams();
+  if (Number.isInteger(ano) && Number.isInteger(mes)) params.set('mes', `${ano}-${String(mes).padStart(2, '0')}`);
+  if (vista) params.set('vista', vista);
+  const query = params.toString();
+  return query ? `/dashboard/agenda?${query}` : '/dashboard/agenda';
+};
+
+// Só o que abre o FORMULÁRIO de compromisso leva o caminho de volta. A
+// derivada leva ao financeiro (DEC-055), que tem a volta dele.
+export const comVoltarDaAgenda = (destino, voltar) =>
+  typeof destino === 'string' && destino.startsWith('/dashboard/agenda/')
+    ? comVoltar(destino, voltar)
+    : destino;
+
 // ── A linha da vista Agenda ──────────────────────────────────────────────
 //
 // A vista Agenda usa a `LinhaDeData` (DEC-131), a mesma linha do Início e da
@@ -68,7 +93,7 @@ export const rotuloDoItemNaGrade = (item) => {
 // - vencimento de parcela: "{honorário} — Parcela N de M" (a redação da
 //   vencida da Visão geral) e o valor; vencimento de honorário: a descrição;
 // - destino: `destinoDoItem`, o mesmo da grade e do sino (DEC-055).
-export const linhaDaAgenda = (item) => {
+export const linhaDaAgenda = (item, voltar = null) => {
   const derivada = item.natureza === 'derivada';
   const titulo = derivada && item.origem === 'parcela'
     ? `${item.subtitulo || 'Honorário'} — ${item.titulo}`
@@ -84,7 +109,7 @@ export const linhaDaAgenda = (item) => {
     titulo,
     subtitulo,
     contexto: contextoDoProcesso(item.processo, null, item.processo?.clientePrincipalNome),
-    destino: destinoDoItem(item),
+    destino: comVoltarDaAgenda(destinoDoItem(item), voltar),
     situacao: situacaoDoItem(item),
     derivada,
   };
@@ -98,4 +123,6 @@ export default {
   itemRiscado,
   rotuloDoItemNaGrade,
   linhaDaAgenda,
+  voltarDaAgenda,
+  comVoltarDaAgenda,
 };

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { destinoDepoisDeSalvar } from '../../components/layout/contexto.js';
 
 import eventService from '../../api/eventService';
 import processService from '../../api/processService';
@@ -72,6 +73,10 @@ function EventFormPage() {
   // Fase 2b (DEC-085): publica para a faixa de contexto o processo — o vinculado, se houver.
   usePublicarContexto({ processoId: formData.processoId });
   const [searchParams] = useSearchParams();
+  // Fase 3.9a (DEC-143): o Salvar, o Cancelar e a fila voltam à Agenda no mês
+  // e na vista de onde ela veio — o `?voltar=` validado (DEC-087), ou a
+  // Agenda de sempre. O "Voltar" da faixa lê o mesmo parâmetro.
+  const saida = destinoDepoisDeSalvar(searchParams.get('voltar'), '/dashboard/agenda');
   const isEditing = Boolean(id);
 
   // Inicia em `true` quando há `id`: começar em `false` faria o formulário
@@ -181,7 +186,7 @@ function EventFormPage() {
       else await eventService.createEvent(payload);
 
       toast.success(isEditing ? 'Compromisso atualizado.' : 'Compromisso registrado.');
-      navigate('/dashboard/agenda');
+      navigate(saida);
     } catch (err) {
       // Sem sinal, a gravação foi para a FILA. Não é erro, e a tela não pode
       // dizer que é: o que a advogada digitou está guardado e sobe sozinho.
@@ -189,7 +194,7 @@ function EventFormPage() {
       // dita em português, e com a pendência visível ao lado do sino.
       if (err?.enfileirado) {
         toast.info(err.message);
-        navigate('/dashboard/agenda');
+        navigate(saida);
         return;
       }
       // O 409 da DEC-053 (processo desativado) chega aqui com a frase que
@@ -390,7 +395,7 @@ function EventFormPage() {
         )}
 
         <div className="form-actions">
-          <button type="button" className="ui-btn ui-btn--secondary ui-btn--md" onClick={() => navigate('/dashboard/agenda')}>
+          <button type="button" className="ui-btn ui-btn--secondary ui-btn--md" onClick={() => navigate(saida)}>
             Cancelar
           </button>
           <button type="submit"
