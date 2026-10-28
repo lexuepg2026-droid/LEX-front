@@ -255,6 +255,12 @@
   gap: var(--space-3);
 }
 
+/* Fase 3.9a (DEC-141): a busca do modelo, acima dos cartões. */
+.inicio-busca {
+  margin-bottom: var(--space-3);
+  max-width: 480px;
+}
+
 .inicio-form__campo {
   display: flex;
   flex-direction: column;
