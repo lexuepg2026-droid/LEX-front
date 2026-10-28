@@ -111,3 +111,30 @@ describe("Fase 3.10 · decisão 4 — 'Remover' só com ícone abaixo de 768 px 
     assert.match(pagina, /from '\.\/assemblyState\.js'/);
   });
 });
+
+// ── Decisão 5 — o foco do interruptor do portal (DEC-155) ────────────────
+describe("Fase 3.10 · decisão 5 — o interruptor não perde o foco durante o pedido (DEC-155)", () => {
+  const tela = semComentarios(ler("src/pages/documents/DocumentFinalTextPage.jsx"));
+  const alternar = tela.slice(tela.indexOf("const alternarPortal"), tela.indexOf("const regerar"));
+
+  test("aria-disabled durante o pedido, e a recusa no tratador (DEC-053)", () => {
+    assert.match(tela, /role="switch"[\s\S]{0,400}onClick=\{alternarPortal\}\s*aria-disabled=\{alternandoPortal \? 'true' : undefined\}/);
+    assert.doesNotMatch(tela.slice(tela.indexOf('role="switch"'), tela.indexOf('role="switch"') + 600), /\sdisabled=\{alternandoPortal\}/);
+    assert.match(alternar, /^const alternarPortal = useCallback\(async \(\) => \{\s*if \(alternandoPortal\) return;\s*const alvo = !visivelPortal;/);
+    assert.match(alternar, /\[id, visivelPortal, alternandoPortal\]/);
+  });
+
+  test("nada mais no tratador mudou: o mesmo pedido, sem confirmação", () => {
+    assert.match(alternar, /await documentService\.alternarVisibilidadePortal\(id, alvo\);/);
+    assert.match(alternar, /setVisivelPortal\(res\.data\?\.visivelPortal === true\);/);
+    assert.match(alternar, /finally \{\s*setAlternandoPortal\(false\);/);
+    assert.doesNotMatch(alternar, /confirm/i);
+  });
+
+  test("o LiberacaoPortal já usa aria-disabled e recusa no tratador — não tinha o defeito", () => {
+    const lib = semComentarios(ler("src/components/processes/LiberacaoPortal.jsx"));
+    assert.match(lib, /if \(!online \|\| enviando\) return;/);
+    assert.match(lib, /aria-disabled=\{online && !enviando \? undefined : 'true'\}/);
+    assert.doesNotMatch(lib.slice(lib.indexOf('role="switch"'), lib.indexOf('role="switch"') + 500), /\sdisabled=/);
+  });
+});

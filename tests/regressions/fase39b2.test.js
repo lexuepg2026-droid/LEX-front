@@ -84,7 +84,11 @@ describe("Fase 3.9b2 · a barra de ações e o interruptor (DEC-149)", () => {
 
   test("o interruptor tem o visual do LiberacaoPortal e o comportamento de hoje (sem confirmar)", () => {
     assert.match(barra, /role="switch"\s*aria-checked=\{visivelPortal\}/);
-    assert.match(barra, /onClick=\{alternarPortal\}\s*disabled=\{alternandoPortal\}/);
+    // Reescrita na Fase 3.10 (DEC-155, autorizada): durante o pedido o
+    // interruptor passou de `disabled` a `aria-disabled`, para não perder o
+    // foco depois do Espaço; a recusa do clique em voo foi para o tratador. A
+    // trava continua exigindo o mesmo tratador e o bloqueio durante o pedido.
+    assert.match(barra, /onClick=\{alternarPortal\}\s*aria-disabled=\{alternandoPortal \? 'true' : undefined\}/);
     assert.doesNotMatch(barra, /aria-pressed/);
     // Liga e desliga direto: o tratador não ganhou confirmação.
     const alternar = corpo.slice(corpo.indexOf("const alternarPortal"), corpo.indexOf("const regerar"));

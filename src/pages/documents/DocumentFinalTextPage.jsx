@@ -164,6 +164,10 @@ function DocumentFinalTextPage() {
   );
 
   const alternarPortal = useCallback(async () => {
+    // Fase 3.10 (DEC-155): durante o pedido o interruptor é `aria-disabled` (e
+    // não `disabled`, que tirava o foco dele depois do Espaço) — a recusa do
+    // clique em voo mora aqui, no padrão da DEC-053.
+    if (alternandoPortal) return;
     const alvo = !visivelPortal;
     setAlternandoPortal(true);
     try {
@@ -179,7 +183,7 @@ function DocumentFinalTextPage() {
     } finally {
       setAlternandoPortal(false);
     }
-  }, [id, visivelPortal]);
+  }, [id, visivelPortal, alternandoPortal]);
 
   // ── Regerar a partir das seções ──────────────────────────────────────────
   //
@@ -385,7 +389,7 @@ function DocumentFinalTextPage() {
             aria-describedby="final-portal-ajuda"
             className={`final__interruptor${visivelPortal ? ' final__interruptor--sim' : ''}`}
             onClick={alternarPortal}
-            disabled={alternandoPortal}
+            aria-disabled={alternandoPortal ? 'true' : undefined}
           >
             <span className="final__trilho" aria-hidden="true">
               <span className="final__botao-trilho" />
