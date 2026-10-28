@@ -59,3 +59,34 @@ describe("Fase 3.10 · decisão 1 — o honorário dos filtros por busca, sem o 
     }
   });
 });
+
+// ── Decisão 3 — a PendenciasPage na pele nova (DEC-153) ──────────────────
+describe("Fase 3.10 · decisão 3 — Pendências na pele das listas (DEC-153)", () => {
+  const tela = semComentarios(ler("src/pages/pendencias/PendenciasPage.jsx"));
+  const css = ler("src/pages/pendencias/PendenciasPage.css").replace(/\/\*[\s\S]*?\*\//g, "");
+
+  test("o balão, o título com o total e as linhas", () => {
+    assert.match(tela, /<section className="lista-balao" aria-labelledby="titulo-pendencias">/);
+    assert.match(tela, /Alterações não enviadas\s*<span className="lista-balao__total"> \(\{quantidade\}\)<\/span>/);
+    assert.match(tela, /import '\.\.\/\.\.\/components\/financeiro\/CabecalhoDeLista\.css';/);
+    assert.match(css, /\.fila__item \{[^}]*border-bottom: 1px solid var\(--color-border\);/);
+    assert.match(css, /\.fila__item:hover \{[^}]*background-color: var\(--color-surface-raised\);/);
+  });
+
+  test("a regra da DEC-060 é a mesma: as duas versões, o reenvio, o descarte só pelo Modal", () => {
+    assert.match(tela, /\{conflito && \(\s*<ComparacaoDeVersoes minha=\{entrada\.body\} doServidor=\{entrada\.falha\?\.atual\} \/>/);
+    assert.match(tela, /onClick=\{\(\) => manterMinha\(entrada\)\}/);
+    assert.match(tela, /onClick=\{\(\) => tentarDeNovo\(entrada\.id\)\}/);
+    assert.match(tela, /onConfirm=\{confirmarDescarte\}/);
+    assert.match(tela, /await manterMinhaVersao\(user\?\.id, entrada\.id\);\s*await recarregar\(\);\s*await enviar\(\);/);
+    for (const frase of ["Sem conexão. A fila sobe sozinha quando o sinal voltar.", "Tudo que você gravou já está no servidor.", "Manter a minha versão", "Ficar com a do servidor", "Tentar enviar agora"]) {
+      assert.ok(tela.includes(frase), frase);
+    }
+  });
+
+  test("as classes não colidem mais com a PendenciaList dos documentos", () => {
+    assert.doesNotMatch(tela, /className=\{?[`"]pendencia/);
+    assert.doesNotMatch(css, /\.pendencia/);
+    assert.match(ler("src/components/documents/PendenciaList.css"), /^\.pendencia \{/m);
+  });
+});
