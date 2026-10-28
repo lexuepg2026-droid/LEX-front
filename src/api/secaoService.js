@@ -13,6 +13,15 @@ const listSecoes = ({ page = 1, limit = 20, tipo, busca } = {}) => {
   return api.get('/secoes', { params });
 };
 
+// Fase 3.9b (DEC-146): a biblioteca da montagem, por busca e "Carregar mais".
+// `semToastGlobal` (DEC-084): a falha aparece na própria coluna, em linha.
+const buscarSecoesDaBiblioteca = ({ page = 1, limit = 20, tipo, busca } = {}) => {
+  const params = { page, limit };
+  if (tipo) params.tipo = tipo;
+  if (busca) params.busca = busca;
+  return api.get('/secoes', { params, semToastGlobal: true });
+};
+
 const getSecaoById = (id) => api.get(`/secoes/${id}`);
 
 const createSecao = (data) => api.post('/secoes', data);
@@ -26,6 +35,7 @@ const deleteSecao = (id) => api.delete(`/secoes/${id}`);
 
 export default {
   listSecoes,
+  buscarSecoesDaBiblioteca,
   getSecaoById,
   createSecao,
   updateSecao,

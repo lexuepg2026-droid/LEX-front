@@ -5582,6 +5582,76 @@ anunciado desabilitado, com o motivo, e o clique é barrado (nada gravado).
    escuro não muda. `--color-border` foi medido e recusado: o listrado âmbar
    do vencimento caía a 2,70:1. Pares "Agenda (claro): … / casa de fora".
 
+
+## DEC-144 (frontend) — o anterior do aviso de portal sem o teto de 100 (Fase 3.9b)
+
+O aviso de portal da geração (Fase 3.2) procura o documento anterior **desta
+combinação** — modelo × processo × cliente, a de `buscarGeradoAnterior` —
+que está visível no portal. A tela pedia `listDocuments({ processoId, limit:
+100 })` e procurava ali: num processo com mais de 100 documentos, o anterior
+mais antigo ficava fora e **o aviso sumia**. Agora pede só ele
+(`consultaDoAnteriorVisivel`, em `components/documents/anteriorVisivel.js`):
+`processoId`, `geradoDeModeloId`, `clienteId`, `visivelPortal=true`,
+`ehModelo=false`, `limit=1` — os filtros aditivos da DEC-144 do back. **A
+regra não mudou:** o mesmo `.find`, as mesmas frases, o mesmo `sairaDoPortal`,
+a falha da consulta continua sem bloquear nem reportar. Medido no navegador:
+processo com 114 documentos, o anterior visível era o mais antigo, e o aviso
+aparece no caminho sem 409.
+
+## DEC-145 (frontend) — a montagem na pele das outras telas, e continua rota (Fase 3.9b)
+
+**Continua rota** (DEC-049): a folha, a biblioteca e a geração são trabalho
+longo. A pele:
+
+- **Cabeçalho em balão** (`--color-surface`, 24 px): o selo "Novo modelo" /
+  "Novo documento", o nome e o tipo; à direita o indicador de salvamento (o
+  mesmo, intocado) e o ⋮ com as ações que a tela já dizia em texto — "Gerar
+  documento" (modo modelo, o link do rodapé) e "Abrir a Biblioteca de
+  Seções". O selo é a distinção dos modos; a faixa lateral de 4 px saiu.
+- **A partir de 1024 px:** a folha e a biblioteca lado a lado
+  (`minmax(0, 1fr) 320px`), cada uma no seu balão; a geração num balão
+  abaixo. **Abaixo de 1024:** a folha em uma coluna e a biblioteca num painel
+  (`BibliotecaEmPainel`) aberto pelo botão "Biblioteca de seções", no padrão
+  do "Mais" (DEC-079): `role="dialog"`, foco no primeiro item (a busca), Tab
+  que circula, Escape e toque no fundo fecham, o foco volta ao botão. O
+  painel fica **montado com `hidden`** — a busca e o filtro sobrevivem entre
+  aberturas. **Inserir pelo painel fecha o painel** (Adicionar e armar).
+  `hooks/useLarguraMinima.js` decide qual dos dois desenhar (o papel de
+  diálogo não é CSS).
+- **A folha continua papel branco** nos dois modos. A moldura é o
+  `--color-bg` com 16 px de canto, dentro do balão; a folha cede à moldura
+  (`width: 100%; max-width: 210mm`, margem de 25 mm intacta) em vez de rolar
+  de lado ao lado da biblioteca. **No celular** a moldura encosta nas bordas
+  do balão (achado no navegador: a 360 o recuo cortava a folha de 320 px, que
+  antes cabia).
+- **Sem `transform` nem `filter`** em ancestral do ⋮ e do arrastar; a
+  entrada do painel é só por opacidade. Varredura em
+  `tests/regressions/fase39b.test.js`.
+- **Não tocados:** `assemblyState.js`, a sentinela (4.4), a fila serial, o
+  indicador, a lista de pendências (4.6), os diálogos da regeração,
+  `regeneration.js` e as rotas.
+
+## DEC-146 (frontend) — a biblioteca da montagem por busca no servidor (Fase 3.9b)
+
+O último teto de 100 do módulo: `listSecoes({ limit: 100 })`. Passou a
+`buscarSecoesDaBiblioteca` (`GET /secoes`, título sem acento, `tipo`, ordem
+alfabética, `semToastGlobal`), **20 por vez com "Carregar mais"** que diz
+quantas faltam — e não paginador: é uma lista dentro de uma coluna ou de um
+painel, lida de cima para baixo, e trocar de página tiraria da vista a seção
+armada. Busca ou tipo novos voltam à página 1; o pedido mais recente vence.
+Regras puras em `components/documents/bibliotecaDeSecoes.js`. **Sem sinal:**
+a busca não pergunta, diz "A busca precisa de conexão. Conecte-se para
+procurar seções.", e o que já estava na coluna continua lá. **Armar,
+Adicionar e arrastar não mudaram.**
+
+## DEC-147 (frontend) — o cartão de início na pele das listas (Fase 3.9b)
+
+O `AssemblyStartCard` com o cabeçalho e os blocos em balão, a busca do modelo
+(DEC-141) em pílula com a lupa do `Icone`, e os modelos em **linhas** com o
+ícone `documento`, nome e tipo, que pousam no plano elevado ao passar o
+mouse. As 20 sugestões e a frase "Mostrando 20 de N modelos…" continuam; o
+destino de cada modelo (`destinoDaMontagem`, com o `?processoId=`) é o mesmo.
+
 ---
 
 ## Rotina de encerramento de sessão

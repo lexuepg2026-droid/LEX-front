@@ -1,11 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, Check, FileStack, FileText, Loader2 } from 'lucide-react';
+import { AlertTriangle, Check, FileStack, FileText, LibraryBig, Loader2 } from 'lucide-react';
 import documentService from '../../api/documentService';
 import DocumentCanvas from '../../components/documents/DocumentCanvas';
 import SecaoLibraryPanel from '../../components/documents/SecaoLibraryPanel';
+import BibliotecaEmPainel from '../../components/documents/BibliotecaEmPainel';
 import GenerationPanel from '../../components/documents/GenerationPanel';
+import ActionMenu from '../../components/ui/ActionMenu';
 import Loading from '../../components/common/Loading';
+import Icone from '../../components/ui/Icone.jsx';
+import useLarguraMinima from '../../hooks/useLarguraMinima.js';
 import { useAuth } from '../../contexts/AuthContext';
 import useSerialQueue from '../../hooks/useSerialQueue';
 import useIsMounted from '../../hooks/useIsMounted';
@@ -72,6 +76,9 @@ const MODO_DOCUMENTO = 'documento';
 
 const ehModoValido = (modo) => modo === MODO_MODELO || modo === MODO_DOCUMENTO;
 
+// A borda da barra de baixo (DEC-079) e do CSS desta tela.
+const LARGURA_DA_BIBLIOTECA_AO_LADO = 1024;
+
 function DocumentAssemblyPage() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -89,6 +96,16 @@ function DocumentAssemblyPage() {
   const [error, setError] = useState('');
 
   const [secaoArmada, setSecaoArmada] = useState(null);
+
+  // Fase 3.9b (DEC-145): a partir de 1024 px a biblioteca é uma coluna ao lado
+  // da folha; abaixo, um painel que abre pelo botão "Biblioteca de seções".
+  const bibliotecaAoLado = useLarguraMinima(LARGURA_DA_BIBLIOTECA_AO_LADO);
+  const [bibliotecaAberta, setBibliotecaAberta] = useState(false);
+  const botaoDaBiblioteca = useRef(null);
+  const fecharBiblioteca = useCallback(() => {
+    setBibliotecaAberta(false);
+    botaoDaBiblioteca.current?.focus();
+  }, []);
 
   // Indicador discreto de salvamento. `emVoo` é contador, não booleano: com
   // operações serializadas ainda pode haver mais de uma enfileirada, e um
@@ -300,14 +317,47 @@ function DocumentAssemblyPage() {
 
   const salvando = emVoo > 0;
 
+  // Pelo painel do celular, inserir FECHA o painel (DEC-145): armar para
+  // escolher a posição e "Adicionar" ao fim levam a advogada de volta à folha,
+  // onde está o resultado. Na coluna ao lado nada muda.
+  const armarPelaBiblioteca = (secao) => {
+    if (!bibliotecaAoLado && secao) fecharBiblioteca();
+    setSecaoArmada(secao);
+  };
+  const adicionarPelaBiblioteca = (secao) => {
+    if (!bibliotecaAoLado) fecharBiblioteca();
+    return adicionarAoFim(secao);
+  };
+
+  const biblioteca = (
+    <SecaoLibraryPanel
+      idsUsados={idsUsados}
+      secaoArmada={secaoArmada}
+      onArmar={armarPelaBiblioteca}
+      onAdicionarAoFim={adicionarPelaBiblioteca}
+      desabilitado={salvando}
+    />
+  );
+
+  // O ⋮ do cabeçalho leva as ações que a tela já oferecia em texto: gerar a
+  // partir do modelo (o rodapé do modo modelo) e cadastrar seções (o estado
+  // vazio da biblioteca).
+  const acoesDoCabecalho = [
+    ...(modo === MODO_MODELO
+      ? [{ rotulo: 'Gerar documento', to: '/dashboard/documentos/montar?modo=documento' }]
+      : []),
+    { rotulo: 'Abrir a Biblioteca de Seções', to: '/dashboard/secoes' },
+  ];
+
   return (
     <div className="module-container montagem">
-      {/* O modo fica no cabeçalho o tempo todo, não só na entrada. */}
+      {/* Fase 3.9b (DEC-145): o cabeçalho em balão. O modo fica nele o tempo
+          todo, não só na entrada; o indicador de salvamento, à direita. */}
       <header className={`montagem__cabecalho montagem__cabecalho--${modo}`}>
         <div className="montagem__identidade">
           <span className="montagem__selo">
-            {modo === MODO_MODELO ? <FileStack size={14} /> : <FileText size={14} />}
-            {modo === MODO_MODELO ? 'Montando um MODELO' : 'Montando um DOCUMENTO'}
+            {modo === MODO_MODELO ? <FileStack size={14} aria-hidden="true" /> : <FileText size={14} aria-hidden="true" />}
+            {modo === MODO_MODELO ? 'Novo modelo' : 'Novo documento'}
           </span>
           <h1 className="montagem__titulo">{documento?.nome}</h1>
           <p className="montagem__subtitulo">
@@ -318,27 +368,30 @@ function DocumentAssemblyPage() {
           </p>
         </div>
 
-        <div className="montagem__estado" aria-live="polite">
-          {salvando ? (
-            <span className="montagem__estado-item montagem__estado-item--salvando">
-              <Loader2 size={14} className="montagem__girando" />
-              salvando…
-            </span>
-          ) : erroSalvamento ? (
-            <span className="montagem__estado-item montagem__estado-item--erro">
-              <AlertTriangle size={14} />
-              não salvo — a ordem anterior foi restaurada
-            </span>
-          ) : salvoEm ? (
-            <span className="montagem__estado-item montagem__estado-item--salvo">
-              <Check size={14} />
-              salvo às {salvoEm.toLocaleTimeString('pt-BR')}
-            </span>
-          ) : (
-            <span className="montagem__estado-item montagem__estado-item--ocioso">
-              cada mudança salva sozinha
-            </span>
-          )}
+        <div className="montagem__direita">
+          <div className="montagem__estado" aria-live="polite">
+            {salvando ? (
+              <span className="montagem__estado-item montagem__estado-item--salvando">
+                <Loader2 size={14} className="montagem__girando" aria-hidden="true" />
+                salvando…
+              </span>
+            ) : erroSalvamento ? (
+              <span className="montagem__estado-item montagem__estado-item--erro">
+                <AlertTriangle size={14} aria-hidden="true" />
+                não salvo — a ordem anterior foi restaurada
+              </span>
+            ) : salvoEm ? (
+              <span className="montagem__estado-item montagem__estado-item--salvo">
+                <Check size={14} aria-hidden="true" />
+                salvo às {salvoEm.toLocaleTimeString('pt-BR')}
+              </span>
+            ) : (
+              <span className="montagem__estado-item montagem__estado-item--ocioso">
+                cada mudança salva sozinha
+              </span>
+            )}
+          </div>
+          <ActionMenu rotulo={`Ações da montagem de ${documento?.nome ?? 'documento'}`} itens={acoesDoCabecalho} />
         </div>
       </header>
 
@@ -356,24 +409,50 @@ function DocumentAssemblyPage() {
       )}
 
       <div className="montagem__area">
-        <SecaoLibraryPanel
-          idsUsados={idsUsados}
-          secaoArmada={secaoArmada}
-          onArmar={setSecaoArmada}
-          onAdicionarAoFim={adicionarAoFim}
-          desabilitado={salvando}
-        />
+        <section className="montagem__balao" aria-labelledby="montagem-folha-titulo">
+          <div className="montagem__balao-topo">
+            <h2 id="montagem-folha-titulo" className="montagem__balao-titulo">
+              Folha <span className="montagem__balao-total">({vinculos.length})</span>
+            </h2>
+            {!bibliotecaAoLado && (
+              <button
+                ref={botaoDaBiblioteca}
+                type="button"
+                className="ui-btn ui-btn--secondary ui-btn--md montagem__abrir-biblioteca"
+                aria-expanded={bibliotecaAberta}
+                aria-controls="montagem-painel-biblioteca"
+                onClick={() => setBibliotecaAberta(true)}
+              >
+                <LibraryBig size={16} aria-hidden="true" />
+                Biblioteca de seções
+              </button>
+            )}
+          </div>
 
-        <DocumentCanvas
-          usuario={user}
-          vinculos={vinculos}
-          secaoArmada={secaoArmada}
-          onInserirNaPosicao={inserirNaPosicao}
-          onMover={aplicarOrdem}
-          onRemover={remover}
-          onReordenarPorArraste={aplicarOrdem}
-          desabilitado={salvando}
-        />
+          <DocumentCanvas
+            usuario={user}
+            vinculos={vinculos}
+            secaoArmada={secaoArmada}
+            onInserirNaPosicao={inserirNaPosicao}
+            onMover={aplicarOrdem}
+            onRemover={remover}
+            onReordenarPorArraste={aplicarOrdem}
+            desabilitado={salvando}
+            bibliotecaAoLado={bibliotecaAoLado}
+          />
+        </section>
+
+        {bibliotecaAoLado ? (
+          <div className="montagem__balao montagem__lateral">{biblioteca}</div>
+        ) : (
+          <BibliotecaEmPainel
+            id="montagem-painel-biblioteca"
+            aberto={bibliotecaAberta}
+            onFechar={fecharBiblioteca}
+          >
+            {biblioteca}
+          </BibliotecaEmPainel>
+        )}
       </div>
 
       {modo === MODO_DOCUMENTO && (
@@ -478,12 +557,14 @@ function AssemblyStartCard({ modo, navigate, processoId = '' }) {
   };
 
   return (
-    <div className="module-container">
+    <div className="module-container montagem">
+      {/* Fase 3.9b (DEC-147): o cartão de início na pele das listas — o
+          cabeçalho em balão, a busca em pílula e os modelos em linhas. */}
       <header className={`montagem__cabecalho montagem__cabecalho--${modo}`}>
         <div className="montagem__identidade">
           <span className="montagem__selo">
-            {modo === MODO_MODELO ? <FileStack size={14} /> : <FileText size={14} />}
-            {modo === MODO_MODELO ? 'Novo MODELO' : 'Novo DOCUMENTO'}
+            {modo === MODO_MODELO ? <FileStack size={14} aria-hidden="true" /> : <FileText size={14} aria-hidden="true" />}
+            {modo === MODO_MODELO ? 'Novo modelo' : 'Novo documento'}
           </span>
           <h1 className="montagem__titulo">
             {modo === MODO_MODELO ? 'Montar um modelo' : 'Gerar um documento'}
@@ -499,23 +580,33 @@ function AssemblyStartCard({ modo, navigate, processoId = '' }) {
       {erro && <p className="error-message">{erro}</p>}
 
       {modo === MODO_DOCUMENTO && !criarNovo && (
-        <section className="inicio-bloco">
-          <h2 className="inicio-bloco__titulo">Escolha o modelo</h2>
+        <section className="montagem__balao" aria-labelledby="inicio-escolha-titulo">
+          <div className="montagem__balao-topo">
+            <h2 id="inicio-escolha-titulo" className="montagem__balao-titulo">
+              Escolha o modelo
+              {typeof totalDeModelos === 'number' && online && (
+                <span className="montagem__balao-total"> ({totalDeModelos})</span>
+              )}
+            </h2>
+          </div>
 
           {/* Fase 3.9a (DEC-141): a busca pelo nome. O campo NUNCA desmonta
               durante a carga — o indicador fica abaixo dele (o foco não se
               perde, a regra da F-1a.1). */}
-          <div className="inicio-form__campo inicio-busca">
+          <div className="inicio-busca">
             <label htmlFor="montagem-busca-modelo">Buscar modelo</label>
-            <input
-              id="montagem-busca-modelo"
-              type="search"
-              value={buscaModelo}
-              onChange={(e) => setBuscaModelo(e.target.value)}
-              placeholder="Nome do modelo"
-              maxLength={80}
-              aria-describedby="montagem-busca-modelo-aviso"
-            />
+            <span className="inicio-busca__pilula">
+              <Icone nome="lupa" tamanho={16} className="inicio-busca__lupa" />
+              <input
+                id="montagem-busca-modelo"
+                type="search"
+                value={buscaModelo}
+                onChange={(e) => setBuscaModelo(e.target.value)}
+                placeholder="Nome do modelo"
+                maxLength={80}
+                aria-describedby="montagem-busca-modelo-aviso"
+              />
+            </span>
             <p id="montagem-busca-modelo-aviso" className="inicio-bloco__vazio" aria-live="polite">
               {!online
                 ? 'A busca precisa de conexão. Conecte-se para escolher o modelo.'
@@ -547,9 +638,12 @@ function AssemblyStartCard({ modo, navigate, processoId = '' }) {
                         navigate(destinoDaMontagem(modelo._id, MODO_DOCUMENTO, processoId))
                       }
                     >
-                      <span className="inicio-modelo__nome">{modelo.nome}</span>
-                      <span className="inicio-modelo__tipo">
-                        {labelDe(TIPO_DOCUMENTO_OPTIONS, modelo.tipo)}
+                      <Icone nome="documento" tamanho={20} className="inicio-modelo__icone" />
+                      <span className="inicio-modelo__textos">
+                        <span className="inicio-modelo__nome">{modelo.nome}</span>
+                        <span className="inicio-modelo__tipo">
+                          {labelDe(TIPO_DOCUMENTO_OPTIONS, modelo.tipo)}
+                        </span>
                       </span>
                     </button>
                   </li>
@@ -568,8 +662,8 @@ function AssemblyStartCard({ modo, navigate, processoId = '' }) {
       )}
 
       {(modo === MODO_MODELO || criarNovo) && (
-        <section className="inicio-bloco">
-          <h2 className="inicio-bloco__titulo">
+        <section className="montagem__balao" aria-labelledby="inicio-criar-titulo">
+          <h2 id="inicio-criar-titulo" className="montagem__balao-titulo inicio-bloco__titulo">
             {modo === MODO_MODELO ? 'Nome e tipo' : 'Montar um modelo novo'}
           </h2>
 

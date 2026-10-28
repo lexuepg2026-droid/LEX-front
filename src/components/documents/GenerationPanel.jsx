@@ -14,6 +14,7 @@ import {
 } from '../../utils/enums';
 import { formatDate } from '../../utils/formatters';
 import { getApiErrorDetails, getApiErrorMessage, getApiErrorPendencias } from '../../utils/apiError';
+import { consultaDoAnteriorVisivel } from './anteriorVisivel.js';
 import './GenerationPanel.css';
 import { usePublicarContexto } from '../../contexts/ContextoContext';
 
@@ -180,7 +181,8 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado, processoIdInicial = 
 
     let ativo = true;
     documentService
-      .listDocuments({ processoId, limit: 100 })
+      // Fase 3.9b (DEC-144): só o que o aviso precisa, sem o teto de 100.
+      .listDocuments(consultaDoAnteriorVisivel({ processoId, modeloId, clienteId }))
       .then((res) => {
         if (!ativo) return;
         const lista = res.data.data ?? res.data;

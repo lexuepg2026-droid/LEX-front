@@ -3,13 +3,20 @@ import { nomeDoAnexo } from '../utils/download';
 
 // Fase 3.9a (DEC-138): `busca`, `de`/`ate` (pela data de geração) e
 // `ehModelo` ('false' tira os modelos — a lista de Documentos sempre manda).
-const listDocuments = ({ page = 1, limit = 20, processoId, busca, de, ate, ehModelo } = {}) => {
+const listDocuments = ({
+  page = 1, limit = 20, processoId, busca, de, ate, ehModelo,
+  // Fase 3.9b (DEC-144): os filtros do anterior do aviso de portal.
+  geradoDeModeloId, clienteId, visivelPortal,
+} = {}) => {
   const params = { page, limit };
   if (processoId) params.processoId = processoId;
   if (busca) params.busca = busca;
   if (de) params.de = de;
   if (ate) params.ate = ate;
   if (ehModelo !== undefined) params.ehModelo = String(ehModelo);
+  if (geradoDeModeloId) params.geradoDeModeloId = geradoDeModeloId;
+  if (clienteId) params.clienteId = clienteId;
+  if (visivelPortal !== undefined) params.visivelPortal = String(visivelPortal);
   return api.get('/documents', { params });
 };
 const getDocumentById = (id) => api.get(`/documents/${id}`);

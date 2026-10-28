@@ -1,9 +1,18 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Check, Plus, Search } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Check, Plus } from 'lucide-react';
 import secaoService from '../../api/secaoService';
 import Loading from '../common/Loading';
+import Icone from '../ui/Icone.jsx';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
 import { TIPO_SECAO_OPTIONS, labelDe } from '../../utils/enums';
 import { getApiErrorMessage } from '../../utils/apiError';
+import {
+  FRASE_SEM_CONEXAO_DA_BIBLIOTECA,
+  POR_PAGINA_DA_BIBLIOTECA,
+  acumularSecoes,
+  rotuloDoCarregarMais,
+  secoesRestantes,
+} from './bibliotecaDeSecoes.js';
 import './SecaoLibraryPanel.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -23,6 +32,12 @@ import './SecaoLibraryPanel.css';
 // Seção já presente no documento aparece marcada como usada e não pode entrar
 // de novo. A restrição real é o índice único {documentoId, secaoId} do banco; a
 // tela antecipa para a advogada não tentar, mas não substitui a garantia.
+//
+// Fase 3.9b (DEC-146): sem o teto de 100. A lista vem do servidor de 20 em 20
+// e acumula por "Carregar mais" (`bibliotecaDeSecoes.js`); a busca e o tipo
+// voltam à página 1. `semToastGlobal`: a falha aparece aqui, em linha. Sem
+// sinal a busca não pergunta e diz que precisa de conexão — o que já estava
+// na coluna continua lá. Armar e inserir NÃO mudaram.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const TAMANHO_TRECHO = 90;
@@ -34,13 +49,21 @@ const trechoInicial = (texto) => {
 };
 
 function SecaoLibraryPanel({ idsUsados, secaoArmada, onArmar, onAdicionarAoFim, desabilitado }) {
+  const online = useOnlineStatus();
   const [secoes, setSecoes] = useState([]);
+  const [total, setTotal] = useState(null);
+  const [pagina, setPagina] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [carregandoMais, setCarregandoMais] = useState(false);
   const [error, setError] = useState('');
 
   const [tipo, setTipo] = useState('');
   const [busca, setBusca] = useState('');
   const [buscaDebounced, setBuscaDebounced] = useState('');
+
+  // O pedido mais recente vence: um "Carregar mais" que chega depois de a
+  // busca mudar não pode acrescentar seções da busca anterior.
+  const pedidoAtual = useRef(0);
 
   // Debounce: sem ele cada tecla vira uma requisição.
   useEffect(() => {
@@ -48,23 +71,67 @@ function SecaoLibraryPanel({ idsUsados, secaoArmada, onArmar, onAdicionarAoFim, 
     return () => clearTimeout(t);
   }, [busca]);
 
-  const carregar = useCallback(() => {
+  // Página 1: busca ou tipo novos (e a primeira carga). Sem sinal não pergunta.
+  useEffect(() => {
+    if (!online) {
+      setLoading(false);
+      return undefined;
+    }
+    const pedido = ++pedidoAtual.current;
     setLoading(true);
     setError('');
     secaoService
-      .listSecoes({
-        limit: 100,
+      .buscarSecoesDaBiblioteca({
+        page: 1,
+        limit: POR_PAGINA_DA_BIBLIOTECA,
         tipo: tipo || undefined,
         busca: buscaDebounced.trim() || undefined,
       })
-      .then((res) => setSecoes(res.data.data ?? res.data))
-      .catch((err) => setError(getApiErrorMessage(err, 'Falha ao carregar a biblioteca de seções.')))
-      .finally(() => setLoading(false));
-  }, [tipo, buscaDebounced]);
+      .then((res) => {
+        if (pedido !== pedidoAtual.current) return;
+        setSecoes(acumularSecoes([], res.data.data ?? res.data, 1));
+        setTotal(typeof res.data.total === 'number' ? res.data.total : null);
+        setPagina(1);
+      })
+      .catch((err) => {
+        if (pedido === pedidoAtual.current) {
+          setError(getApiErrorMessage(err, 'Falha ao carregar a biblioteca de seções.'));
+        }
+      })
+      .finally(() => {
+        if (pedido === pedidoAtual.current) setLoading(false);
+      });
+    return undefined;
+  }, [tipo, buscaDebounced, online]);
 
-  useEffect(() => {
-    carregar();
-  }, [carregar]);
+  const carregarMais = () => {
+    if (!online || carregandoMais) return;
+    const pedido = ++pedidoAtual.current;
+    const proxima = pagina + 1;
+    setCarregandoMais(true);
+    setError('');
+    secaoService
+      .buscarSecoesDaBiblioteca({
+        page: proxima,
+        limit: POR_PAGINA_DA_BIBLIOTECA,
+        tipo: tipo || undefined,
+        busca: buscaDebounced.trim() || undefined,
+      })
+      .then((res) => {
+        if (pedido !== pedidoAtual.current) return;
+        setSecoes((anteriores) => acumularSecoes(anteriores, res.data.data ?? res.data, proxima));
+        setTotal(typeof res.data.total === 'number' ? res.data.total : null);
+        setPagina(proxima);
+      })
+      .catch((err) => {
+        if (pedido === pedidoAtual.current) {
+          setError(getApiErrorMessage(err, 'Falha ao carregar mais seções.'));
+        }
+      })
+      .finally(() => setCarregandoMais(false));
+  };
+
+  const restantes = secoesRestantes(total, secoes.length);
 
   const temFiltro = Boolean(tipo || buscaDebounced.trim());
 
@@ -80,14 +147,15 @@ function SecaoLibraryPanel({ idsUsados, secaoArmada, onArmar, onAdicionarAoFim, 
 
       <div className="biblioteca__filtros">
         <label className="biblioteca__busca">
-          <Search size={14} aria-hidden="true" />
+          <Icone nome="lupa" tamanho={16} className="biblioteca__lupa" />
           <input
-            type="text"
+            type="search"
             placeholder="Buscar por título..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             maxLength={80}
             aria-label="Buscar seção por título"
+            aria-describedby="biblioteca-busca-aviso"
           />
         </label>
         <select
@@ -104,11 +172,17 @@ function SecaoLibraryPanel({ idsUsados, secaoArmada, onArmar, onAdicionarAoFim, 
         </select>
       </div>
 
+      {/* O campo e o filtro NUNCA desmontam durante a carga (F-1a.1): o aviso
+          e o indicador ficam abaixo deles. */}
+      <p id="biblioteca-busca-aviso" className="biblioteca__aviso" aria-live="polite">
+        {!online ? FRASE_SEM_CONEXAO_DA_BIBLIOTECA : ''}
+      </p>
+
       {error && <p className="error-message">{error}</p>}
 
       {loading ? (
         <Loading />
-      ) : secoes.length === 0 ? (
+      ) : secoes.length === 0 && !online ? null : secoes.length === 0 ? (
         <div className="biblioteca__vazio">
           <p>
             {temFiltro
@@ -199,6 +273,18 @@ function SecaoLibraryPanel({ idsUsados, secaoArmada, onArmar, onAdicionarAoFim, 
             );
           })}
         </ul>
+      )}
+
+      {!loading && restantes > 0 && (
+        <button
+          type="button"
+          className="ui-btn ui-btn--secondary ui-btn--sm biblioteca__mais"
+          onClick={carregarMais}
+          disabled={carregandoMais}
+          aria-disabled={online ? undefined : 'true'}
+        >
+          {carregandoMais ? 'Carregando…' : rotuloDoCarregarMais(restantes)}
+        </button>
       )}
     </aside>
   );

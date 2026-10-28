@@ -44,15 +44,25 @@
   gap: var(--space-2);
 }
 
+/* Fase 3.9b (DEC-146): a busca em pílula, a das listas (DEC-102). */
 .biblioteca__busca {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 0 var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-3);
   background: var(--color-surface-input);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-pill);
   color: var(--color-text-muted);
+}
+
+.biblioteca__busca:focus-within {
+  border-color: var(--color-text-primary);
+}
+
+.biblioteca__lupa {
+  flex-shrink: 0;
 }
 
 .biblioteca__busca input {
@@ -66,14 +76,13 @@
   font-size: var(--font-size-sm);
 }
 
-.biblioteca__busca input:focus {
-}
 
 .biblioteca__filtros select {
-  padding: var(--space-2) var(--space-3);
+  min-height: 36px;
+  padding: var(--space-1) var(--space-3);
   background: var(--color-surface-input);
   border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-campo);
+  border-radius: var(--radius-pill);
   color: var(--color-text-primary);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
@@ -230,11 +239,22 @@
   font-weight: var(--font-weight-semibold);
 }
 
-/* No tablet e no celular a biblioteca deixa de ser coluna e passa a faixa
-   acima do canvas, com altura limitada e rolagem própria. */
-@media (max-width: 900px) {
-  .biblioteca {
-    width: 100%;
-    max-height: 320px;
-  }
+/* O aviso da busca (sem conexão). Vazio, não ocupa espaço. */
+.biblioteca__aviso {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
 }
+
+.biblioteca__aviso:empty {
+  display: none;
+}
+
+.biblioteca__mais {
+  align-self: stretch;
+  justify-content: center;
+}
+
+/* Fase 3.9b (DEC-145): abaixo de 1024 px a biblioteca mora no painel que o
+   botão abre (BibliotecaEmPainel.css), e não mais numa faixa acima da folha. */

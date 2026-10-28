@@ -1,0 +1,74 @@
+/* A biblioteca como painel, abaixo de 1024 px — Fase 3.9b (DEC-145).
+   O fundo e a folha do "Mais" (BottomNav.css), sem o `transform` da entrada:
+   as miniaturas são arrastáveis (DEC-046). */
+
+.biblioteca-painel__fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: flex-end;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.biblioteca-painel__fundo[hidden] {
+  display: none;
+}
+
+.biblioteca-painel {
+  width: 100%;
+  max-height: 85vh;
+  max-height: 85dvh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  background-color: var(--color-surface);
+  border-radius: var(--space-6) var(--space-6) 0 0;
+  box-shadow: var(--shadow-lg);
+  animation: biblioteca-painel-entra var(--transition-normal) ease-out;
+}
+
+@keyframes biblioteca-painel-entra {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .biblioteca-painel { animation: none; }
+}
+
+/* Dentro do painel a biblioteca não é mais coluna: perde a largura fixa, o
+   balão próprio e a rolagem própria — quem rola é o painel. */
+.biblioteca-painel .biblioteca {
+  width: 100%;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.biblioteca-painel__fechar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+}
+
+.biblioteca-painel__fechar:hover {
+  background-color: var(--color-surface-raised);
+}
+
+.biblioteca-painel__fechar:focus-visible {
+  border-radius: var(--radius-pill);
+}
