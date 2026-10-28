@@ -44,6 +44,7 @@ import {
   rotuloDaConfirmacaoPorProcesso,
   destinoDosNaoLiberados,
   parcelaDaSemana,
+  pedidoDaSemana,
 } from './inicio.js';
 import { pluralizar } from '../../components/ui/plural.js';
 // `link-interno` (F-1b) mora em `styles/modules.css`, junto das demais
@@ -269,7 +270,7 @@ function DashboardHomePage() {
   }, []);
 
   useEffect(() => {
-    installmentService.listInstallments()
+    installmentService.listInstallments(pedidoDaSemana())
       .then(res => {
         const all = res.data.data ?? res.data;
         const today = new Date();

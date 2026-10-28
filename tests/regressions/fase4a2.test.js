@@ -269,3 +269,30 @@ describe("Fase 4a2 · decisão 5 — \"Precisa de atenção\" com honorário, pr
     assert.match(tela, /if \(inst\.status !== 'pendente'\) return false;\s*return new Date\(inst\.dataVencimento\) <= in7Days;/);
   });
 });
+
+// ── Decisão 6 — "Vencida" × "Pendente" e 12 × 6: o que era de tela (DEC-165) ──
+import { pedidoDaSemana, LIMITE_DA_SEMANA } from "../../src/pages/dashboard/inicio.js";
+
+describe("Fase 4a2 · decisão 6 — os dois defeitos de tela da investigação (DEC-165)", () => {
+  test("o prazo compara datas de calendário: o vencimento de hoje (meia-noite UTC) é \"Vence hoje\", não \"Vencida\"", () => {
+    const agora = new Date(2026, 9, 28, 10); // 28/10, 10 h no relógio de quem olha
+    assert.equal(prazoDaParcela("2026-10-28T00:00:00.000Z", agora), "Vence hoje");
+    assert.equal(prazoDaParcela("2026-10-29T00:00:00.000Z", agora), "Vence amanhã");
+    assert.equal(prazoDaParcela("2026-10-27T00:00:00.000Z", agora), "Vencida");
+    assert.equal(prazoDaParcela("2026-11-04T00:00:00.000Z", agora), "Vence em 7 dias");
+    // Às 23 h continua o mesmo dia (a conta antiga dependia da hora e do fuso).
+    assert.equal(prazoDaParcela("2026-10-28T00:00:00.000Z", new Date(2026, 9, 28, 23, 30)), "Vence hoje");
+    assert.equal(prazoDaParcela(null, agora), "");
+  });
+
+  test("a lista da semana pede o conjunto inteiro ao servidor (não a primeira página de 20)", () => {
+    assert.deepEqual(pedidoDaSemana(new Date(2026, 9, 28, 10)), { status: "pendente", ate: "2026-11-04", limit: 100 });
+    assert.deepEqual(pedidoDaSemana(new Date(2026, 11, 29, 10)), { status: "pendente", ate: "2027-01-05", limit: 100 });
+    assert.equal(LIMITE_DA_SEMANA, 100, "o teto de toda listagem (regra nº 4 do back)");
+    const tela = semComentarios(ler("src/pages/dashboard/DashboardHomePage.jsx"));
+    assert.match(tela, /installmentService\.listInstallments\(pedidoDaSemana\(\)\)/);
+    const servico = semComentarios(ler("src/api/installmentService.js"));
+    assert.match(servico, /if \(status\) params\.status = status;/);
+    assert.match(servico, /if \(ate\) params\.ate = ate;/);
+  });
+});
