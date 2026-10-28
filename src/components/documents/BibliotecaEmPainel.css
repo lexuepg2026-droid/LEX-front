@@ -8,7 +8,7 @@
   z-index: 120;
   display: flex;
   align-items: flex-end;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--color-scrim);
 }
 
 .biblioteca-painel__fundo[hidden] {

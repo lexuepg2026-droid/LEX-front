@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import paymentService from '../../api/paymentService';
-import feeService from '../../api/feeService';
 import CabecalhoDeLista from '../../components/financeiro/CabecalhoDeLista';
 import useLinhaClicavel from '../../components/financeiro/useLinhaClicavel';
 import EmptyState from '../../components/ui/EmptyState';
@@ -54,7 +53,6 @@ function PaymentListPage() {
   // Os honorários que alimentam o seletor. Carregados uma vez: a lista muda
   // devagar, e recarregá-la a cada consulta de pagamento faria duas chamadas
   // por tecla digitada na busca.
-  const [honorarios, setHonorarios] = useState([]);
 
   // ── O teto 100 + "Mostrando N de M" SAIU (F-1b.3) ───────────────────────
   //
@@ -67,16 +65,10 @@ function PaymentListPage() {
     definirFiltro, aplicarPreset, limpar, temFiltro
   } = useListFilters({ formaPagamento: '' }, FILTROS_DAS_FINANCEIRAS);
 
-  useEffect(() => {
-    let ativo = true;
-    feeService.listFees({ page: 1, limit: 100 })
-      .then((res) => { if (ativo) setHonorarios(res.data.data ?? res.data ?? []); })
-      // Falhar ao carregar o seletor NÃO derruba a listagem: o filtro por
-      // honorário some, a busca por texto continua respondendo à mesma
-      // pergunta, e a tela principal segue de pé.
-      .catch(() => { if (ativo) setHonorarios([]); });
-    return () => { ativo = false; };
-  }, []);
+  // Fase 3.10 (DEC-151): o honorário do filtro vem do `SeletorComBusca` da
+  // barra, por busca — o `listFees({ limit: 100 })` saiu. O escolhido (por
+  // clique ou buscado pelo id da URL) fica aqui só para a frase do recorte.
+  const [honorarioEscolhido, setHonorarioEscolhido] = useState(null);
 
   // DEC-058 (F-5a): a consulta passou para `useCachedResource`, que também é
   // quem lê as duas ocasiões — a carga e a volta do modal de estorno, agora por
@@ -144,7 +136,7 @@ function PaymentListPage() {
   const recorte = descricaoDoRecorteFinanceiro({
     filtros,
     busca: buscaDebounced,
-    honorarios,
+    honorarios: honorarioEscolhido && filtros.honorarioId ? [honorarioEscolhido] : [],
     extras: [
       filtros.formaPagamento
         ? `pagos em ${labelDe(FORMA_PAGAMENTO_OPTIONS, filtros.formaPagamento).toLowerCase()}`
@@ -183,7 +175,7 @@ function PaymentListPage() {
         aplicarPreset={aplicarPreset}
         limpar={limparTudo}
         temFiltro={filtrado}
-        honorarios={honorarios}
+        filtroDeHonorario={{ onEscolhido: setHonorarioEscolhido }}
         descricaoDoRecorte={recorte}
         semBusca
         pilulas

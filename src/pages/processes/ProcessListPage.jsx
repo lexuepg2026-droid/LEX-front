@@ -161,7 +161,6 @@ function ProcessoListPage() {
           aplicarPreset={aplicarPreset}
           limpar={limpar}
           temFiltro={comRecorte}
-          honorarios={null}
           descricaoDoRecorte={recorte}
           semBusca
           pilulas

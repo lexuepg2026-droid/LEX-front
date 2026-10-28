@@ -166,6 +166,27 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+  /* Fase 3.10 (DEC-152): três sombras que nenhuma das acima descreve, e que
+     são as MESMAS nos dois modos (não são redefinidas no claro).
+     - As colunas fixas das listas (DEC-107/133): uma sombra de UM lado só,
+       que separa a coluna presa do que rola por baixo dela.
+     - O halo das telas da marca (autenticação e portal, DEC-078/096): uma
+       sombra em volta, sem deslocamento, sobre o fundo fixo da marca. Eram
+       .10 e .08; ficou uma só, .10. */
+  --shadow-coluna-esquerda: -8px 0 8px -8px rgba(0, 0, 0, 0.45);
+  --shadow-coluna-direita: 8px 0 8px -8px rgba(0, 0, 0, 0.45);
+  --shadow-halo: 0 0 15px 8px rgba(0, 0, 0, 0.1);
+
+  /* Fase 3.10 (DEC-152): o fundo escurecido atrás de diálogo e de painel
+     (Modal, a prévia da seção, o "Mais" e a biblioteca no celular). Um token
+     só, com a opacidade do Modal. Igual nos dois modos. */
+  --color-scrim: rgba(0, 0, 0, 0.6);
+
+  /* Fase 3.10 (DEC-152): o verde da marca SOBRE O PAPEL — o botão "Inserir
+     aqui" da folha da montagem. O papel é branco nos dois modos, então o
+     realce também não muda com o tema. */
+  --color-papel-realce: rgba(23, 64, 52, 0.08);
+  --color-papel-realce-hover: rgba(23, 64, 52, 0.18);
 
   /* Transições */
   --transition-fast:   150ms ease;

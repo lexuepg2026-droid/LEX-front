@@ -14,7 +14,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: var(--color-scrim);
   display: flex;
   align-items: center;
   justify-content: center;

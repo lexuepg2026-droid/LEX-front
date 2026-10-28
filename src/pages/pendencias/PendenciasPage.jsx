@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { CloudOff, RefreshCw } from 'lucide-react';
 
-import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import Loading from '../../components/common/Loading';
@@ -13,6 +12,7 @@ import { formatUpdatedAt } from '../../offline/dataAge';
 import { toast } from '../../utils/toast';
 import { formatDate } from '../../utils/formatters';
 import '../../styles/modules.css';
+import '../../components/financeiro/CabecalhoDeLista.css';
 import './PendenciasPage.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -34,6 +34,11 @@ import './PendenciasPage.css';
 //
 // O que a tela NÃO faz: descartar sozinha. Não há limite de tentativas, prazo
 // nem "falhou demais, some" (ver `offline/outboxPlan.js`).
+//
+// Fase 3.10 (DEC-153): a pele das listas — o balão, o título com o total e as
+// entradas em linhas. As classes passaram de `pendencia*` a `fila__*`: a
+// `PendenciaList` dos documentos usa `.pendencia`, e as duas folhas, globais,
+// pintavam uma a outra. O conflito, o reenvio e os textos não mudaram.
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Os campos do corpo que valem a pena mostrar lado a lado no conflito. É uma
@@ -66,10 +71,10 @@ function ComparacaoDeVersoes({ minha, doServidor }) {
   if (campos.length === 0) return null;
 
   return (
-    <div className="pendencia__versoes">
-      <div className="pendencia__versao">
-        <h4 className="pendencia__versao-titulo">A sua versão</h4>
-        <dl className="pendencia__campos">
+    <div className="fila__versoes">
+      <div className="fila__versao">
+        <h4 className="fila__versao-titulo">A sua versão</h4>
+        <dl className="fila__campos">
           {campos.map(([campo, rotulo]) => (
             <React.Fragment key={`minha-${campo}`}>
               <dt>{rotulo}</dt>
@@ -78,9 +83,9 @@ function ComparacaoDeVersoes({ minha, doServidor }) {
           ))}
         </dl>
       </div>
-      <div className="pendencia__versao">
-        <h4 className="pendencia__versao-titulo">O que está no servidor</h4>
-        <dl className="pendencia__campos">
+      <div className="fila__versao">
+        <h4 className="fila__versao-titulo">O que está no servidor</h4>
+        <dl className="fila__campos">
           {campos.map(([campo, rotulo]) => (
             <React.Fragment key={`servidor-${campo}`}>
               <dt>{rotulo}</dt>
@@ -118,121 +123,126 @@ function PendenciasPage() {
 
   return (
     <div className="module-container">
-      <PageHeader title="Alterações não enviadas" />
+      <section className="lista-balao" aria-labelledby="titulo-pendencias">
+        <div className="lista-balao__topo">
+          <h1 className="lista-balao__titulo" id="titulo-pendencias">
+            Alterações não enviadas
+            <span className="lista-balao__total"> ({quantidade})</span>
+          </h1>
+          {/* O envio manual existe para quem não quer esperar o gatilho
+              automático — e para o caso de o navegador achar que há rede quando
+              não há (portal cativo), em que o automático não dispara. */}
+          <button
+            type="button"
+            className="ui-btn ui-btn--secondary ui-btn--sm fila__enviar"
+            onClick={enviar}
+            disabled={quantidade === 0 || enviando}
+            aria-disabled={online ? undefined : 'true'}
+          >
+            <RefreshCw size={15} aria-hidden="true" />
+            {enviando ? 'Enviando…' : 'Tentar enviar agora'}
+          </button>
+        </div>
 
-      <div className="pendencias__topo">
-        <p className="pendencias__resumo">
+        <p className="fila__resumo">
           {quantidade === 0
             ? 'Tudo que você gravou já está no servidor.'
             : `${quantidade} ${quantidade === 1 ? 'alteração' : 'alterações'} ainda ` +
               `${quantidade === 1 ? 'não foi enviada' : 'não foram enviadas'}.`}
         </p>
-        {/* O envio manual existe para quem não quer esperar o gatilho
-            automático — e para o caso de o navegador achar que há rede quando
-            não há (portal cativo), em que o automático não dispara. */}
-        <button
-          type="button"
-          className="ui-btn ui-btn--secondary ui-btn--sm"
-          onClick={enviar}
-          disabled={quantidade === 0 || enviando}
-          aria-disabled={online ? undefined : 'true'}
-        >
-          <RefreshCw size={15} aria-hidden="true" />
-          {enviando ? 'Enviando…' : 'Tentar enviar agora'}
-        </button>
-      </div>
 
-      {!online && (
-        <p className="pendencias__offline">
-          <CloudOff size={15} aria-hidden="true" />
-          Sem conexão. A fila sobe sozinha quando o sinal voltar.
-        </p>
-      )}
+        {!online && (
+          <p className="fila__offline">
+            <CloudOff size={15} aria-hidden="true" />
+            Sem conexão. A fila sobe sozinha quando o sinal voltar.
+          </p>
+        )}
 
-      {enviando && <Loading />}
+        {enviando && <Loading />}
 
-      {quantidade === 0 ? (
-        <EmptyState
-          title="Nada pendente"
-          description="Toda alteração que você fez já chegou ao servidor."
-        />
-      ) : (
-        <ul className="pendencias__lista">
-          {entradas.map((entrada, indice) => {
-            const falhou = entrada.estado === 'falhou';
-            const conflito = entrada.falha?.classificacao === 'conflito';
+        {quantidade === 0 ? (
+          <EmptyState
+            title="Nada pendente"
+            description="Toda alteração que você fez já chegou ao servidor."
+          />
+        ) : (
+          <ul className="fila__lista">
+            {entradas.map((entrada, indice) => {
+              const falhou = entrada.estado === 'falhou';
+              const conflito = entrada.falha?.classificacao === 'conflito';
 
-            return (
-              <li
-                key={entrada.id}
-                className={`pendencia${falhou ? ' pendencia--falhou' : ''}`}
-              >
-                <div className="pendencia__cabecalho">
-                  {/* A ordem é a do reenvio, e ela importa: criar e depois
-                      editar são duas entradas, e fora de ordem a segunda
-                      falharia. O número deixa isso visível. */}
-                  <span className="pendencia__ordem" aria-hidden="true">{indice + 1}</span>
-                  <div>
-                    <p className="pendencia__descricao">
-                      {descreverEntrada(entrada)}
-                    </p>
-                    <p className="pendencia__estado">
-                      {falhou
-                        ? entrada.falha?.mensagem
-                        : `Aguardando envio — enfileirada ${formatUpdatedAt(entrada.criadoEm) ?? ''}.`}
-                    </p>
-                  </div>
-                </div>
+              return (
+                <li
+                  key={entrada.id}
+                  className={`fila__item${falhou ? ' fila__item--falhou' : ''}`}
+                >
+                  <div className="fila__linha">
+                    {/* A ordem é a do reenvio, e ela importa: criar e depois
+                        editar são duas entradas, e fora de ordem a segunda
+                        falharia. O número deixa isso visível. */}
+                    <span className="fila__ordem" aria-hidden="true">{indice + 1}</span>
+                    <div className="fila__textos">
+                      <p className="fila__descricao">
+                        {descreverEntrada(entrada)}
+                      </p>
+                      <p className="fila__estado">
+                        {falhou
+                          ? entrada.falha?.mensagem
+                          : `Aguardando envio — enfileirada ${formatUpdatedAt(entrada.criadoEm) ?? ''}.`}
+                      </p>
+                    </div>
 
-                {conflito && (
-                  <ComparacaoDeVersoes minha={entrada.body} doServidor={entrada.falha?.atual} />
-                )}
-
-                <div className="pendencia__acoes">
-                  {conflito ? (
-                    <>
-                      <button
-                        type="button"
-                        className="ui-btn ui-btn--primary ui-btn--sm"
-                        onClick={() => manterMinha(entrada)}
-                      >
-                        Manter a minha versão
-                      </button>
-                      <button
-                        type="button"
-                        className="ui-btn ui-btn--secondary ui-btn--sm"
-                        onClick={() => setDescarteAberto(entrada)}
-                      >
-                        Ficar com a do servidor
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      {falhou && (
-                        <button
-                          type="button"
-                          className="ui-btn ui-btn--primary ui-btn--sm"
-                          onClick={() => tentarDeNovo(entrada.id)}
-                          disabled={enviando}
-                        >
-                          Tentar de novo
-                        </button>
+                    <div className="fila__acoes">
+                      {conflito ? (
+                        <>
+                          <button
+                            type="button"
+                            className="ui-btn ui-btn--primary ui-btn--sm"
+                            onClick={() => manterMinha(entrada)}
+                          >
+                            Manter a minha versão
+                          </button>
+                          <button
+                            type="button"
+                            className="ui-btn ui-btn--secondary ui-btn--sm"
+                            onClick={() => setDescarteAberto(entrada)}
+                          >
+                            Ficar com a do servidor
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {falhou && (
+                            <button
+                              type="button"
+                              className="ui-btn ui-btn--primary ui-btn--sm"
+                              onClick={() => tentarDeNovo(entrada.id)}
+                              disabled={enviando}
+                            >
+                              Tentar de novo
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="ui-btn ui-btn--secondary ui-btn--sm"
+                            onClick={() => setDescarteAberto(entrada)}
+                          >
+                            Descartar
+                          </button>
+                        </>
                       )}
-                      <button
-                        type="button"
-                        className="ui-btn ui-btn--secondary ui-btn--sm"
-                        onClick={() => setDescarteAberto(entrada)}
-                      >
-                        Descartar
-                      </button>
-                    </>
+                    </div>
+                  </div>
+
+                  {conflito && (
+                    <ComparacaoDeVersoes minha={entrada.body} doServidor={entrada.falha?.atual} />
                   )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       {/* A confirmação NOMEIA o que se perde. Uma frase genérica ("descartar
           esta alteração?") não deixa a advogada avaliar o que está perdendo —

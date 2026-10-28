@@ -165,7 +165,7 @@
   cursor: pointer;
 }
 
-.final__interruptor:hover:not(:disabled) {
+.final__interruptor:hover:not([aria-disabled="true"]) {
   background: var(--color-surface-raised);
 }
 
@@ -173,7 +173,7 @@
   border-radius: var(--radius-pill);
 }
 
-.final__interruptor:disabled {
+.final__interruptor[aria-disabled="true"] {
   cursor: not-allowed;
   color: var(--color-text-secondary);
 }

@@ -5701,6 +5701,74 @@ ordem, o mesmo "ir até o trecho" desabilitado com texto sujo —, depois
 para depois do texto. Os dois `Modal`s continuam o `Modal` da fase 1, com o
 texto e a ordem das escolhas idênticos (travado).
 
+
+## DEC-151 (frontend) — o filtro por honorário por busca (Fase 3.10)
+
+Os dois últimos tetos de 100: Parcelas e Pagamentos pediam
+`listFees({ limit: 100 })` para o `<select>` do filtro, e o 101º honorário
+não existia para ele. A `FinancialFilters` ganhou `filtroDeHonorario`
+(`{ onEscolhido }`), que liga o `SeletorComBusca` da DEC-101
+(`GET /fees?busca=`, `semToastGlobal`, "descrição — Processo nº — cliente",
+não obrigatório: vazio é "todos"). O valor continua na URL (`?honorarioId=`);
+ao recarregar, aparece escolhido, buscado pelo id (DEC-086). O escolhido vai
+para a frase do recorte. A prop `honorarios`, que só servia ao `<select>`,
+saiu das sete listas.
+
+- **Achado no navegador, corrigido no `SeletorComBusca`:** o valor esvaziado
+  DE FORA (o "voltar" do navegador, o "Limpar filtros") deixava o nome no
+  campo. Agora, valor vazio com escolha de pé limpa o campo; a digitação não
+  passa por aí (`aoDigitar` desfaz a escolha antes de avisar o pai), e nos
+  formulários o valor nunca era esvaziado de fora.
+- **Sem sinal:** o campo diz "A busca precisa de conexão. Conecte-se para
+  procurar." — antes o `<select>` ficava com a lista que tivesse carregado.
+
+## DEC-152 (frontend) — nenhuma cor crua fora de `variables.css` (Fase 3.10)
+
+- **`--color-scrim`** (`rgba(0,0,0,.6)`, a opacidade do `Modal`) no fundo do
+  `Modal`, da prévia da seção, do "Mais" e da biblioteca no celular (os dois
+  últimos eram .5).
+- **Sombras:** o `ActionMenu` e a prévia da seção no `--shadow-lg` (o
+  `Modal` já estava); três novas, iguais nos dois modos —
+  `--shadow-coluna-esquerda`/`-direita` (as colunas fixas das listas) e
+  `--shadow-halo` (as telas da marca: autenticação e portal; .10 e .08
+  viraram .10). Saiu o fallback cru de `var(--shadow-md, …)`.
+- **O papel** (`DocumentCanvas.css`) continua literal, por decisão; o verde
+  do "Inserir aqui" virou `--color-papel-realce` / `-hover`.
+- **Trava:** `tests/css/coresCruas.test.js` varre o VALOR das declarações
+  de toda folha (sem comentários) atrás de hex, `rgb`, `hsl` e nomes de cor;
+  a única exceção é o papel, numa lista fechada valor a valor, com o motivo,
+  e entrada morta derruba o teste.
+
+## DEC-153 (frontend) — Pendências na pele das listas (Fase 3.10)
+
+O balão, o título com o total ("Alterações não enviadas (N)") e o "Tentar
+enviar agora" no topo; as entradas em LINHAS separadas por fio, com o plano
+elevado no hover e a borda de falha à esquerda. A DEC-060 (as duas versões,
+"Manter a minha versão" / "Ficar com a do servidor", o descarte só pelo
+`Modal`), o reenvio e os textos não mudaram.
+
+- **As classes passaram de `pendencia*` a `fila__*`.** A `PendenciaList` dos
+  documentos usa `.pendencia`, as duas folhas são globais, e cada uma pintava
+  a outra (a borda de aviso da lista do 422 nas entradas da fila, e vice-versa).
+
+## DEC-154 (frontend) — o título do bloco da folha a 360 px (Fase 3.10)
+
+Abaixo de 768 px o "Remover" do bloco fica só com a lixeira do `Icone` (o
+nome da seção continua no `aria-label`), e a barra do bloco QUEBRA: o título
+guarda 120 px e as ações descem para a linha de baixo quando não cabem. Só o
+ícone não bastava — medido, o título ficava com 8 a 34 px. A folha continua
+branca; `assemblyState.js`, a sentinela e a fila serial não mudaram.
+
+## DEC-155 (frontend) — o interruptor do portal não perde o foco (Fase 3.10)
+
+Exceção autorizada no tratador do texto final: durante o pedido o
+interruptor passou de `disabled` a `aria-disabled="true"`, e `alternarPortal`
+recusa o clique em voo (`if (alternandoPortal) return;`, o padrão da
+DEC-053). O `disabled` tirava o foco do interruptor depois do Espaço. Nada
+mais no tratador mudou (o mesmo pedido, sem confirmação). O `LiberacaoPortal`
+já usava `aria-disabled` e recusava no tratador: conferido no navegador, o
+foco fica nele.
+
 ---
 
 ## Rotina de encerramento de sessão

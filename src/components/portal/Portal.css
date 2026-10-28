@@ -136,7 +136,7 @@
   border-radius: 1.5rem;
   padding: var(--space-6) var(--space-5);
   margin-bottom: var(--space-5);
-  box-shadow: 0 0 15px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-halo);
 }
 
 .portal-titulo {
@@ -399,7 +399,7 @@
   background-color: var(--color-marca-escuro);
   color: var(--color-marca-texto);
   text-decoration: none;
-  box-shadow: 0 0 15px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-halo);
   transition: background-color var(--transition-fast);
 }
 

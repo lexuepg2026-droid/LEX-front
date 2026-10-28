@@ -115,7 +115,6 @@ function ClienteListPage() {
           aplicarPreset={aplicarPreset}
           limpar={limpar}
           temFiltro={temFiltro}
-          honorarios={null}
           descricaoDoRecorte={recorte}
           semBusca
           pilulas

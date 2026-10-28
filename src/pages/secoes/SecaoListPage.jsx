@@ -110,7 +110,6 @@ function SecaoListPage() {
           aplicarPreset={aplicarPreset}
           limpar={limpar}
           temFiltro={temFiltro}
-          honorarios={null}
           descricaoDoRecorte={recorte}
           semBusca
           semPeriodo

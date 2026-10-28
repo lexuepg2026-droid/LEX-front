@@ -259,7 +259,7 @@
   padding: 0 var(--space-3);
   border: 1px dashed var(--color-primary);
   border-radius: var(--radius-full);
-  background: rgba(23, 64, 52, 0.08);
+  background: var(--color-papel-realce);
   color: var(--color-primary-dark);
   font-family: var(--font-family);
   font-size: 8.5pt;
@@ -269,7 +269,7 @@
 }
 
 .canvas-slot__botao:hover {
-  background: rgba(23, 64, 52, 0.18);
+  background: var(--color-papel-realce-hover);
 }
 
 /* ── Rodapé ─────────────────────────────────────────────────────────────── */
@@ -297,7 +297,27 @@
 /* No celular a moldura encosta nas bordas do balão (o recuo dele é
    `--space-3`): os 320 px da folha cabem inteiros a 360, como antes da fase,
    em vez de rolar dentro dela. */
+/* Fase 3.10 (DEC-154): a 360 px a barra do bloco (alça, número, título,
+   tipo, ↑ ↓ e "Remover") não cabia, e quem cedia era o título — 0 px. Abaixo
+   de 768 o "Remover" fica só com o ícone (o nome está no aria-label), e a
+   barra QUEBRA: o título guarda 120 px, e as ações descem para a linha de
+   baixo quando não cabem ao lado dele. Medido no navegador: só o ícone
+   deixava o título com 8 a 34 px. */
 @media (max-width: 767px) {
+  .canvas-bloco__acao-rotulo {
+    display: none;
+  }
+
+  .canvas-bloco__barra {
+    flex-wrap: wrap;
+    row-gap: var(--space-1);
+  }
+
+  .canvas-bloco__titulo {
+    flex: 1 1 120px;
+    min-width: 120px;
+  }
+
   .canvas-scroll {
     margin: 0 calc(-1 * var(--space-3));
     padding: 0;

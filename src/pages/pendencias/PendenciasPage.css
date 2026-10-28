@@ -1,18 +1,23 @@
-.pendencias__topo {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  justify-content: space-between;
-  margin-bottom: var(--space-4);
+/* As alterações que ainda não subiram — F-5b, Parte 4.
+
+   Fase 3.10 (DEC-153): a pele das listas. O balão e o topo vêm de
+   `CabecalhoDeLista.css` (`.lista-balao*`, DEC-102); as entradas são LINHAS,
+   separadas por fio, que pousam no plano elevado ao passar o mouse, como as
+   linhas da lista em balão. As classes são `fila__*` — `.pendencia` é da
+   `PendenciaList` dos documentos, e as duas folhas são globais. */
+
+.lista-balao__topo .fila__enviar {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
-.pendencias__resumo {
-  color: var(--color-text-primary);
-  margin: 0;
+.fila__resumo {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0 0 var(--space-3);
 }
 
-.pendencias__offline {
+.fila__offline {
   align-items: center;
   background-color: var(--color-warning-bg);
   border: 1px solid var(--color-warning);
@@ -21,39 +26,41 @@
   display: flex;
   font-size: var(--font-size-sm);
   gap: var(--space-2);
-  margin-bottom: var(--space-4);
+  margin: 0 0 var(--space-3);
   padding: var(--space-2) var(--space-3);
 }
 
-.pendencias__lista {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+.fila__lista {
   list-style: none;
   margin: 0;
   padding: 0;
+  border-top: 1px solid var(--color-border);
 }
 
-.pendencia {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
+.fila__item {
+  padding: var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  border-left: 3px solid transparent;
+}
+
+.fila__item:hover {
+  background-color: var(--color-surface-raised);
 }
 
 /* A que falhou se distingue pela BORDA, e não por fundo cheio: ela continua
    sendo uma linha da lista, e um bloco vermelho sólido no meio se leria como
    "o sistema quebrou" em vez de "esta precisa da sua decisão". */
-.pendencia--falhou {
-  border-color: var(--color-danger);
+.fila__item--falhou {
+  border-left-color: var(--color-danger);
 }
 
-.pendencia__cabecalho {
+.fila__linha {
   display: flex;
+  align-items: flex-start;
   gap: var(--space-3);
 }
 
-.pendencia__ordem {
+.fila__ordem {
   align-items: center;
   background-color: var(--color-surface-raised);
   border-radius: 50%;
@@ -66,66 +73,79 @@
   width: 26px;
 }
 
-.pendencia__descricao {
+.fila__item:hover .fila__ordem {
+  background-color: var(--color-surface);
+}
+
+.fila__textos {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fila__descricao {
   color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
-.pendencia__estado {
+.fila__estado {
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   line-height: 1.4;
   margin: var(--space-1) 0 0;
 }
 
+.fila__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
 /* Duas colunas em tela larga, uma embaixo da outra em 360 px — comparar duas
    versões espremidas lado a lado é pior do que lê-las em sequência. */
-.pendencia__versoes {
+.fila__versoes {
   display: grid;
   gap: var(--space-3);
   grid-template-columns: 1fr 1fr;
-  margin-top: var(--space-3);
+  margin: var(--space-3) 0 0 calc(26px + var(--space-3));
 }
 
-.pendencia__versao {
+.fila__versao {
   background-color: var(--color-surface-raised);
   border-radius: var(--radius-md);
   padding: var(--space-3);
 }
 
-.pendencia__versao-titulo {
+.fila__versao-titulo {
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   margin: 0 0 var(--space-2);
 }
 
-.pendencia__campos {
+.fila__campos {
   display: grid;
   gap: var(--space-1) var(--space-2);
   grid-template-columns: auto 1fr;
   margin: 0;
 }
 
-.pendencia__campos dt {
+.fila__campos dt {
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
 
-.pendencia__campos dd {
+.fila__campos dd {
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   margin: 0;
   overflow-wrap: anywhere;
 }
 
-.pendencia__acoes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-}
-
 @media (max-width: 767px) {
-  .pendencia__versoes { grid-template-columns: 1fr; }
+  .fila__linha { flex-wrap: wrap; }
+  .fila__acoes { flex-basis: 100%; justify-content: flex-start; padding-left: calc(26px + var(--space-3)); }
+  .fila__versoes { grid-template-columns: 1fr; margin-left: 0; }
 }
