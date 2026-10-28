@@ -194,10 +194,15 @@ describe("os cartões em 360 px — pendência do passo 181", () => {
   // a regra até onde ela mora agora.
   const css = () => readFileSync(resolve(SRC, "components/dashboard/CartaoDeResumo.css"), "utf8");
 
+  // Reescrita na Fase 4a2 (DEC-160): a coluna única deixou de vir de uma
+  // `@media (max-width: 480px)` e passou a sair da própria trilha mínima,
+  // `minmax(min(100%, 15rem), 1fr)` — numa grade mais estreita que 15rem
+  // sobra uma coluna, do tamanho da grade. A proteção é a mesma (e maior: vale
+  // em qualquer largura de grade, não só abaixo de 480 px de janela).
   test("os três blocos empilham numa coluna só na tela estreita", () => {
     const t = css();
     assert.match(
-      t, /@media \(max-width: 480px\) \{[^}]*\.summary-grid \{ grid-template-columns: 1fr; \}/s,
+      t, /\.summary-grid \{[^}]*grid-template-columns: repeat\(auto-fill, minmax\(min\(100%, 15rem\), 1fr\)\);/s,
       "sem uma coluna só, 'R$ 1.234.567,89' — token indivisível — estica a trilha e a página"
     );
   });

@@ -5,9 +5,27 @@
    pela Visão geral do Financeiro, e a folha vai com quem aplica as classes
    (a regra de alcançabilidade da varredura de CSS). */
 
+/* ── O valor em reais nunca vaza nem é cortado (Fase 4a2, DEC-160) ────────
+   Em produção, a 1920 px, "R$ 58.280,00" saía do cartão: o conteúdo para em
+   1280 px, a grade de `minmax(190px, 1fr)` fazia seis trilhas de 193 px, e o
+   valor de 30 px pedia 246 (medido com R$ 1.234.567,89). Duas defesas:
+
+   1. **O cartão cresce.** A trilha mínima passou a 15rem (240 px), o que
+      cabe "R$ 1.234.567,89" na fonte cheia; numa grade mais estreita que
+      isso, `min(100%, …)` faz uma coluna só, do tamanho da grade.
+   2. **A fonte cede.** O cartão é um contêiner (`container-type`), e o valor
+      mede `11cqi` (11% da largura útil do cartão), entre `--font-size-lg` e
+      `--font-size-2xl`. Na fonte, cada caractere do valor pede ~0,55 em
+      ("R$ 1.234.567,89", 15 caracteres, pede 8,2 em): a 11cqi cabe qualquer
+      valor de até 16 caracteres ("R$ 12.345.678,90") em qualquer largura,
+      até o piso. No piso, o cartão já é uma coluna inteira.
+
+   Nunca reticências nem `overflow: hidden` em dinheiro (F-1b.2). As duas
+   regras antigas de 767 e 480 px (duas colunas e uma) ficaram contidas no
+   `min(100%, 15rem)`: abaixo de ~520 px de grade sobra uma coluna só. */
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
   gap: var(--space-4);
 }
 
@@ -39,11 +57,13 @@
   padding: var(--space-5);
   text-align: left;
   background-color: var(--color-surface-card);
+  container-type: inline-size;
 }
 
 .card-value {
   order: -1;
-  font-size: var(--font-size-2xl);
+  font-size: clamp(var(--font-size-lg), 11cqi, var(--font-size-2xl));
+  white-space: nowrap;
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
   line-height: 2.25rem;
@@ -112,18 +132,11 @@
    Por isso a correção NÃO é quebrar o valor. Quebrar "R$ 1.234.567,89" no
    meio produz um número ilegível, e a F-1b.2 já decidiu que o valor é
    indivisível por construção. A correção é dar largura ao cartão: uma coluna
-   só, onde o valor cabe inteiro.
+   só, onde o valor cabe inteiro. Desde a 4a2 (DEC-160) a coluna única sai do
+   `min(100%, 15rem)` da grade, e não mais de duas `@media`.
 
    `min-width: 0` junto, como cinto e suspensório: se um dia entrar um valor
    maior que a coluna única, a trilha encolhe em vez de empurrar a página. */
-@media (max-width: 767px) {
-  .summary-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 480px) {
-  .summary-grid { grid-template-columns: 1fr; }
-}
-
 .summary-card {
   min-width: 0;
 }
