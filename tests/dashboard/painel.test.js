@@ -121,10 +121,13 @@ describe("blocos colapsáveis, com a escolha lembrada", () => {
       "remover o outline aqui desfaz a regra global de :focus-visible");
   });
 
-  test("fechado DESMONTA o conteúdo — é o que poupa o chunk dos gráficos", () => {
+  // Reescrita na Fase 4a2 (DEC-161): o motivo antigo era poupar o chunk dos
+  // gráficos, que saíram do Início. A trava fica, pelo motivo que sobrou: o
+  // bloco fechado não faz as leituras do conteúdo nem o deixa no Tab.
+  test("fechado DESMONTA o conteúdo — nada dele fica montado nem no Tab", () => {
     const bloco = fonte("components/dashboard/BlocoDoPainel.jsx");
     assert.match(bloco, /\{aberto && \(/,
-      "esconder por CSS manteria `DashboardCharts` montado e desfaria metade do motivo");
+      "esconder por CSS manteria o conteúdo montado, com os focáveis dele no Tab");
     assert.ok(!/display:\s*none/.test(cru("components/dashboard/BlocoDoPainel.css")));
   });
 });
@@ -132,12 +135,14 @@ describe("blocos colapsáveis, com a escolha lembrada", () => {
 describe("atenção primeiro, estatística depois", () => {
   const painel = () => fonte(PAINEL);
 
-  test("os seis blocos aparecem na ordem que a pergunta do dia pede", () => {
+  // Reescrita na Fase 4a2 (DEC-161): "graficos" saiu da ordem com o bloco.
+  // A ordem dos cinco que ficaram é a mesma.
+  test("os cinco blocos aparecem na ordem que a pergunta do dia pede", () => {
     const ordem = [...painel().matchAll(/chave="([a-z]+)"/g)].map((m) => m[1]);
     // Fase 3.1: as Datas próximas (chave `proximos`, a mesma de antes, para a
     // preferência gravada continuar valendo) sobem para antes do mês — "o que
     // vem por aí" é pergunta do dia; o mês escolhido é consulta.
-    assert.deepEqual(ordem, ["atencao", "proximos", "mes", "acumulado", "resumo", "graficos"]);
+    assert.deepEqual(ordem, ["atencao", "proximos", "mes", "acumulado", "resumo"]);
   });
 
   test("o que exige atenção nasce ABERTO; a estatística nasce FECHADA", () => {
@@ -148,7 +153,7 @@ describe("atenção primeiro, estatística depois", () => {
         `${chave} responde "o que preciso fazer hoje" — nasce aberto`
       );
     }
-    for (const chave of ["acumulado", "resumo", "graficos"]) {
+    for (const chave of ["acumulado", "resumo"]) {
       assert.match(
         t, new RegExp(`estaAberto\\('${chave}', true\\)`),
         `${chave} é estatística — nasce fechado`

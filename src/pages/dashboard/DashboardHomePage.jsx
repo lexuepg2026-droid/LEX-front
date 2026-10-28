@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AlertCircle, ChevronLeft, ChevronRight, HandCoins } from 'lucide-react';
 import dashboardService from '../../api/dashboardService';
@@ -63,7 +63,11 @@ import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 // Fase 2b (DEC-084): com o servidor fora, os GETs em paralelo desta tela
 // falham juntos. O toast global sai UMA vez (deduplicação da DEC-083), e os
 // `catch` abaixo só falam do que ele não cobre — um 404, por exemplo.
-const DashboardCharts = lazy(() => import('./DashboardCharts'));
+//
+// Fase 4a2 (DEC-161): o bloco "Gráficos" saiu do Início, com o componente,
+// os estilos, as duas leituras que só ele fazia (`/dashboard/status` e
+// `/dashboard/honorarios-por-mes`) e o `recharts`. As rotas continuam no
+// back — tirar rota é mudar contrato —, só sem uso no front.
 
 // O `BlocoDoPainel` recebe um COMPONENTE de ícone (`size`, `className`), no
 // formato do lucide. Este adaptador põe os ícones da Raniele no mesmo formato,
@@ -77,7 +81,6 @@ const doIcone = (nome) => {
 const ICONE_CALENDARIO = doIcone('calendario');
 const ICONE_DINHEIRO = doIcone('dinheiro');
 const ICONE_FOLDER = doIcone('folder');
-const ICONE_DOCUMENTO = doIcone('documento');
 
 // O ícone ao lado do rótulo do cartão: o da Raniele pelo nome, ou o lucide
 // quando ela não tem equivalente.
@@ -155,7 +158,7 @@ const CARDS_DO_MES = [
 // impede os dois painéis de discordarem.
 
 // Os blocos de estatística, que nascem fechados.
-const PADRAO_FECHADO = new Set(['acumulado', 'resumo', 'graficos']);
+const PADRAO_FECHADO = new Set(['acumulado', 'resumo']);
 
 const formatCurrentDate = () =>
   new Date().toLocaleDateString('pt-BR', {
@@ -192,8 +195,6 @@ function DashboardHomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [upcoming, setUpcoming] = useState([]);
-  const [statusData, setStatusData] = useState(null);
-  const [feesByMonth, setFeesByMonth] = useState([]);
   const [agenda, setAgenda] = useState(null);
   const [agendaFalhou, setAgendaFalhou] = useState(false);
 
@@ -329,23 +330,6 @@ function DashboardHomePage() {
       .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar os avisos.')); });
   }, []);
 
-  useEffect(() => {
-    dashboardService.getStatusCounts()
-      .then(res => setStatusData(res.data))
-      .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar estatísticas do dashboard.')); });
-  }, []);
-
-  // A série mensal TERMINA no mês escolhido (DEC-098), então é refeita quando
-  // ele muda. `ativo` descarta a resposta de um mês que já ficou para trás —
-  // duas setas rápidas não podem pintar o gráfico do mês do meio.
-  useEffect(() => {
-    let ativo = true;
-    dashboardService.getFeesByMonth(mesParaApi)
-      .then(res => { if (ativo) setFeesByMonth(res.data); })
-      .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar gráfico financeiro.')); });
-    return () => { ativo = false; };
-  }, [mesParaApi]);
-
   const rotuloMes = rotuloDoMes(chaveEscolhida);
   const rotuloMesDoServidor = resumoFinanceiro?.mesReferencia
     ? rotuloDoMes(resumoFinanceiro.mesReferencia)
@@ -364,7 +348,7 @@ function DashboardHomePage() {
   // ── A ordem dos blocos, e por que ela é esta ────────────────────────────
   // Ações rápidas e atenção primeiro, estatística depois. Os três primeiros
   // blocos nascem abertos porque respondem "o que eu preciso fazer hoje"; os
-  // três últimos nascem fechados porque respondem "como está o escritório" —
+  // dois últimos nascem fechados porque respondem "como está o escritório" —
   // uma pergunta boa, só não é a da primeira olhada do dia.
   return (
     <div>
@@ -729,25 +713,6 @@ function DashboardHomePage() {
         )}
       </BlocoDoPainel>
 
-      {/* ══ 6. GRÁFICOS — estatística, nasce FECHADO ════════════════════════
-          Fechado por padrão também poupa o chunk: `DashboardCharts` é `lazy` e
-          o bloco desmonta o conteúdo, então quem não abre não baixa os 386 KB
-          do recharts. A barra segue o mês; os donuts são a situação de hoje. */}
-      <BlocoDoPainel
-        chave="graficos"
-        titulo="Gráficos"
-        Icone={ICONE_DOCUMENTO}
-        aberto={estaAberto('graficos', true)}
-        aoAlternar={alternarBloco}
-      >
-        <Suspense fallback={<Loading />}>
-          <DashboardCharts
-            statusData={statusData}
-            feesByMonth={feesByMonth}
-            mesReferencia={chaveEscolhida}
-          />
-        </Suspense>
-      </BlocoDoPainel>
     </div>
   );
 }

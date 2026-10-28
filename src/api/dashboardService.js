@@ -1,9 +1,8 @@
 import api from './axiosConfig';
 
 const getDashboardSummary = () => api.get('/dashboard');
-const getStatusCounts    = () => api.get('/dashboard/status');
-// `mes` (DEC-098): a janela de 6 meses TERMINA no mês escolhido.
-const getFeesByMonth     = (mes) =>
-  api.get('/dashboard/honorarios-por-mes', mes ? { params: { mes } } : undefined);
 
-export default { getDashboardSummary, getStatusCounts, getFeesByMonth };
+// Fase 4a2 (DEC-161): `getStatusCounts` (`/dashboard/status`) e
+// `getFeesByMonth` (`/dashboard/honorarios-por-mes`) saíram com os gráficos do
+// Início, que eram os únicos a chamá-las. As rotas continuam no back.
+export default { getDashboardSummary };

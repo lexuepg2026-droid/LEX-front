@@ -19,6 +19,10 @@
 // o badge é o que a advogada vê o dia inteiro nas listagens, e o donut é
 // consulta ocasional. Quem se ajustou foi o gráfico.
 //
+// Fase 4a2 (DEC-161): os gráficos saíram do Início, e `corDoStatus` com eles.
+// `COR_DO_TOM` fica: é a tabela tom → token que a bolinha do processo segue
+// (`tests/regressions/fase33b.test.js`).
+//
 // ── Por que a cor é o TEXTO do badge, e não o fundo ────────────────────────
 // O badge pinta fundo esmaecido (`--color-*-bg`) e texto em `--color-*-text`,
 // o tom de texto de cada modo (Fase 1, DEC-075). Numa fatia de donut, o fundo
@@ -122,6 +126,3 @@ export const rotuloDoStatus = (status) => visualDoStatus(status).label;
 
 export const tomDoStatus = (status) => visualDoStatus(status).tom;
 
-// A cor pronta para o gráfico, já como `var(--…)`. O Recharts a repassa para
-// o atributo `fill` do SVG, que resolve variável CSS normalmente.
-export const corDoStatus = (status) => COR_DO_TOM[tomDoStatus(status)];

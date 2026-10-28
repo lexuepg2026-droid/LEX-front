@@ -100,16 +100,14 @@ describe("Fase 3.1 · as chamadas com e sem ?mes=", () => {
     const fin = semComentarios(ler("src/api/financeiroService.js"));
     const dash = semComentarios(ler("src/api/dashboardService.js"));
     assert.match(fin, /api\.get\('\/financeiro\/resumo', mes \? \{ params: \{ mes \} \} : undefined\)/);
-    assert.match(dash, /api\.get\('\/dashboard\/honorarios-por-mes', mes \? \{ params: \{ mes \} \} : undefined\)/);
+    // Fase 4a2 (DEC-161): a chamada a `/dashboard/honorarios-por-mes` saiu
+    // com os gráficos; a trava passa a exigir que ela NÃO volte.
+    assert.doesNotMatch(dash, /honorarios-por-mes/);
   });
 
-  test("o gráfico mensal é refeito quando o mês muda, e a série termina nele", () => {
-    const tela = semComentarios(ler("src/pages/dashboard/DashboardHomePage.jsx"));
-    assert.match(tela, /getFeesByMonth\(mesParaApi\)[\s\S]*?\}, \[mesParaApi\]\);/);
-    const graficos = semComentarios(ler("src/pages/dashboard/DashboardCharts.jsx"));
-    assert.match(graficos, /preencherMeses\(feesByMonth, referenciaDoMes\(mesReferencia\)\)/);
-    assert.match(graficos, /Situação atual \(geral\)/, "os donuts não seguem o mês e dizem isso");
-  });
+  // Trava REMOVIDA na Fase 4a2 (DEC-161): "o gráfico mensal é refeito quando
+  // o mês muda, e a série termina nele" protegia `getFeesByMonth(mesParaApi)`
+  // e `DashboardCharts.jsx`, que deixaram de existir com o bloco "Gráficos".
 });
 
 describe("Fase 3.1 · Datas próximas", () => {
@@ -202,8 +200,9 @@ describe("Fase 3.1 · a página", () => {
 
   test("o primeiro clique num bloco que nasce fechado o ABRE (achado no navegador)", () => {
     assert.match(tela, /\[chave\]: !\(prev\[chave\] \?\? PADRAO_FECHADO\.has\(chave\)\)/);
-    assert.match(tela, /const PADRAO_FECHADO = new Set\(\['acumulado', 'resumo', 'graficos'\]\);/);
-    for (const chave of ["acumulado", "resumo", "graficos"]) {
+    // Fase 4a2 (DEC-161): "graficos" saiu da lista com o bloco.
+    assert.match(tela, /const PADRAO_FECHADO = new Set\(\['acumulado', 'resumo'\]\);/);
+    for (const chave of ["acumulado", "resumo"]) {
       assert.match(tela, new RegExp(`estaAberto\\('${chave}', true\\)`), `${chave} nasce fechado e está na lista`);
     }
   });
@@ -217,11 +216,14 @@ describe("Fase 3.1 · a página", () => {
     assert.match(tela, /MENSAGEM_ESCRITA_OFFLINE/);
   });
 
+  // Reescrita na Fase 4a2 (DEC-161): eram 5 chamadas; as duas dos gráficos
+  // (`/dashboard/status` e `/dashboard/honorarios-por-mes`) saíram com o
+  // bloco. A proteção é a mesma: TODA chamada com toast tem a guarda.
   test("as chamadas que dão toast continuam com a guarda (DEC-084)", () => {
     const toasts = [...tela.matchAll(/toast\.error\(/g)].length;
     const guardadas = [...tela.matchAll(/if \(!jaAvisadoPeloToastGlobal\(err\)\) toast\.error\(/g)].length;
-    assert.equal(toasts, 5);
-    assert.equal(guardadas, 5);
+    assert.equal(toasts, 3);
+    assert.equal(guardadas, toasts);
   });
 
   test("os ícones dos cartões e o sino vêm do Icone", () => {
