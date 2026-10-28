@@ -157,3 +157,30 @@ describe("Fase 3.9b · item 2 — a biblioteca por busca, sem o teto de 100 (DEC
     assert.match(biblioteca, /draggable=\{!usada && !desabilitado\}/);
   });
 });
+
+// ── Item 3 — o cartão de início na pele das listas (DEC-147) ─────────────
+describe("Fase 3.9b · item 3 — o cartão de início (DEC-147)", () => {
+  const pagina = semComentarios(ler("src/pages/documents/DocumentAssemblyPage.jsx"));
+  const inicio = pagina.slice(pagina.indexOf("function AssemblyStartCard"));
+
+  test("a regra das 20 sugestões e a frase 'Mostrando 20 de N' continuam", () => {
+    assert.match(inicio, /limit: LIMITE_DA_ESCOLHA_DE_MODELO/);
+    assert.match(inicio, /avisoDeModelosOcultos\(modelos\.length, totalDeModelos\)/);
+    assert.match(inicio, /documentService\s*\.buscarModelos\(/);
+  });
+
+  test("os balões, a busca em pílula com a lupa do Icone, e os modelos em linhas", () => {
+    assert.match(inicio, /className=\{`montagem__cabecalho montagem__cabecalho--\$\{modo\}`\}/);
+    assert.ok((inicio.match(/className="montagem__balao"/g) ?? []).length >= 2);
+    assert.match(inicio, /<label htmlFor="montagem-busca-modelo">Buscar modelo<\/label>/);
+    assert.match(inicio, /<span className="inicio-busca__pilula">\s*<Icone nome="lupa"/);
+    assert.match(inicio, /<Icone nome="documento"/);
+    // O campo não desmonta na carga: o indicador vem depois dele.
+    assert.ok(inicio.indexOf('id="montagem-busca-modelo"') < inicio.indexOf("<Loading />"));
+  });
+
+  test("o destino de cada modelo é o de sempre, com o processo da lista", () => {
+    assert.match(inicio, /navigate\(destinoDaMontagem\(modelo\._id, MODO_DOCUMENTO, processoId\)\)/);
+    assert.match(inicio, /navigate\(destinoDaMontagem\(res\.data\._id, modo, processoId\), \{ replace: true \}\)/);
+  });
+});

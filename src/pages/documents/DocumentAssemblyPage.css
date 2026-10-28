@@ -222,21 +222,13 @@
   color: var(--color-accent);
 }
 
-/* ── Porta de entrada ───────────────────────────────────────────────────── */
-
-.inicio-bloco {
-  padding: var(--space-4);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  margin-top: var(--space-4);
-}
+/* ── Porta de entrada (Fase 3.9b, DEC-147) ────────────────────────────────
+   Os balões da montagem; a busca em pílula das listas (DEC-102); os modelos
+   em linhas que pousam no plano elevado ao passar o mouse, como as linhas da
+   lista em balão. */
 
 .inicio-bloco__titulo {
-  margin: 0 0 var(--space-3);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
+  margin-bottom: var(--space-3);
 }
 
 .inicio-bloco__vazio,
@@ -246,15 +238,68 @@
   color: var(--color-text-secondary);
 }
 
+.inicio-bloco__vazio:empty {
+  display: none;
+}
+
 .inicio-bloco__link {
   border: none;
   background: none;
   padding: 0;
-  color: var(--color-accent);
+  color: var(--color-text-primary);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
   text-decoration: underline;
   cursor: pointer;
+}
+
+.inicio-busca {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: 480px;
+  margin-bottom: var(--space-3);
+}
+
+.inicio-busca label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.inicio-busca__pilula {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-3);
+  background: var(--color-surface-input);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+}
+
+.inicio-busca__pilula:focus-within {
+  border-color: var(--color-text-primary);
+}
+
+.inicio-busca__lupa {
+  flex-shrink: 0;
+}
+
+.inicio-busca__pilula input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+}
+
+.inicio-busca__pilula input::placeholder {
+  color: var(--color-text-secondary);
 }
 
 .inicio-modelos {
@@ -262,40 +307,53 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-1) var(--space-3);
 }
 
 .inicio-modelo {
   width: 100%;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-1);
-  padding: var(--space-3);
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-family: var(--font-family);
   text-align: left;
   cursor: pointer;
-  transition: border-color var(--transition-fast), background var(--transition-fast);
+  transition: background var(--transition-fast);
 }
 
 .inicio-modelo:hover {
-  border-color: var(--color-primary-light);
-  background: var(--color-surface-input);
+  background: var(--color-surface-raised);
+}
+
+.inicio-modelo__icone {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.inicio-modelo__textos {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .inicio-modelo__nome {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+  overflow-wrap: anywhere;
 }
 
 .inicio-modelo__tipo {
   font-size: var(--font-size-xs);
-  color: var(--color-accent);
+  color: var(--color-text-secondary);
 }
 
 .inicio-form {
@@ -303,12 +361,6 @@
   flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--space-3);
-}
-
-/* Fase 3.9a (DEC-141): a busca do modelo, acima dos cartões. */
-.inicio-busca {
-  margin-bottom: var(--space-3);
-  max-width: 480px;
 }
 
 .inicio-form__campo {
@@ -338,6 +390,7 @@
 
 .inicio-form__acoes {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
 }
 
