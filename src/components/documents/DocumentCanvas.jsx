@@ -45,6 +45,9 @@ function DocumentCanvas({
   onRemover,
   onReordenarPorArraste,
   desabilitado,
+  // Fase 3.9b (DEC-145): onde a biblioteca está — ao lado, ou no painel que o
+  // botão acima da folha abre. Só muda a frase da folha em branco.
+  bibliotecaAoLado = true,
 }) {
   // Índice do slot sob o cursor durante o arraste. Só visual.
   const [slotAtivo, setSlotAtivo] = useState(null);
@@ -130,10 +133,17 @@ function DocumentCanvas({
           {total === 0 ? (
             <div className="canvas-vazio">
               <p className="canvas-vazio__titulo">A folha está em branco.</p>
-              <p>
-                Use <strong>Adicionar</strong> numa seção da biblioteca, à esquerda, para pôr a
-                primeira no fim do documento — ou arraste-a para cá.
-              </p>
+              {bibliotecaAoLado ? (
+                <p>
+                  Use <strong>Adicionar</strong> numa seção da biblioteca, ao lado, para pôr a
+                  primeira no fim do documento — ou arraste-a para cá.
+                </p>
+              ) : (
+                <p>
+                  Abra a <strong>Biblioteca de seções</strong>, acima, e use{' '}
+                  <strong>Adicionar</strong> numa seção para pôr a primeira no documento.
+                </p>
+              )}
               <Slot indice={0} />
             </div>
           ) : (

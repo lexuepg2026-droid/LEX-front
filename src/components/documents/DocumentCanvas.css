@@ -2,19 +2,25 @@
    Aproximação visual: a fonte da verdade do layout é documentRenderService.js.
    Só tokens que existem de fato em variables.css. */
 
+/* A moldura (Fase 3.9b, DEC-145): o fundo da página, dentro do balão da
+   folha — a folha branca pousa nele nos dois temas. A rolagem que sobrar fica
+   aqui dentro, nunca na página. */
 .canvas-scroll {
-  flex: 1;
   min-width: 0;
   overflow: auto;
   padding: var(--space-4);
   background: var(--color-bg);
-  border-radius: var(--radius-lg);
+  border-radius: 16px;
 }
 
 /* 210mm × 297mm é A4 de verdade. As unidades mm do CSS dão a proporção certa
    na tela e mantêm a margem de 2,5 cm comparável à do arquivo gerado. */
+/* Fase 3.9b (DEC-145): a folha cede à moldura em vez de rolar de lado — ao
+   lado da biblioteca, a 1024–1366 px, os 210 mm não cabem. É a mesma folha
+   branca, com o mesmo teto de largura. */
 .canvas-folha {
-  width: 210mm;
+  width: 100%;
+  max-width: 210mm;
   min-height: 297mm;
   margin: 0 auto;
   padding: 25mm;
@@ -282,9 +288,14 @@
    horizontal na página inteira. A rolagem fica dentro de .canvas-scroll. */
 @media (max-width: 900px) {
   .canvas-folha {
-    width: 100%;
     min-width: 320px;
     min-height: 0;
     padding: var(--space-5);
+  }
+}
+
+@media (max-width: 767px) {
+  .canvas-scroll {
+    padding: var(--space-2);
   }
 }

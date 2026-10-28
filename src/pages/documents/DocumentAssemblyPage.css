@@ -6,28 +6,22 @@
   gap: var(--space-4);
 }
 
-/* ── Cabeçalho com o modo sempre visível ────────────────────────────────── */
+/* ── Cabeçalho em balão, com o modo sempre visível (Fase 3.9b, DEC-145) ────
+   O balão das outras telas (DEC-100/102/111): `--color-surface`, cantos de
+   24 px. O selo diz o modo; o indicador de salvamento e o ⋮ ficam à direita.
+
+   ⚠️ Nenhum `transform` nem `filter` nesta folha fora do ícone que gira: o ⋮
+   abre em portal com `position: fixed` (DEC-046), e as miniaturas e os blocos
+   da folha são arrastáveis. */
 
 .montagem__cabecalho {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
-  flex-wrap: wrap;
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-5);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  /* A faixa lateral é o que distingue os dois modos de longe, sem ler. */
-  border-left: 4px solid var(--color-border-strong);
-}
-
-.montagem__cabecalho--modelo {
-  border-left-color: var(--color-accent);
-}
-
-.montagem__cabecalho--documento {
-  border-left-color: var(--color-primary-light);
+  border-radius: 24px;
 }
 
 .montagem__identidade {
@@ -73,6 +67,13 @@
 }
 
 /* ── Indicador de salvamento ────────────────────────────────────────────── */
+
+.montagem__direita {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
 
 .montagem__estado {
   flex-shrink: 0;
@@ -146,20 +147,69 @@
   cursor: pointer;
 }
 
-/* ── Área de trabalho ───────────────────────────────────────────────────── */
+/* ── Área de trabalho: a folha e a biblioteca (Fase 3.9b, DEC-145) ─────────
+   A partir de 1024 px, lado a lado, cada uma no seu balão. Abaixo, a folha em
+   uma coluna e a biblioteca no painel que o botão abre. */
 
 .montagem__area {
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
   gap: var(--space-4);
   min-width: 0;
 }
 
-.montagem__rodape {
-  padding: var(--space-3) var(--space-4);
+.montagem__balao {
+  min-width: 0;
+  padding: var(--space-4) var(--space-5);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: 24px;
+}
+
+.montagem__balao-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.montagem__balao-titulo {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.montagem__balao-total {
+  font-size: var(--font-size-base);
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.montagem__abrir-biblioteca {
+  flex-shrink: 0;
+}
+
+/* A biblioteca, dentro do balão lateral: o balão é dela, então ela perde a
+   borda, o fundo e o recuo próprios. A largura e a rolagem continuam. */
+.montagem__lateral {
+  padding: var(--space-4);
+}
+
+.montagem__lateral .biblioteca {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.montagem__rodape {
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface);
+  border-radius: 24px;
 }
 
 .montagem__rodape p {
@@ -291,13 +341,25 @@
   gap: var(--space-2);
 }
 
-/* A biblioteca vira faixa acima da folha quando a coluna não cabe. */
-@media (max-width: 900px) {
+@media (max-width: 1023px) {
   .montagem__area {
-    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .montagem__cabecalho {
+    flex-wrap: wrap;
+    padding: var(--space-3);
+    border-radius: 16px;
   }
 
-  .montagem__area > * {
-    width: 100%;
+  .montagem__balao {
+    padding: var(--space-3);
+    border-radius: 16px;
+  }
+
+  .montagem__balao-topo {
+    flex-wrap: wrap;
   }
 }
