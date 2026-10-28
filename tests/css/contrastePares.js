@@ -264,6 +264,17 @@ export const PARES = [
   { nome: "texto final: interruptor rótulo / balão", texto: "--color-text-primary", fundo: "--color-surface", limite: TEXTO },
   { nome: "texto final: interruptor alterando / balão", texto: "--color-text-secondary", fundo: "--color-surface", limite: TEXTO },
 
+  // "Pular para o conteúdo" (Fase 4a, DEC-156): o link aparece sobre o
+  // cabeçalho da advogada e sobre a barra (ou o fundo, no login) do portal,
+  // nos tokens fixos da marca. O texto sobre o próprio fundo do link, e o anel
+  // bege contra o link e contra o que fica atrás dele.
+  { nome: "pular para o conteúdo: texto / --color-marca-escuro", texto: "--color-marca-texto", fundo: "--color-marca-escuro", limite: TEXTO },
+  { nome: "pular para o conteúdo: anel / --color-marca-escuro", texto: "--color-marca-foco", fundo: "--color-marca-escuro", limite: NAO_TEXTO },
+  { nome: "pular para o conteúdo: anel / --color-marca-fundo (cabeçalho, portal)", texto: "--color-marca-foco", fundo: "--color-marca-fundo", limite: NAO_TEXTO },
+  // O `<main>` que recebe o foco: o anel global por dentro, sobre o fundo da
+  // página da advogada; o do portal é o bege sobre o verde (par de cima).
+  { nome: "pular para o conteúdo: anel do conteúdo / --color-bg", texto: "--color-focus", fundo: "--color-bg", limite: NAO_TEXTO },
+
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
   { nome: "borda de campo / --color-surface", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },

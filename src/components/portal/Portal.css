@@ -48,6 +48,15 @@
   outline-offset: 2px;
 }
 
+/* Fase 4a (DEC-156): o `<main>` recebe o foco do "Pular para o conteúdo".
+   Fica de fora do seletor acima (que é de controle) e ganha o mesmo anel bege,
+   por dentro: o `--color-focus` do claro é o verde do próprio fundo. */
+.portal__conteudo:focus-visible {
+  outline: 2px solid var(--color-marca-foco);
+  outline-offset: -2px;
+  border-radius: 0;
+}
+
 /* ── Barra ─────────────────────────────────────────────────────────────── */
 
 .portal__barra {

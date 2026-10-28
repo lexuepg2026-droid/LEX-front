@@ -165,7 +165,11 @@ describe("A-2 — o aviso de e-mail não confirmado NÃO bloqueia", () => {
   });
 
   test("está montado no layout, ao lado do conteúdo — e não envolvendo ou substituindo o Outlet", () => {
-    assert.match(layout, /<EmailConfirmationBanner \/>\s*<main className="main-content">\s*<Outlet \/>\s*<\/main>/);
+    // Fase 4a (DEC-156): o `<main>` ganhou `id` e `tabIndex={-1}`, para ser o
+    // alvo do "Pular para o conteúdo". Os atributos novos vêm antes da classe;
+    // o que esta trava protege não mudou e continua exigido igual — o aviso
+    // ao LADO do conteúdo, e o `<main>` contendo só o `<Outlet />`.
+    assert.match(layout, /<EmailConfirmationBanner \/>\s*<main id=\{ID_DO_CONTEUDO\} tabIndex=\{-1\} className="main-content">\s*<Outlet \/>\s*<\/main>/);
   });
 
   test("DECISÃO DO DANIEL: nada além do aviso consulta `emailConfirmadoEm` — ninguém é barrado por isso", () => {

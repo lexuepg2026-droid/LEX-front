@@ -5,6 +5,7 @@ import BottomNav from './BottomNav';
 import EmailConfirmationBanner from './EmailConfirmationBanner';
 import VoltarAoTopo from './VoltarAoTopo.jsx';
 import FaixaContexto from './FaixaContexto.jsx';
+import PularParaConteudo, { ID_DO_CONTEUDO } from '../ui/PularParaConteudo.jsx';
 // A faixa de contexto precisa saber de qual processo ou cliente a página é, e
 // só a página sabe. O provider envolve a faixa e o Outlet — os dois lados da
 // conversa. Ver `contexts/ContextoContext.jsx` (Fase 2b, DEC-085).
@@ -19,12 +20,14 @@ function AppLayout({ theme, toggleTheme, onLogout }) {
   return (
     <ContextoProvider>
       <div className="app-layout">
+        {/* Fase 4a (DEC-156): o primeiro Tab, antes do cabeçalho. */}
+        <PularParaConteudo />
         <Header theme={theme} toggleTheme={toggleTheme} onLogout={onLogout} />
         {/* No lugar da trilha: "Voltar" e o contexto, só onde há os dois. */}
         <FaixaContexto />
         {/* A-2: aviso de e-mail não confirmado. Não bloqueia nada. */}
         <EmailConfirmationBanner />
-        <main className="main-content">
+        <main id={ID_DO_CONTEUDO} tabIndex={-1} className="main-content">
           <Outlet />
         </main>
         {/* Quem rola aqui é `.main-content`, não o `window`. */}
