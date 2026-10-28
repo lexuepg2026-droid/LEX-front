@@ -254,6 +254,16 @@ export const PARES = [
     { nome: `Agenda (claro): listrado e borda ${s} / casa de fora`, texto: `--color-${s}`, fundo: "--color-accent-muted", sobre: ["--color-surface"], limite: NAO_TEXTO, modos: ["claro"] }
   ]),
 
+  // O texto final na pele nova (Fase 3.9b2, DEC-148/149): os selos da lista
+  // de Documentos sobre o balão (a lista os usava sem par medido), o "não
+  // salvo" em pílula e o interruptor do portal sobre o balão e no hover.
+  { nome: "texto final: selo editado à mão / balão", texto: "--color-accent", fundo: "--color-accent-muted", sobre: ["--color-surface"], limite: TEXTO },
+  { nome: "texto final: selo no portal / balão", texto: "--color-success-text", fundo: "--color-success-bg", sobre: ["--color-surface"], limite: TEXTO },
+  { nome: "texto final: selo substituído / balão", texto: "--color-danger-text", fundo: "--color-danger-bg", sobre: ["--color-surface"], limite: TEXTO },
+  { nome: "texto final: não salvo / balão", texto: "--color-warning-text", fundo: "--color-warning-bg", sobre: ["--color-surface"], limite: TEXTO },
+  { nome: "texto final: interruptor rótulo / balão", texto: "--color-text-primary", fundo: "--color-surface", limite: TEXTO },
+  { nome: "texto final: interruptor alterando / balão", texto: "--color-text-secondary", fundo: "--color-surface", limite: TEXTO },
+
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
   { nome: "borda de campo / --color-surface", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },
