@@ -5480,6 +5480,110 @@ aparecia coberto pelo ⋮ até ser rolado.
 
 ---
 
+## DEC-139 (frontend) — Documentos e Seções no padrão da Figura 19 (Fase 3.9a)
+
+As duas últimas listas que faltavam (DEC-133 dizia "Documentos e Seções na
+3.9"). Balão com `CabecalhoDeLista` (título com o total, busca em pílula, "+"),
+filtros em pílulas **na URL** (DEC-103), linha clicável (o link do nome/título
+é o alvo de Tab), **`Paginador` no lugar do teto de 100**, ⋮ fixo e a regra
+das telas estreitas (DEC-133/135). Sem seleção em massa. Regras puras em
+`pages/documents/listaDocumentos.js` e `pages/secoes/listaSecoes.js`.
+
+- **Documentos:** busca (nome, número do processo, cliente), **período pela
+  data de geração** (Qualquer, Mês atual, Últimos 6 meses, Personalizado, com
+  a linha de ajuda) e o chip do `?processoId=` (DEC-070), que o "Limpar" tira
+  junto. Os modelos saem **no servidor** (`ehModelo=false`, DEC-138), não mais
+  na tela. Coluna **Cliente** nova (a chave `cliente` da DEC-138). Com o filtro
+  de processo, o "+" leva o processo à geração (DEC-140).
+- **Seções:** busca e **tipo** (o modelo tem `tipo`). **Situação do registro
+  NÃO entra:** `GET /secoes` só lista as ativas, e o filtro prometeria um
+  conjunto que a API não devolve.
+- **Prioridades:** Documentos — Nome (fixa) 1, Tipo 3, Processo 2, Cliente 2,
+  Gerado em 1, Situação 1, Ações 1. Seções — Título (fixa) 1, Tipo 1, Trecho 1
+  (distingue duas seções de títulos parecidos), Variáveis 3, Ações 1.
+- **`col-cede`** (`styles/modules.css`, achado no navegador): numa tabela fixa
+  de 100% a sobra se reparte **também** na coluna do ⋮ — 176 px a 1024 em
+  Documentos, 207 px a 1280 em Seções. A coluna de texto marcada `col-cede`
+  fica sem largura a partir de 1024 (recebe a sobra sozinha) e tem 220 px
+  abaixo, para não colapsar numa tabela que rola (coluna `auto` recebe zero:
+  o Nome de Documentos media **0 px** a 360 no `main`). As outras cinco listas
+  não a usam.
+- **Offline:** `documents` e `secoes` entraram na allowlist do espelho
+  (`CACHEABLE_RESOURCES`), com **um** aviso de idade (DEC-109). Da lista de
+  documentos vai **só o que a linha mostra**: `envelopeParaOEspelho` tira
+  `textoResolvido` e `variaveisResolvidas` — o texto da peça é o "documento
+  gerado" que a F-5a decidiu não guardar no aparelho. PDF/DOCX continuam fora.
+  As duas travas que usavam `documents` como exemplo de recurso de fora foram
+  reescritas sem afrouxar (o download continua de fora, e há trava nova de que
+  o texto da peça não entra).
+- O rótulo do ⋮ de Documentos lia `documento.titulo`, que não existe: passou a
+  `documento.nome`.
+
+## DEC-140 (frontend) — o processo da geração por busca (Fase 3.9a)
+
+O mesmo caso da DEC-137: o `<select>` do `GenerationPanel` pedia
+`listProcesses({ limit: 100 })`, e o 101º processo não existia para a geração
+(medido: com 109 processos, o "Inventário de Ernesto Wosch" do seed é o 107º).
+Virou o `SeletorComBusca` da DEC-101 ("{número} — {título} — {cliente}").
+
+- **O processo que chega pronto:** `?processoId=` na montagem
+  (`processoIdDaUrl`, só ObjectId) — o "+" da lista de Documentos filtrada
+  por processo. Ele vai do cartão de início à montagem (`destinoDaMontagem`) e
+  aparece escolhido, com o rótulo completo, buscado pelo id (DEC-086).
+- **Contexto:** `usePublicarContexto({ processoId })` pelo id, assim que a
+  escolha muda (DEC-085) — a faixa não espera o rótulo.
+- **Sem sinal:** a busca diz "A busca precisa de conexão. Conecte-se para
+  procurar." A geração **continua fora da fila** e a regra não mudou: o botão
+  Gerar fica habilitado e o clique é recusado pela guarda da F-5a ("Sem
+  conexão — você pode consultar, mas não registrar…"), sem criar documento.
+- **Não tocados:** `assemblyState.js`, a sentinela (4.4), a lista de
+  pendências (4.6) e os diálogos da regeração — são da 3.9b.
+
+## DEC-141 (frontend) — a escolha do modelo busca no servidor (Fase 3.9a)
+
+O cartão de início da montagem pedia `listModelos({ limit: 100 })`. O seed tem
+7 modelos, mas **cada "montar um modelo novo" da geração cria um**, e o back
+não tem teto — então pode passar de 100. Passou à busca: campo "Buscar
+modelo" (pelo nome, sem acento, `GET /documents/modelos?busca=`, DEC-138), até
+20 cartões, e a frase "Mostrando 20 de N modelos. Busque pelo nome para achar
+os outros." quando há mais. `semToastGlobal` (DEC-084): a falha aparece em
+linha. Sem sinal: "A busca precisa de conexão. Conecte-se para escolher o
+modelo." O campo nunca desmonta durante a carga (o foco não se perde, F-1a.1).
+
+## DEC-142 (frontend) — o formulário de seção em seções, e continua rota (Fase 3.9a)
+
+"Identificação" (título, tipo) e "Texto e variáveis" (o texto com o
+`VariableSelector` com busca ao lado), no padrão da 3.4/3.5. **Continua rota:**
+o desenho da Raniele usa modal, e o texto de uma seção é montagem longa com
+painel lateral — a DEC-049 prefere rota para isso. Botão **"Pré-visualizar"**
+abre o `SecaoPreviewModal` (o mesmo do "Ver" da biblioteca) com o texto
+digitado, cru, variáveis destacadas — funciona sem sinal. Rótulos ligados por
+`htmlFor`; campos e payload iguais. Sem sinal, a regra de sempre: o botão é
+anunciado desabilitado, com o motivo, e o clique é barrado (nada gravado).
+
+## DEC-143 (frontend) — três correções que sobraram da 3.8 (Fase 3.9a)
+
+1. **"cancelado" nas Parcelas:** `?situacao=cancelado` dizia "com status —"
+   na frase. `STATUS_PARCELA_OPTIONS` ganhou `{ cancelado, "Cancelado" }` (o
+   rótulo do badge): a frase diz "com status \"Cancelado\"" **e** a pílula
+   oferece a opção — a parcela cancelada (a reparcelada) aparece na lista de
+   sempre, e o back já filtrava.
+2. **O "Voltar" do compromisso:** a Agenda manda o mês e a vista que está
+   mostrando pelo `?voltar=` da DEC-087 (`voltarDaAgenda`,
+   `comVoltarDaAgenda` em `pages/calendar/agenda.js`), no "+", no "+" do dia,
+   no clique da grade e na linha da vista Agenda — só para o formulário de
+   compromisso; a derivada leva ao financeiro sem ele. O formulário usa
+   `destinoDepoisDeSalvar` no Salvar, no Cancelar e na fila; a faixa já
+   respeitava o parâmetro.
+3. **Dias de fora do mês, no claro:** eram transparentes sobre o balão quase
+   branco — mais claros que os do mês, lidos como "vazio claro". Agora
+   `--color-accent-muted` (cinza frio ao lado do bege das casas do mês;
+   1,15:1 contra o balão, como a casa do mês, 1,18:1). Sem `opacity`; o
+   escuro não muda. `--color-border` foi medido e recusado: o listrado âmbar
+   do vencimento caía a 2,70:1. Pares "Agenda (claro): … / casa de fora".
+
+---
+
 ## Rotina de encerramento de sessão
 
 Antes de fechar qualquer sessão, peça:
