@@ -1,4 +1,10 @@
-/* Editor de texto final. Só tokens que existem de fato em variables.css. */
+/* Editor de texto final. Só tokens que existem de fato em variables.css.
+
+   Fase 3.9b2 (DEC-148 a 150): os balões das outras telas — `--color-surface`
+   com cantos de 24 px, sobre o `--color-bg` da página (DEC-100/102/111).
+
+   ⚠️ Nenhum `transform` nem `filter` aqui: os diálogos e o ⋮ da faixa abrem
+   por cima, e o `position: fixed` do menu se re-ancoraria (DEC-046). */
 
 .final {
   display: flex;
@@ -6,18 +12,39 @@
   gap: var(--space-4);
 }
 
-/* ── Cabeçalho ──────────────────────────────────────────────────────────── */
+.final__balao {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface);
+  border-radius: 24px;
+}
+
+.final__balao-titulo {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+/* ── Cabeçalho em balão (DEC-148) ───────────────────────────────────────── */
 
 .final__cabecalho {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface);
+  border-radius: 24px;
+}
+
+.final__topo {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
-  flex-wrap: wrap;
-  padding: var(--space-4);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
 }
 
 .final__identidade {
@@ -32,6 +59,15 @@
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.final__contexto {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
 }
 
 .final__subtitulo {
@@ -55,11 +91,22 @@
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
 }
 
+/* Os selos da lista (DEC-139): as mesmas cores de `.doc-selo--*`. */
 .final__selo--editado {
   background: var(--color-accent-muted);
   color: var(--color-accent);
+}
+
+.final__selo--portal {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.final__selo--neutro {
+  color: var(--color-text-discreto);
 }
 
 .final__selo--substituido {
@@ -67,21 +114,111 @@
   color: var(--color-danger-text);
 }
 
-.final__acoes-topo {
-  display: flex;
-  gap: var(--space-2);
+/* O "não salvo", à direita; vazio, não ocupa espaço. */
+.final__estado {
+  margin: 0;
   flex-shrink: 0;
+}
+
+.final__estado:empty {
+  display: none;
+}
+
+.final__sujo {
+  display: inline-flex;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-warning-bg);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning-text);
+}
+
+/* ── A barra de ações (DEC-149) ─────────────────────────────────────────────
+   Quebra em linhas quando não cabe, em vez de esconder ações num ⋮. */
+
+.final__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+/* O interruptor do portal — o desenho do `LiberacaoPortal` (DEC-111), com os
+   mesmos tokens (pares "interruptor: …" em contrastePares.js). */
+.final__interruptor {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.final__interruptor:hover:not(:disabled) {
+  background: var(--color-surface-raised);
+}
+
+.final__interruptor:focus-visible {
+  border-radius: var(--radius-pill);
+}
+
+.final__interruptor:disabled {
+  cursor: not-allowed;
+  color: var(--color-text-secondary);
+}
+
+.final__trilho {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 36px;
+  height: 20px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-full);
+  background-color: transparent;
+  box-sizing: border-box;
+}
+
+.final__botao-trilho {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-text-secondary);
+}
+
+.final__interruptor--sim .final__trilho {
+  border-color: var(--color-success-text);
+  background-color: var(--color-success-solid);
+}
+
+.final__interruptor--sim .final__botao-trilho {
+  left: 18px;
+  background-color: var(--color-on-solid);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .final__botao-trilho { transition: left var(--transition-fast); }
 }
 
 /* ── Lacunas ────────────────────────────────────────────────────────────── */
 
+/* Fase 3.9b2 (DEC-150): as lacunas num balão (`.final__balao`); o título
+   continua na cor de aviso. */
 .final__lacunas {
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-warning-bg);
-  border: 1px solid var(--color-warning);
-  border-radius: var(--radius-md);
-  display: flex;
-  flex-direction: column;
   gap: var(--space-2);
 }
 
@@ -154,51 +291,20 @@
   text-decoration: none;
 }
 
-/* ── Área de trabalho ───────────────────────────────────────────────────── */
+/* ── Área de trabalho (DEC-150) ────────────────────────────────────────────
+   A partir de 1024 px, o texto e a coluna das lacunas lado a lado; abaixo, a
+   coluna desce para depois do texto. */
 
 .final__area {
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
   gap: var(--space-4);
   min-width: 0;
 }
 
 .final__editor {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-4);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-}
-
-.final__editor-barra {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.final__editor-titulo {
-  margin: 0;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.final__editor-acoes {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.final__sujo {
-  font-size: var(--font-size-xs);
-  color: var(--color-warning-text);
 }
 
 /* Editor de texto simples, de propósito: o documento é texto corrido, e um
@@ -230,28 +336,10 @@
 /* ── Lateral ────────────────────────────────────────────────────────────── */
 
 .final__lateral {
-  width: 300px;
-  flex-shrink: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-}
-
-.final__cartao {
-  padding: var(--space-3);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.final__cartao-titulo {
-  margin: 0;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
+  gap: var(--space-4);
 }
 
 .final__cartao-texto {
@@ -280,13 +368,6 @@
   color: var(--color-info-text);
 }
 
-/* ── Regerar (Fase 4.4) ──────────────────────────────────────────────────── */
-
-.final__regerar {
-  width: 100%;
-  justify-content: center;
-}
-
 /* Por que este documento NÃO pode ser regerado. Não é erro — é estado, e por
    isso não usa a cor de perigo: um documento de upload ou sem modelo de origem
    está correto do jeito que está. */
@@ -303,42 +384,12 @@
 /* O aviso de sobrescrita no cartão de regerar é ALERTA, e não informação: o
    `--color-info` do aviso genérico diria "isto é uma dica" sobre a única ação
    da tela que apaga trabalho da advogada. */
-.final__cartao .final__cartao-aviso--risco,
 .final__cartao-aviso--risco {
   background: var(--color-warning-bg);
 }
 
 .final__cartao-aviso--risco svg {
   color: var(--color-warning-text);
-}
-
-.final__portal {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  min-height: 38px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-input);
-  color: var(--color-text-secondary);
-  font-family: var(--font-family);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast),
-    border-color var(--transition-fast);
-}
-
-.final__portal--ligado {
-  background: var(--color-success-bg);
-  border-color: var(--color-success);
-  color: var(--color-success-text);
-}
-
-.final__portal:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .final__secoes {
@@ -390,12 +441,25 @@
   color: var(--color-accent);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1023px) {
   .final__area {
-    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .final__cabecalho,
+  .final__balao {
+    padding: var(--space-3);
+    border-radius: 16px;
   }
 
-  .final__lateral {
-    width: 100%;
+  .final__topo {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .final__textarea {
+    padding: var(--space-3);
   }
 }
