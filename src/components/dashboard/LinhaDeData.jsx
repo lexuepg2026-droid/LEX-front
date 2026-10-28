@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { seloDaData, TIPOS_DE_DATA } from '../../pages/dashboard/inicio.js';
+import { classeDoTom } from '../../utils/tomDaData.js';
+import '../../styles/tomDaData.css';
 import './LinhaDeData.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -13,9 +15,17 @@ import './LinhaDeData.css';
 // `item` é o que `datasProximas` (ou `vencidasDoAviso`) monta: `chave`,
 // `data`, `tipo`, `titulo`, `subtitulo`, `contexto`, `destino`. A lista
 // (`<ul className="datas-lista">`) é de quem usa: o componente é o `<li>`.
+//
+// Fase 3.8 (DEC-136): a vista Agenda usa a mesma linha. Dois acréscimos
+// opcionais, que o Início e a Visão geral não passam (e não mudam):
+// - `item.situacao` ("Concluído", "Pago"): o título sai riscado e a situação
+//   aparece escrita ao lado — a forma e o texto, nunca só a cor;
+// - `onAbrir(item)`: chamado no clique, antes da navegação do link. A Agenda
+//   o usa para a frase da derivada (DEC-055).
 // ═══════════════════════════════════════════════════════════════════════════
-function LinhaDeData({ item }) {
+function LinhaDeData({ item, onAbrir = null }) {
   const selo = seloDaData(item.data);
+  const classe = item.situacao ? 'datas-item datas-item--riscado' : 'datas-item';
   const conteudo = (
     <>
       <span className="datas-item__selo">
@@ -24,10 +34,12 @@ function LinhaDeData({ item }) {
       </span>
       <span className="datas-item__texto">
         <span className="datas-item__titulo">{item.titulo}</span>
+        {item.situacao && <span className="datas-item__situacao">{item.situacao}</span>}
         {item.subtitulo && <span className="datas-item__subtitulo">{item.subtitulo}</span>}
         {item.contexto && <span className="datas-item__contexto">{item.contexto}</span>}
       </span>
-      <span className={`datas-item__pilula datas-item__pilula--${item.tipo}`}>
+      {/* Fase 3.8 (DEC-134): o tom sai de `tomDaData`, a mesma fonte da Agenda. */}
+      <span className={`datas-item__pilula ${classeDoTom(item.tipo)}`}>
         {TIPOS_DE_DATA[item.tipo].rotulo}
       </span>
     </>
@@ -35,9 +47,9 @@ function LinhaDeData({ item }) {
   return (
     <li>
       {item.destino ? (
-        <Link to={item.destino} className="datas-item">{conteudo}</Link>
+        <Link to={item.destino} className={classe} onClick={onAbrir ? () => onAbrir(item) : undefined}>{conteudo}</Link>
       ) : (
-        <div className="datas-item">{conteudo}</div>
+        <div className={classe}>{conteudo}</div>
       )}
     </li>
   );

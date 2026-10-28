@@ -316,22 +316,21 @@ function PaymentListPage() {
                     {estornadoIntegralmente(p) && (
                       <StatusBadge status="estornado_integralmente" />
                     )}
+                    {/* ── A NOTA "sem recibo" (F-1b.3; Fase 3.8, DEC-135) ──
+                        Pagamento sem líquido não tem recibo: a rota responde
+                        404 de propósito. A nota é EXPLICAÇÃO, não ação — fica
+                        fora do menu, e desde a 3.8 no Líquido, que é o número
+                        que decide: a mesma regra (`liquido <= 0`), a mesma
+                        palavra. A célula do ⋮ ficou com a largura do botão. */}
+                    {liquido <= 0 && (
+                      <span className="nota-da-celula sem-recibo" title="A emissão de recibo é recusada pelo servidor para pagamento sem valor líquido.">
+                        sem recibo
+                      </span>
+                    )}
                   </td>
                   <td>{formatDate(p.data)}</td>
                   <td className="cell-truncate prio-3">{labelDe(FORMA_PAGAMENTO_OPTIONS, p.formaPagamento)}</td>
                   <td className="actions-cell actions-cell--menu">
-                    {/* ── A NOTA "sem recibo" FICA FORA DO MENU (F-1b.3) ──
-                        Pagamento integralmente estornado não tem recibo: a
-                        rota responde 404 de propósito. A nota que explica isso
-                        é EXPLICAÇÃO, não ação — escondê-la dentro do menu
-                        devolveria o buraco silencioso que a F-1b fechou, com
-                        um passo a mais: a advogada teria de abrir um menu para
-                        descobrir por que falta um botão. */}
-                    {liquido <= 0 && (
-                      <span className="sem-recibo" title="A emissão de recibo é recusada pelo servidor para pagamento sem valor líquido.">
-                        sem recibo
-                      </span>
-                    )}
                     <ActionMenu
                       rotulo={`Ações do pagamento de ${formatCurrency(p.valor)}`}
                       itens={[

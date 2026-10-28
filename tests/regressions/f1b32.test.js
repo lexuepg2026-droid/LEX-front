@@ -360,15 +360,17 @@ describe("F-1b.3.2 — DEC-047: o ⋮ em toda listagem", () => {
   test("a EXPLICAÇÃO continua fora do menu, na célula", () => {
     // "Reparcelada" e "sem recibo" são explicação, não ação. Escondê-las no
     // menu faria abrir um menu para descobrir por que falta um botão.
+    // Fase 3.8 (DEC-135): a nota saiu da célula de ações para a coluna
+    // vizinha que ela explica (o Status), com a mesma palavra e a mesma regra.
     const parcelas = semComentarios(ler("src/pages/installments/InstallmentListPage.jsx"));
-    assert.match(parcelas, /className="acao-indisponivel">Reparcelada</);
+    assert.match(parcelas, /inst\.status === 'cancelado' && \(\s*<span className="nota-da-celula">Reparcelada<\/span>/);
     assert.ok(
       !/rotulo: ['"]Reparcelada['"]/.test(parcelas),
       "`Reparcelada` é explicação e não pode virar item de menu"
     );
 
     const pagamentos = semComentarios(ler("src/pages/payments/PaymentListPage.jsx"));
-    assert.match(pagamentos, /className="sem-recibo"/);
+    assert.match(pagamentos, /liquido <= 0 && \(\s*<span className="nota-da-celula sem-recibo"[^>]*>\s*sem recibo\s*<\/span>/);
     assert.ok(
       !/rotulo: ['"]sem recibo['"]/.test(pagamentos),
       "`sem recibo` é explicação e não pode virar item de menu"

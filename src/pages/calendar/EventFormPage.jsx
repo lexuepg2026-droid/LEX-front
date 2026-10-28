@@ -3,6 +3,8 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import eventService from '../../api/eventService';
 import processService from '../../api/processService';
+import SeletorComBusca from '../../components/ui/SeletorComBusca';
+import { rotuloDoProcessoNoSeletor } from '../../utils/feeLabel';
 import Loading from '../../components/common/Loading';
 import { toast } from '../../utils/toast';
 import { getApiErrorField, getApiErrorMessage } from '../../utils/apiError';
@@ -53,7 +55,10 @@ const FORM_VAZIO = {
 
 function EventFormPage() {
   const [formData, setFormData] = useState(FORM_VAZIO);
-  const [processos, setProcessos] = useState([]);
+  // O processo que o compromisso já tem, como o `GET /events/:id` o projeta
+  // (número e título, sem o cliente). Só é usado SEM SINAL, para o seletor
+  // mostrar a escolha sem buscar pelo id — o compromisso grava offline.
+  const [processoDoEvento, setProcessoDoEvento] = useState(null);
   const [salvando, setSalvando] = useState(false);
   const [error, setError] = useState('');
   const [campoComErro, setCampoComErro] = useState(null);
@@ -85,16 +90,14 @@ function EventFormPage() {
     }
   }, [isEditing, searchParams]);
 
-  useEffect(() => {
-    let ativo = true;
-    processService
-      .listProcesses({ page: 1, limit: 100 })
-      .then((res) => { if (ativo) setProcessos(res.data.data ?? res.data ?? []); })
-      // Falhar ao carregar o seletor não derruba o formulário: o evento existe
-      // solto, e o processo é opcional. É a mesma escolha das outras telas.
-      .catch(() => { if (ativo) setProcessos([]); });
-    return () => { ativo = false; };
-  }, []);
+  // Fase 3.8 (DEC-137): o seletor de processo tinha teto — os 100 processos
+  // mais recentes (`listProcesses({ limit: 100 })`), e o 101º não aparecia.
+  // Virou o `SeletorComBusca` da DEC-101: busca no servidor por número,
+  // título e cliente, até 20 sugestões, e o processo em edição é buscado
+  // pelo id (DEC-086). Sem sinal a busca diz que precisa de conexão; o
+  // processo já escolhido continua, e o compromisso vai para a fila.
+  const buscarProcessos = (termo) => processService.buscarProcessos(termo);
+  const buscarProcessoPorId = (pid) => processService.getProcessById(pid).then((res) => res.data);
 
   useEffect(() => {
     if (!isEditing) return undefined;
@@ -116,6 +119,7 @@ function EventFormPage() {
           descricao: e.descricao ?? '',
           processoId: e.processoId ?? '',
         });
+        setProcessoDoEvento(e.processo ?? null);
         setConcluido(Boolean(e.concluido));
         // DEC-060: a versão que ESTA tela leu. Ela viaja no cabeçalho na hora
         // de salvar, e é o que faz o servidor recusar a gravação atrasada em
@@ -231,8 +235,12 @@ function EventFormPage() {
 
       <form onSubmit={handleSubmit} className="data-form">
         {!online && <OfflineQueueNotice />}
+        {/* Fase 3.8 (DEC-137): em seções, no padrão dos formulários de
+            processo e de cliente (3.4, 3.5): o que é, quando e onde, o
+            processo vinculado e as observações. Os campos e o payload são os
+            de antes. */}
         <div className="form-grid section">
-          <h3>Dados do compromisso</h3>
+          <h3>O que é</h3>
 
           <div className="form-group span-1">
             <label htmlFor="evento-tipo">Tipo *</label>
@@ -265,6 +273,10 @@ function EventFormPage() {
               className={campoComErro === 'titulo' ? 'input-erro' : undefined}
             />
           </div>
+        </div>
+
+        <div className="form-grid section">
+          <h3>Quando e onde</h3>
 
           <div className="form-group span-1">
             <label htmlFor="evento-data">Data *</label>
@@ -308,27 +320,42 @@ function EventFormPage() {
               maxLength={200}
             />
           </div>
+        </div>
+
+        <div className="form-grid section">
+          <h3>Processo vinculado</h3>
 
           <div className="form-group span-3">
             <label htmlFor="evento-processo">Processo</label>
             {/* OPCIONAL, e a ausência é o caso comum: nem toda reunião é de um
                 processo. Exigir vínculo obrigaria a advogada a inventar um para
-                registrar o que ela de fato tem na agenda. */}
-            <select
+                registrar o que ela de fato tem na agenda. Apagar o campo
+                desfaz a escolha e o compromisso fica solto (`null`). */}
+            <SeletorComBusca
               id="evento-processo"
               name="processoId"
-              value={formData.processoId}
-              onChange={handleChange}
+              valor={formData.processoId}
+              onMudar={(pid) => {
+                setFormData((atual) => ({ ...atual, processoId: pid }));
+                if (campoComErro === 'processoId') setCampoComErro(null);
+              }}
+              buscar={buscarProcessos}
+              buscarPorId={buscarProcessoPorId}
+              rotulo={rotuloDoProcessoNoSeletor}
+              itemInicial={online ? null : processoDoEvento}
+              obrigatorio={false}
+              aria-describedby="evento-processo-ajuda"
+              placeholder="Busque pelo número, título ou cliente"
               className={campoComErro === 'processoId' ? 'input-erro' : undefined}
-            >
-              <option value="">Sem processo</option>
-              {processos.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.titulo}{p.numeroProcesso ? ` — ${p.numeroProcesso}` : ''}
-                </option>
-              ))}
-            </select>
+            />
+            <p id="evento-processo-ajuda" className="form-note">
+              Opcional. Para deixar sem processo, apague o campo.
+            </p>
           </div>
+        </div>
+
+        <div className="form-grid section">
+          <h3>Observações</h3>
 
           <div className="form-group span-3">
             <label htmlFor="evento-descricao">Descrição</label>

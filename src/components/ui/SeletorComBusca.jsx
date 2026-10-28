@@ -45,6 +45,9 @@ function SeletorComBusca({
   filtrar = null,         // (item) → boolean, a regra própria da tela
   placeholder,
   className,
+  // Fase 3.8 (DEC-137): o processo do compromisso é OPCIONAL. Os seletores
+  // dos formulários financeiros continuam obrigatórios (o padrão).
+  obrigatorio = true,
   ...resto
 }) {
   const online = useOnlineStatus();
@@ -179,7 +182,7 @@ function SeletorComBusca({
       descricao={descricao}
       placeholder={placeholder}
       className={className}
-      aria-required="true"
+      aria-required={obrigatorio ? 'true' : undefined}
     />
   );
 }

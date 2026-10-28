@@ -1,16 +1,17 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { CalendarDays, List, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { List, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 
 import calendarService from '../../api/calendarService';
-import PageHeader from '../../components/ui/PageHeader';
+import Icone from '../../components/ui/Icone';
+import LinhaDeData from '../../components/dashboard/LinhaDeData';
 import OfflineNotice from '../../components/ui/OfflineNotice';
 import useCachedResource from '../../hooks/useCachedResource';
 import { MENSAGEM_ALTERACAO_NAO_ENVIADA } from '../../offline/outboxMessages';
 import { useOutbox } from '../../contexts/OutboxContext';
 import EmptyState from '../../components/ui/EmptyState';
 import Loading from '../../components/common/Loading';
-import { formatMonthKey, formatDate, formatCurrency } from '../../utils/formatters';
+import { formatMonthKey, formatDate } from '../../utils/formatters';
 import {
   LEGENDA, classeDaNatureza, destinoDoItem, rotuloDaNatureza,
   MOTIVO_DA_DERIVADA_NAO_EDITAVEL,
@@ -19,7 +20,16 @@ import {
   DIAS_DA_SEMANA, VISTAS, construirGradeDoMes, mesVizinho, lerChaveDoMes,
   mesDaChave, vistaPadrao, recortarCelula, agruparPorDia, diasComItens,
 } from './monthGrid';
+import {
+  NOMES_DOS_MESES, anosDoSeletor, itemRiscado, rotuloDoItemNaGrade, linhaDaAgenda,
+} from './agenda.js';
 import { toast } from '../../utils/toast';
+import { classeDoTom, tipoDaDataDoItem } from '../../utils/tomDaData.js';
+import '../../styles/tomDaData.css';
+// O botão do estado vazio. Vinha de carona pelo `PageHeader`, que saiu da
+// tela na 3.8 (o título e o "+" moram no balão): a folha é importada por quem
+// aplica a classe.
+import '../../components/ui/Button.css';
 import './CalendarPage.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -131,6 +141,12 @@ function CalendarPage() {
     navigate(destino);
   };
 
+  // Na vista Agenda a linha é a `LinhaDeData`, um link: a navegação é dele, e
+  // a frase da DEC-055 sai no clique, pelo mesmo `toast.info`.
+  const avisarDaDerivada = (linha) => {
+    if (linha.derivada) toast.info(MOTIVO_DA_DERIVADA_NAO_EDITAVEL);
+  };
+
   // Criar a partir do clique num DIA, com a data já preenchida. É o caminho que
   // faz a grade valer como ferramenta e não só como relatório.
   //
@@ -142,15 +158,6 @@ function CalendarPage() {
 
   return (
     <div className="cal-page">
-      {/* Sem `actionMotivo`: o botão continua ativo sem sinal (F-5b). O que
-          acontece com o que ela salvar está dito no formulário, e a pendência
-          aparece no contador ao lado do sino. */}
-      <PageHeader
-        title="Agenda"
-        actionLabel="Novo compromisso"
-        actionTo="/dashboard/agenda/novo"
-      />
-
       {fromCache && <OfflineNotice atualizadoEm={updatedAt} />}
 
       {/* Enquanto houver alteração na fila, a tela onde o registro aparece diz
@@ -162,149 +169,205 @@ function CalendarPage() {
         </p>
       )}
 
-      <div className="cal-toolbar">
-        <div className="cal-nav">
-          <button
-            type="button"
-            className="cal-nav__btn"
-            onClick={() => irPara(mesVizinho(ano, mes, -1))}
-            aria-label="Mês anterior"
-          >
-            <ChevronLeft size={18} />
-          </button>
+      {/* ── O BALÃO DA FIGURA 20 (Fase 3.8, DEC-136) ─────────────────────
+          Título, "Hoje", as setas, mês e ano em pílula; à direita a vista e
+          o "+". Sem a busca e sem "fins de semana" do desenho dela: busca é
+          funcionalidade nova, e a grade mostra sempre os sete dias. */}
+      <section className="cal-balao" aria-labelledby="cal-titulo">
+        <div className="cal-toolbar">
+          <div className="cal-toolbar__esquerda">
+            <h1 id="cal-titulo" className="cal-titulo">Agenda</h1>
 
-          {/* O mês por extenso, e não "09/2026": é o que a advogada lê num
-              calendário de parede, e é o mesmo `formatMonthKey` que o resumo
-              financeiro já usa para rotular os cartões. */}
-          <h2 className="cal-nav__mes">{rotuloDoMes}</h2>
+            {/* "Hoje" sai do backend. O relógio do navegador pode estar
+                atrasado, e o botão que leva ao dia de hoje é justamente onde
+                isso doeria. */}
+            {hoje && (
+              <button
+                type="button"
+                className="cal-pilula"
+                onClick={() => irPara(mesDaChave(hoje))}
+              >
+                Hoje
+              </button>
+            )}
 
-          <button
-            type="button"
-            className="cal-nav__btn"
-            onClick={() => irPara(mesVizinho(ano, mes, 1))}
-            aria-label="Próximo mês"
-          >
-            <ChevronRight size={18} />
-          </button>
+            <div className="cal-setas">
+              <button
+                type="button"
+                className="cal-seta"
+                onClick={() => irPara(mesVizinho(ano, mes, -1))}
+                aria-label="Mês anterior"
+                title="Mês anterior"
+              >
+                <ChevronLeft size={18} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="cal-seta"
+                onClick={() => irPara(mesVizinho(ano, mes, 1))}
+                aria-label="Próximo mês"
+                title="Próximo mês"
+              >
+                <ChevronRight size={18} aria-hidden="true" />
+              </button>
+            </div>
 
-          {/* "Hoje" sai do backend. O relógio do navegador pode estar atrasado,
-              e o botão que leva ao dia de hoje é justamente onde isso doeria. */}
-          {hoje && (
-            <button
-              type="button"
-              className="cal-nav__hoje"
-              onClick={() => irPara(mesDaChave(hoje))}
+            {/* Mês e ano: `<select>` nativos em pílula, que mudam o `?mes=`
+                pelo mesmo `irPara` das setas — o "voltar" desfaz igual. */}
+            <label htmlFor="cal-mes" className="sr-only">Mês</label>
+            <select
+              id="cal-mes"
+              className="cal-pilula cal-seletor"
+              value={mes}
+              onChange={(e) => irPara({ ano, mes: Number(e.target.value) })}
             >
-              Hoje
-            </button>
-          )}
+              {NOMES_DOS_MESES.map((nome, i) => (
+                <option key={nome} value={i + 1}>{nome}</option>
+              ))}
+            </select>
+            <label htmlFor="cal-ano" className="sr-only">Ano</label>
+            <select
+              id="cal-ano"
+              className="cal-pilula cal-seletor"
+              value={ano}
+              onChange={(e) => irPara({ ano: Number(e.target.value), mes })}
+            >
+              {anosDoSeletor(ano).map((a) => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+
+            {/* O mês por extenso para quem lê por áudio, anunciado quando
+                muda: os seletores dizem o mês, mas só quando focados. É o
+                mesmo `formatMonthKey` do resumo financeiro. */}
+            <h2 className="sr-only" aria-live="polite">{rotuloDoMes}</h2>
+          </div>
+
+          <div className="cal-toolbar__direita">
+            {/* As duas vistas. `aria-pressed` e não `aria-selected`: são botões
+                de alternância, não abas de um tablist. A semana do desenho
+                dela não entra (DEC-136). */}
+            <div className="cal-vistas" role="group" aria-label="Vista do calendário">
+              <button
+                type="button"
+                className={vista === 'mes' ? 'cal-vista cal-vista--ativa' : 'cal-vista'}
+                aria-pressed={vista === 'mes'}
+                onClick={() => irPara({ ano, mes, vista: 'mes' })}
+              >
+                <Icone nome="calendario" tamanho={16} />
+                <span>Mês</span>
+              </button>
+              <button
+                type="button"
+                className={vista === 'agenda' ? 'cal-vista cal-vista--ativa' : 'cal-vista'}
+                aria-pressed={vista === 'agenda'}
+                onClick={() => irPara({ ano, mes, vista: 'agenda' })}
+              >
+                <List size={16} aria-hidden="true" />
+                <span>Agenda</span>
+              </button>
+            </div>
+
+            {/* O "+". Sem `actionMotivo`: continua ativo sem sinal (F-5b). O
+                que acontece com o que ela salvar está dito no formulário. */}
+            <Link
+              to="/dashboard/agenda/novo"
+              className="cal-novo"
+              aria-label="Novo compromisso"
+              title="Novo compromisso"
+            >
+              <Plus size={20} aria-hidden="true" />
+            </Link>
+          </div>
         </div>
 
-        {/* As duas vistas. `aria-pressed` e não `aria-selected`: são botões de
-            alternância, não abas de um tablist. */}
-        <div className="cal-vistas" role="group" aria-label="Vista do calendário">
-          <button
-            type="button"
-            className={vista === 'mes' ? 'cal-vista cal-vista--ativa' : 'cal-vista'}
-            aria-pressed={vista === 'mes'}
-            onClick={() => irPara({ ano, mes, vista: 'mes' })}
-          >
-            <CalendarDays size={16} />
-            <span>Mês</span>
-          </button>
-          <button
-            type="button"
-            className={vista === 'agenda' ? 'cal-vista cal-vista--ativa' : 'cal-vista'}
-            aria-pressed={vista === 'agenda'}
-            onClick={() => irPara({ ano, mes, vista: 'agenda' })}
-          >
-            <List size={16} />
-            <span>Agenda</span>
-          </button>
-        </div>
-      </div>
-
-      {/* A LEGENDA. A distinção visual sozinha não basta: cor sem legenda
-          obriga a advogada a descobrir sozinha por que uma linha abre um
-          formulário e a outra a leva embora. */}
-      <ul className="cal-legenda">
-        {LEGENDA.map((n) => (
-          <li key={n.valor} className="cal-legenda__item">
-            <span className={`cal-legenda__marca ${n.classe}`} aria-hidden="true" />
-            <strong>{n.rotulo}</strong>
-            <span className="cal-legenda__texto">{n.legenda}</span>
+        {/* A LEGENDA. A distinção visual sozinha não basta: cor sem legenda
+            obriga a advogada a descobrir sozinha por que uma linha abre um
+            formulário e a outra a leva embora. Os três tons da DEC-134, a
+            forma de cada um, e o riscado. */}
+        <ul className="cal-legenda">
+          {LEGENDA.map((n) => (
+            <li key={n.tipo} className="cal-legenda__item">
+              <span className={`cal-legenda__marca ${n.classe} ${classeDoTom(n.tipo)}`} aria-hidden="true" />
+              <strong>{n.rotulo}</strong>
+              <span className="cal-legenda__texto">{n.legenda}</span>
+            </li>
+          ))}
+          <li className="cal-legenda__item">
+            <s className="cal-legenda__riscado" aria-hidden="true">Abc</s>
+            <strong>Concluído ou pago</strong>
+            <span className="cal-legenda__texto">Continua à vista, riscado.</span>
           </li>
-        ))}
-      </ul>
+        </ul>
 
-      {error && <p className="cal-erro" role="alert">{error}</p>}
+        {error && <p className="cal-erro" role="alert">{error}</p>}
 
-      {/* ── CARREGANDO ≠ VAZIO (regra do passo 116) ────────────────────────
-          Grade vazia e grade carregando são indistinguíveis, e a segunda faz
-          esperar por algo que não vem. Por isso o `Loading` tem ramo próprio,
-          e o estado vazio tem frase própria — nunca uma grade muda. */}
-      {loading ? (
-        <Loading />
-      ) : vista === 'mes' ? (
-        <VistaDeMes
-          grade={grade}
-          porDia={porDia}
-          hoje={hoje}
-          diaAberto={diaAberto}
-          onAbrirDia={setDiaAberto}
-          onCriarNoDia={criarNoDia}
-          onAbrirItem={abrirItem}
-          rotuloDoMes={rotuloDoMes}
-        />
-      ) : (
-        <VistaDeAgenda
-          itens={itens}
-          hoje={hoje}
-          rotuloDoMes={rotuloDoMes}
-          onAbrirItem={abrirItem}
-          onCriarNoDia={criarNoDia}
-        />
-      )}
+        {/* ── CARREGANDO ≠ VAZIO (regra do passo 116) ──────────────────────
+            Grade vazia e grade carregando são indistinguíveis, e a segunda faz
+            esperar por algo que não vem. Por isso o `Loading` tem ramo
+            próprio, e o estado vazio tem frase própria — nunca uma grade
+            muda. */}
+        {loading ? (
+          <Loading />
+        ) : vista === 'mes' ? (
+          <VistaDeMes
+            grade={grade}
+            porDia={porDia}
+            hoje={hoje}
+            diaAberto={diaAberto}
+            onAbrirDia={setDiaAberto}
+            onCriarNoDia={criarNoDia}
+            onAbrirItem={abrirItem}
+            onAbrirLinha={avisarDaDerivada}
+            rotuloDoMes={rotuloDoMes}
+          />
+        ) : (
+          <VistaDeAgenda
+            itens={itens}
+            hoje={hoje}
+            rotuloDoMes={rotuloDoMes}
+            onAbrirLinha={avisarDaDerivada}
+            onCriarNoDia={criarNoDia}
+          />
+        )}
+      </section>
     </div>
   );
 }
 
-// ── UM ITEM, nas duas vistas ─────────────────────────────────────────────
+// ── UMA PÍLULA DA GRADE ──────────────────────────────────────────────────
 //
-// O mesmo componente na grade e na agenda: se fossem dois, a distinção visual
-// entre as naturezas teria de ser mantida em dois lugares — e é exatamente o
-// tipo de coisa que passa a divergir na terceira fase.
-function ItemDoCalendario({ item, onAbrir, compacto = false }) {
+// Uma linha, com reticências. O tom é o da DEC-134 (a classe de
+// `tomDaData`); a forma é a da DEC-055 — cheia no compromisso, listrada e
+// tracejada no vencimento; o riscado diz concluído ou pago. O rótulo
+// acessível e o `title` levam o texto inteiro, com o nome da natureza
+// (`rotuloDoItemNaGrade`): quem lê por áudio não recebe a cor, e é essa
+// pessoa que mais precisa saber que aquela linha não se edita ali.
+function ItemDoCalendario({ item, onAbrir }) {
   const clicavel = Boolean(destinoDoItem(item));
+  const rotulo = rotuloDoItemNaGrade(item);
   const classe = [
     'cal-item',
     classeDaNatureza(item.natureza),
-    compacto ? 'cal-item--compacto' : '',
-    item.concluido ? 'cal-item--concluido' : '',
+    // Fase 3.8 (DEC-134): o tom da mesma fonte da `LinhaDeData`.
+    classeDoTom(tipoDaDataDoItem(item)),
+    itemRiscado(item) ? 'cal-item--concluido' : '',
   ].filter(Boolean).join(' ');
 
   const conteudo = (
     <>
-      <span className="cal-item__marca" aria-hidden="true" />
       {item.hora && <span className="cal-item__hora">{item.hora}</span>}
       <span className="cal-item__titulo">{item.titulo}</span>
-      {!compacto && item.subtitulo && (
-        <span className="cal-item__subtitulo">{item.subtitulo}</span>
-      )}
-      {!compacto && item.natureza === 'derivada' && item.valor !== null && (
-        <span className="cal-item__valor">{formatCurrency(item.valor)}</span>
-      )}
-      {/* O nome da natureza vai no texto acessível, e não só na cor: quem lê
-          por leitor de tela não recebe a cor, e é justamente essa pessoa que
-          mais precisa saber que aquela linha não se edita ali. */}
       <span className="sr-only">{rotuloDaNatureza(item.natureza)}</span>
     </>
   );
 
-  if (!clicavel) return <div className={classe}>{conteudo}</div>;
+  if (!clicavel) {
+    return <div className={classe} role="img" aria-label={rotulo} title={rotulo}>{conteudo}</div>;
+  }
 
   return (
-    <button type="button" className={classe} onClick={() => onAbrir(item)}>
+    <button type="button" className={classe} onClick={() => onAbrir(item)} aria-label={rotulo} title={rotulo}>
       {conteudo}
     </button>
   );
@@ -312,7 +375,7 @@ function ItemDoCalendario({ item, onAbrir, compacto = false }) {
 
 // ── A GRADE DO MÊS ───────────────────────────────────────────────────────
 function VistaDeMes({
-  grade, porDia, hoje, diaAberto, onAbrirDia, onCriarNoDia, onAbrirItem, rotuloDoMes,
+  grade, porDia, hoje, diaAberto, onAbrirDia, onCriarNoDia, onAbrirItem, onAbrirLinha, rotuloDoMes,
 }) {
   const totalNoMes = grade.semanas
     .flat()
@@ -364,14 +427,14 @@ function VistaDeMes({
                       type="button"
                       className="cal-celula__numero"
                       onClick={() => onCriarNoDia(celula.chave)}
-                      aria-label={`Novo compromisso em ${formatDate(celula.chave)}`}
+                      aria-label={`Novo compromisso em ${formatDate(celula.chave)}${ehHoje ? ' (hoje)' : ''}`}
                     >
                       {celula.dia}
-                      {/* HOJE é visualmente distinto — sempre, e não só quando
-                          tem compromisso. É a única pergunta que um calendário
-                          precisa responder sem que ninguém a faça. */}
-                      {ehHoje && <span className="sr-only"> (hoje)</span>}
                     </button>
+                    {/* HOJE é visualmente distinto — sempre, e não só quando
+                        tem compromisso, e não só pela cor: o número no disco
+                        cheio, o anel na célula e a palavra "hoje". */}
+                    {ehHoje && <span className="cal-celula__hoje">hoje</span>}
                   </div>
 
                   <div className="cal-celula__itens">
@@ -380,20 +443,21 @@ function VistaDeMes({
                         key={`${item.natureza}-${item._id}`}
                         item={item}
                         onAbrir={onAbrirItem}
-                        compacto
                       />
                     ))}
 
-                    {/* A célula NÃO estica. O "+N" é quantos FICARAM DE FORA —
-                        um "+8" quando 3 já aparecem mandaria procurar oito
-                        itens dos quais três estão à vista. */}
+                    {/* A célula NÃO estica. O "Mais N" é quantos FICARAM DE
+                        FORA — um "Mais 8" quando 3 já aparecem mandaria
+                        procurar oito itens dos quais três estão à vista. Abre
+                        o dia inteiro embaixo da grade, como antes. */}
                     {ocultos > 0 && (
                       <button
                         type="button"
                         className="cal-celula__mais"
                         onClick={() => onAbrirDia(celula.chave)}
+                        aria-label={`Mais ${ocultos} em ${formatDate(celula.chave)}: abrir o dia`}
                       >
-                        +{ocultos}
+                        Mais {ocultos}
                       </button>
                     )}
                   </div>
@@ -412,15 +476,12 @@ function VistaDeMes({
               Fechar
             </button>
           </div>
-          <div className="cal-dia-aberto__itens">
-            {itensDoDiaAberto.map((item) => (
-              <ItemDoCalendario
-                key={`${item.natureza}-${item._id}`}
-                item={item}
-                onAbrir={onAbrirItem}
-              />
-            ))}
-          </div>
+          <ul className="datas-lista">
+            {itensDoDiaAberto.map((item) => {
+              const linha = linhaDaAgenda(item);
+              return <LinhaDeData key={linha.chave} item={linha} onAbrir={onAbrirLinha} />;
+            })}
+          </ul>
         </div>
       )}
     </>
@@ -430,9 +491,10 @@ function VistaDeMes({
 // ── A AGENDA — lista por dia, em ordem de data ───────────────────────────
 //
 // É a vista que importa em 360 px, e é a que abre lá. Só os dias que TÊM
-// alguma coisa viram linha: uma agenda que imprime os trinta dias do mês para
-// mostrar três compromissos esconde os três.
-function VistaDeAgenda({ itens, hoje, rotuloDoMes, onAbrirItem, onCriarNoDia }) {
+// alguma coisa viram grupo: uma agenda que imprime os trinta dias do mês para
+// mostrar três compromissos esconde os três. Cada item é a `LinhaDeData`
+// (DEC-131), a mesma do Início e da Visão geral (DEC-136).
+function VistaDeAgenda({ itens, hoje, rotuloDoMes, onAbrirLinha, onCriarNoDia }) {
   const dias = useMemo(() => diasComItens(itens), [itens]);
 
   if (dias.length === 0) return <EstadoVazio rotuloDoMes={rotuloDoMes} />;
@@ -444,7 +506,7 @@ function VistaDeAgenda({ itens, hoje, rotuloDoMes, onAbrirItem, onCriarNoDia }) 
           <div className="cal-agenda__cabecalho">
             <h3 className="cal-agenda__data">
               {formatDate(chave)}
-              {chave === hoje && <span className="cal-agenda__hoje">hoje</span>}
+              {chave === hoje && <span className="cal-agenda__hoje">Hoje</span>}
             </h3>
             <button
               type="button"
@@ -452,18 +514,15 @@ function VistaDeAgenda({ itens, hoje, rotuloDoMes, onAbrirItem, onCriarNoDia }) 
               onClick={() => onCriarNoDia(chave)}
               aria-label={`Novo compromisso em ${formatDate(chave)}`}
             >
-              <Plus size={16} />
+              <Plus size={16} aria-hidden="true" />
             </button>
           </div>
-          <div className="cal-agenda__itens">
-            {doDia.map((item) => (
-              <ItemDoCalendario
-                key={`${item.natureza}-${item._id}`}
-                item={item}
-                onAbrir={onAbrirItem}
-              />
-            ))}
-          </div>
+          <ul className="datas-lista">
+            {doDia.map((item) => {
+              const linha = linhaDaAgenda(item);
+              return <LinhaDeData key={linha.chave} item={linha} onAbrir={onAbrirLinha} />;
+            })}
+          </ul>
         </li>
       ))}
     </ol>
@@ -479,7 +538,7 @@ function VistaDeAgenda({ itens, hoje, rotuloDoMes, onAbrirItem, onCriarNoDia }) 
 function EstadoVazio({ rotuloDoMes }) {
   return (
     <EmptyState
-      icon={<CalendarDays size={40} />}
+      icon={<Icone nome="calendario" tamanho={40} />}
       title={`Nenhum compromisso em ${rotuloDoMes}`}
       description="Audiências, prazos e reuniões que você registrar aparecem aqui, junto dos vencimentos do financeiro."
       action={

@@ -2991,8 +2991,16 @@ decisão é a que a advogada vive:
 
 | | O quê | Na tela |
 |---|---|---|
-| **Compromisso** | audiência, prazo, reunião | barra **cheia**, verde. **Edita aqui.** |
-| **Vencimento** | parcela, honorário | barra **listrada**, borda **tracejada**, azul de `info`. **Leva à parcela.** |
+| **Compromisso** | audiência, prazo, reunião | **cheio**, azul de `info`. **Edita aqui.** |
+| **Vencimento** | parcela, honorário | **listrado**, borda **tracejada**, âmbar de `warning` (vermelho de `danger` quando vencida). **Leva à parcela.** |
+
+> **Nota de 27/10/2026 (Fase 3.8, DEC-134):** as cores mudaram. Até a 3.7 o
+> compromisso era verde e o vencimento azul, e o Início e a Visão geral
+> pintavam o vencimento de âmbar e o compromisso de azul: a mesma coisa com
+> cor diferente em duas telas. A regra agora é uma só, em
+> `utils/tomDaData.js`, para a Agenda e a `LinhaDeData`. **A forma não
+> mudou:** o vencimento continua listrado e tracejado, porque é derivado — e é
+> a forma, não a cor, que diz isso.
 
 **A derivada não é editável no calendário.** Clicar nela navega para
 `/dashboard/parcelas/editar/:id` (ou `/honorarios/editar/:id`), com uma frase
@@ -3013,7 +3021,7 @@ formulário de evento, e editar a data ali criaria a segunda fonte.
 **Três sinais somados:** cor, forma da barra (cheia × listrada) e borda (sólida ×
 tracejada), mais a **legenda escrita** e o nome da natureza em `.sr-only`.
 
-Quem não distingue verde de azul não recebe distinção nenhuma — e é **a mesma
+Quem não distingue âmbar de azul não recebe distinção nenhuma — e é **a mesma
 pessoa** que não receberia a informação de que uma das linhas não se edita.
 
 Em 360 px a **explicação** da legenda sai (duas linhas por item empurrariam a
@@ -5380,6 +5388,95 @@ Processos e Clientes (Documentos e Seções na 3.9).
   dentro de `@media` e acusava "classe sem regra" para quem só existe ali.
   Corrigido (bloco de declaração some; bloco de seletores devolve os
   seletores).
+
+## DEC-134 (frontend) — uma regra de cores para as naturezas (Fase 3.8)
+
+A Agenda pintava o vencimento de azul listrado e o compromisso de verde; o
+Início e a Visão geral (`LinhaDeData`), o vencimento de âmbar e o compromisso
+de azul. Decisão do Daniel: **uma regra, nas três telas**.
+
+| Tipo de data | Tom | Tokens |
+|---|---|---|
+| Vencimento (parcela a vencer) | âmbar | `--color-warning-*` |
+| Vencida | vermelho | `--color-danger-*` |
+| Compromisso | azul | `--color-info-*` |
+
+- **Fonte única:** `utils/tomDaData.js` (`TOM_DA_DATA`, `classeDoTom`,
+  `tipoDaDataDoItem`). A classe `tom-data--warning|danger|info` põe
+  `--tom-fundo`, `--tom-texto` e `--tom-forte` (`styles/tomDaData.css`); a
+  pílula da `LinhaDeData` e os itens, marcas e legenda da Agenda leem as
+  variáveis e **não nomeiam o token**. Há teste exigindo que as duas telas
+  importem a mesma fonte e que nenhuma regra de item, pílula ou legenda nomeie
+  `--color-warning|info|danger`.
+- **Vencida** sai do `status: "vencido"` que o servidor manda (DEC-028); a tela
+  não recalcula.
+- **A forma não mudou** (DEC-055): o vencimento continua listrado e tracejado,
+  agora no âmbar (ou no vermelho, vencida). A legenda tem três entradas —
+  Compromisso, Vencimento, Vencida — mais "Concluído ou pago: riscado".
+- Conferido no navegador: as três pílulas com a mesma cor e o mesmo fundo no
+  Início, na Visão geral e na vista Agenda.
+
+## DEC-135 (frontend) — no celular, só o ⋮ fica fixo; as notas mudam de coluna (Fase 3.8)
+
+O risco 1 da 3.7: a 360 px a janela entre as duas colunas fixas era 112 px
+(56 em Parcelas e Pagamentos), menor que uma coluna de dinheiro, e o valor
+aparecia coberto pelo ⋮ até ser rolado.
+
+- **≤ 480 px:** a primeira coluna deixa de ser `sticky` (`position: static`,
+  sem sombra) e o ⋮ tem **64 px nas cinco listas**
+  (`.data-table--acoes-fixas col:last-child`). A janela passou a 240 px.
+  `data-table--acoes-sem-nota` saiu.
+- **As notas saíram da célula de ações**, com o mesmo texto e a mesma regra:
+  "Reparcelada" (parcela `cancelado`) vai para o **Status** — é a explicação do
+  "Cancelado" ao lado; "sem recibo" (`liquido <= 0`) vai para o **Líquido** — é
+  o número que decide. As duas colunas são `prio-1`. Classe nova
+  `.nota-da-celula` (linha própria, itálico, `--color-text-secondary`,
+  `nowrap`). A parcela cancelada continua sem menu: a célula mostra "—".
+- **Medido** (relatório da 3.8): a 360 px, 128 de 128 células de dinheiro
+  ficavam cobertas pelo ⋮ quando roladas até a vista; agora, 0. Acima de
+  480 px, 390 comparações (1280, 1024, 768; dois modos; cinco listas, coluna a
+  coluna) iguais às do `main`.
+
+## DEC-136 (frontend) — a Agenda na pele da Figura 20 (Fase 3.8)
+
+- **Balão** `--color-surface`, 24 px. Barra: título "Agenda" (h1), "Hoje", as
+  setas com rótulo, **mês e ano em `<select>` nativos em pílula** (mudam o
+  `?mes=` pelo mesmo `irPara` das setas; o "voltar" desfaz), as vistas
+  **Mês/Agenda** em pílulas (`aria-pressed`, `?vista=`) e o "+". O
+  `PageHeader` saiu da tela.
+- **Fica de fora do desenho dela:** a semana (ela promete cinco vistas e tem
+  duas, sem os atalhos), o "mostrar fins de semana" (a grade mostra os sete
+  dias) e a busca (seria funcionalidade nova).
+- **Grade:** células arredondadas na `--color-surface-raised`; hoje com o
+  número no disco verde, o anel e a palavra "hoje" (e "(hoje)" no rótulo do
+  número); fora do mês sem opacidade, com o número no tom discreto; itens como
+  **pílulas de uma linha** com reticências, `aria-label` e `title` completos
+  (`rotuloDoItemNaGrade`: natureza, hora, título, honorário ou tipo,
+  situação); concluído e pago **riscados**, sem opacidade; **"Mais N"** abre o
+  dia embaixo da grade, como antes.
+- **Vista Agenda e dia aberto** pela `LinhaDeData` (DEC-131), agrupada por dia,
+  com "Hoje" marcado. A linha ganhou dois opcionais que o Início não usa:
+  `item.situacao` (título riscado e a palavra) e `onAbrir` (a frase da DEC-055
+  no clique da derivada, antes da navegação do link).
+- Regras puras em `pages/calendar/agenda.js`. Mantidos: `?vista=`/`?mes=`, a
+  Agenda como padrão abaixo de 768 px, `monthGrid.js`, a fila e o aviso de
+  idade único.
+
+## DEC-137 (frontend) — o formulário de compromisso em seções, com o processo por busca (Fase 3.8)
+
+- **Seções** no padrão da 3.4 e da 3.5: "O que é" (tipo, título), "Quando e
+  onde" (data, hora, local — o local entrou com o "quando", e o título da
+  seção diz isso), "Processo vinculado", "Observações", e a "Conclusão" na
+  edição. Campos e payload iguais.
+- **O seletor de processo tinha teto:** `listProcesses({ limit: 100 })`. Virou
+  o `SeletorComBusca` da DEC-101 (`buscarProcessos`, até 20 sugestões,
+  "{número} — {título} — {cliente}"). O contexto continua publicado quando a
+  escolha muda (DEC-085). Sem sinal, o processo já escolhido aparece pelo
+  `processo` que o `GET /events/:id` projeta, e o compromisso vai para a fila.
+- **`SeletorComBusca` ganhou `obrigatorio`** (padrão `true`): o processo do
+  compromisso é opcional e deixou de ser anunciado com `aria-required`. Apagar
+  o campo deixa o compromisso solto (`null`).
+- Continua rota própria (fila, faixa de contexto e "Voltar" dependem dela).
 
 ---
 

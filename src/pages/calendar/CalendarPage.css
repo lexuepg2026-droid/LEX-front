@@ -1,30 +1,32 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   O CALENDÁRIO — GRADE CONSTRUÍDA À MÃO, SEM BIBLIOTECA NENHUMA
+   A AGENDA — GRADE CONSTRUÍDA À MÃO, SEM BIBLIOTECA NENHUMA
 
    Sete colunas de `grid`, e mais nada. A conta dos dias vive em
    `monthGrid.js`, que é função pura e testada; este arquivo só desenha.
 
-   ── A distinção entre as duas naturezas é por COR **e** por MARCA ────────
-   A DEC-055 pede que evento próprio e data derivada se distingam no relance.
-   A cor sozinha não serve: quem não distingue verde de âmbar não recebe
-   distinção nenhuma, e é a mesma pessoa que não recebe a informação de que
-   uma das linhas não se edita.
+   ── Fase 3.8 (DEC-136): a pele da Figura 20 ──────────────────────────────
+   Um balão `--color-surface` de cantos grandes; a barra com o título, "Hoje",
+   as setas, mês e ano em pílula, a vista e o "+"; células arredondadas na
+   `--color-surface-raised`; os itens como pílulas de uma linha.
 
-   Por isso são três sinais somados — a barra lateral colorida, a forma dela
-   (cheia no evento, listrada na derivada) e o texto da legenda. Um leitor de
-   tela recebe o nome da natureza pelo `.sr-only` de `ItemDoCalendario`.
+   ── A distinção entre as naturezas é por COR **e** por FORMA ─────────────
+   A COR sai de `utils/tomDaData.js` (DEC-134): a classe `tom-data--…` põe
+   `--tom-fundo`, `--tom-texto` e `--tom-forte`, e nenhuma regra de item ou
+   de legenda daqui nomeia o tom. A FORMA é desta folha (DEC-055): o
+   compromisso é cheio; o vencimento é listrado e de borda tracejada. O
+   riscado diz concluído ou pago. E o rótulo acessível de cada pílula diz
+   tudo isso por escrito.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .cal-page {
   padding: var(--space-4);
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
 }
 
-/* Texto só para leitor de tela. Existia em `FeeRenegotiationPage.css` e é
-   repetido aqui de propósito: um CSS que só funciona se OUTRA página tiver
-   sido importada é exatamente o defeito que a varredura de classes existe
-   para achar (o caso do `.input-error`). */
+/* Texto só para leitor de tela. Repetido aqui de propósito: um CSS que só
+   funciona se OUTRA página tiver sido importada é exatamente o defeito que a
+   varredura de classes existe para achar (o caso do `.input-error`). */
 .cal-page .sr-only,
 .cal-item .sr-only {
   position: absolute;
@@ -47,7 +49,15 @@
   margin-bottom: var(--space-4);
 }
 
-/* ── Barra de navegação e vistas ──────────────────────────────────────── */
+/* ── O balão ──────────────────────────────────────────────────────────── */
+
+.cal-balao {
+  background-color: var(--color-surface);
+  border-radius: 24px;
+  padding: var(--space-4) var(--space-5);
+}
+
+/* ── A barra ──────────────────────────────────────────────────────────── */
 
 .cal-toolbar {
   display: flex;
@@ -58,77 +68,109 @@
   margin-bottom: var(--space-4);
 }
 
-.cal-nav {
+.cal-toolbar__esquerda,
+.cal-toolbar__direita {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
 }
 
-.cal-nav__btn,
-.cal-nav__hoje {
+.cal-titulo {
+  margin: 0 var(--space-2) 0 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+/* As pílulas da barra: "Hoje" e os dois seletores. Contorno na cor de borda
+   de campo (`--color-border-input`, 3:1 medido sobre o balão: não é texto, é
+   o que diz "isto é clicável"). */
+.cal-pilula {
+  height: 2.5rem;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.cal-pilula:hover {
+  background-color: var(--color-surface-raised);
+}
+
+/* O `<select>` nativo em pílula: a seta do sistema fica (é ela que diz "isto
+   abre uma lista"), e o texto não encosta nela. */
+.cal-seletor {
+  padding-right: var(--space-3);
+}
+
+.cal-setas {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.cal-seta,
+.cal-novo {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface);
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
   color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background var(--transition-fast);
+  text-decoration: none;
+  transition: background-color var(--transition-fast);
 }
 
-.cal-nav__btn {
-  width: 36px;
-  height: 36px;
+.cal-seta:hover,
+.cal-novo:hover {
+  background-color: var(--color-surface-raised);
 }
 
-.cal-nav__hoje {
-  height: 36px;
-  padding: 0 var(--space-3);
-  font-size: var(--font-size-sm);
-}
-
-.cal-nav__btn:hover,
-.cal-nav__hoje:hover {
-  background: var(--color-surface-raised);
-}
-
-.cal-nav__mes {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  margin: 0;
-  min-width: 10ch;
-  text-align: center;
-  /* O mês por extenso é a única coisa que muda de largura nesta barra.
-     Sem o mínimo, os botões "<" e ">" andam de lugar entre "maio" e
-     "setembro" — e um alvo de clique que se move é um alvo que se erra. */
-}
-
+/* As vistas em pílulas. A ativa é o verde pleno com o creme — o par das
+   abas do detalhe do processo (DEC-111), já medido. */
 .cal-vistas {
   display: inline-flex;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  gap: var(--space-1);
+  padding: 3px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-pill);
 }
 
 .cal-vista {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
+  height: calc(2.5rem - 8px);
+  padding: 0 var(--space-3);
   border: none;
-  cursor: pointer;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
   font-size: var(--font-size-sm);
-  transition: background var(--transition-fast), color var(--transition-fast);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
-.cal-vista:hover { background: var(--color-surface-raised); }
+.cal-vista:hover {
+  background-color: var(--color-surface-raised);
+  color: var(--color-text-primary);
+}
 
-.cal-vista--ativa {
-  background: var(--color-primary);
+.cal-vista--ativa,
+.cal-vista--ativa:hover {
+  background-color: var(--color-primary);
   color: var(--color-on-primary);
 }
 
@@ -137,13 +179,10 @@
 .cal-legenda {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-4);
+  gap: var(--space-2) var(--space-5);
   list-style: none;
-  padding: var(--space-3);
+  padding: 0;
   margin: 0 0 var(--space-4);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
 }
 
@@ -155,10 +194,15 @@
 }
 
 .cal-legenda__marca {
-  width: 14px;
-  height: 14px;
+  width: 1.75rem;
+  height: 0.9rem;
   border-radius: var(--radius-sm);
   flex-shrink: 0;
+}
+
+.cal-legenda__riscado {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
 }
 
 .cal-legenda__texto { color: var(--color-text-discreto); }
@@ -166,72 +210,83 @@
 /* ── A GRADE ──────────────────────────────────────────────────────────── */
 
 .cal-grade {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .cal-grade__cabecalho,
 .cal-grade__semana {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
 }
 
 .cal-grade__dia-semana {
-  padding: var(--space-2);
+  padding: var(--space-1) 0 var(--space-2);
   text-align: center;
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-text-secondary);
-  background: var(--color-surface-raised);
-  border-bottom: 1px solid var(--color-border);
 }
 
 .cal-celula {
-  /* A célula NÃO estica: altura mínima fixa, e o excesso vira "+N". Um dia com
+  /* A célula NÃO estica: altura fixa, e o excesso vira "Mais N". Um dia com
      sete itens empurraria as outras semanas para fora da tela, e a advogada
      perderia a visão do mês por causa do dia mais ocupado dele. */
-  min-height: 104px;
-  max-height: 104px;
+  min-height: 112px;
+  max-height: 112px;
   overflow: hidden;
-  padding: var(--space-1);
-  border-right: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
+  min-width: 0;
+  padding: 4px;
+  border-radius: 10px;
+  background-color: var(--color-surface-raised);
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.cal-grade__semana > .cal-celula:last-child { border-right: none; }
-
 /* Dia de outro mês: esmaecido, mas PRESENTE. Uma casa vazia seria lida como
-   "não há nada nesse dia", quando o certo é "esse dia é de outro mês". */
-.cal-celula--fora { background: var(--color-bg); opacity: 0.55; }
+   "não há nada nesse dia", quando o certo é "esse dia é de outro mês". Sem
+   `opacity` (derrubaria o contraste dos itens): a célula some no balão e o
+   número fica no tom discreto. */
+.cal-celula--fora {
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
 
-/* HOJE é visualmente distinto, SEMPRE — e não só quando tem compromisso. É a
-   única pergunta que um calendário responde sem que ninguém a faça.
-   O anel usa o dourado da marca, que é a mesma cor do foco: aqui não há
-   conflito, porque o foco desenha um anel EXTERNO com offset. */
+.cal-celula--fora .cal-celula__numero { color: var(--color-text-discreto); }
+
+/* HOJE é visualmente distinto, SEMPRE — e não só pela cor: o anel na
+   célula, o número no disco cheio e a palavra "hoje" ao lado. */
 .cal-celula--hoje {
-  background: var(--color-accent-muted);
   box-shadow: inset 0 0 0 2px var(--color-accent);
 }
 
 .cal-celula__topo {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 1.6rem;
 }
 
 .cal-celula__numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 4px;
   background: none;
   border: none;
+  border-radius: var(--radius-pill);
   color: var(--color-text-secondary);
+  font-family: inherit;
   font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
   line-height: 1;
 }
 
@@ -241,14 +296,24 @@
 }
 
 .cal-celula--hoje .cal-celula__numero {
-  color: var(--color-accent);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
   font-weight: var(--font-weight-bold);
+}
+
+.cal-celula__hoje {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-accent);
 }
 
 .cal-celula__itens {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -256,116 +321,102 @@
   background: none;
   border: none;
   color: var(--color-text-secondary);
+  font-family: inherit;
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   text-align: left;
   cursor: pointer;
   padding: 1px var(--space-1);
+  white-space: nowrap;
 }
 
-.cal-celula__mais:hover { color: var(--color-accent); text-decoration: underline; }
+.cal-celula__mais:hover { color: var(--color-text-primary); text-decoration: underline; }
 
-/* ── O ITEM, nas duas vistas ──────────────────────────────────────────── */
+/* ── A PÍLULA DO ITEM ─────────────────────────────────────────────────── */
 
+/* Uma linha, com reticências. Fundo e texto são o par de badge do tom
+   (`--tom-fundo`/`--tom-texto`), medidos sobre a célula. */
 .cal-item {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  text-align: left;
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  overflow: hidden;
-}
-
-.cal-item:hover { border-color: var(--color-border-strong); }
-
-.cal-item--compacto {
-  font-size: var(--font-size-xs);
-  padding: 1px var(--space-1);
   gap: var(--space-1);
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 1px 6px;
+  background-color: var(--tom-fundo);
+  color: var(--tom-texto);
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
 }
 
-.cal-item__marca {
-  width: 4px;
-  align-self: stretch;
-  min-height: 12px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
+.cal-item:hover { border-color: var(--tom-texto); }
 
 .cal-item__hora {
-  color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
 
 .cal-item__titulo {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.cal-item__subtitulo,
-.cal-item__valor {
-  color: var(--color-text-discreto);
-  font-size: var(--font-size-xs);
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
-/* Concluído: riscado e esmaecido. Continua visível — a advogada precisa poder
-   ver o que já resolveu no dia, e esconder faria a agenda de uma segunda-feira
-   cheia parecer vazia às cinco da tarde. */
-.cal-item--concluido { opacity: 0.55; }
-.cal-item--concluido .cal-item__titulo { text-decoration: line-through; }
+/* Concluído ou pago: RISCADO, e continua visível — a advogada precisa poder
+   ver o que já resolveu no dia. Sem opacidade: o par de contraste continua o
+   medido. A situação vai escrita no rótulo acessível. */
+.cal-item--concluido .cal-item__titulo,
+.cal-item--concluido .cal-item__hora { text-decoration: line-through; }
 
 /* ── AS DUAS NATUREZAS ────────────────────────────────────────────────── */
 
-/* Evento próprio: verde primário, barra CHEIA. É o fato que a advogada
-   registrou, e é o que ela edita aqui. */
-.cal-item--evento .cal-item__marca,
+/* Evento próprio: CHEIO. É o fato que a advogada registrou, e é o que ela
+   edita aqui. */
 .cal-legenda__marca.cal-item--evento {
-  background: var(--color-primary-light);
+  background: var(--tom-fundo);
+  border: 1px solid var(--tom-forte);
 }
 
-/* Data derivada: azul de informação, barra LISTRADA. O listrado é o segundo
-   sinal, para a distinção não depender de enxergar cor — e o azul é o tom de
-   `info`, não o de `danger`: um vencimento não deu errado, ele só vem de outro
-   lugar. */
-.cal-item--derivada .cal-item__marca,
+/* Data derivada: LISTRADA e de borda TRACEJADA. O listrado é o segundo sinal
+   (DEC-055), para a distinção não depender de enxergar cor; a borda, o
+   terceiro. O texto passa sobre as duas faixas (o fundo do tom e a célula),
+   e as duas estão medidas. */
+.cal-item--derivada,
 .cal-legenda__marca.cal-item--derivada {
   background: repeating-linear-gradient(
-    45deg,
-    var(--color-info),
-    var(--color-info) 3px,
-    transparent 3px,
-    transparent 6px
+    135deg,
+    var(--tom-fundo),
+    var(--tom-fundo) 5px,
+    transparent 5px,
+    transparent 9px
   );
-  background-color: var(--color-info-bg);
+  border: 1px solid var(--tom-forte);
 }
 
 .cal-item--derivada { border-style: dashed; }
+.cal-legenda__marca.cal-item--derivada { border-style: dashed; }
 
-/* ── O dia aberto pelo "+N" ───────────────────────────────────────────── */
+/* ── O dia aberto pelo "Mais N" ───────────────────────────────────────── */
 
 .cal-dia-aberto {
   margin-top: var(--space-4);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
 }
 
 .cal-dia-aberto__cabecalho {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
 .cal-dia-aberto__cabecalho h3 {
@@ -375,20 +426,18 @@
 }
 
 .cal-dia-aberto__fechar {
+  height: 2rem;
+  padding: 0 var(--space-3);
   background: none;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
-  padding: var(--space-1) var(--space-3);
-  cursor: pointer;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-primary);
+  font-family: inherit;
   font-size: var(--font-size-sm);
+  cursor: pointer;
 }
 
-.cal-dia-aberto__itens {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
+.cal-dia-aberto__fechar:hover { background-color: var(--color-surface-raised); }
 
 /* ── A AGENDA ─────────────────────────────────────────────────────────── */
 
@@ -398,23 +447,26 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
-.cal-agenda__dia {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
+.cal-agenda__dia + .cal-agenda__dia {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
 }
 
-.cal-agenda__dia--hoje { border-color: var(--color-accent); }
+/* Hoje, na lista: a palavra "Hoje" em selo (texto, não só cor) e uma faixa
+   à esquerda do título do dia. */
+.cal-agenda__dia--hoje .cal-agenda__data {
+  border-left: 3px solid var(--color-accent);
+  padding-left: var(--space-2);
+}
 
 .cal-agenda__cabecalho {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
 }
 
 .cal-agenda__data {
@@ -441,55 +493,59 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 2rem;
+  height: 2rem;
   background: none;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
+  border: none;
+  border-radius: 50%;
+  color: var(--color-text-primary);
   cursor: pointer;
 }
 
-.cal-agenda__novo:hover { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
-
-.cal-agenda__itens {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
+.cal-agenda__novo:hover { background: var(--color-primary); color: var(--color-on-primary); }
 
 /* ── 360 px: a agenda é o padrão, e a grade continua ALCANÇÁVEL ───────── */
 
 @media (max-width: 767px) {
   .cal-page { padding: var(--space-3) var(--space-2); }
+  .cal-balao { padding: var(--space-3); border-radius: 20px; }
 
   .cal-toolbar { flex-direction: column; align-items: stretch; }
-  .cal-nav { justify-content: space-between; }
-  .cal-vistas { align-self: stretch; }
+  .cal-toolbar__direita { justify-content: space-between; }
+  .cal-vistas { flex: 1; }
   .cal-vista { flex: 1; justify-content: center; }
 
-  .cal-legenda { flex-direction: column; gap: var(--space-2); }
+  .cal-legenda { flex-direction: column; gap: var(--space-1); }
   /* A explicação de cada natureza sai em 360 px: em duas linhas por item ela
-     empurraria a grade para baixo da dobra. O nome (`Compromisso` /
-     `Vencimento`) FICA, que é o que distingue as duas — e o texto inteiro
+     empurraria a grade para baixo da dobra. O nome (`Compromisso`,
+     `Vencimento`, `Vencida`) FICA, que é o que distingue — e o texto inteiro
      continua na tela larga, onde há espaço para explicar. */
   .cal-legenda__texto { display: none; }
 
   /* A grade cabe, mas apertada — e é por isso que ela não é o que ABRE.
-     Sete colunas em 360 px dão 51 px por dia; o "+1" aparece cedo, e é ele
-     que leva ao dia inteiro. */
+     Sete colunas em 360 px dão uns 40 px por dia; o "Mais N" aparece cedo,
+     e é ele que leva ao dia inteiro. */
+  .cal-grade,
+  .cal-grade__cabecalho,
+  .cal-grade__semana { gap: 2px; }
+
   .cal-celula {
-    min-height: 68px;
-    max-height: 68px;
+    min-height: 92px;
+    max-height: 92px;
     padding: 2px;
+    border-radius: 6px;
   }
 
-  .cal-celula__numero { font-size: var(--font-size-xs); padding: 1px 3px; }
-  .cal-item--compacto { padding: 0 2px; gap: 2px; }
-  /* A hora sai da célula compacta em 360 px: com 45 px úteis, "14:30" come o
-     título inteiro e o item vira um horário sem assunto. Ela continua na
-     agenda e no dia aberto, que é onde a linha tem largura. */
+  .cal-celula__numero { font-size: var(--font-size-xs); min-width: 1.3rem; height: 1.3rem; }
+  /* A palavra "hoje" sai da célula estreita (o disco e o anel ficam, e o
+     rótulo do número diz "hoje"); na vista Agenda ela continua escrita. */
+  .cal-celula__hoje { display: none; }
+  .cal-item { padding: 0 3px; border-radius: 4px; }
+  /* A hora sai da pílula em 360 px: com 40 px úteis, "14:30" come o título
+     inteiro e o item vira um horário sem assunto. Ela continua no rótulo,
+     na vista Agenda e no dia aberto. */
   .cal-celula .cal-item__hora { display: none; }
+  .cal-celula__mais { padding: 0 2px; }
 }
 
 /* O aviso de alteração não enviada (F-5b). Discreto e clicável: ele não é um

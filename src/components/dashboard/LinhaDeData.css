@@ -86,7 +86,13 @@ a.datas-item:hover {
 }
 
 /* A pílula com os pares de badge do tema, e não o branco sobre #42A5F5 dela
-   (2,65:1). Vencimento é dinheiro a receber: âmbar. Compromisso: azul. */
+   (2,65:1). Vencimento é dinheiro a receber: âmbar. Compromisso: azul. A
+   parcela que já venceu (3.7): vermelho de badge.
+
+   Fase 3.8 (DEC-134): o tom deixou de ser escrito aqui. A pílula recebe a
+   classe de `utils/tomDaData.js` (`tom-data--…`) e lê as variáveis dela, em
+   `styles/tomDaData.css` — a mesma fonte dos itens e da legenda da Agenda.
+   Os pares são os mesmos de antes. */
 .datas-item__pilula {
   justify-self: end;
   padding: 2px var(--space-3);
@@ -94,23 +100,21 @@ a.datas-item:hover {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   white-space: nowrap;
+  background-color: var(--tom-fundo);
+  color: var(--tom-texto);
 }
 
-.datas-item__pilula--vencimento {
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning-text);
+/* Fase 3.8 (DEC-136): na vista Agenda, o compromisso concluído e a parcela
+   paga. O título riscado é a forma; a situação escrita, o texto. Sem
+   opacidade: o contraste do título continua o do par medido. */
+.datas-item--riscado .datas-item__titulo {
+  text-decoration: line-through;
 }
 
-.datas-item__pilula--compromisso {
-  background-color: var(--color-info-bg);
-  color: var(--color-info-text);
-}
-
-/* Fase 3.7: a parcela que já venceu. Vermelho de badge (não o sólido): é o
-   mesmo par do selo "Vencido" das listas, medido sobre o balão e o hover. */
-.datas-item__pilula--vencida {
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger-text);
+.datas-item__situacao {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
 }
 
 @media (max-width: 480px) {

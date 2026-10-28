@@ -396,7 +396,6 @@
    espremê-la até o truncamento quando a coluna aperta; o `nowrap` é
    reafirmado aqui, e não herdado de `.data-table td`, para o truncamento ser
    uma decisão visível ao lado do texto que ele protege. */
-.actions-cell .sem-recibo,
 .actions-cell .acao-indisponivel {
   flex-shrink: 0;
   white-space: nowrap;
@@ -665,6 +664,21 @@
   .data-table--primeira-fixa col:first-child { width: 128px; }
 }
 
+/* Fase 3.8 (DEC-135): no celular, SÓ O ⋮ fica fixo. Com a primeira coluna
+   presa, a janela entre as duas fixas era de 112 px (56 em Parcelas e
+   Pagamentos): menor que uma coluna de dinheiro (150), e o valor aparecia
+   coberto pelo ⋮ até ser rolado (risco 1 da 3.7). Solta, ela rola junto e a
+   janela é a área inteira menos o ⋮ (304 − 64 = 240 px a 360).
+   `position: static` desfaz o `sticky`; a sombra, que só separava a coluna
+   do que rolava por baixo, sai junto. Acima de 480 px nada muda (DEC-133). */
+@media (max-width: 480px) {
+  .data-table--primeira-fixa th:first-child,
+  .data-table--primeira-fixa td:first-child {
+    position: static;
+    box-shadow: none;
+  }
+}
+
 /* Os `min-width` genéricos de `.data-table` (600 px abaixo de 1024, 480 abaixo
    de 768, mais acima) são de antes das larguras por coluna: esticavam a tabela
    além da soma das `<col>` — Clientes a 360 px media 480 com 362 de colunas.
@@ -673,11 +687,27 @@
   .data-table.data-table--primeira-fixa { min-width: 0; }
 }
 
-/* E nas listas cuja célula de ações NÃO tem nota (Honorários, Processos e
-   Clientes), a coluna de ações encolhe para a largura do botão. Os 120 px de
-   `col-acoes-menu` são a medida da NOTA ("Reparcelada", "sem recibo",
-   F-1b.3.1), que só existe em Parcelas e Pagamentos. Medido a 360 px: a
-   janela entre as duas colunas fixas vai de 56 para 112 px. */
+/* E no celular a coluna de ações encolhe para a largura do botão, nas cinco
+   listas. Os 120 px de `col-acoes-menu` eram a medida da NOTA ("Reparcelada",
+   "sem recibo", F-1b.3.1); desde a 3.8 (DEC-135) as notas moram numa coluna
+   `prio-1` vizinha (o Status em Parcelas, o Líquido em Pagamentos), e a
+   classe `--acoes-sem-nota` deixou de existir. Acima de 480 px a coluna
+   continua com 120 px, e as medidas da 3.7 não mudam. */
 @media (max-width: 480px) {
-  .data-table--acoes-sem-nota col:last-child { width: 64px; }
+  .data-table--acoes-fixas col:last-child { width: 64px; }
+}
+
+/* A nota que explica a linha, abaixo do que ela explica (Fase 3.8, DEC-135):
+   "Reparcelada" sob o status "Cancelado", "sem recibo" sob o líquido. Mesma
+   letra e mesmo tom das notas da célula de ações (F-1b), em linha própria
+   para não disputar a largura com o badge ou com o valor — e sem quebrar nem
+   cortar: as duas palavras cabem em qualquer coluna de status ou dinheiro. */
+.data-table .nota-da-celula {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-xs);
+  font-style: italic;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  line-height: var(--line-height-normal);
 }
