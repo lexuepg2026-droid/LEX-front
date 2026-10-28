@@ -1,9 +1,15 @@
 import api from './axiosConfig';
 import { nomeDoAnexo } from '../utils/download';
 
-const listDocuments = ({ page = 1, limit = 20, processoId } = {}) => {
+// Fase 3.9a (DEC-138): `busca`, `de`/`ate` (pela data de geração) e
+// `ehModelo` ('false' tira os modelos — a lista de Documentos sempre manda).
+const listDocuments = ({ page = 1, limit = 20, processoId, busca, de, ate, ehModelo } = {}) => {
   const params = { page, limit };
   if (processoId) params.processoId = processoId;
+  if (busca) params.busca = busca;
+  if (de) params.de = de;
+  if (ate) params.ate = ate;
+  if (ehModelo !== undefined) params.ehModelo = String(ehModelo);
   return api.get('/documents', { params });
 };
 const getDocumentById = (id) => api.get(`/documents/${id}`);
@@ -25,6 +31,15 @@ const listModelos = ({ page = 1, limit = 20, tipo } = {}) => {
   const params = { page, limit };
   if (tipo) params.tipo = tipo;
   return api.get('/documents/modelos', { params });
+};
+
+// Fase 3.9a (DEC-141): a escolha do modelo na montagem busca no servidor,
+// pelo nome, sem acento. Disparada pela digitação, então `semToastGlobal`
+// (DEC-084): a falha aparece em linha.
+const buscarModelos = ({ busca, limit = 20 } = {}) => {
+  const params = { page: 1, limit };
+  if (busca) params.busca = busca;
+  return api.get('/documents/modelos', { params, semToastGlobal: true });
 };
 
 // `clienteId` escolhe de qual participante do processo sai a qualificação
@@ -158,6 +173,7 @@ export default {
   deleteDocument,
   criarModelo,
   listModelos,
+  buscarModelos,
   gerarDocumento,
   compatibilidadeModelo,
   previewDocumento,

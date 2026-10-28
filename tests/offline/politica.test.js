@@ -52,7 +52,9 @@ describe("o que se guarda", () => {
   });
 
   test("recusa recurso fora da lista, e valor ausente", () => {
-    assert.equal(isStorable({ resource: "documents", value: [] }).ok, false);
+    // Fase 3.9a (DEC-139): "documents" entrou na lista; o recurso de fora do
+    // exemplo passou ao download, que continua de fora.
+    assert.equal(isStorable({ resource: "documentDownload", value: [] }).ok, false);
     assert.equal(isStorable({ resource: "clients", value: undefined }).ok, false);
     assert.equal(isStorable({ resource: "clients", value: null }).ok, false);
   });
