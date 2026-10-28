@@ -135,6 +135,22 @@ describe("Fase 3.9a · item 2 — a lista de Documentos no padrão da Figura 19 
   });
 });
 
+// ── A coluna que cede (achado no navegador, DEC-139) ──────────────────────
+describe("Fase 3.9a · a coluna de texto cede a sobra, e o ⋮ fica em 120 px (DEC-139)", () => {
+  test("col-cede: sem largura a partir de 1024, 220 px abaixo; o Nome e o Trecho a usam", () => {
+    const css = semComentarios(ler("src/styles/modules.css"));
+    assert.match(css, /@media \(max-width: 1023px\) \{\s*\.data-table--fixed col\.col-cede \{ width: 220px; \}\s*\}/);
+    const docs = semComentarios(ler("src/pages/documents/DocumentListPage.jsx"));
+    const secoes = semComentarios(ler("src/pages/secoes/SecaoListPage.jsx"));
+    assert.match(docs, /<colgroup>\s*<col className="col-cede" \/>/, "o Nome é a primeira e a que cede");
+    assert.equal((secoes.match(/className="col-cede"/g) ?? []).length, 1, "em Seções, só o Trecho cede");
+    // As outras cinco listas não a usam (a medição delas não mudou).
+    for (const f of ["fees/FeeListPage", "installments/InstallmentListPage", "payments/PaymentListPage", "processes/ProcessListPage", "clients/ClientListPage"]) {
+      assert.doesNotMatch(ler(`src/pages/${f}.jsx`), /col-cede/, f);
+    }
+  });
+});
+
 // ── Item 3 — o seletor de processo da geração (DEC-140/141) ──────────────
 describe("Fase 3.9a · item 3 — o processo da geração por busca; o modelo também (DEC-140/141)", () => {
   const painel = semComentarios(ler("src/components/documents/GenerationPanel.jsx"));
