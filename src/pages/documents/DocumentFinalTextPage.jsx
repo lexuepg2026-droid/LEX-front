@@ -3,8 +3,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   AlertTriangle,
   Download,
-  Eye,
-  EyeOff,
   FileDown,
   Info,
   PencilLine,
@@ -23,6 +21,7 @@ import {
   parametrosDeRegeracao,
   textoDaSobrescrita,
 } from './regeneration.js';
+import { contextoDoDocumento } from './textoFinal.js';
 import '../../styles/modules.css';
 import '../../components/ui/Button.css';
 import './DocumentFinalTextPage.css';
@@ -294,31 +293,58 @@ function DocumentFinalTextPage() {
 
   return (
     <div className="module-container final">
-      <header className="final__cabecalho">
-        <div className="final__identidade">
-          <h1 className="final__titulo">{documento?.nome}</h1>
-          <p className="final__subtitulo">
-            {labelDe(TIPO_DOCUMENTO_OPTIONS, documento?.tipo)}
-            {documento?.dataGeracao ? ` · gerado em ${formatDate(documento.dataGeracao)}` : ''}
-            {documento?.processoId?.titulo ? ` · ${documento.processoId.titulo}` : ''}
-          </p>
+      {/* ── Fase 3.9b2 (DEC-148): o cabeçalho em balão ─────────────────────
+          O nome, "processo · cliente", os selos da lista e o "não salvo" à
+          direita. A faixa de contexto continua acima (DEC-085). */}
+      <header className="final__cabecalho" aria-labelledby="final-titulo">
+        <div className="final__topo">
+          <div className="final__identidade">
+            <h1 id="final-titulo" className="final__titulo">{documento?.nome}</h1>
+            {contextoDoDocumento(documento) && (
+              <p className="final__contexto">{contextoDoDocumento(documento)}</p>
+            )}
+            <p className="final__subtitulo">
+              {labelDe(TIPO_DOCUMENTO_OPTIONS, documento?.tipo)}
+              {documento?.dataGeracao ? ` · gerado em ${formatDate(documento.dataGeracao)}` : ''}
+            </p>
 
-          <div className="final__selos">
-            {editadoManualmente && (
-              <span className="final__selo final__selo--editado">
-                <PencilLine size={13} aria-hidden="true" />
-                editado à mão
-              </span>
-            )}
-            {documento?.substituidoPorId && (
-              <span className="final__selo final__selo--substituido">
-                substituído por uma versão mais nova
-              </span>
-            )}
+            {/* Os selos da lista de Documentos (DEC-139), com a mesma regra. */}
+            <div className="final__selos">
+              {editadoManualmente && (
+                <span className="final__selo final__selo--editado">
+                  <PencilLine size={13} aria-hidden="true" />
+                  editado à mão
+                </span>
+              )}
+              {visivelPortal && <span className="final__selo final__selo--portal">no portal</span>}
+              {!editadoManualmente && !visivelPortal && (
+                <span className="final__selo final__selo--neutro">gerado</span>
+              )}
+              {documento?.substituidoPorId && (
+                <span className="final__selo final__selo--substituido">
+                  substituído por uma versão mais nova
+                </span>
+              )}
+            </div>
           </div>
+
+          <p className="final__estado" aria-live="polite">
+            {sujo && <span className="final__sujo">alterações não salvas</span>}
+          </p>
         </div>
 
-        <div className="final__acoes-topo">
+        {/* ── A barra de ações (DEC-149), nesta ordem: Salvar, Baixar PDF,
+            Baixar DOCX, Portal e Regerar. Os tratadores são os de sempre. */}
+        <div className="final__barra" role="group" aria-label="Ações do documento">
+          <button
+            type="button"
+            className="ui-btn ui-btn--primary ui-btn--md"
+            onClick={salvar}
+            disabled={!sujo || salvando}
+            aria-disabled={online ? undefined : 'true'}
+          >
+            {salvando ? 'Salvando…' : 'Salvar'}
+          </button>
           <button
             type="button"
             className="ui-btn ui-btn--secondary ui-btn--md"
@@ -332,7 +358,7 @@ function DocumentFinalTextPage() {
             aria-disabled={online ? undefined : 'true'}
           >
             <Download size={15} aria-hidden="true" />
-            {baixando === 'pdf' ? 'Baixando…' : 'PDF'}
+            {baixando === 'pdf' ? 'Baixando…' : 'Baixar PDF'}
           </button>
           <button
             type="button"
@@ -347,68 +373,51 @@ function DocumentFinalTextPage() {
             aria-disabled={online ? undefined : 'true'}
           >
             <FileDown size={15} aria-hidden="true" />
-            {baixando === 'docx' ? 'Baixando…' : 'DOCX'}
+            {baixando === 'docx' ? 'Baixando…' : 'Baixar DOCX'}
           </button>
+
+          {/* O interruptor do `LiberacaoPortal` (DEC-111) no VISUAL, com o
+              comportamento de hoje: liga e desliga sem confirmar. */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={visivelPortal}
+            aria-describedby="final-portal-ajuda"
+            className={`final__interruptor${visivelPortal ? ' final__interruptor--sim' : ''}`}
+            onClick={alternarPortal}
+            disabled={alternandoPortal}
+          >
+            <span className="final__trilho" aria-hidden="true">
+              <span className="final__botao-trilho" />
+            </span>
+            {alternandoPortal ? 'alterando…' : `No portal: ${visivelPortal ? 'sim' : 'não'}`}
+          </button>
+
+          {!impedimentoDeRegerar && (
+            <button
+              type="button"
+              className="ui-btn ui-btn--secondary ui-btn--md"
+              onClick={tentarRegerar}
+              disabled={regerando}
+            >
+              <RefreshCw size={14} aria-hidden="true" />
+              {regerando ? 'Regerando…' : 'Regerar'}
+            </button>
+          )}
         </div>
+
+        {!online && <OfflineWriteReason />}
+
+        {/* A lista completa do 422, aqui mesmo (Fase 4.6), junto da barra
+            onde está o Regerar. É o MESMO componente da tela de geração. */}
+        {!impedimentoDeRegerar && <PendenciaList pendencias={pendencias} />}
       </header>
 
-      {/* ── Aviso de lacuna — não bloqueia nada ───────────────────────────── */}
-      {lacunas.length > 0 && (
-        <section className="final__lacunas">
-          <p className="final__lacunas-titulo">
-            <AlertTriangle size={15} aria-hidden="true" />
-            {lacunas.length === 1
-              ? '1 trecho a preencher neste documento'
-              : `${lacunas.length} trechos a preencher neste documento`}
-          </p>
-          <p className="final__lacunas-ajuda">
-            Aviso, não impedimento — o download continua liberado. Se o espaço foi deixado de
-            propósito para preencher à mão depois, está certo assim.
-          </p>
-          <ul className="final__lacunas-lista">
-            {lacunas.map((lacuna) => (
-              <li key={`${lacuna.tipo}-${lacuna.inicio}`} className="final__lacuna">
-                <span className="final__lacuna-rotulo">
-                  {lacuna.rotulo} · linha {lacuna.linha}
-                </span>
-                <span className="final__lacuna-contexto">{lacuna.contexto}</span>
-                <button
-                  type="button"
-                  className="final__lacuna-ir"
-                  onClick={() => irParaLacuna(lacuna)}
-                  disabled={sujo}
-                  title={
-                    sujo
-                      ? 'Salve o texto para as posições voltarem a corresponder'
-                      : 'Levar o cursor até este trecho'
-                  }
-                >
-                  ir até o trecho
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       <div className="final__area">
-        <section className="final__editor">
-          <div className="final__editor-barra">
-            <h2 className="final__editor-titulo">Texto final</h2>
-            <div className="final__editor-acoes">
-              {sujo && <span className="final__sujo">alterações não salvas</span>}
-              <button
-                type="button"
-                className="ui-btn ui-btn--primary ui-btn--sm"
-                onClick={salvar}
-                disabled={!sujo || salvando}
-                aria-disabled={online ? undefined : 'true'}
-              >
-                {salvando ? 'Salvando…' : 'Salvar texto'}
-              </button>
-            </div>
-            {!online && <OfflineWriteReason />}
-          </div>
+        {/* ── Fase 3.9b2 (DEC-150): o texto num balão, com a fonte e a largura
+            de leitura de antes. */}
+        <section className="final__balao final__editor" aria-labelledby="final-texto-titulo">
+          <h2 id="final-texto-titulo" className="final__balao-titulo">Texto final</h2>
 
           <textarea
             ref={areaRef}
@@ -426,67 +435,76 @@ function DocumentFinalTextPage() {
         </section>
 
         <aside className="final__lateral">
-          {/* ── Visibilidade no portal ────────────────────────────────────── */}
-          <section className="final__cartao">
-            <h2 className="final__cartao-titulo">Portal do cliente</h2>
-            <p className="final__cartao-texto">
+          {/* ── Lacunas: ao lado do texto a partir de 1024 px, abaixo dele em
+              telas menores (DEC-150). Aviso, não impedimento. */}
+          {lacunas.length > 0 && (
+            <section className="final__balao final__lacunas">
+              <p className="final__lacunas-titulo">
+                <AlertTriangle size={15} aria-hidden="true" />
+                {lacunas.length === 1
+                  ? '1 trecho a preencher neste documento'
+                  : `${lacunas.length} trechos a preencher neste documento`}
+              </p>
+              <p className="final__lacunas-ajuda">
+                Aviso, não impedimento — o download continua liberado. Se o espaço foi deixado de
+                propósito para preencher à mão depois, está certo assim.
+              </p>
+              <ul className="final__lacunas-lista">
+                {lacunas.map((lacuna) => (
+                  <li key={`${lacuna.tipo}-${lacuna.inicio}`} className="final__lacuna">
+                    <span className="final__lacuna-rotulo">
+                      {lacuna.rotulo} · linha {lacuna.linha}
+                    </span>
+                    <span className="final__lacuna-contexto">{lacuna.contexto}</span>
+                    <button
+                      type="button"
+                      className="final__lacuna-ir"
+                      onClick={() => irParaLacuna(lacuna)}
+                      disabled={sujo}
+                      title={
+                        sujo
+                          ? 'Salve o texto para as posições voltarem a corresponder'
+                          : 'Levar o cursor até este trecho'
+                      }
+                    >
+                      ir até o trecho
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* ── O que o portal e o regerar fazem — a explicação que ficava nos
+              cartões, agora que os controles estão na barra. */}
+          <section className="final__balao">
+            <h2 className="final__balao-titulo">Portal e regeração</h2>
+            <p id="final-portal-ajuda" className="final__cartao-texto">
               Desligado por padrão. Ligue só quando o documento estiver pronto para o cliente ver.
             </p>
-            <button
-              type="button"
-              className={`final__portal${visivelPortal ? ' final__portal--ligado' : ''}`}
-              onClick={alternarPortal}
-              disabled={alternandoPortal}
-              aria-pressed={visivelPortal}
-            >
-              {visivelPortal ? <Eye size={15} /> : <EyeOff size={15} />}
-              {alternandoPortal ? 'alterando…' : visivelPortal ? 'Visível no portal' : 'Oculto do portal'}
-            </button>
-          </section>
-
-          {/* ── Regerar a partir das seções (Fase 4.4) ────────────────────── */}
-          <section className="final__cartao">
-            <h2 className="final__cartao-titulo">Regerar</h2>
             <p className="final__cartao-texto">
-              Recompõe o texto a partir das seções e do cadastro de hoje. Use quando o
+              Regerar recompõe o texto a partir das seções e do cadastro de hoje. Use quando o
               cadastro do cliente mudou, ou quando uma seção foi corrigida na biblioteca.
             </p>
 
             {impedimentoDeRegerar ? (
               <p className="final__cartao-impedimento">{impedimentoDeRegerar}</p>
             ) : (
-              <>
-                <button
-                  type="button"
-                  className="ui-btn ui-btn--secondary ui-btn--sm final__regerar"
-                  onClick={tentarRegerar}
-                  disabled={regerando}
-                >
-                  <RefreshCw size={14} aria-hidden="true" />
-                  {regerando ? 'Regerando…' : 'Regerar a partir das seções'}
-                </button>
-                {editadoManualmente && (
-                  <p className="final__cartao-aviso final__cartao-aviso--risco">
-                    <AlertTriangle size={13} aria-hidden="true" />
-                    <span>
-                      Este texto foi editado à mão. Regerar <strong>substitui</strong> a
-                      revisão — o sistema vai pedir confirmação.
-                    </span>
-                  </p>
-                )}
-
-                {/* A lista completa do 422, aqui mesmo (Fase 4.6). Antes esta
-                    tela mostrava só "há informações faltando no cadastro", sem
-                    dizer quais — e obrigava a voltar à montagem para descobrir.
-                    É o MESMO componente da tela de geração. */}
-                <PendenciaList pendencias={pendencias} />
-              </>
+              editadoManualmente && (
+                <p className="final__cartao-aviso final__cartao-aviso--risco">
+                  <AlertTriangle size={13} aria-hidden="true" />
+                  <span>
+                    Este texto foi editado à mão. Regerar <strong>substitui</strong> a
+                    revisão — o sistema vai pedir confirmação.
+                  </span>
+                </p>
+              )
             )}
           </section>
 
           {/* ── Rastreabilidade de origem ─────────────────────────────────── */}
-          <section className="final__cartao">
-            <h2 className="final__cartao-titulo">Seções de origem</h2>
+          <section className="final__balao">
+            <h2 className="final__balao-titulo">Seções de origem</h2>
             <p className="final__cartao-aviso">
               <Info size={13} aria-hidden="true" />
               <span>
