@@ -155,12 +155,13 @@ function SecaoListPage() {
                     esquerda. Tipo e trecho `prio-1` (o trecho distingue duas
                     seções de títulos parecidos — é identificação para quem
                     lê); a contagem de variáveis `prio-3`.
-                    220/130/220/80/120 = 770 px. O trecho ganhou largura
-                    (era `auto`): numa tabela que rola, coluna `auto` recebe o
-                    que sobra — zero a 360 px. */}
+                    O trecho é a coluna que CEDE (`col-cede`): recebe a sobra a
+                    partir de 1024 e tem 220 px abaixo — era `auto` sempre, e
+                    numa tabela que rola coluna `auto` recebe zero (medido:
+                    0 px a 360). 220/130/80/120 sem ele. */}
                 <col className="col-lg" />
                 <col className="col-sm" />
-                <col className="col-lg" />
+                <col className="col-cede" />
                 <col className="col-xxs prio-3" />
                 <col className="col-acoes-menu" />
               </colgroup>

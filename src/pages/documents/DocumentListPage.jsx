@@ -204,11 +204,12 @@ function DocumentListPage() {
           <div className="table-wrapper" aria-busy={carregando || undefined}>
             <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa">
               <colgroup>
-                {/* DEC-133/135 (Fase 3.9a): o nome é a coluna fixa à esquerda.
-                    Processo e cliente `prio-2`, tipo `prio-3`; data e situação
-                    `prio-1`. 220/170/170/170/130/170/120 = 1.150 px; sem o tipo,
-                    980 — cabe sem rolar a 1280. */}
-                <col className="col-lg" />
+                {/* DEC-133/135 (Fase 3.9a): o nome é a coluna fixa à esquerda e
+                    a que CEDE (`col-cede`: recebe a sobra a partir de 1024, 220
+                    px abaixo, 128 no celular). Processo e cliente `prio-2`, tipo
+                    `prio-3`; data e situação `prio-1`. Sem o nome, 930 px com
+                    tudo; 760 sem o tipo; 420 só com as `prio-1`. */}
+                <col className="col-cede" />
                 <col className="col-md prio-3" />
                 <col className="col-md prio-2" />
                 <col className="col-md prio-2" />
