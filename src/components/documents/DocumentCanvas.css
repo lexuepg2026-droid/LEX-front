@@ -294,8 +294,13 @@
   }
 }
 
+/* No celular a moldura encosta nas bordas do balão (o recuo dele é
+   `--space-3`): os 320 px da folha cabem inteiros a 360, como antes da fase,
+   em vez de rolar dentro dela. */
 @media (max-width: 767px) {
   .canvas-scroll {
-    padding: var(--space-2);
+    margin: 0 calc(-1 * var(--space-3));
+    padding: 0;
+    background: transparent;
   }
 }
