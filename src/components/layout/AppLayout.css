@@ -40,3 +40,12 @@
     padding-bottom: calc(var(--bottom-nav-height) + var(--space-4));
   }
 }
+
+/* Fase 4a (DEC-156): o "Pular para o conteúdo" põe o foco aqui
+   (`tabIndex={-1}`: alcançável pelo link, fora da ordem do Tab). O anel é o
+   global, só que POR DENTRO: quem rola é este elemento, e o `overflow` da
+   `.app-layout` cortaria um anel desenhado para fora nas bordas da tela. */
+.main-content:focus-visible {
+  outline-offset: calc(-1 * var(--focus-ring-width));
+  border-radius: 0;
+}

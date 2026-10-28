@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { usePortalAuth } from '../../contexts/PortalAuthContext';
 import LogoLex from '../ui/LogoLex.jsx';
+import PularParaConteudo, { ID_DO_CONTEUDO } from '../ui/PularParaConteudo.jsx';
 import './Portal.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -28,6 +29,9 @@ function PortalLayout() {
 
   return (
     <div className="portal">
+      {/* Fase 4a (DEC-156): o primeiro Tab, antes da barra. Também no login,
+          onde não há barra: o link pula a área e leva ao cartão. */}
+      <PularParaConteudo />
       {autenticado && (
         <header className="portal__barra">
           <span className="portal__marca">
@@ -44,7 +48,7 @@ function PortalLayout() {
         </header>
       )}
 
-      <main className="portal__conteudo">
+      <main id={ID_DO_CONTEUDO} tabIndex={-1} className="portal__conteudo">
         <Outlet />
       </main>
 

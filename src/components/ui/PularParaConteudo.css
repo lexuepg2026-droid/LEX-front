@@ -1,0 +1,51 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   "PULAR PARA O CONTEÚDO" (Fase 4a, DEC-156)
+
+   Fora da tela até receber foco, e não `display: none`: o que não é exibido
+   não recebe foco, e o link precisa ser o primeiro Tab. O recorte é o mesmo
+   do `.sr-only` das outras telas.
+
+   Com foco, aparece no topo, à esquerda, por cima do cabeçalho. Tokens da
+   MARCA (DEC-078), iguais nos dois modos, com os pares medidos em
+   `tests/css/contrastePares.js` ("pular para o conteúdo: …"). O anel é o da
+   barra (`--color-marca-foco`): o `--color-focus` do claro é o verde da
+   própria barra, e sumiria ali.
+
+   `position: fixed` e não `absolute`: em `.app-layout` quem rola é o
+   `.main-content`, e o link precisa aparecer no topo da tela, não do bloco.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.pular-conteudo {
+  position: fixed;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 1000;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.pular-conteudo:focus {
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm, 4px);
+  background-color: var(--color-marca-escuro);
+  color: var(--color-marca-texto);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pular-conteudo:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-marca-foco);
+  outline-offset: var(--focus-ring-offset);
+}
