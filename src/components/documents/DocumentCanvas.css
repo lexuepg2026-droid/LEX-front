@@ -299,10 +299,23 @@
    em vez de rolar dentro dela. */
 /* Fase 3.10 (DEC-154): a 360 px a barra do bloco (alça, número, título,
    tipo, ↑ ↓ e "Remover") não cabia, e quem cedia era o título — 0 px. Abaixo
-   de 768 o "Remover" fica só com o ícone (o nome está no aria-label). */
+   de 768 o "Remover" fica só com o ícone (o nome está no aria-label), e a
+   barra QUEBRA: o título guarda 120 px, e as ações descem para a linha de
+   baixo quando não cabem ao lado dele. Medido no navegador: só o ícone
+   deixava o título com 8 a 34 px. */
 @media (max-width: 767px) {
   .canvas-bloco__acao-rotulo {
     display: none;
+  }
+
+  .canvas-bloco__barra {
+    flex-wrap: wrap;
+    row-gap: var(--space-1);
+  }
+
+  .canvas-bloco__titulo {
+    flex: 1 1 120px;
+    min-width: 120px;
   }
 
   .canvas-scroll {
