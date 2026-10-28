@@ -95,3 +95,38 @@ describe("Fase 4a2 · decisão 2 — sem gráficos em nenhuma tela (DEC-161)", (
     assert.doesNotMatch(tela, /graficos|Gráficos|lazy\(|Suspense/);
   });
 });
+
+// ── Decisão 3 — o seletor do mês mora no bloco "Em {mês}" (DEC-162) ───────
+describe("Fase 4a2 · decisão 3 — o seletor do mês no bloco do mês (DEC-162)", () => {
+  const tela = semComentarios(ler("src/pages/dashboard/DashboardHomePage.jsx"));
+  const topo = tela.slice(tela.indexOf('<div className="dashboard-header">'), tela.indexOf("{fromCache && <OfflineNotice"));
+  const blocoDoMes = tela.slice(tela.indexOf('chave="mes"'), tela.indexOf('chave="acumulado"'));
+
+  test("o topo fica só com o título e a data de hoje", () => {
+    assert.match(topo, /<h1 className="dashboard-title">Início<\/h1>/);
+    assert.match(topo, /formatCurrentDate\(\)/);
+    assert.doesNotMatch(topo, /inicio-mes|<button/);
+  });
+
+  test("o seletor está na ação do bloco \"Em {mês}\", com as setas, o rótulo e o \"Mês atual\"", () => {
+    const acao = blocoDoMes.slice(blocoDoMes.indexOf("acao={"), blocoDoMes.indexOf("carregandoResumo"));
+    assert.match(blocoDoMes, /titulo=\{`Em \$\{rotuloMes\}`\}/);
+    assert.match(acao, /className="inicio-mes" role="group"/);
+    assert.match(acao, /aria-label="Mês anterior"[\s\S]*onClick=\{\(\) => irParaMes\(anterior\)\}/);
+    assert.match(acao, /aria-label="Próximo mês"[\s\S]*onClick=\{\(\) => irParaMes\(proximo\)\}/);
+    assert.match(acao, /irParaMes\(null\)[\s\S]*Mês atual/);
+    assert.equal((tela.match(/className="inicio-mes"/g) || []).length, 1, "um seletor só");
+  });
+
+  test("o mês continua na URL, e o \"voltar\" desfaz a troca", () => {
+    assert.match(tela, /setSearchParams\(paramsDoMes\(searchParams, destino, corrente\), \{ replace: false, preventScrollReset: true \}\)/);
+    assert.match(tela, /lerMesDaUrl\(searchParams\.get\('mes'\)\)/);
+  });
+
+  test("o seletor fica FORA do botão que alterna o bloco (botão dentro de botão é inválido)", () => {
+    const bloco = semComentarios(ler("src/components/dashboard/BlocoDoPainel.jsx"));
+    const botao = bloco.slice(bloco.indexOf("<button"), bloco.indexOf("</button>"));
+    assert.doesNotMatch(botao, /acao/);
+    assert.match(bloco, /\{acao && <div className="bloco__acao">\{acao\}<\/div>\}/);
+  });
+});

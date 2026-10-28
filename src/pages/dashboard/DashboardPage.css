@@ -1,6 +1,6 @@
 /* --- Dashboard Header --- */
-/* Título à esquerda, seletor do mês à direita (Fase 3.1); na tela estreita o
-   seletor desce para a linha de baixo. */
+/* Título e data de hoje. O seletor do mês, que ficava à direita (Fase 3.1),
+   desceu para o bloco "Em {mês}" na Fase 4a2 (DEC-162). */
 .dashboard-header {
   display: flex;
   flex-wrap: wrap;
@@ -139,7 +139,10 @@
    O INÍCIO — seletor do mês, ações rápidas e Datas próximas (Fase 3.1)
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Seletor do mês ───────────────────────────────────────────────────────── */
+/* ── Seletor do mês ─────────────────────────────────────────────────────────
+   No cabeçalho do bloco "Em {mês}" desde a Fase 4a2 (DEC-162). O bloco é
+   `--color-surface`, e as pílulas também: quem as separa do fundo é a borda,
+   como nos botões secundários. */
 .inicio-mes {
   display: flex;
   align-items: center;

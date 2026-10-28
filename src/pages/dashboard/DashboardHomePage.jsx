@@ -352,39 +352,14 @@ function DashboardHomePage() {
   // uma pergunta boa, só não é a da primeira olhada do dia.
   return (
     <div>
+      {/* Fase 4a2 (DEC-162): o topo fica só com o título e a data de hoje. O
+          seletor do mês desceu para o cabeçalho do bloco "Em {mês}", o único
+          que muda com ele — no topo, longe do bloco, trocar o mês parecia não
+          mudar nada. */}
       <div className="dashboard-header">
         <div className="dashboard-header__titulo">
           <h1 className="dashboard-title">Início</h1>
           <p className="dashboard-date">{formatCurrentDate()}</p>
-        </div>
-
-        {/* O seletor do mês. Só os blocos que dizem o mês no título o seguem —
-            ver a tabela da DEC-098. */}
-        <div className="inicio-mes" role="group" aria-label="Mês do Início">
-          <button
-            type="button"
-            className="inicio-mes__seta"
-            aria-label="Mês anterior"
-            disabled={!anterior}
-            onClick={() => irParaMes(anterior)}
-          >
-            <ChevronLeft size={18} aria-hidden="true" />
-          </button>
-          <span className="inicio-mes__rotulo" aria-live="polite">{rotuloMes}</span>
-          <button
-            type="button"
-            className="inicio-mes__seta"
-            aria-label="Próximo mês"
-            disabled={!proximo}
-            onClick={() => irParaMes(proximo)}
-          >
-            <ChevronRight size={18} aria-hidden="true" />
-          </button>
-          {!noMesCorrente && (
-            <button type="button" className="inicio-mes__atual" onClick={() => irParaMes(null)}>
-              Mês atual
-            </button>
-          )}
         </div>
       </div>
 
@@ -544,13 +519,44 @@ function DashboardHomePage() {
         )}
       </BlocoDoPainel>
 
-      {/* ══ 3. NO MÊS — segue o mês escolhido ════════════════════════════════ */}
+      {/* ══ 3. NO MÊS — segue o mês escolhido ════════════════════════════════
+          O seletor mora na AÇÃO do bloco (DEC-162): fica à vista com o bloco
+          aberto ou fechado, fora do botão que o alterna (link ou botão dentro
+          de botão é HTML inválido — ver `BlocoDoPainel`). */}
       <BlocoDoPainel
         chave="mes"
         titulo={`Em ${rotuloMes}`}
         Icone={ICONE_DINHEIRO}
         aberto={estaAberto('mes')}
         aoAlternar={alternarBloco}
+        acao={
+          <div className="inicio-mes" role="group" aria-label="Mês do bloco">
+            <button
+              type="button"
+              className="inicio-mes__seta"
+              aria-label="Mês anterior"
+              disabled={!anterior}
+              onClick={() => irParaMes(anterior)}
+            >
+              <ChevronLeft size={18} aria-hidden="true" />
+            </button>
+            <span className="inicio-mes__rotulo" aria-live="polite">{rotuloMes}</span>
+            <button
+              type="button"
+              className="inicio-mes__seta"
+              aria-label="Próximo mês"
+              disabled={!proximo}
+              onClick={() => irParaMes(proximo)}
+            >
+              <ChevronRight size={18} aria-hidden="true" />
+            </button>
+            {!noMesCorrente && (
+              <button type="button" className="inicio-mes__atual" onClick={() => irParaMes(null)}>
+                Mês atual
+              </button>
+            )}
+          </div>
+        }
       >
         {carregandoResumo && !resumoFinanceiro ? (
           <Loading />
