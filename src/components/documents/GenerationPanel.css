@@ -189,3 +189,11 @@
     flex-basis: 100%;
   }
 }
+
+/* Fase 3.10 (achado da varredura): o processo é o `SeletorComBusca`, e o
+   invólucro `.sugestoes` não ocupava a largura do campo — o input ficava com
+   ~240 px e cortava "número — título — cliente". */
+.geracao__campo .sugestoes,
+.geracao__campo .sugestoes input {
+  width: 100%;
+}

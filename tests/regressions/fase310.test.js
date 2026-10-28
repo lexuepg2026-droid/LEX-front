@@ -149,3 +149,11 @@ describe("Fase 3.10 · decisão 5 — o interruptor não perde o foco durante o 
     assert.doesNotMatch(lib.slice(lib.indexOf('role="switch"'), lib.indexOf('role="switch"') + 500), /\sdisabled=/);
   });
 });
+
+// ── Achado da varredura — o campo de processo da geração (pele) ──────────
+describe("Fase 3.10 · achado da varredura — o seletor de processo da geração ocupa o campo", () => {
+  test("o invólucro .sugestoes e o input com a largura do campo", () => {
+    const css = ler("src/components/documents/GenerationPanel.css").replace(/\/\*[\s\S]*?\*\//g, "");
+    assert.match(css, /\.geracao__campo \.sugestoes,\s*\.geracao__campo \.sugestoes input \{\s*width: 100%;/);
+  });
+});
