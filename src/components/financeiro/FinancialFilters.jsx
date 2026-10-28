@@ -4,7 +4,10 @@ import {
   ROTULO_PRESET,
   descricaoDoPeriodo
 } from '../ui/periodo.js';
-import { rotuloCurtoDoHonorario } from '../../utils/feeLabel';
+import SeletorComBusca from '../ui/SeletorComBusca';
+import feeService from '../../api/feeService';
+import { rotuloDoHonorarioNoSeletor } from '../../utils/feeLabel';
+import { honorarioDoDetalhe } from '../../utils/seletorComBusca.js';
 import './FinancialFilters.css';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -32,13 +35,25 @@ import './FinancialFilters.css';
 // acrescentaria a quinta bandeira.
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ── Fase 3.10 (DEC-151): o honorário por BUSCA, e não pelos 100 primeiros ──
+// O `<select>` de Parcelas e Pagamentos pedia `listFees({ limit: 100 })`: o
+// 101º honorário não existia para o filtro. Virou o `SeletorComBusca` da
+// DEC-101 (`GET /fees?busca=`, `semToastGlobal`, até 20 sugestões, "descrição
+// — Processo nº — cliente"). O valor continua na URL (`?honorarioId=`); ao
+// recarregar, o honorário aparece escolhido, buscado pelo id (DEC-086). Vazio
+// é "todos os honorários" — o campo não é obrigatório.
+const buscarHonorarios = (termo) => feeService.buscarHonorarios(termo);
+const buscarHonorarioPorId = (hid) => feeService.getFeeById(hid).then((res) => honorarioDoDetalhe(res.data));
+
 function FinancialFilters({
   filtros,
   definirFiltro,
   aplicarPreset,
   limpar,
   temFiltro,
-  honorarios = null,
+  // Fase 3.10 (DEC-151): só Parcelas e Pagamentos têm o recorte por
+  // honorário. `{ onEscolhido }` liga o seletor; ausente, ele não existe.
+  filtroDeHonorario = null,
   placeholderBusca = 'Buscar por descrição, processo ou observação…',
   descricaoDoRecorte = null,
   // Fase 3.2 (DEC-102): na página própria a busca sobe para o topo do balão
@@ -78,27 +93,22 @@ function FinancialFilters({
         )}
 
         {/* O seletor de honorário só existe onde a listagem tem esse recorte —
-            a de honorários, obviamente, não tem. `null` é a ausência, e não
-            uma lista vazia: lista vazia é "nenhum honorário cadastrado", que é
-            outro estado e merece o `<option>` que o diz. */}
-        {honorarios !== null && (
-          <select
-            value={filtros.honorarioId}
-            onChange={(e) => definirFiltro('honorarioId', e.target.value)}
+            a de honorários, obviamente, não tem. */}
+        {filtroDeHonorario && (
+          <SeletorComBusca
+            id="filtro-honorario"
+            name="honorarioId"
+            className="filtros-financeiros__honorario"
+            valor={filtros.honorarioId}
+            onMudar={(hid) => definirFiltro('honorarioId', hid || '')}
+            onEscolhido={filtroDeHonorario.onEscolhido}
+            buscar={buscarHonorarios}
+            buscarPorId={buscarHonorarioPorId}
+            rotulo={rotuloDoHonorarioNoSeletor}
+            placeholder="Todos os honorários — busque um"
+            obrigatorio={false}
             aria-label="Filtrar por honorário"
-          >
-            <option value="">Todos os honorários</option>
-            {honorarios.length === 0 ? (
-              <option value="" disabled>Nenhum honorário cadastrado</option>
-            ) : (
-              honorarios.map((h) => (
-                <option key={h._id} value={h._id}>
-                  {rotuloCurtoDoHonorario(h.descricao)}
-                  {h.processoId?.titulo ? ` — ${h.processoId.titulo}` : ''}
-                </option>
-              ))
-            )}
-          </select>
+          />
         )}
 
         {children}

@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import installmentService from '../../api/installmentService';
-import feeService from '../../api/feeService';
 import CabecalhoDeLista from '../../components/financeiro/CabecalhoDeLista';
 import useLinhaClicavel from '../../components/financeiro/useLinhaClicavel';
 import EmptyState from '../../components/ui/EmptyState';
@@ -40,7 +39,6 @@ function InstallmentListPage() {
   const processoId = filtroProcesso.processoId || undefined;
   // Modo "desativadas" (Fase 4.5) — ver a nota em PaymentListPage. Vive junto
   // dos demais filtros para que ligá-lo também volte à página 1.
-  const [honorarios, setHonorarios] = useState([]);
   const online = useOnlineStatus();
 
   // ── O teto 100 + "Mostrando N de M" SAIU (F-1b.3) ───────────────────────
@@ -53,15 +51,10 @@ function InstallmentListPage() {
     definirFiltro, aplicarPreset, limpar, temFiltro
   } = useListFilters({ status: '', registro: '' }, FILTROS_DAS_FINANCEIRAS);
 
-  useEffect(() => {
-    let ativo = true;
-    feeService.listFees({ page: 1, limit: 100 })
-      .then((res) => { if (ativo) setHonorarios(res.data.data ?? res.data ?? []); })
-      // Falhar ao carregar o seletor não derruba a listagem — ver a nota em
-      // `PaymentListPage`.
-      .catch(() => { if (ativo) setHonorarios([]); });
-    return () => { ativo = false; };
-  }, []);
+  // Fase 3.10 (DEC-151): o honorário do filtro vem do `SeletorComBusca` da
+  // barra, por busca — o `listFees({ limit: 100 })` saiu. O escolhido (por
+  // clique ou buscado pelo id da URL) fica aqui só para a frase do recorte.
+  const [honorarioEscolhido, setHonorarioEscolhido] = useState(null);
 
   // DEC-058 (F-5a): espelho local da listagem, escopado por usuário. Guarda-se
   // o ENVELOPE inteiro — o `total` é ele que diz, e sem o total o paginador
@@ -142,7 +135,7 @@ function InstallmentListPage() {
   const recorte = descricaoDoRecorteFinanceiro({
     filtros,
     busca: buscaDebounced,
-    honorarios,
+    honorarios: honorarioEscolhido && filtros.honorarioId ? [honorarioEscolhido] : [],
     extras: [
       filtros.status ? `com status "${labelDe(STATUS_PARCELA_OPTIONS, filtros.status)}"` : null,
       trechoDoRegistro(registro)
@@ -180,7 +173,7 @@ function InstallmentListPage() {
         aplicarPreset={aplicarPreset}
         limpar={limparTudo}
         temFiltro={filtrado}
-        honorarios={honorarios}
+        filtroDeHonorario={{ onEscolhido: setHonorarioEscolhido }}
         placeholderBusca="Buscar por honorário, processo ou cliente…"
         descricaoDoRecorte={recorte}
         semBusca

@@ -140,16 +140,14 @@ function FeeListPage() {
         />
       )}
 
-      {/* `honorarios={null}` — a listagem DE honorários não se filtra por
-          honorário. `null` é a ausência do controle; uma lista vazia seria
-          "nenhum honorário cadastrado", que é outro estado. */}
+      {/* Sem `filtroDeHonorario`: a listagem DE honorários não se filtra
+          por honorário (DEC-151). */}
       <FinancialFilters
         filtros={filtros}
         definirFiltro={definirFiltro}
         aplicarPreset={aplicarPreset}
         limpar={limparTudo}
         temFiltro={filtrado}
-        honorarios={null}
         placeholderBusca="Buscar por descrição, processo ou cliente…"
         descricaoDoRecorte={recorte}
         semBusca

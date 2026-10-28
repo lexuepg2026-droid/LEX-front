@@ -45,9 +45,10 @@ export const descricaoDoRecorteFinanceiro = ({
 
   if (filtros.honorarioId) {
     const achado = honorarios.find((h) => String(h._id) === String(filtros.honorarioId));
-    // O honorário pode não estar na lista do seletor — ela carrega 100, e o
-    // filtro pode ter vindo de um link. Dizer "para este honorário" sem nomeá-lo
-    // é menos preciso e continua verdadeiro; inventar um nome não.
+    // O honorário pode ainda não ter chegado (desde a DEC-151 ele vem do
+    // seletor por busca, buscado pelo id quando vem da URL). Dizer "para este
+    // honorário" sem nomeá-lo é menos preciso e continua verdadeiro; inventar
+    // um nome não.
     trechos.push(
       achado ? `do honorário "${rotuloCurtoDoHonorario(achado.descricao)}"` : 'para este honorário'
     );

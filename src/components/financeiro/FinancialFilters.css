@@ -57,3 +57,14 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
+
+/* Fase 3.10 (DEC-151): o honorário é um campo de busca com sugestões. O item
+   da barra é o invólucro `.sugestoes`; o campo ocupa a largura dele. */
+.filtros-financeiros .filter-bar .sugestoes {
+  flex: 1 1 280px;
+  min-width: 200px;
+}
+
+.filtros-financeiros__honorario {
+  width: 100%;
+}
