@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ArrowDown, ArrowUp, GripVertical, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, GripVertical, Plus } from 'lucide-react';
+import Icone from '../ui/Icone.jsx';
 import Letterhead from './Letterhead';
 import { TIPO_SECAO_OPTIONS, labelDe } from '../../utils/enums';
 import './DocumentCanvas.css';
@@ -207,8 +208,11 @@ function DocumentCanvas({
                             disabled={desabilitado}
                             aria-label={`Remover “${secao.titulo}” do documento`}
                           >
-                            <Trash2 size={14} />
-                            Remover
+                            <Icone nome="lixeira" tamanho={14} />
+                            {/* Fase 3.10 (DEC-154): abaixo de 768 px a palavra
+                                some e fica o ícone, para o título da seção ter
+                                espaço na barra. O nome continua no aria-label. */}
+                            <span className="canvas-bloco__acao-rotulo">Remover</span>
                           </button>
                         </div>
                       </div>

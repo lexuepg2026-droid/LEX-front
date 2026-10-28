@@ -297,7 +297,14 @@
 /* No celular a moldura encosta nas bordas do balão (o recuo dele é
    `--space-3`): os 320 px da folha cabem inteiros a 360, como antes da fase,
    em vez de rolar dentro dela. */
+/* Fase 3.10 (DEC-154): a 360 px a barra do bloco (alça, número, título,
+   tipo, ↑ ↓ e "Remover") não cabia, e quem cedia era o título — 0 px. Abaixo
+   de 768 o "Remover" fica só com o ícone (o nome está no aria-label). */
 @media (max-width: 767px) {
+  .canvas-bloco__acao-rotulo {
+    display: none;
+  }
+
   .canvas-scroll {
     margin: 0 calc(-1 * var(--space-3));
     padding: 0;

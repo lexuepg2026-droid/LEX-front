@@ -90,3 +90,24 @@ describe("Fase 3.10 · decisão 3 — Pendências na pele das listas (DEC-153)",
     assert.match(ler("src/components/documents/PendenciaList.css"), /^\.pendencia \{/m);
   });
 });
+
+// ── Decisão 4 — o título do bloco da folha a 360 px (DEC-154) ────────────
+describe("Fase 3.10 · decisão 4 — 'Remover' só com ícone abaixo de 768 px (DEC-154)", () => {
+  const canvas = semComentarios(ler("src/components/documents/DocumentCanvas.jsx"));
+  const css = ler("src/components/documents/DocumentCanvas.css").replace(/\/\*[\s\S]*?\*\//g, "");
+
+  test("o botão guarda o nome no aria-label, e a palavra numa classe que some no celular", () => {
+    assert.match(canvas, /aria-label=\{`Remover “\$\{secao\.titulo\}” do documento`\}\s*>\s*<Icone nome="lixeira" tamanho=\{14\} \/>\s*<span className="canvas-bloco__acao-rotulo">Remover<\/span>/);
+    assert.match(css, /@media \(max-width: 767px\) \{\s*\.canvas-bloco__acao-rotulo \{\s*display: none;/);
+    // O remover continua chamando o mesmo tratador.
+    assert.match(canvas, /onClick=\{\(\) => onRemover\(vinculo\)\}/);
+  });
+
+  test("a folha continua branca, e os protegidos não mudaram de lugar", () => {
+    assert.match(css, /\.canvas-folha \{[^}]*background: #ffffff;/);
+    const pagina = semComentarios(ler("src/pages/documents/DocumentAssemblyPage.jsx"));
+    assert.match(pagina, /const montado = useIsMounted\(\);/);
+    assert.match(pagina, /const enfileirar = useSerialQueue\(\);/);
+    assert.match(pagina, /from '\.\/assemblyState\.js'/);
+  });
+});
