@@ -5769,6 +5769,56 @@ mais no tratador mudou (o mesmo pedido, sem confirmação). O `LiberacaoPortal`
 já usava `aria-disabled` e recusava no tratador: conferido no navegador, o
 foco fica nele.
 
+## DEC-156 (frontend) — "Pular para o conteúdo" (Fase 4a)
+
+Achado da varredura da 3.10: o primeiro Tab ia sempre ao logo, e quem usa
+teclado atravessava o cabeçalho inteiro em toda tela.
+
+- **`components/ui/PularParaConteudo.jsx`** é o **primeiro elemento
+  focável** do `AppLayout` e do `PortalLayout`. Em `ui/`, e não em `layout/`,
+  porque o portal não importa nada de `layout/` (`tests/portal/isolamento`).
+- **Fora da tela até receber foco** (o recorte do `.sr-only`, nunca
+  `display: none`, que tiraria o foco). Com foco, aparece no topo à esquerda,
+  `position: fixed`, por cima do cabeçalho, nos tokens fixos da marca
+  (`--color-marca-escuro` / `-texto`) e com o anel da barra
+  (`--color-marca-foco`). Pares em `contrastePares.js`.
+- **O alvo é `<main id="conteudo" tabIndex={-1}>`**, nos dois layouts. O
+  clique move o foco à mão e cancela a âncora: o hash não entra na URL. O
+  `<main>` focado mostra o anel por dentro (o `overflow` da `.app-layout`
+  cortaria um anel para fora; no portal, o bege, porque o `--color-focus` do
+  claro é o verde do fundo).
+- **Nas telas de autenticação não entra:** lá o primeiro Tab já é o
+  "Voltar", colado no conteúdo. No portal entra também no login, porque é o
+  mesmo layout.
+- **Limite conhecido:** depois de uma navegação interna (clicar num link do
+  app), o ponto de partida do Tab é onde ficou o clique, como em toda SPA
+  sem gestão de foco na troca de rota. O link vale na carga da página e
+  sempre que o foco volta ao topo.
+
+## DEC-157 (frontend) — a frase própria do percentual (Fase 4a)
+
+Acima de 100, o envio do honorário caía na validação do navegador (`max="100"`)
+e mostrava a mensagem genérica dele num balão fora do desenho — talvez o que a
+banca viu no apontamento 13. **A regra não mudou** (o back recusa acima de 100,
+DEC-027; o front também).
+
+- O campo **mantém** `min`, `max`, `step` e `required`, e ganhou
+  `onInvalid`: o `preventDefault` tira o balão, e a frase
+  **"O percentual vai de 0,01 a 100."** aparece no próprio campo
+  (`.form-erro-campo`, `role="alert"`, `aria-describedby`), com a borda de
+  `.input-erro`. O rodapé fica limpo. Digitar no campo apaga a frase.
+- A decisão vive em `utils/feeCalc.js`: `PERCENTUAL_MINIMO` (0,01),
+  `PERCENTUAL_MAXIMO` (100), `MENSAGEM_FAIXA_DO_PERCENTUAL` e
+  `mensagemDoCampoPercentual(validity)`. `validarHonorario` usa a mesma frase
+  (`p < 0,01 || p > 100`).
+- **Duas frases a mais, e por quê:** vazio continua com a do hook ("exige o
+  percentual contratado"); casas demais (12,345, na faixa) dizem "O percentual
+  aceita até duas casas decimais." — dizer "vai de 0,01 a 100" sobre ele
+  mandaria corrigir o que não está errado.
+- **É a única frase da validação de cliente que não repete o hook** palavra
+  por palavra (lá: "deve ser maior que zero e no máximo 100"). Se a Laís
+  decidir outro teto, a mudança é na Fase 4b, aqui e no `Fee`.
+
 ---
 
 ## Rotina de encerramento de sessão
