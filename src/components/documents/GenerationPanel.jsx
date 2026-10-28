@@ -3,6 +3,8 @@ import { AlertCircle, Sparkles, UserX } from 'lucide-react';
 import documentService from '../../api/documentService';
 import processService from '../../api/processService';
 import Modal from '../ui/Modal';
+import SeletorComBusca from '../ui/SeletorComBusca';
+import { rotuloDoProcessoNoSeletor } from '../../utils/feeLabel';
 import PendenciaList, { EscolhaDeHonorario } from './PendenciaList';
 import {
   PAPEL_PROCESSO_OPTIONS,
@@ -84,9 +86,24 @@ import { usePublicarContexto } from '../../contexts/ContextoContext';
 // decide o que é "o mesmo documento" continua sendo o backend.
 // ═══════════════════════════════════════════════════════════════════════════
 
-function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
-  const [processos, setProcessos] = useState([]);
-  const [processoId, setProcessoId] = useState('');
+// ── Fase 3.9a (DEC-140): o processo por BUSCA, e não pelos 100 primeiros ──
+//
+// O `<select>` pedia `listProcesses({ limit: 100 })`: o 101º processo não
+// existia para a geração — o mesmo teto que a 3.8 tirou do compromisso
+// (DEC-137). Virou o `SeletorComBusca` da DEC-101: busca no servidor por
+// número, título e cliente, até 20 sugestões, "{número} — {título} —
+// {cliente}". Sem sinal a busca diz que precisa de conexão (a geração
+// continua fora da fila, F-5b).
+//
+// `processoIdInicial` é o `?processoId=` da montagem — o "Gerar documento" da
+// lista filtrada por processo. Ele aparece escolhido, com o rótulo completo,
+// buscado pelo id (DEC-086). A faixa de contexto é publicada pelo id assim
+// que a escolha muda (DEC-085), e não depende de o rótulo ter chegado.
+const buscarProcessos = (termo) => processService.buscarProcessos(termo);
+const buscarProcessoPorId = (pid) => processService.getProcessById(pid).then((res) => res.data);
+
+function GenerationPanel({ modeloId, totalSecoes, onGerado, processoIdInicial = '' }) {
+  const [processoId, setProcessoId] = useState(processoIdInicial || '');
   // Fase 2b (DEC-085): publica para a faixa de contexto o processo — o escolhido para gerar.
   usePublicarContexto({ processoId });
 
@@ -117,21 +134,6 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
   // novo ali mesmo, sem obrigar a advogada a ir à lista de documentos.
   const [ofertaDeLiberacao, setOfertaDeLiberacao] = useState(null);
   const [liberando, setLiberando] = useState(false);
-
-  useEffect(() => {
-    let ativo = true;
-    processService
-      .listProcesses({ limit: 100 })
-      .then((res) => {
-        if (!ativo) return;
-        const lista = res.data.data ?? res.data;
-        setProcessos(Array.isArray(lista) ? lista : []);
-      })
-      .catch((err) => {
-        if (ativo) setErro(getApiErrorMessage(err, 'Falha ao carregar os processos.'));
-      });
-    return () => { ativo = false; };
-  }, []);
 
   // Participantes do processo escolhido. Só os vinculados podem receber a peça:
   // o vínculo é o que autoriza qualificar alguém como parte.
@@ -362,19 +364,16 @@ function GenerationPanel({ modeloId, totalSecoes, onGerado }) {
       <div className="geracao__campos">
         <div className="geracao__campo">
           <label htmlFor="geracao-processo">Processo *</label>
-          <select
+          <SeletorComBusca
             id="geracao-processo"
-            value={processoId}
-            onChange={(e) => setProcessoId(e.target.value)}
-          >
-            <option value="">Selecione o processo</option>
-            {processos.map((p) => (
-              <option key={p._id} value={p._id}>
-                {p.titulo}
-                {p.numeroProcesso ? ` — ${p.numeroProcesso}` : ''}
-              </option>
-            ))}
-          </select>
+            name="processoId"
+            valor={processoId}
+            onMudar={(pid) => setProcessoId(pid || '')}
+            buscar={buscarProcessos}
+            buscarPorId={buscarProcessoPorId}
+            rotulo={rotuloDoProcessoNoSeletor}
+            placeholder="Busque pelo número, título ou cliente"
+          />
         </div>
 
         <div className="geracao__campo">

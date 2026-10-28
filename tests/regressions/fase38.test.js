@@ -194,7 +194,9 @@ describe("Fase 3.8 · item 3 — a fiação da tela (DEC-136)", () => {
     assert.match(tela, /<label htmlFor="cal-ano"[^>]*>Ano<\/label>\s*<select\s+id="cal-ano"/);
     assert.match(tela, /onChange=\{\(e\) => irPara\(\{ ano, mes: Number\(e\.target\.value\) \}\)\}/);
     assert.match(tela, /onChange=\{\(e\) => irPara\(\{ ano: Number\(e\.target\.value\), mes \}\)\}/);
-    assert.match(tela, /to="\/dashboard\/agenda\/novo"\s+className="cal-novo"\s+aria-label="Novo compromisso"/);
+    // Fase 3.9a (DEC-143), reescrito: o "+" continua levando ao formulário
+    // novo, agora com o caminho de volta (mês e vista) pelo `?voltar=`.
+    assert.match(tela, /to=\{comVoltar\('\/dashboard\/agenda\/novo', voltar\)\}\s+className="cal-novo"\s+aria-label="Novo compromisso"/);
     assert.doesNotMatch(tela, /PageHeader/);
   });
 

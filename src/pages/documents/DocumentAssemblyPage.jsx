@@ -24,6 +24,13 @@ import '../../styles/modules.css';
 import '../../components/ui/Button.css';
 import './DocumentAssemblyPage.css';
 import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import {
+  LIMITE_DA_ESCOLHA_DE_MODELO,
+  avisoDeModelosOcultos,
+  destinoDaMontagem,
+  processoIdDaUrl,
+} from './processoDaGeracao.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TELA DE MONTAGEM — UMA TELA, DOIS MODOS
@@ -73,6 +80,8 @@ function DocumentAssemblyPage() {
   const enfileirar = useSerialQueue();
 
   const modo = ehModoValido(searchParams.get('modo')) ? searchParams.get('modo') : MODO_MODELO;
+  // Fase 3.9a (DEC-140): o processo pedido pela lista filtrada por processo.
+  const processoIdDaLista = processoIdDaUrl(searchParams);
 
   const [documento, setDocumento] = useState(null);
   const [vinculos, setVinculos] = useState([]);
@@ -273,7 +282,7 @@ function DocumentAssemblyPage() {
   // ── Porta de entrada: escolher ou criar o modelo ─────────────────────────
 
   if (!id) {
-    return <AssemblyStartCard modo={modo} navigate={navigate} />;
+    return <AssemblyStartCard modo={modo} navigate={navigate} processoId={processoIdDaLista} />;
   }
 
   if (loading) return <Loading />;
@@ -371,6 +380,7 @@ function DocumentAssemblyPage() {
         <GenerationPanel
           modeloId={id}
           totalSecoes={vinculos.length}
+          processoIdInicial={processoIdDaLista}
           onGerado={(documentoGerado) => {
             toast.success('Documento gerado. Agora é revisar o texto final.');
             navigate(`/dashboard/documentos/${documentoGerado._id}/texto`);
@@ -398,8 +408,13 @@ function DocumentAssemblyPage() {
 // modo=documento  escolhe um modelo já montado (o caminho normal — a
 //                 reutilização é o ponto do modelo) ou monta um novo
 // ═══════════════════════════════════════════════════════════════════════════
-function AssemblyStartCard({ modo, navigate }) {
+function AssemblyStartCard({ modo, navigate, processoId = '' }) {
+  const online = useOnlineStatus();
   const [modelos, setModelos] = useState([]);
+  const [totalDeModelos, setTotalDeModelos] = useState(null);
+  // Fase 3.9a (DEC-141): a escolha do modelo busca no servidor, pelo nome.
+  const [buscaModelo, setBuscaModelo] = useState('');
+  const [buscaModeloDebounced, setBuscaModeloDebounced] = useState('');
   const [carregandoModelos, setCarregandoModelos] = useState(modo === MODO_DOCUMENTO);
   const [nome, setNome] = useState('');
   const [tipo, setTipo] = useState('');
@@ -408,17 +423,31 @@ function AssemblyStartCard({ modo, navigate }) {
   const [criarNovo, setCriarNovo] = useState(modo === MODO_MODELO);
 
   useEffect(() => {
+    const t = setTimeout(() => setBuscaModeloDebounced(buscaModelo.trim()), 300);
+    return () => clearTimeout(t);
+  }, [buscaModelo]);
+
+  useEffect(() => {
     if (modo !== MODO_DOCUMENTO) return;
+    // Sem sinal não pergunta: a busca precisa de conexão (a frase está no JSX).
+    if (!online) {
+      setCarregandoModelos(false);
+      return;
+    }
 
     let ativo = true;
+    setCarregandoModelos(true);
     documentService
-      .listModelos({ limit: 100 })
+      .buscarModelos({ busca: buscaModeloDebounced || undefined, limit: LIMITE_DA_ESCOLHA_DE_MODELO })
       .then((res) => {
         if (!ativo) return;
         const lista = res.data.data ?? res.data;
         setModelos(Array.isArray(lista) ? lista : []);
+        setTotalDeModelos(typeof res.data.total === 'number' ? res.data.total : null);
+        setErro('');
       })
       .catch((err) => {
+        // `semToastGlobal` (DEC-084): a falha aparece aqui, em linha.
         if (ativo) setErro(getApiErrorMessage(err, 'Falha ao carregar os modelos.'));
       })
       .finally(() => {
@@ -426,7 +455,7 @@ function AssemblyStartCard({ modo, navigate }) {
       });
 
     return () => { ativo = false; };
-  }, [modo]);
+  }, [modo, buscaModeloDebounced, online]);
 
   const criar = async (evento) => {
     evento.preventDefault();
@@ -441,7 +470,7 @@ function AssemblyStartCard({ modo, navigate }) {
 
     try {
       const res = await documentService.criarModelo({ nome: nome.trim(), tipo });
-      navigate(`/dashboard/documentos/montar/${res.data._id}?modo=${modo}`, { replace: true });
+      navigate(destinoDaMontagem(res.data._id, modo, processoId), { replace: true });
     } catch (err) {
       setErro(getApiErrorMessage(err, 'Não foi possível criar o modelo.'));
       setCriando(false);
@@ -473,8 +502,31 @@ function AssemblyStartCard({ modo, navigate }) {
         <section className="inicio-bloco">
           <h2 className="inicio-bloco__titulo">Escolha o modelo</h2>
 
-          {carregandoModelos ? (
+          {/* Fase 3.9a (DEC-141): a busca pelo nome. O campo NUNCA desmonta
+              durante a carga — o indicador fica abaixo dele (o foco não se
+              perde, a regra da F-1a.1). */}
+          <div className="inicio-form__campo inicio-busca">
+            <label htmlFor="montagem-busca-modelo">Buscar modelo</label>
+            <input
+              id="montagem-busca-modelo"
+              type="search"
+              value={buscaModelo}
+              onChange={(e) => setBuscaModelo(e.target.value)}
+              placeholder="Nome do modelo"
+              maxLength={80}
+              aria-describedby="montagem-busca-modelo-aviso"
+            />
+            <p id="montagem-busca-modelo-aviso" className="inicio-bloco__vazio" aria-live="polite">
+              {!online
+                ? 'A busca precisa de conexão. Conecte-se para escolher o modelo.'
+                : avisoDeModelosOcultos(modelos.length, totalDeModelos) ?? ''}
+            </p>
+          </div>
+
+          {!online ? null : carregandoModelos ? (
             <Loading />
+          ) : modelos.length === 0 && buscaModeloDebounced ? (
+            <p className="inicio-bloco__vazio">Nenhum modelo com “{buscaModeloDebounced}”.</p>
           ) : modelos.length === 0 ? (
             <p className="inicio-bloco__vazio">
               Não há modelo montado ainda. Comece por um:{' '}
@@ -492,7 +544,7 @@ function AssemblyStartCard({ modo, navigate }) {
                       type="button"
                       className="inicio-modelo"
                       onClick={() =>
-                        navigate(`/dashboard/documentos/montar/${modelo._id}?modo=${MODO_DOCUMENTO}`)
+                        navigate(destinoDaMontagem(modelo._id, MODO_DOCUMENTO, processoId))
                       }
                     >
                       <span className="inicio-modelo__nome">{modelo.nome}</span>

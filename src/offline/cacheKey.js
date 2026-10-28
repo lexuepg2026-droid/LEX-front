@@ -57,6 +57,12 @@ export const CACHEABLE_RESOURCES = Object.freeze([
   'payments',       // pagamentos
   'events',         // agenda
   'financeSummary', // o resumo do financeiro
+  // Fase 3.9a (DEC-139): as listas de Documentos e de Seções no padrão das
+  // outras — servidas do espelho sem sinal, com o aviso de idade (DEC-109).
+  // É a LISTAGEM (os metadados e o texto, que já passaram pela tela); o PDF e
+  // o DOCX continuam fora, pelo motivo de sempre.
+  'documents',      // listagem de documentos
+  'secoes',         // listagem de seções
 ]);
 
 export const isCacheableResource = (resource) =>

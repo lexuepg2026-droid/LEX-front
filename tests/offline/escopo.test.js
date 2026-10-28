@@ -63,7 +63,11 @@ describe("a chave NÃO existe sem usuário", () => {
     assert.throws(() => buildKey({ userId: ADVOGADA, resource: "documentDownload" }), /não está na lista/);
     assert.throws(() => buildKey({ userId: ADVOGADA, resource: "portalProcesso" }), /não está na lista/);
     assert.equal(isCacheableResource("clients"), true);
-    assert.equal(isCacheableResource("documents"), false);
+    // Fase 3.9a (DEC-139): "documents" entrou na lista (a listagem de
+    // Documentos ganhou espelho), e deixou de servir de exemplo do recurso
+    // de fora. O exemplo passou ao download, que continua de fora.
+    assert.equal(isCacheableResource("documentDownload"), false);
+    assert.equal(isCacheableResource("documents"), true);
   });
 });
 
@@ -170,11 +174,42 @@ describe("a lista do que se guarda", () => {
     // offline é baixo perto do custo. E o portal roda no aparelho do cliente,
     // que pode ser emprestado (passo 93) — cache de dado jurídico ali é decisão
     // de privacidade, e ninguém a tomou.
+    //
+    // Fase 3.9a (DEC-139), reescrito: a LISTAGEM de documentos ("documents")
+    // entrou, para a lista servir o espelho com o aviso de idade como as
+    // outras. O que o teste protegia continua protegido, por dois lados:
+    // nenhum recurso de download/pdf/docx/portal, e o CONTEÚDO do documento
+    // gerado (o texto da peça) não entra — o bloco seguinte cobra isso.
     for (const recurso of CACHEABLE_RESOURCES) {
       assert.ok(
-        !/download|pdf|docx|portal|document/i.test(recurso),
+        !/download|pdf|docx|portal/i.test(recurso),
         `"${recurso}" não devia estar na lista do que se guarda`
       );
+      if (/document/i.test(recurso)) {
+        assert.equal(recurso, "documents", `"${recurso}": de documento, só a listagem`);
+      }
     }
+  });
+
+  test("a listagem de documentos vai ao espelho SEM o texto da peça", async () => {
+    const { envelopeParaOEspelho, CAMPOS_FORA_DO_ESPELHO } = await import(
+      "../../src/pages/documents/listaDocumentos.js"
+    );
+    assert.deepEqual([...CAMPOS_FORA_DO_ESPELHO], ["textoResolvido", "variaveisResolvidas"]);
+    const envelope = {
+      data: [{ _id: "1", nome: "Procuração", textoResolvido: "CPF 123", variaveisResolvidas: { cpf: "123" } }],
+      total: 1, page: 1, limit: 20, totalPages: 1
+    };
+    const guardado = envelopeParaOEspelho(envelope);
+    assert.equal(guardado.total, 1);
+    assert.equal(guardado.data[0].nome, "Procuração");
+    assert.ok(!("textoResolvido" in guardado.data[0]));
+    assert.ok(!("variaveisResolvidas" in guardado.data[0]));
+    // A resposta original não é mexida.
+    assert.equal(envelope.data[0].textoResolvido, "CPF 123");
+    // E a tela grava pelo filtro, não pelo envelope cru.
+    const { readFileSync } = await import("node:fs");
+    const tela = readFileSync(new URL("../../src/pages/documents/DocumentListPage.jsx", import.meta.url), "utf8");
+    assert.match(tela, /fetcher: \(\) => documentService\.listDocuments\(consulta\)\.then\(\(res\) => envelopeParaOEspelho\(res\.data\)\)/);
   });
 });

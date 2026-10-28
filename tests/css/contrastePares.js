@@ -242,6 +242,18 @@ export const PARES = [
   { nome: "Agenda: anel do hoje / célula da grade", texto: "--color-accent", fundo: "--color-surface-raised", limite: NAO_TEXTO },
   { nome: "Agenda: palavra hoje / célula da grade", texto: "--color-accent", fundo: "--color-surface-raised", limite: TEXTO },
 
+  // Fase 3.9a (DEC-143): no claro, a casa de fora do mês é `--color-accent-muted`
+  // pousado no balão (`--color-surface`). O número no tom discreto, as três
+  // pílulas, a faixa vazia das listradas e o listrado — tudo sobre ela.
+  { nome: "Agenda (claro): número / casa de fora", texto: "--color-text-discreto", fundo: "--color-accent-muted", sobre: ["--color-surface"], limite: TEXTO, modos: ["claro"] },
+  ...["warning", "danger", "info"].map((s) => (
+    { nome: `Agenda (claro): pílula ${s} / casa de fora`, texto: `--color-${s}-text`, fundo: `--color-${s}-bg`, sobre: ["--color-accent-muted", "--color-surface"], limite: TEXTO, modos: ["claro"] }
+  )),
+  ...["warning", "danger"].flatMap((s) => [
+    { nome: `Agenda (claro): pílula ${s} listrada, faixa vazia / casa de fora`, texto: `--color-${s}-text`, fundo: "--color-accent-muted", sobre: ["--color-surface"], limite: TEXTO, modos: ["claro"] },
+    { nome: `Agenda (claro): listrado e borda ${s} / casa de fora`, texto: `--color-${s}`, fundo: "--color-accent-muted", sobre: ["--color-surface"], limite: NAO_TEXTO, modos: ["claro"] }
+  ]),
+
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
   { nome: "borda de campo / --color-surface", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },

@@ -660,6 +660,18 @@
    não caberiam nos 304 px de área a 360. O texto corta com reticências e o
    inteiro está no `title` e no destino do link (F-1b.2: a coluna de texto
    cede; a de dinheiro, nunca). */
+/* ── A coluna que CEDE (Fase 3.9a, DEC-139) ─────────────────────────────
+   Numa tabela fixa de largura 100%, a sobra se reparte entre as colunas na
+   proporção das larguras — inclusive a do ⋮. Em listas curtas (Documentos e
+   Seções somam 640 e 470 px de `prio-1`) isso esticava o ⋮ a 176 px a 1024 e
+   a 207 px a 1280 (medido). A coluna de TEXTO marcada `col-cede` fica sem
+   largura a partir de 1024 e recebe a sobra sozinha; abaixo disso tem 220 px,
+   para nunca colapsar numa tabela que rola (coluna `auto` recebe zero). No
+   celular, a primeira coluna continua com os 128 px da regra seguinte. */
+@media (max-width: 1023px) {
+  .data-table--fixed col.col-cede { width: 220px; }
+}
+
 @media (max-width: 480px) {
   .data-table--primeira-fixa col:first-child { width: 128px; }
 }

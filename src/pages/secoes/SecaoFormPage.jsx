@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import secaoService from '../../api/secaoService';
 import VariableSelector from '../../components/secoes/VariableSelector';
+import SecaoPreviewModal from '../../components/secoes/SecaoPreviewModal';
 import Loading from '../../components/common/Loading';
 import { TIPO_SECAO_OPTIONS } from '../../utils/enums';
 import { getApiErrorMessage, getApiErrorField } from '../../utils/apiError';
@@ -20,6 +21,8 @@ function SecaoFormPage() {
   const [carregando, setCarregando] = useState(false);
   const [error, setError] = useState('');
   const [campoErro, setCampoErro] = useState('');
+  // Fase 3.9a (DEC-142): a prévia do texto digitado, no modal da biblioteca.
+  const [previa, setPrevia] = useState(null);
 
   const textoRef = useRef(null);
   // Última posição do cursor dentro do textarea. Guardada porque clicar num
@@ -146,73 +149,98 @@ function SecaoFormPage() {
 
       <form onSubmit={handleSubmit} className="data-form">
         {!online && <OfflineWriteReason />}
-        <div className="secao-editor">
-          <div className="secao-editor__campos">
-            <div className="form-group">
-              <label htmlFor="titulo">Título</label>
-              <input
-                id="titulo"
-                name="titulo"
-                type="text"
-                value={form.titulo}
-                onChange={handleChange}
-                maxLength={120}
-                className={campoErro === 'titulo' ? 'campo-erro' : undefined}
-                placeholder="Ex.: Qualificação do outorgante — pessoa física"
-              />
-              <p className="form-note">
-                É por ele que você vai encontrar a seção na biblioteca. Dois
-                títulos iguais não são aceitos.
-              </p>
-            </div>
+        {/* Fase 3.9a (DEC-142): em seções, no padrão da 3.4 e da 3.5 — e
+            continua ROTA. O desenho da Raniele usa modal; o texto de uma seção
+            é montagem longa, com o painel de variáveis ao lado, e a DEC-049
+            prefere rota para isso. Campos e payload iguais. */}
+        <div className="form-grid section">
+          <h3>Identificação</h3>
 
-            <div className="form-group">
-              <label htmlFor="tipo">Tipo</label>
-              <select
-                id="tipo"
-                name="tipo"
-                value={form.tipo}
-                onChange={handleChange}
-                className={campoErro === 'tipo' ? 'campo-erro' : undefined}
-              >
-                <option value="">Selecione o tipo...</option>
-                {TIPO_SECAO_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="texto">Texto</label>
-              <textarea
-                id="texto"
-                name="texto"
-                ref={textoRef}
-                value={form.texto}
-                onChange={(e) => {
-                  handleChange(e);
-                  guardarCursor(e);
-                }}
-                onClick={guardarCursor}
-                onKeyUp={guardarCursor}
-                onSelect={guardarCursor}
-                onBlur={guardarCursor}
-                rows={16}
-                className={`secao-textarea ${campoErro === 'texto' ? 'campo-erro' : ''}`}
-                placeholder="Escreva o texto da seção. Use o painel ao lado para inserir variáveis onde o dado do cliente, do processo ou do honorário deve entrar."
-              />
-              <p className="form-note">
-                As variáveis ficam entre chaves duplas, como{' '}
-                <code>{'{{nomeCliente}}'}</code>, e são preenchidas na hora de
-                gerar o documento.
-              </p>
-            </div>
+          <div className="form-group span-2">
+            <label htmlFor="titulo">Título</label>
+            <input
+              id="titulo"
+              name="titulo"
+              type="text"
+              value={form.titulo}
+              onChange={handleChange}
+              maxLength={120}
+              aria-describedby="titulo-ajuda"
+              className={campoErro === 'titulo' ? 'campo-erro' : undefined}
+              placeholder="Ex.: Qualificação do outorgante — pessoa física"
+            />
+            <p id="titulo-ajuda" className="form-note">
+              É por ele que você vai encontrar a seção na biblioteca. Dois
+              títulos iguais não são aceitos.
+            </p>
           </div>
 
-          <div className="secao-editor__painel">
-            <VariableSelector onInserir={inserirVariavel} disabled={loading} />
+          <div className="form-group span-1">
+            <label htmlFor="tipo">Tipo</label>
+            <select
+              id="tipo"
+              name="tipo"
+              value={form.tipo}
+              onChange={handleChange}
+              className={campoErro === 'tipo' ? 'campo-erro' : undefined}
+            >
+              <option value="">Selecione o tipo...</option>
+              {TIPO_SECAO_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="form-grid section">
+          <h3>Texto e variáveis</h3>
+
+          <div className="secao-editor span-3">
+            <div className="secao-editor__campos">
+              <div className="form-group">
+                <label htmlFor="texto">Texto</label>
+                <textarea
+                  id="texto"
+                  name="texto"
+                  ref={textoRef}
+                  value={form.texto}
+                  onChange={(e) => {
+                    handleChange(e);
+                    guardarCursor(e);
+                  }}
+                  onClick={guardarCursor}
+                  onKeyUp={guardarCursor}
+                  onSelect={guardarCursor}
+                  onBlur={guardarCursor}
+                  rows={16}
+                  aria-describedby="texto-ajuda"
+                  className={`secao-textarea ${campoErro === 'texto' ? 'campo-erro' : ''}`}
+                  placeholder="Escreva o texto da seção. Use o painel ao lado para inserir variáveis onde o dado do cliente, do processo ou do honorário deve entrar."
+                />
+                <p id="texto-ajuda" className="form-note">
+                  As variáveis ficam entre chaves duplas, como{' '}
+                  <code>{'{{nomeCliente}}'}</code>, e são preenchidas na hora de
+                  gerar o documento.
+                </p>
+              </div>
+              {/* A prévia é a do "Ver" da biblioteca: o texto CRU, com as
+                  variáveis destacadas — sem processo nem cliente. Funciona sem
+                  sinal: é o que está digitado. */}
+              <button
+                type="button"
+                className="ui-btn ui-btn--secondary ui-btn--md secao-editor__previa"
+                onClick={() => setPrevia({ titulo: form.titulo, tipo: form.tipo, texto: form.texto })}
+                disabled={!form.texto.trim()}
+              >
+                Pré-visualizar
+              </button>
+            </div>
+
+            <div className="secao-editor__painel">
+              <VariableSelector onInserir={inserirVariavel} disabled={loading} />
+            </div>
           </div>
         </div>
 
@@ -230,6 +258,8 @@ function SecaoFormPage() {
           </button>
         </div>
       </form>
+
+      <SecaoPreviewModal secao={previa} onClose={() => setPrevia(null)} />
     </div>
   );
 }

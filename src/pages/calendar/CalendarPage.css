@@ -259,6 +259,20 @@
 
 .cal-celula--fora .cal-celula__numero { color: var(--color-text-discreto); }
 
+/* Fase 3.9a (DEC-143): no CLARO a casa de fora deixa de ser transparente.
+   Sobre o balão quase branco ela ficava MAIS CLARA que a do mês (bege) e se
+   lia como "vazio claro", não como "fora". Agora é preenchida pelo verde
+   esmaecido `--color-accent-muted`: um cinza FRIO ao lado do bege das casas
+   do mês — "papel de outro mês", e não "papel em branco" —, separado do
+   balão como a casa do mês (1,15:1 × 1,18:1). Sem `opacity`.
+   `--color-border` (mais escuro) foi medido e recusado: o listrado âmbar do
+   vencimento caía a 2,70:1 sobre ele. No escuro nada muda: lá a casa
+   transparente já é mais escura que a do mês. Pares "Agenda (claro): … /
+   casa de fora" em `contrastePares.js`. */
+body.light-mode .cal-celula--fora {
+  background-color: var(--color-accent-muted);
+}
+
 /* HOJE é visualmente distinto, SEMPRE — e não só pela cor: o anel na
    célula, o número no disco cheio e a palavra "hoje" ao lado. */
 .cal-celula--hoje {

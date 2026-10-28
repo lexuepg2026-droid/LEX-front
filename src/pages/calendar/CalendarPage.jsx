@@ -22,8 +22,10 @@ import {
 } from './monthGrid';
 import {
   NOMES_DOS_MESES, anosDoSeletor, itemRiscado, rotuloDoItemNaGrade, linhaDaAgenda,
+  voltarDaAgenda, comVoltarDaAgenda,
 } from './agenda.js';
 import { toast } from '../../utils/toast';
+import { comVoltar } from '../../components/layout/contexto.js';
 import { classeDoTom, tipoDaDataDoItem } from '../../utils/tomDaData.js';
 import '../../styles/tomDaData.css';
 // O botão do estado vazio. Vinha de carona pelo `PageHeader`, que saiu da
@@ -85,6 +87,9 @@ function CalendarPage() {
   const { ano, mes } = mesDaUrl ?? { ano: agora.getUTCFullYear(), mes: agora.getUTCMonth() + 1 };
 
   const grade = useMemo(() => construirGradeDoMes(ano, mes), [ano, mes]);
+  // Fase 3.9a (DEC-143): o formulário de compromisso volta a ESTE mês e a
+  // ESTA vista.
+  const voltar = voltarDaAgenda({ ano, mes, vista });
 
   const irPara = useCallback(
     (proximo) => {
@@ -138,7 +143,7 @@ function CalendarPage() {
     const destino = destinoDoItem(item);
     if (!destino) return;
     if (item.natureza === 'derivada') toast.info(MOTIVO_DA_DERIVADA_NAO_EDITAVEL);
-    navigate(destino);
+    navigate(comVoltarDaAgenda(destino, voltar));
   };
 
   // Na vista Agenda a linha é a `LinhaDeData`, um link: a navegação é dele, e
@@ -152,7 +157,7 @@ function CalendarPage() {
   //
   // Sem sinal ela CONTINUA levando (F-5b): compromisso é uma das duas coisas
   // que a fila aceita, e o formulário avisa lá dentro o que vai acontecer.
-  const criarNoDia = (chave) => navigate(`/dashboard/agenda/novo?data=${chave}`);
+  const criarNoDia = (chave) => navigate(comVoltar(`/dashboard/agenda/novo?data=${chave}`, voltar));
 
   const rotuloDoMes = formatMonthKey(grade.chaveDoMes);
 
@@ -271,7 +276,7 @@ function CalendarPage() {
             {/* O "+". Sem `actionMotivo`: continua ativo sem sinal (F-5b). O
                 que acontece com o que ela salvar está dito no formulário. */}
             <Link
-              to="/dashboard/agenda/novo"
+              to={comVoltar('/dashboard/agenda/novo', voltar)}
               className="cal-novo"
               aria-label="Novo compromisso"
               title="Novo compromisso"
@@ -320,6 +325,7 @@ function CalendarPage() {
             onAbrirItem={abrirItem}
             onAbrirLinha={avisarDaDerivada}
             rotuloDoMes={rotuloDoMes}
+            voltar={voltar}
           />
         ) : (
           <VistaDeAgenda
@@ -328,6 +334,7 @@ function CalendarPage() {
             rotuloDoMes={rotuloDoMes}
             onAbrirLinha={avisarDaDerivada}
             onCriarNoDia={criarNoDia}
+            voltar={voltar}
           />
         )}
       </section>
@@ -375,7 +382,7 @@ function ItemDoCalendario({ item, onAbrir }) {
 
 // ── A GRADE DO MÊS ───────────────────────────────────────────────────────
 function VistaDeMes({
-  grade, porDia, hoje, diaAberto, onAbrirDia, onCriarNoDia, onAbrirItem, onAbrirLinha, rotuloDoMes,
+  grade, porDia, hoje, diaAberto, onAbrirDia, onCriarNoDia, onAbrirItem, onAbrirLinha, rotuloDoMes, voltar,
 }) {
   const totalNoMes = grade.semanas
     .flat()
@@ -384,7 +391,7 @@ function VistaDeMes({
 
   if (totalNoMes === 0) {
     return (
-      <EstadoVazio rotuloDoMes={rotuloDoMes} />
+      <EstadoVazio rotuloDoMes={rotuloDoMes} voltar={voltar} />
     );
   }
 
@@ -478,7 +485,7 @@ function VistaDeMes({
           </div>
           <ul className="datas-lista">
             {itensDoDiaAberto.map((item) => {
-              const linha = linhaDaAgenda(item);
+              const linha = linhaDaAgenda(item, voltar);
               return <LinhaDeData key={linha.chave} item={linha} onAbrir={onAbrirLinha} />;
             })}
           </ul>
@@ -494,10 +501,10 @@ function VistaDeMes({
 // alguma coisa viram grupo: uma agenda que imprime os trinta dias do mês para
 // mostrar três compromissos esconde os três. Cada item é a `LinhaDeData`
 // (DEC-131), a mesma do Início e da Visão geral (DEC-136).
-function VistaDeAgenda({ itens, hoje, rotuloDoMes, onAbrirLinha, onCriarNoDia }) {
+function VistaDeAgenda({ itens, hoje, rotuloDoMes, onAbrirLinha, onCriarNoDia, voltar }) {
   const dias = useMemo(() => diasComItens(itens), [itens]);
 
-  if (dias.length === 0) return <EstadoVazio rotuloDoMes={rotuloDoMes} />;
+  if (dias.length === 0) return <EstadoVazio rotuloDoMes={rotuloDoMes} voltar={voltar} />;
 
   return (
     <ol className="cal-agenda">
@@ -519,7 +526,7 @@ function VistaDeAgenda({ itens, hoje, rotuloDoMes, onAbrirLinha, onCriarNoDia })
           </div>
           <ul className="datas-lista">
             {doDia.map((item) => {
-              const linha = linhaDaAgenda(item);
+              const linha = linhaDaAgenda(item, voltar);
               return <LinhaDeData key={linha.chave} item={linha} onAbrir={onAbrirLinha} />;
             })}
           </ul>
@@ -535,14 +542,14 @@ function VistaDeAgenda({ itens, hoje, rotuloDoMes, onAbrirLinha, onCriarNoDia })
 // grade carregando são indistinguíveis, e a segunda faz esperar por algo que
 // não vem — é a regra do passo 116, e é por isso que o vazio nomeia o MÊS: sem
 // o nome, a advogada não sabe se está vendo o mês que pediu.
-function EstadoVazio({ rotuloDoMes }) {
+function EstadoVazio({ rotuloDoMes, voltar }) {
   return (
     <EmptyState
       icon={<Icone nome="calendario" tamanho={40} />}
       title={`Nenhum compromisso em ${rotuloDoMes}`}
       description="Audiências, prazos e reuniões que você registrar aparecem aqui, junto dos vencimentos do financeiro."
       action={
-        <Link to="/dashboard/agenda/novo" className="ui-btn ui-btn--primary ui-btn--md">
+        <Link to={comVoltar('/dashboard/agenda/novo', voltar)} className="ui-btn ui-btn--primary ui-btn--md">
           Novo compromisso
         </Link>
       }
