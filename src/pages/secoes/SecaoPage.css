@@ -49,6 +49,11 @@
   min-width: 0;
 }
 
+/* Fase 3.9a (DEC-142): o botão da prévia não estica na coluna. */
+.secao-editor__previa {
+  align-self: flex-start;
+}
+
 .secao-editor__painel {
   position: sticky;
   top: var(--space-4, 16px);
