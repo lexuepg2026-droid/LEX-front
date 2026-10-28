@@ -275,6 +275,12 @@ export const PARES = [
   // página da advogada; o do portal é o bege sobre o verde (par de cima).
   { nome: "pular para o conteúdo: anel do conteúdo / --color-bg", texto: "--color-focus", fundo: "--color-bg", limite: NAO_TEXTO },
 
+  // A frase do percentual no campo (Fase 4a, DEC-157): o texto de perigo
+  // sobre o fundo da página do formulário (`.cliente-page-container` não tem
+  // fundo próprio) e sobre o balão, onde os formulários da 3.x pousam.
+  { nome: "honorário: erro do percentual / --color-bg", texto: "--color-danger-text", fundo: "--color-bg", limite: TEXTO },
+  { nome: "honorário: erro do percentual / --color-surface", texto: "--color-danger-text", fundo: "--color-surface", limite: TEXTO },
+
   // Não texto.
   { nome: "borda de campo / --color-surface-input", texto: "--color-border-input", fundo: "--color-surface-input", limite: NAO_TEXTO },
   { nome: "borda de campo / --color-surface", texto: "--color-border-input", fundo: "--color-surface", limite: NAO_TEXTO },

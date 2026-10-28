@@ -91,3 +91,70 @@ describe("Fase 4a · item 1 — \"Pular para o conteúdo\" (DEC-156)", () => {
     ]) assert.ok(pares.includes(nome), nome);
   });
 });
+
+// ── Item 2 — a frase própria do percentual (DEC-157) ─────────────────────
+import {
+  validarHonorario,
+  mensagemDoCampoPercentual,
+  MENSAGEM_FAIXA_DO_PERCENTUAL,
+  PERCENTUAL_MINIMO,
+  PERCENTUAL_MAXIMO
+} from "../../src/utils/feeCalc.js";
+
+describe("Fase 4a · item 2 — \"O percentual vai de 0,01 a 100.\" (DEC-157)", () => {
+  const base = { processoId: "p1", descricao: "Contrato", tipo: "percentual", valorBase: 1000 };
+  const tela = semComentarios(ler("src/pages/fees/FeeFormPage.jsx"));
+
+  test("a frase é exatamente a decidida, e a faixa continua 0,01–100 (a regra não mudou)", () => {
+    assert.equal(MENSAGEM_FAIXA_DO_PERCENTUAL, "O percentual vai de 0,01 a 100.");
+    assert.equal(PERCENTUAL_MINIMO, 0.01);
+    assert.equal(PERCENTUAL_MAXIMO, 100);
+  });
+
+  test("acima de 100 e abaixo de 0,01 o envio é barrado, com a frase, no campo percentual", () => {
+    for (const fora of [150, 100.01, 1000, 0.009, 0.001, 0, -5, "abc"]) {
+      const p = validarHonorario({ ...base, percentual: fora });
+      assert.deepEqual(p, { campo: "percentual", mensagem: MENSAGEM_FAIXA_DO_PERCENTUAL }, String(fora));
+    }
+  });
+
+  test("100 e 0,01 passam (as bordas são do intervalo)", () => {
+    for (const dentro of [100, "100", 0.01, "0.01", 12.5, 33.33]) {
+      assert.equal(validarHonorario({ ...base, percentual: dentro }), null, String(dentro));
+    }
+  });
+
+  test("o `invalid` do navegador vira a frase própria — faixa, vazio e casas decimais", () => {
+    assert.equal(mensagemDoCampoPercentual({ rangeOverflow: true }), MENSAGEM_FAIXA_DO_PERCENTUAL);
+    assert.equal(mensagemDoCampoPercentual({ rangeUnderflow: true, stepMismatch: true }), MENSAGEM_FAIXA_DO_PERCENTUAL);
+    assert.equal(mensagemDoCampoPercentual({ badInput: true }), MENSAGEM_FAIXA_DO_PERCENTUAL);
+    assert.equal(mensagemDoCampoPercentual({ valueMissing: true }), "Honorário do tipo percentual exige o percentual contratado");
+    assert.equal(mensagemDoCampoPercentual({ stepMismatch: true }), "O percentual aceita até duas casas decimais.");
+  });
+
+  test("o campo mantém min/max/step e intercepta o `invalid` com preventDefault (sem o balão do navegador)", () => {
+    const campo = tela.match(/<input\s+id="fee-percentual"[\s\S]*?\/>/)[0];
+    for (const attr of ['min="0.01"', 'max="100"', 'step="0.01"', "required", "onInvalid={handlePercentualInvalido}",
+      "className={campoComErro === 'percentual' ? 'input-erro' : undefined}"]) {
+      assert.ok(campo.includes(attr), attr);
+    }
+    assert.match(tela, /const handlePercentualInvalido = \(e\) => \{\s*e\.preventDefault\(\);/);
+    assert.match(tela, /setErroDoPercentual\(mensagemDoCampoPercentual\(e\.target\.validity\)\);\s*setCampoComErro\('percentual'\);/);
+    // Sem `noValidate`: os outros campos continuam com a validação de sempre.
+    assert.doesNotMatch(tela, /noValidate/);
+  });
+
+  test("a frase aparece NO CAMPO, ligada ao input, e o handleSubmit não envia com o problema", () => {
+    assert.match(tela, /\{erroDoPercentual && \(\s*<span id="fee-percentual-erro" className="form-erro-campo" role="alert">/);
+    assert.match(tela, /aria-describedby=\{erroDoPercentual \? 'fee-percentual-erro' : undefined\}/);
+    const submit = tela.slice(tela.indexOf("const handleSubmit"), tela.indexOf("setLoading(true)"));
+    assert.match(submit, /const problema = validarHonorario\(formData\);\s*if \(problema\) \{[\s\S]*?return;\s*\}/);
+    assert.doesNotMatch(submit, /feeService\./, "nada é enviado antes da validação");
+  });
+
+  test("a classe da frase tem regra, na folha que a tela importa, com o par medido", () => {
+    const css = semComentarios(ler("src/pages/clients/ClientPage.css"));
+    assert.match(css, /\.form-erro-campo\s*\{[^}]*color:\s*var\(--color-danger-text\)/);
+    assert.match(ler("tests/css/contrastePares.js"), /honorário: erro do percentual \/ --color-bg/);
+  });
+});

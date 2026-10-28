@@ -152,9 +152,14 @@ describe("a validação de cliente usa as mensagens do backend, palavra por pala
   });
 
   test("percentual fora da faixa (> 100)", () => {
+    // Fase 4a (DEC-157): a ÚNICA frase desta validação que deixou de repetir
+    // o hook. A decisão foi de uma frase própria, que diz a faixa do campo; a
+    // REGRA continua a mesma dos dois lados (acima de 100 é recusado). A trava
+    // segue exigindo a frase exata e o campo — mudou o texto esperado, não o
+    // rigor. Os limites (0,01 e 100) estão em `regressions/fase4a.test.js`.
     const p = validarHonorario({ ...base, percentual: 150, valorBase: 1000 });
     assert.equal(p.campo, "percentual");
-    assert.equal(p.mensagem, "O percentual deve ser maior que zero e no máximo 100");
+    assert.equal(p.mensagem, "O percentual vai de 0,01 a 100.");
   });
 
   test("percentual zero também é fora da faixa", () => {

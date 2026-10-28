@@ -18,6 +18,7 @@ import {
   derivarValorHonorario,
   validarHonorario,
   montarPayloadHonorario,
+  mensagemDoCampoPercentual,
 } from '../../utils/feeCalc';
 import '../clients/ClientPage.css';
 import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
@@ -68,6 +69,8 @@ function FeeFormPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [campoComErro, setCampoComErro] = useState(null);
+  // Fase 4a (DEC-157): a frase do percentual mora NO CAMPO, e não no rodapé.
+  const [erroDoPercentual, setErroDoPercentual] = useState('');
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -143,6 +146,20 @@ function FeeFormPage() {
     // vermelha depois da correção faz a advogada reenviar achando que não
     // resolveu.
     if (campoComErro === name) setCampoComErro(null);
+    if (name === 'percentual') setErroDoPercentual('');
+  };
+
+  // ── O `invalid` do percentual (Fase 4a, DEC-157) ─────────────────────────
+  // `min`, `max` e `step` continuam no campo (o teclado e o leitor de tela os
+  // usam), e por isso o navegador barra o envio antes do `handleSubmit`. O
+  // `preventDefault` tira o balão genérico dele; no lugar entra a frase
+  // própria, no campo, com o destaque de erro de sempre. Nada é enviado: o
+  // navegador já cancelou o `submit`.
+  const handlePercentualInvalido = (e) => {
+    e.preventDefault();
+    setError('');
+    setErroDoPercentual(mensagemDoCampoPercentual(e.target.validity));
+    setCampoComErro('percentual');
   };
 
   // Os campos de dinheiro não passam pelo `handleChange` genérico: `MoneyInput`
@@ -183,7 +200,13 @@ function FeeFormPage() {
     }
     const problema = validarHonorario(formData);
     if (problema) {
-      setError(problema.mensagem);
+      // O percentual fala no próprio campo (DEC-157); o resto, no rodapé.
+      if (problema.campo === 'percentual') {
+        setError('');
+        setErroDoPercentual(problema.mensagem);
+      } else {
+        setError(problema.mensagem);
+      }
       setCampoComErro(problema.campo);
       return;
     }
@@ -291,8 +314,9 @@ function FeeFormPage() {
           {/* ── Tipo percentual: as duas parcelas da conta ─────────────────── */}
           {campos.percentual && (
             <div className="form-group span-1">
-              <label>Percentual (%) *</label>
+              <label htmlFor="fee-percentual">Percentual (%) *</label>
               <input
+                id="fee-percentual"
                 type="number"
                 name="percentual"
                 step="0.01"
@@ -300,9 +324,17 @@ function FeeFormPage() {
                 max="100"
                 value={formData.percentual}
                 onChange={handleChange}
+                onInvalid={handlePercentualInvalido}
                 className={campoComErro === 'percentual' ? 'input-erro' : undefined}
+                aria-invalid={erroDoPercentual ? 'true' : undefined}
+                aria-describedby={erroDoPercentual ? 'fee-percentual-erro' : undefined}
                 required
               />
+              {erroDoPercentual && (
+                <span id="fee-percentual-erro" className="form-erro-campo" role="alert">
+                  {erroDoPercentual}
+                </span>
+              )}
             </div>
           )}
 

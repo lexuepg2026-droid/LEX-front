@@ -64,11 +64,45 @@ export const camposDoTipo = (tipo) => {
   };
 };
 
+// ── A faixa do percentual (Fase 4a, DEC-157) ───────────────────────────────
+//
+// A REGRA não mudou: o backend recusa acima de 100 (DEC-027), e o campo já
+// tinha `min="0.01"` e `max="100"`. O que mudou é a FRASE. Antes, o envio
+// acima de 100 caía na validação do navegador, que mostrava a mensagem
+// genérica dele ("O valor deve ser menor ou igual a 100") num balão fora do
+// desenho — talvez o que a banca viu. Agora o formulário intercepta o
+// `invalid` do campo e mostra esta frase, no campo, com o destaque de sempre.
+//
+// É a ÚNICA mensagem desta validação que não repete o hook palavra por
+// palavra (lá: "O percentual deve ser maior que zero e no máximo 100"). A
+// decisão foi de uma frase própria, mais curta, que diz a faixa do campo.
+// Se a Laís decidir outro teto, a mudança é na Fase 4b — aqui e no `Fee`.
+export const PERCENTUAL_MINIMO = 0.01;
+export const PERCENTUAL_MAXIMO = 100;
+export const MENSAGEM_FAIXA_DO_PERCENTUAL = 'O percentual vai de 0,01 a 100.';
+export const MENSAGEM_CASAS_DO_PERCENTUAL = 'O percentual aceita até duas casas decimais.';
+
+// A frase para o `invalid` do `<input type="number">` do percentual, a partir
+// do `ValidityState` dele. Sem DOM na suíte, a decisão fica aqui, em função
+// pura; a tela só a chama.
+export const mensagemDoCampoPercentual = (validade) => {
+  if (!validade) return MENSAGEM_FAIXA_DO_PERCENTUAL;
+  if (validade.valueMissing) return 'Honorário do tipo percentual exige o percentual contratado';
+  if (validade.rangeUnderflow || validade.rangeOverflow || validade.badInput) {
+    return MENSAGEM_FAIXA_DO_PERCENTUAL;
+  }
+  // `step="0.01"`: 12,345 está na faixa, e dizer "vai de 0,01 a 100" sobre ele
+  // seria mandar corrigir o que não está errado.
+  if (validade.stepMismatch) return MENSAGEM_CASAS_DO_PERCENTUAL;
+  return MENSAGEM_FAIXA_DO_PERCENTUAL;
+};
+
 // ── Validação de cliente ───────────────────────────────────────────────────
 //
-// As mensagens são as MESMAS que o hook devolve, palavra por palavra. Duas
-// redações para a mesma regra fariam a advogada ler um texto ao errar offline e
-// outro ao errar contra o servidor, sobre exatamente o mesmo erro.
+// As mensagens são as MESMAS que o hook devolve, palavra por palavra — com a
+// exceção da faixa do percentual, acima. Duas redações para a mesma regra
+// fariam a advogada ler um texto ao errar offline e outro ao errar contra o
+// servidor, sobre exatamente o mesmo erro.
 //
 // Devolve `{ campo, mensagem }` do primeiro problema, ou `null`. Um por vez, e
 // não uma lista, pelo mesmo motivo do backend: destacar dois inputs esconde o
@@ -93,11 +127,8 @@ export const validarHonorario = (form) => {
   }
 
   const p = Number(form.percentual);
-  if (!Number.isFinite(p) || p <= 0 || p > 100) {
-    return {
-      campo: 'percentual',
-      mensagem: 'O percentual deve ser maior que zero e no máximo 100',
-    };
+  if (!Number.isFinite(p) || p < PERCENTUAL_MINIMO || p > PERCENTUAL_MAXIMO) {
+    return { campo: 'percentual', mensagem: MENSAGEM_FAIXA_DO_PERCENTUAL };
   }
 
   if (ehVazio(form.valorBase)) {
