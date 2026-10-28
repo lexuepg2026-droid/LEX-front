@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-4, 16px);
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--color-scrim);
 }
 
 .secao-preview {
@@ -20,7 +20,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md, 8px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-lg);
 }
 
 .secao-preview__header {
