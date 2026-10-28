@@ -53,6 +53,13 @@ describe("Fase 3.10 · decisão 1 — o honorário dos filtros por busca, sem o 
     assert.match(descricaoDoRecorteFinanceiro({ filtros, honorarios: [] }), /para este honorário/);
   });
 
+  test("o valor esvaziado de fora (o 'voltar', o 'Limpar filtros') desfaz a escolha do seletor", () => {
+    const seletor = semComentarios(ler("src/components/ui/SeletorComBusca.jsx"));
+    assert.match(seletor, /if \(!valor\) \{\s*if \(escolhido\) \{\s*setEscolhido\(null\);\s*setTexto\(''\);/);
+    // A digitação desfaz a escolha ANTES de avisar o pai — por isso não cai aqui.
+    assert.match(seletor, /setEscolhido\(null\);\s*onMudar\('', null\);/);
+  });
+
   test("nenhuma lista passa mais a prop morta `honorarios`", () => {
     for (const p of ["clients/ClientListPage", "secoes/SecaoListPage", "processes/ProcessListPage", "documents/DocumentListPage", "fees/FeeListPage", ...paginas.map((x) => x.replace(/^src\/pages\/|\.jsx$/g, ""))]) {
       assert.doesNotMatch(semComentarios(ler(`src/pages/${p}.jsx`)), /\shonorarios=\{/, p);
@@ -99,6 +106,10 @@ describe("Fase 3.10 · decisão 4 — 'Remover' só com ícone abaixo de 768 px 
   test("o botão guarda o nome no aria-label, e a palavra numa classe que some no celular", () => {
     assert.match(canvas, /aria-label=\{`Remover “\$\{secao\.titulo\}” do documento`\}\s*>\s*<Icone nome="lixeira" tamanho=\{14\} \/>\s*<span className="canvas-bloco__acao-rotulo">Remover<\/span>/);
     assert.match(css, /@media \(max-width: 767px\) \{\s*\.canvas-bloco__acao-rotulo \{\s*display: none;/);
+    // Só o ícone deixava o título com 8 a 34 px (medido): a barra quebra, e o
+    // título guarda 120 px.
+    assert.match(css, /\.canvas-bloco__barra \{\s*flex-wrap: wrap;/);
+    assert.match(css, /\.canvas-bloco__titulo \{\s*flex: 1 1 120px;\s*min-width: 120px;/);
     // O remover continua chamando o mesmo tratador.
     assert.match(canvas, /onClick=\{\(\) => onRemover\(vinculo\)\}/);
   });

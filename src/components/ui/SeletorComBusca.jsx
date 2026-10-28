@@ -72,7 +72,19 @@ function SeletorComBusca({
 
   // ── DEC-086: o id que chega pronto aparece escolhido ────────────────────
   useEffect(() => {
-    if (!valor) return undefined;
+    if (!valor) {
+      // Fase 3.10 (DEC-151): o valor ESVAZIADO de fora — o "voltar" do
+      // navegador ou o "Limpar filtros" de uma lista — desfaz a escolha, e o
+      // campo não fica dizendo um honorário que já não filtra nada. A
+      // digitação não passa por aqui com escolha de pé: `aoDigitar` desfaz a
+      // escolha ANTES de avisar o pai.
+      if (escolhido) {
+        setEscolhido(null);
+        setTexto('');
+        setEstadoDoId(null);
+      }
+      return undefined;
+    }
     if (itemInicial && String(itemInicial._id) === String(valor)) {
       setEscolhido(itemInicial);
       setTexto(rotulo(itemInicial));
