@@ -16,7 +16,7 @@
 ## Stack
 
 React 19 + Vite 7 + React Router 7, **CSS puro** (sem Tailwind, sem CSS-in-JS).
-`axios` para HTTP, `recharts` para os gráficos do dashboard, `lucide-react` para
+`axios` para HTTP (o `recharts` saiu com os gráficos na Fase 4a2, DEC-161), `lucide-react` para
 ícones. Testes em `node --test`, **sem DOM e sem testing-library**.
 
 Sessão da advogada por cookie httpOnly `lex-token`; portal do cliente por
@@ -611,7 +611,7 @@ A consequência é a divisão de trabalho que a Fase 4.2 firmou:
 | `tests/financial/erros.test.js` | os **quatro erros**, com o corpo real da API |
 | `tests/financial/estatica.test.js` | que a **tela continua chamando** aquelas funções |
 | `tests/financial/moeda.test.js` | a **máscara de moeda**, nos três caminhos de entrada |
-| `tests/dashboard/graficos.test.js` | a **série e a legenda** dos gráficos, e a paridade badge ↔ fatia |
+| ~~`tests/dashboard/graficos.test.js`~~ | removido na Fase 4a2 com os gráficos (DEC-161) |
 | `tests/documents/folha.test.js` | o **ciclo de vida** da sentinela e a lista que alimenta a folha |
 | `tests/documents/regeracao.test.js` | os **parâmetros** da regeração e o texto do 409 |
 | `tests/css/appliedClasses.test.js` | que toda classe aplicada **alcança** regra |
@@ -5818,6 +5818,142 @@ DEC-027; o front também).
 - **É a única frase da validação de cliente que não repete o hook** palavra
   por palavra (lá: "deve ser maior que zero e no máximo 100"). Se a Laís
   decidir outro teto, a mudança é na Fase 4b, aqui e no `Fee`.
+
+---
+
+## DEC-160 (frontend) — o valor em reais nunca vaza do cartão (Fase 4a2)
+
+Em produção, a 1920 px, "R$ 58.280,00" saía do cartão no Início e no
+Financeiro: o conteúdo para em 1280 px, a grade `minmax(190px, 1fr)` fazia
+seis trilhas de 193 px, e o valor de 30 px pedia 246 (medido com
+R$ 1.234.567,89). Era o apontamento 2 da banca de volta.
+
+- **O cartão cresce:** `.summary-grid` passou a
+  `repeat(auto-fill, minmax(min(100%, 15rem), 1fr))`. Numa grade mais estreita
+  que 15rem sobra uma coluna, do tamanho da grade; as duas `@media` antigas
+  (767 e 480 px) saíram, contidas nessa regra.
+- **A fonte cede:** o `.summary-card` é contêiner (`container-type:
+  inline-size`) e o `.card-value` mede `clamp(var(--font-size-lg), 11cqi,
+  var(--font-size-2xl))`. A 11cqi cabe qualquer valor de até 16 caracteres
+  ("R$ 12.345.678,90") em qualquer largura até o piso.
+- Nunca reticências nem `overflow` em dinheiro: `white-space: nowrap` no
+  valor, nada que o esconda.
+- **Medido no navegador** (Início, Financeiro, honorário e ficha do processo;
+  360, 768, 1024, 1280 e 1920 px; claro e escuro): antes 80 de 170 valores
+  vazavam (todos do `CartaoDeResumo`, de 768 px para cima); depois, 0. Os
+  cartões do honorário e da ficha já cabiam.
+
+## DEC-161 (frontend) — os gráficos saem do Início (Fase 4a2)
+
+Decisão do Daniel. A varredura achou gráficos só no Início (o bloco
+"Gráficos", com o `recharts`). Saíram:
+
+- `pages/dashboard/DashboardCharts.jsx`, `utils/chartSeries.js`,
+  `formatCurrencyCompact` (`utils/formatters.js`), `corDoStatus`
+  (`utils/statusVisual.js`; `COR_DO_TOM` fica, é a tabela que a bolinha do
+  processo segue), as regras `.chart*` de `DashboardPage.css`, o bloco e o
+  estado do Início, e `getStatusCounts`/`getFeesByMonth` de
+  `api/dashboardService.js`;
+- a dependência **`recharts`** (`npm uninstall`), que só servia a eles.
+
+**As rotas `GET /dashboard/honorarios-por-mes` e `GET /dashboard/status`
+continuam no back**: tirar rota é mudar contrato. Ficam sem consumidor no
+front. `tests/dashboard/graficos.test.js` foi removido, e as travas dos
+gráficos em `fase31` e `painel` foram removidas ou reescritas, com o motivo no
+teste. O Início fica com cinco blocos. O pacote principal não encolheu: o
+`recharts` já era `lazy` (386,6 kB num pacote à parte, baixado só ao abrir o
+bloco); o que sai é esse pacote.
+
+## DEC-162 (frontend) — o seletor do mês mora no bloco "Em {mês}" (Fase 4a2)
+
+Trocar o mês no topo do Início parecia não mudar nada: só o bloco do mês muda,
+e ele fica longe do seletor. O seletor (setas, rótulo, "Mês atual") passou à
+**ação** do `BlocoDoPainel` "Em {mês}", fora do botão que alterna o bloco
+(botão dentro de botão é inválido), à vista com o bloco aberto ou fechado. O
+topo fica só com o título e a data de hoje. O `?mes=` na URL, o "voltar" e o
+espelho por mês (DEC-098) não mudaram.
+
+## DEC-163 (frontend) — as prioridades de coluna pela largura do conteúdo (Fase 4a2)
+
+As `prio-2`/`prio-3` (DEC-133) olhavam a janela (`@media` 1280 e 1440). A
+1920 px o conteúdo para em 1280 e a área da tabela é 1.240, mas a janela larga
+punha de volta as `prio-3`: Processos pedia 1.330, e o ⋮ fixo cobria a
+"Distribuição" (o cabeçalho mostrava "Di").
+
+- **Container queries**, sem dependência: o `.table-wrapper` é o contêiner
+  (`container-type: inline-size`) — a área útil de verdade, na lista dentro do
+  balão ou fora dele. Ficou no wrapper, e não no `.lista-balao`, porque ele
+  está em toda lista, e o balão não.
+- **Um ponto por lista**, a soma das `<col>` que ficam (a tabela é
+  `table-layout: fixed`), lida pela tabela em `data-lista="…"` (atributo, para
+  as travas que leem o `className` exato não mudarem). A tabela de somas está
+  em `styles/modules.css`; há teste recalculando cada ponto das larguras das
+  classes.
+- **Medido:** a 1280 e a 1920 px, nenhuma das sete listas rola, exceto
+  Parcelas (DEC-133); todas as colunas visíveis inteiras e nenhuma coberta
+  pelo ⋮. A 1024 px Clientes passou a mostrar E-mail e Telefone e Seções a
+  coluna Variáveis (cabem); 768 e 360 px iguais às medidas da 3.7/3.8. O
+  celular (DEC-135) não mudou.
+- Seções: a coluna Variáveis passou de `col-xxs` (80) a `col-xs` (100): o
+  cabeçalho não cabia em 80.
+
+## DEC-164 (frontend) — "Precisa de atenção" com honorário, processo e cliente (Fase 4a2)
+
+As linhas de parcela vencida diziam só "Parcela 4" e a data (apontamento 3 da
+banca). As duas listas do bloco passaram à `LinhaDeData` (DEC-131), no formato
+das vencidas da Visão geral: "{honorário} — Parcela N", o em aberto,
+"processo · cliente", e **a linha inteira leva à parcela**.
+
+- As vencidas saem de `vencidasDoAviso(avisos, Infinity)` (todas, sem o limite
+  de 8 da Visão geral), que passou a ler a lista por `parcelasVencidasDoAviso`
+  — um caminho só, como o sino.
+- A lista da semana sai de `parcelaDaSemana` (`pages/dashboard/inicio.js`),
+  com o `processo` resumido que `GET /installments` já manda (DEC-102); o
+  prazo em palavras ("Vence em 5 dias") vai no subtítulo.
+- **O nome do honorário deixou de ser um segundo link ali** (link dentro de
+  link é inválido): a trava da F-1b (`f1b.test.js`) tirou o Início da lista,
+  com o motivo. O `StatusBadge` e as `.upcoming-*` saíram.
+
+## DEC-165 (frontend) — "Vencida" × "Pendente" e 12 × 6: o que era de tela (Fase 4a2)
+
+A investigação (relatório da 4a2, seção 4) achou três causas. Duas eram de
+tela e foram corrigidas; a terceira é regra do back e **aguarda decisão**.
+
+1. **A lista da semana lia só a primeira página** de `GET /installments` (20
+   parcelas, por número): com mais de 20 parcelas no escritório, as da semana
+   na página 2 não apareciam. Passou a pedir `status=pendente`, `ate=+7 dias`
+   e `limit=100` (`pedidoDaSemana`), com o mesmo filtro por cima.
+2. **O prazo lia o vencimento no fuso do navegador:** meia-noite UTC é 21 h do
+   dia anterior em Brasília, e a parcela de hoje saía "Vencida". Passou a
+   comparar datas de calendário (`prazoDaParcela`).
+3. **Pendente no banco, vencida pela data (NÃO corrigido):** o status
+   `vencido` só é gravado quando um recálculo roda (`definirStatusInstallment`,
+   no pagamento/edição). Parcela que passa da data sem recálculo fica
+   `pendente`: some das vencidas (o sino conta `status: "vencido"`) e cai em
+   "Vencem nos próximos 7 dias" com o prazo "Vencida". É regra do back.
+
+O sino e o bloco contam coisas diferentes, e é por isso que dão números
+diferentes: o sino soma **compromissos de hoje + compromissos atrasados +
+parcelas vencidas**; o bloco, **parcelas vencidas + parcelas da semana**. A
+coincidência só acontece por acaso.
+
+## DEC-167 (frontend) — a aba "Financeiro" do cliente (Fase 4a2)
+
+Revê a DEC-123 ("o financeiro é por processo"), por decisão do Daniel. A aba
+entra entre Processos e Portal (`?aba=financeiro`).
+
+- `components/clients/ClientFinanceTab.jsx`: as **parcelas** e os
+  **pagamentos** dos processos do cliente (`?clienteId=` em `GET /installments`
+  e `GET /payments`, DEC-166 do back), em duas listas compactas como a aba
+  Processos, com a coluna do processo, paginador e "Ver na lista de parcelas" /
+  "Ver na lista de pagamentos".
+- As listas completas ganharam o `?clienteId=`: `useClienteFiltrado` (depois
+  do hook do processo, recebendo o `processoId`, para o contexto publicado ser
+  o par inteiro), o chip "Filtro: só este cliente ×", a frase do recorte
+  (`do cliente "…"`), o "Limpar filtros" (`EXTRAS_DAS_FINANCEIRAS`) e o pai da
+  rota (volta à aba Financeiro).
+- **Sem espelho**, como as outras abas: sem sinal, "indisponível sem
+  conexão", nunca "nenhuma parcela".
 
 ---
 
