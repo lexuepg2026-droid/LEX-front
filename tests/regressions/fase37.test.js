@@ -291,9 +291,15 @@ describe("Fase 3.7 · item 3 — a primeira coluna fixa e a prioridade das colun
     }
   });
 
-  test("o CSS: os dois pontos de troca, a irmã da coluna de ações e o celular", () => {
-    assert.match(css, /@media \(max-width: 1439\.98px\) \{\s*\.data-table \.prio-3 \{ display: none; \}\s*\}/);
-    assert.match(css, /@media \(max-width: 1279\.98px\) \{\s*\.data-table \.prio-2 \{ display: none; \}\s*\}/);
+  // Reescrita na Fase 4a2 (DEC-163): os pontos de troca deixaram de ser
+  // `@media` da janela (1440 e 1280 px) e passaram a `@container` da área da
+  // tabela, um par por lista. A proteção é a mesma — cada prioridade sai
+  // inteira num ponto definido —, agora medida no lugar certo; os pontos
+  // estão em `tests/regressions/fase4a2.test.js`.
+  test("o CSS: os pontos de troca, a irmã da coluna de ações e o celular", () => {
+    assert.match(css, /@container \(max-width: [\d.]+px\) \{ \.data-table\[data-lista="processos"\] \.prio-3 \{ display: none; \} \}/);
+    assert.match(css, /@container \(max-width: [\d.]+px\) \{ \.data-table\[data-lista="processos"\] \.prio-2 \{ display: none; \} \}/);
+    assert.doesNotMatch(css, /@media[^{]*\{\s*\.data-table \.prio-[23]/);
     assert.match(css, /\.data-table--primeira-fixa th:first-child,\s*\.data-table--primeira-fixa td:first-child \{[^}]*position: sticky;[^}]*left: 0;[^}]*z-index: 1;[^}]*background-color: var\(--color-bg\);[^}]*box-shadow:/);
     assert.match(css, /\.lista-balao \.data-table--primeira-fixa td:first-child \{\s*background-color: var\(--color-surface\);/);
     assert.match(css, /\.lista-balao \.data-table--primeira-fixa tbody tr:hover > td:first-child \{[^}]*background-color: var\(--color-surface-raised\);/);

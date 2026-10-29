@@ -47,6 +47,9 @@
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
+  /* Fase 4a2 (DEC-163): o contêiner das prioridades de coluna. Ver "A
+     PRIORIDADE DAS COLUNAS", mais abaixo. */
+  container-type: inline-size;
 }
 
 .data-table {
@@ -628,33 +631,61 @@
    A PRIORIDADE DAS COLUNAS — Fase 3.7 (DEC-133)
    ═══════════════════════════════════════════════════════════════════════════
 
-   Cada coluna das cinco listas (Honorários, Parcelas, Pagamentos, Processos e
-   Clientes) tem uma prioridade, na `<col>`, no `<th>` e em cada `<td>` — a
-   MESMA classe nos três, para a coluna sumir inteira (largura, cabeçalho e
-   célula) e o leitor de tela continuar lendo uma tabela coerente:
+   Cada coluna das listas (Honorários, Parcelas, Pagamentos, Processos,
+   Clientes, Documentos e Seções) tem uma prioridade, na `<col>`, no `<th>` e
+   em cada `<td>` — a MESMA classe nos três, para a coluna sumir inteira
+   (largura, cabeçalho e célula) e o leitor de tela continuar lendo uma
+   tabela coerente:
 
    - `prio-1` (sem classe): nunca sai. Identificação, VALOR, DATA, STATUS e
      ações. Dinheiro nunca trunca e nunca some (F-1b.2).
-   - `prio-3`: sai abaixo de **1440 px**.
-   - `prio-2`: sai abaixo de **1280 px**.
+   - `prio-3`: sai primeiro.
+   - `prio-2`: sai depois.
 
-   Os pontos vêm das medidas (relatório da 3.7, seção 2). A área útil da
-   tabela é a largura da janela menos 88 px (1280 → 1192). Com tudo à mostra
-   as listas pedem de 1.192 a 1.660 px; sem as `prio-3`, Honorários (1.120),
-   Pagamentos (1.110) e Processos (1.160) cabem em 1.192 — é o que faz a lista
-   de Processos caber sem rolar a 1280. Abaixo de 1280 nem com as `prio-2` elas
-   cabem (a 1024 a área é 936), e só as `prio-1` ficam. Parcelas, com cinco
-   colunas de dinheiro e datas, rola em qualquer largura menor que 1.748 px:
-   o que rola passa por baixo da primeira coluna e do ⋮, que ficam à vista.
+   ── Pela largura do CONTEÚDO, e não da janela (Fase 4a2, DEC-163) ─────────
+   Até a 4a2 os pontos eram `@media` da janela (1440 e 1280 px). A 1920 px o
+   conteúdo para em 1280, a área da tabela é 1240 — e a janela, larga, punha
+   de volta as `prio-3`: Processos pedia 1.330 e o ⋮ fixo cobria a
+   "Distribuição" (o cabeçalho mostrava "Di"). Agora quem decide é a largura
+   do `.table-wrapper` (o contêiner, `container-type: inline-size`), que é a
+   área útil de verdade, na lista dentro do balão ou fora dele.
+
+   **Um ponto por lista**, que é a soma das `<col>` visíveis (a tabela é
+   `table-layout: fixed`): a coluna sai quando a área fica menor que o que a
+   lista pede com ela. As somas, em px:
+
+   | Lista      | tudo  | sem `prio-3` | só `prio-1` |
+   |------------|-------|--------------|-------------|
+   | Honorários | 1.220 | 1.120        | 780         |
+   | Pagamentos | 1.380 | 1.110        | 770         |
+   | Processos  | 1.330 | 1.160        | 820         |
+   | Clientes   | 990   | 860          | 510         |
+   | Documentos | 1.150 | 980          | 640         |
+   | Seções     | 790   | —            | 690         |
+   | Parcelas   | 1.660 | —            | 1.320       |
+
+   Documentos e Seções contam a coluna que cede (`col-cede`) com os 220 px que
+   ela tem quando a tabela rola. Parcelas não cabe em área nenhuma que o
+   layout ofereça (cinco colunas de dinheiro e datas, DEC-133): o Processo e o
+   Cliente dela saem abaixo de 1.192, a área de uma janela de 1280, como antes.
+
+   No celular (≤ 480 px de janela) nada mudou (DEC-135): as `@media` de lá
+   mexem na primeira coluna e no ⋮, não nas prioridades — e a área de 304 px
+   já é menor que qualquer ponto.
 
    O que sai da tabela continua no detalhe do registro. */
-@media (max-width: 1439.98px) {
-  .data-table .prio-3 { display: none; }
-}
-
-@media (max-width: 1279.98px) {
-  .data-table .prio-2 { display: none; }
-}
+@container (max-width: 1219.98px) { .data-table[data-lista="honorarios"] .prio-3 { display: none; } }
+@container (max-width: 1119.98px) { .data-table[data-lista="honorarios"] .prio-2 { display: none; } }
+@container (max-width: 1379.98px) { .data-table[data-lista="pagamentos"] .prio-3 { display: none; } }
+@container (max-width: 1109.98px) { .data-table[data-lista="pagamentos"] .prio-2 { display: none; } }
+@container (max-width: 1329.98px) { .data-table[data-lista="processos"] .prio-3 { display: none; } }
+@container (max-width: 1159.98px) { .data-table[data-lista="processos"] .prio-2 { display: none; } }
+@container (max-width: 989.98px) { .data-table[data-lista="clientes"] .prio-3 { display: none; } }
+@container (max-width: 859.98px) { .data-table[data-lista="clientes"] .prio-2 { display: none; } }
+@container (max-width: 1149.98px) { .data-table[data-lista="documentos"] .prio-3 { display: none; } }
+@container (max-width: 979.98px) { .data-table[data-lista="documentos"] .prio-2 { display: none; } }
+@container (max-width: 789.98px) { .data-table[data-lista="secoes"] .prio-3 { display: none; } }
+@container (max-width: 1191.98px) { .data-table[data-lista="parcelas"] .prio-2 { display: none; } }
 
 /* No celular a primeira coluna encolhe: duas colunas fixas de 220 + 120 px
    não caberiam nos 304 px de área a 360. O texto corta com reticências e o

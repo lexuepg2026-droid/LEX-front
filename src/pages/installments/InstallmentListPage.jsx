@@ -12,6 +12,7 @@ import FinancialFilters from '../../components/financeiro/FinancialFilters';
 import { descricaoDoRecorteFinanceiro } from '../../components/financeiro/filterSummary.js';
 import useListFilters, { FILTROS_DAS_FINANCEIRAS } from '../../hooks/useListFilters';
 import useProcessoFiltrado from '../../hooks/useProcessoFiltrado';
+import useClienteFiltrado from '../../hooks/useClienteFiltrado';
 import ProcessFilterChip from '../../components/ui/ProcessFilterChip';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import { rotuloCurtoDoHonorario } from '../../utils/feeLabel';
@@ -37,6 +38,12 @@ function InstallmentListPage() {
   // dizer; agora ele aparece num chip e na frase do recorte (DEC-070).
   const filtroProcesso = useProcessoFiltrado({ avisoProprio: true });
   const processoId = filtroProcesso.processoId || undefined;
+  // Fase 4a2 (DEC-167): `?clienteId=`, da aba "Financeiro" do cliente. O chip
+  // diz o recorte e o desfaz, como o do processo. Vem DEPOIS do hook do
+  // processo e recebe o `processoId`: os dois publicam o contexto, e este,
+  // que roda por último, publica o par inteiro (o processo tem precedência).
+  const filtroCliente = useClienteFiltrado({ avisoProprio: true, processoId: processoId ?? null });
+  const clienteId = filtroCliente.clienteId || undefined;
   // Modo "desativadas" (Fase 4.5) — ver a nota em PaymentListPage. Vive junto
   // dos demais filtros para que ligá-lo também volte à página 1.
   const online = useOnlineStatus();
@@ -63,6 +70,7 @@ function InstallmentListPage() {
     page,
     limit: POR_PAGINA,
     processoId,
+    clienteId,
     honorarioId: filtros.honorarioId || undefined,
     status: filtros.status || undefined,
     inativos: inativosDaConsulta(filtros.registro),
@@ -140,13 +148,14 @@ function InstallmentListPage() {
       filtros.status ? `com status "${labelDe(STATUS_PARCELA_OPTIONS, filtros.status)}"` : null,
       trechoDoRegistro(registro)
     ],
-    processo: processoId ? { rotulo: filtroProcesso.rotulo } : null
+    processo: processoId ? { rotulo: filtroProcesso.rotulo } : null,
+    cliente: clienteId ? { nome: filtroCliente.rotulo } : null
   });
 
   // O processo da URL é um filtro como os outros: conta como "filtrado" para a
   // barra e para o estado vazio, e o "Limpar filtros" o remove junto — senão a
   // frase diria "do processo X" e o botão deixaria o processo de pé.
-  const filtrado = temFiltro || Boolean(processoId);
+  const filtrado = temFiltro || Boolean(processoId) || Boolean(clienteId);
   // O `processoId` sai no mesmo `limpar` da URL (uma escrita só — duas
   // seguidas se atropelariam). Desde a 3.7 a lista só existe na página
   // própria: o Financeiro deixou de embuti-la (DEC-130).
@@ -158,12 +167,21 @@ function InstallmentListPage() {
       {/* DEC-109: a faixa não mostra o aviso do processo do filtro — esta tela
           mostra, quando a lista em si veio da rede e só o processo do espelho. */}
       {!fromCache && filtroProcesso.fromCache && <OfflineNotice atualizadoEm={filtroProcesso.updatedAt} />}
+      {!fromCache && !filtroProcesso.fromCache && filtroCliente.fromCache && <OfflineNotice atualizadoEm={filtroCliente.updatedAt} />}
       {error && <p className="error-message">{error}</p>}
       {processoId && (
         <ProcessFilterChip
           rotulo={filtroProcesso.rotulo}
           carregando={filtroProcesso.carregando}
           onRemover={filtroProcesso.remover}
+        />
+      )}
+      {clienteId && (
+        <ProcessFilterChip
+          alvo="cliente"
+          rotulo={filtroCliente.rotulo}
+          carregando={filtroCliente.carregando}
+          onRemover={filtroCliente.remover}
         />
       )}
 
@@ -232,7 +250,7 @@ function InstallmentListPage() {
       ) : (
         <div className="table-wrapper" aria-busy={carregando || undefined}>
           {/* Larguras estáveis (Fase 4.3) — ver `styles/modules.css`. */}
-          <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa">
+          <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa" data-lista="parcelas">
             {/* Dinheiro em `col-money`, data em `col-data`, status em
                 `col-status` (F-1b.2). "Valor", "Recebido" e "Em aberto"
                 estavam em `col-sm`, que só aguenta até a casa dos milhares;

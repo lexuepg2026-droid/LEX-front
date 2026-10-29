@@ -180,7 +180,7 @@ function ClienteListPage() {
           <div className="table-wrapper" aria-busy={carregando || undefined}>
             {/* Larguras estáveis (Fase 4.3); a última coluna fica fixa à
                 direita (DEC-107) e a tabela rola dentro do wrapper. */}
-            <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa">
+            <table className="data-table data-table--fixed data-table--acoes-fixas data-table--primeira-fixa" data-lista="clientes">
               <colgroup>
                 {/* Fase 3.7 (DEC-133): o nome é a coluna fixa à esquerda, e o
                     documento fica (é o que distingue dois homônimos). E-mail e

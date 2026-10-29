@@ -34,7 +34,11 @@ export const descricaoDoRecorteFinanceiro = ({
   // nulo enquanto o processo não carregou; `null` quando não há o filtro.
   // Vem logo depois da busca e antes do honorário: o processo é o recorte mais
   // largo dos dois, e é a ordem em que se lê ("do processo X e do honorário Y").
-  processo = null
+  processo = null,
+  // Fase 4a2 (DEC-167): o `?clienteId=` da aba "Financeiro" do cliente.
+  // `{ nome }`, com `nome` nulo enquanto o cliente não carregou. Depois do
+  // processo, pela mesma ordem do mais largo ao mais estreito.
+  cliente = null
 } = {}) => {
   const trechos = [];
 
@@ -42,6 +46,7 @@ export const descricaoDoRecorteFinanceiro = ({
   if (termo) trechos.push(`com "${termo}"`);
 
   if (processo) trechos.push(trechoDoProcessoFiltrado(processo.rotulo));
+  if (cliente) trechos.push(cliente.nome ? `do cliente "${cliente.nome}"` : 'deste cliente');
 
   if (filtros.honorarioId) {
     const achado = honorarios.find((h) => String(h._id) === String(filtros.honorarioId));

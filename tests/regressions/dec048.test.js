@@ -36,7 +36,10 @@ const TELAS = [
   "src/pages/fees/FeeDetailPage.jsx",
   "src/pages/installments/InstallmentListPage.jsx",
   "src/components/financeiro/ProcessFinancialSheet.jsx",
-  "src/pages/dashboard/DashboardHomePage.jsx"
+  // Fase 4a2 (DEC-164): o rótulo da parcela do Início passou a ser montado
+  // em `inicio.js` (`parcelaDaSemana`), que a tela importa. A trava segue o
+  // rótulo até onde ele é montado agora.
+  "src/pages/dashboard/inicio.js"
 ];
 
 describe("DEC-048 — o rótulo da parcela", () => {
@@ -128,7 +131,9 @@ describe("DEC-048 — nenhuma tela monta o rótulo por conta própria", () => {
     for (const arquivo of TELAS) {
       assert.match(
         semComentarios(ler(arquivo)),
-        /import \{[^}]*rotulo(DaParcela|NaLista)[^}]*\} from ['"][^'"]*installmentLabel['"]/,
+        // Fase 4a2: `(\.js)?` — `inicio.js` importa com a extensão, como
+        // todo módulo que a suíte executa sem o resolvedor do Vite.
+        /import \{[^}]*rotulo(DaParcela|NaLista)[^}]*\} from ['"][^'"]*installmentLabel(\.js)?['"]/,
         `${arquivo}: o rótulo precisa vir de \`installmentLabel\``
       );
     }

@@ -22,7 +22,7 @@ import { usePublicarContexto } from '../contexts/ContextoContext';
 // do processo) e o "Limpar filtros" da lista (`extrasNaLimpeza`). Os dois
 // mudam a assinatura dos filtros na URL, e a lista volta à página 1.
 // ═══════════════════════════════════════════════════════════════════════════
-export default function useClienteFiltrado({ avisoProprio = false } = {}) {
+export default function useClienteFiltrado({ avisoProprio = false, processoId = null } = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const clienteId = searchParams.get('clienteId') || null;
 
@@ -34,7 +34,12 @@ export default function useClienteFiltrado({ avisoProprio = false } = {}) {
     enabled: Boolean(clienteId),
   });
 
-  usePublicarContexto({ clienteId, avisoProprio });
+  // Fase 4a2 (DEC-167): com `useProcessoFiltrado` na mesma tela (parcelas e
+  // pagamentos), este hook vem depois e recebe o `processoId`. Os efeitos de
+  // um componente rodam na ordem em que foram declarados, e este refaz junto
+  // sempre que o processo muda (está nas dependências): o último a publicar
+  // é este, com o par inteiro — e o processo tem precedência.
+  usePublicarContexto({ processoId, clienteId, avisoProprio });
 
   const remover = useCallback(() => {
     setSearchParams((atual) => {

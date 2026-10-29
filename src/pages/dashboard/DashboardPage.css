@@ -1,6 +1,6 @@
 /* --- Dashboard Header --- */
-/* Título à esquerda, seletor do mês à direita (Fase 3.1); na tela estreita o
-   seletor desce para a linha de baixo. */
+/* Título e data de hoje. O seletor do mês, que ficava à direita (Fase 3.1),
+   desceu para o bloco "Em {mês}" na Fase 4a2 (DEC-162). */
 .dashboard-header {
   display: flex;
   flex-wrap: wrap;
@@ -43,80 +43,9 @@
 
 
 
-/* --- Parcelas Urgentes --- */
-.upcoming-section {
-  margin-bottom: var(--space-8);
-}
-
-.upcoming-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.upcoming-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-4);
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.upcoming-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
-}
-
-.upcoming-desc {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* A descrição virou link para a parcela (Fase 4.3). Herda a cor do texto em
-   vez do verde de `a`: dentro de uma lista de itens, quinze linhas verdes
-   deixariam de parecer conteúdo e passariam a parecer menu. O sublinhado no
-   hover é o que sinaliza que é clicável. */
-.upcoming-link {
-  color: var(--color-text-primary);
-  text-decoration: none;
-  display: block;
-}
-
-.upcoming-link:hover,
-.upcoming-link:focus-visible {
-  color: var(--color-primary-light);
-  text-decoration: underline;
-}
-
-.upcoming-due {
-  font-size: var(--font-size-xs);
-  color: var(--color-warning-text);
-}
-
-.upcoming-right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-shrink: 0;
-}
-
-.upcoming-value {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-}
+/* --- Parcelas Urgentes ---
+   As linhas de "Precisa de atenção" passaram à `LinhaDeData` (Fase 4a2,
+   DEC-164), com as regras dela; as `.upcoming-*` saíram sem uso. */
 
 /* --- Error --- */
 .error-message {
@@ -125,105 +54,10 @@
   margin: var(--space-2) 0;
 }
 
-/* --- Gráficos --- */
-.charts-section {
-  margin-bottom: var(--space-8);
-}
-
-.chart-sub-title {
-  margin-top: var(--space-6);
-}
-
-.charts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--space-4);
-  margin-bottom: var(--space-2);
-}
-
-.chart-panel {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.chart-panel-title {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  margin: 0 0 var(--space-2);
-  text-align: center;
-}
-
-.chart-empty {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-discreto);
-  margin: var(--space-6) 0;
-  text-align: center;
-}
-
-/* ── Legenda dos donuts (Fase 4.3) ─────────────────────────────────────────
-   Os três gráficos não tinham legenda nenhuma: eram anéis coloridos sem nada
-   dizendo o que cada cor significava. A cor do ponto sai de
-   `utils/statusVisual.js`, o MESMO módulo que pinta o `StatusBadge` das
-   listagens — o ponto vermelho da legenda é o vermelho do badge "Vencido". */
-.chart-legend {
-  list-style: none;
-  margin: var(--space-3) 0 0;
-  padding: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.chart-legend-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-}
-
-.chart-legend-dot {
-  flex-shrink: 0;
-  width: 9px;
-  height: 9px;
-  border-radius: var(--radius-full);
-}
-
-/* O rótulo é quem cede espaço quando o cartão é estreito; a quantidade nunca
-   trunca, porque é o dado. */
-.chart-legend-label {
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.chart-legend-value {
-  flex-shrink: 0;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  font-variant-numeric: tabular-nums;
-}
-
-.chart-bar-wrapper {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4) var(--space-2);
-}
+/* --- Gráficos: saíram na Fase 4a2 (DEC-161), com o bloco do Início. --- */
 
 @media (max-width: 767px) {
   .dashboard-title { font-size: var(--font-size-xl); }
-  .upcoming-item { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
-  .upcoming-right { width: 100%; justify-content: space-between; }
 }
 
 
@@ -232,7 +66,10 @@
    O INÍCIO — seletor do mês, ações rápidas e Datas próximas (Fase 3.1)
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Seletor do mês ───────────────────────────────────────────────────────── */
+/* ── Seletor do mês ─────────────────────────────────────────────────────────
+   No cabeçalho do bloco "Em {mês}" desde a Fase 4a2 (DEC-162). O bloco é
+   `--color-surface`, e as pílulas também: quem as separa do fundo é a borda,
+   como nos botões secundários. */
 .inicio-mes {
   display: flex;
   align-items: center;

@@ -51,7 +51,13 @@ describe("a contagem de vencidas tem UMA fonte", () => {
     const sino = fonte(SINO);
 
     assert.match(painel, /contarParcelasVencidas\(/, "o painel precisa contar pela função compartilhada");
-    assert.match(painel, /parcelasVencidasDoAviso\(/, "o painel precisa ler a lista pela função compartilhada");
+    // Reescrita na Fase 4a2 (DEC-164): o painel lê a lista por
+    // `vencidasDoAviso` (a linha da Visão geral, com honorário e contexto), e
+    // ELA lê pela função compartilhada. O caminho continua sendo um só.
+    assert.match(painel, /vencidasDoAviso\(avisos, Infinity\)/, "o painel lê as linhas pela função da Visão geral");
+    const visao = fonte("pages/financeiro/visaoGeral.js");
+    assert.match(visao, /parcelasVencidasDoAviso\(avisos\)/, "e ela lê a lista pela função compartilhada");
+    assert.ok(!/avisos\??\.\s*parcelasVencidas/.test(visao), "visaoGeral.js não lê a lista na mão");
     assert.match(sino, /parcelasVencidasDoAviso\(/, "o sino precisa ler a lista pela função compartilhada");
 
     for (const [arquivo, texto] of [[PAINEL, painel], [SINO, sino]]) {
@@ -121,10 +127,13 @@ describe("blocos colapsáveis, com a escolha lembrada", () => {
       "remover o outline aqui desfaz a regra global de :focus-visible");
   });
 
-  test("fechado DESMONTA o conteúdo — é o que poupa o chunk dos gráficos", () => {
+  // Reescrita na Fase 4a2 (DEC-161): o motivo antigo era poupar o chunk dos
+  // gráficos, que saíram do Início. A trava fica, pelo motivo que sobrou: o
+  // bloco fechado não faz as leituras do conteúdo nem o deixa no Tab.
+  test("fechado DESMONTA o conteúdo — nada dele fica montado nem no Tab", () => {
     const bloco = fonte("components/dashboard/BlocoDoPainel.jsx");
     assert.match(bloco, /\{aberto && \(/,
-      "esconder por CSS manteria `DashboardCharts` montado e desfaria metade do motivo");
+      "esconder por CSS manteria o conteúdo montado, com os focáveis dele no Tab");
     assert.ok(!/display:\s*none/.test(cru("components/dashboard/BlocoDoPainel.css")));
   });
 });
@@ -132,12 +141,14 @@ describe("blocos colapsáveis, com a escolha lembrada", () => {
 describe("atenção primeiro, estatística depois", () => {
   const painel = () => fonte(PAINEL);
 
-  test("os seis blocos aparecem na ordem que a pergunta do dia pede", () => {
+  // Reescrita na Fase 4a2 (DEC-161): "graficos" saiu da ordem com o bloco.
+  // A ordem dos cinco que ficaram é a mesma.
+  test("os cinco blocos aparecem na ordem que a pergunta do dia pede", () => {
     const ordem = [...painel().matchAll(/chave="([a-z]+)"/g)].map((m) => m[1]);
     // Fase 3.1: as Datas próximas (chave `proximos`, a mesma de antes, para a
     // preferência gravada continuar valendo) sobem para antes do mês — "o que
     // vem por aí" é pergunta do dia; o mês escolhido é consulta.
-    assert.deepEqual(ordem, ["atencao", "proximos", "mes", "acumulado", "resumo", "graficos"]);
+    assert.deepEqual(ordem, ["atencao", "proximos", "mes", "acumulado", "resumo"]);
   });
 
   test("o que exige atenção nasce ABERTO; a estatística nasce FECHADA", () => {
@@ -148,7 +159,7 @@ describe("atenção primeiro, estatística depois", () => {
         `${chave} responde "o que preciso fazer hoje" — nasce aberto`
       );
     }
-    for (const chave of ["acumulado", "resumo", "graficos"]) {
+    for (const chave of ["acumulado", "resumo"]) {
       assert.match(
         t, new RegExp(`estaAberto\\('${chave}', true\\)`),
         `${chave} é estatística — nasce fechado`
@@ -194,10 +205,15 @@ describe("os cartões em 360 px — pendência do passo 181", () => {
   // a regra até onde ela mora agora.
   const css = () => readFileSync(resolve(SRC, "components/dashboard/CartaoDeResumo.css"), "utf8");
 
+  // Reescrita na Fase 4a2 (DEC-160): a coluna única deixou de vir de uma
+  // `@media (max-width: 480px)` e passou a sair da própria trilha mínima,
+  // `minmax(min(100%, 15rem), 1fr)` — numa grade mais estreita que 15rem
+  // sobra uma coluna, do tamanho da grade. A proteção é a mesma (e maior: vale
+  // em qualquer largura de grade, não só abaixo de 480 px de janela).
   test("os três blocos empilham numa coluna só na tela estreita", () => {
     const t = css();
     assert.match(
-      t, /@media \(max-width: 480px\) \{[^}]*\.summary-grid \{ grid-template-columns: 1fr; \}/s,
+      t, /\.summary-grid \{[^}]*grid-template-columns: repeat\(auto-fill, minmax\(min\(100%, 15rem\), 1fr\)\);/s,
       "sem uma coluna só, 'R$ 1.234.567,89' — token indivisível — estica a trilha e a página"
     );
   });

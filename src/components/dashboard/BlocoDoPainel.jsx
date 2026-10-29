@@ -28,7 +28,7 @@ const BlocoDoPainel = ({
   contagem = null,     // número em destaque ao lado do título, quando houver
   aberto,
   aoAlternar,
-  acao = null,         // { rotulo, para } — o que este bloco manda fazer
+  acao = null,         // o que este bloco manda fazer (ou, no "Em {mês}", o seletor do mês)
   children,
 }) => {
   const idConteudo = `bloco-${chave}`;
@@ -54,9 +54,9 @@ const BlocoDoPainel = ({
         {acao && <div className="bloco__acao">{acao}</div>}
       </div>
 
-      {/* Desmonta o conteúdo quando fechado, em vez de escondê-lo por CSS: o
-          bloco de gráficos é `lazy` e pesado, e mantê-lo montado atrás de um
-          `display: none` desfaria metade do motivo de ele ser colapsável. */}
+      {/* Desmonta o conteúdo quando fechado, em vez de escondê-lo por CSS:
+          atrás de um `display: none` ele continuaria montado. O motivo antigo
+          (o bloco de gráficos, `lazy` e pesado) saiu na Fase 4a2 (DEC-161). */}
       {aberto && (
         <div className="bloco__conteudo" id={idConteudo}>
           {children}

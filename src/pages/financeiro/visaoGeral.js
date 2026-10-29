@@ -1,6 +1,7 @@
 import { contextoDoProcesso, datasProximas, TIPOS_DE_DATA } from '../dashboard/inicio.js';
 import { destinoDoItem } from '../../utils/calendarLabels.js';
 import { formatCurrency } from '../../utils/formatters.js';
+import { parcelasVencidasDoAviso } from '../../utils/painel.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // A VISÃO GERAL DO FINANCEIRO — as regras (Fase 3.7, DEC-130)
@@ -29,8 +30,11 @@ export const DESTINO_DAS_VENCIDAS = '/dashboard/parcelas?situacao=vencido';
 //   é o que falta receber; sem o campo (back antigo), não se inventa número;
 // - contexto: "{processo} · {cliente}" (DEC-105);
 // - destino: a parcela, o mesmo que a Agenda dá a uma derivada de parcela.
+// Fase 4a2 (DEC-164): pela função compartilhada do sino (`utils/painel.js`), e
+// não por `avisos.parcelasVencidas` na mão — o Início passou a usar esta
+// função, e as três telas leem a lista por um caminho só.
 export const vencidasDoAviso = (avisos, limite = LIMITE_DA_VISAO_GERAL) =>
-  (Array.isArray(avisos?.parcelasVencidas) ? avisos.parcelasVencidas : [])
+  parcelasVencidasDoAviso(avisos)
     .slice(0, limite)
     .map((p) => ({
       chave: `vencida-${p._id}`,

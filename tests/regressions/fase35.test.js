@@ -193,9 +193,13 @@ import { consultaDaLista as consultaDosProcessos, descricaoDoRecorteDeProcessos,
 import { paiDaRota } from "../../src/components/layout/contexto.js";
 
 describe("Fase 3.5 · item 4 — o detalhe do cliente (DEC-123)", () => {
-  test("três abas, sem Pagamentos; a URL decide, e a padrão sai da URL", () => {
-    assert.deepEqual(ABAS.map((a) => a.id), ["detalhes", "processos", "portal"]);
-    assert.ok(!ABAS.some((a) => /pagamento/i.test(a.rotulo)), "a aba Pagamentos da Figura 21 não entra");
+  // Reescrita na Fase 4a2 (DEC-167): a decisão da DEC-123 (sem aba
+  // financeira) foi revista pelo Daniel — entra "Financeiro", entre
+  // Processos e Portal. O que se protege continua: a lista fechada de abas,
+  // a URL decidindo, a padrão sem parâmetro e a aba desconhecida caindo nela.
+  test("quatro abas, com Financeiro; a URL decide, e a padrão sai da URL", () => {
+    assert.deepEqual(ABAS.map((a) => a.id), ["detalhes", "processos", "financeiro", "portal"]);
+    assert.equal(abaDaUrl("?aba=financeiro"), "financeiro");
     assert.equal(abaDaUrl(""), "detalhes");
     assert.equal(abaDaUrl("?aba=portal"), "portal");
     assert.equal(abaDaUrl("?aba=pagamentos"), "detalhes");
@@ -313,7 +317,10 @@ describe("Fase 3.5 · item 4 — a lista de processos com `?clienteId=` (DEC-124
     assert.match(lista, /!fromCache && filtroCliente\.fromCache && <OfflineNotice atualizadoEm=\{filtroCliente\.updatedAt\} \/>/);
     const hook = semComentarios(ler("src/hooks/useClienteFiltrado.js"));
     assert.match(hook, /resource: 'client',\s*params: \{ id: clienteId \}/);
-    assert.match(hook, /usePublicarContexto\(\{ clienteId, avisoProprio \}\)/);
+    // Fase 4a2 (DEC-167): o hook passou a repassar o `processoId` da tela
+    // (parcelas e pagamentos têm os dois filtros); continua publicando o
+    // cliente, com o aviso próprio.
+    assert.match(hook, /usePublicarContexto\(\{ processoId, clienteId, avisoProprio \}\)/);
     assert.match(hook, /proximo\.delete\('clienteId'\)/);
     const chip = semComentarios(ler("src/components/ui/ProcessFilterChip.jsx"));
     assert.match(chip, /cliente: \{ titulo: 'Cliente'/);

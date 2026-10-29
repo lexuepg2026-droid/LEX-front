@@ -12,6 +12,7 @@ import OfflineWriteReason from '../../components/ui/OfflineWriteReason';
 import ClientTabs from '../../components/clients/ClientTabs';
 import ClientProcessesTab from '../../components/clients/ClientProcessesTab';
 import ClientPortalTab from '../../components/clients/ClientPortalTab';
+import ClientFinanceTab from '../../components/clients/ClientFinanceTab';
 import useCachedResource from '../../hooks/useCachedResource';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
 import useDesativacaoCliente from '../../hooks/useDesativacaoCliente';
@@ -34,8 +35,9 @@ import { usePublicarContexto } from '../../contexts/ContextoContext';
 // "Pessoa jurídica", o documento com o botão de copiar do número do processo,
 // o selo "Desativado" e o ⋮) e as abas em pílulas na URL: Detalhes (os dados
 // em balões por grupo, só leitura — editar continua no formulário), Processos
-// (apontamento 3 da banca) e Portal (a pendência da 2.5). A aba "Pagamentos"
-// da Figura 21 não entra: o financeiro é por processo (decisão 5).
+// (apontamento 3 da banca), Financeiro e Portal (a pendência da 2.5). A aba
+// financeira da Figura 21 tinha ficado de fora na 3.5 (DEC-123); entrou na
+// Fase 4a2 (DEC-167), com as parcelas e os pagamentos de todos os processos.
 //
 // Os balões, o cabeçalho e o botão de copiar são os do detalhe do processo
 // (`ProcessDetailPage.css`, DEC-111): o mesmo desenho para o mesmo papel.
@@ -164,6 +166,8 @@ function ClientDetailPage() {
       )}
 
       {aba === 'processos' && <ClientProcessesTab clienteId={id} online={online} />}
+
+      {aba === 'financeiro' && <ClientFinanceTab clienteId={id} online={online} />}
 
       {aba === 'portal' && <ClientPortalTab clienteId={id} nomeCliente={nome} online={online} />}
 

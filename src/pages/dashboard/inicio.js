@@ -144,6 +144,81 @@ const deCompromisso = (evento) => ({
   destino: destinoDoItem(evento),
 });
 
+// ── "Precisa de atenção": a linha da parcela da semana (Fase 4a2, DEC-164) ──
+//
+// O bloco mostrava "Parcela 4" e a data, sem honorário, processo nem cliente
+// (apontamento 3 da banca). Agora as duas listas do bloco usam a `LinhaDeData`
+// (DEC-131), no formato das vencidas da Visão geral (`vencidasDoAviso`):
+// "{honorário} — Parcela N", o em aberto, "processo · cliente", e a linha
+// inteira leva à parcela.
+//
+// A fonte e o filtro da lista da semana NÃO mudaram (`GET /installments`,
+// `status === 'pendente'`, vencimento até daqui a 7 dias): o desencontro
+// "Vencida" × "Pendente" depende de uma decisão de regra (relatório da 4a2,
+// seção 4), e esta função só troca a apresentação.
+
+// A data de hoje no relógio do navegador, como "AAAA-MM-DD".
+const hojeLocal = (agora) =>
+  `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}-${String(agora.getDate()).padStart(2, '0')}`;
+
+const diasEntre = (de, ate) =>
+  Math.round((Date.UTC(+ate.slice(0, 4), +ate.slice(5, 7) - 1, +ate.slice(8, 10))
+    - Date.UTC(+de.slice(0, 4), +de.slice(5, 7) - 1, +de.slice(8, 10))) / 86400000);
+
+// O prazo dito em palavras (era `daysUntilLabel`, no componente).
+//
+// Fase 4a2 (DEC-165), achado da investigação "Vencida" × "Pendente": o
+// vencimento chega como meia-noite UTC ("2026-10-28T00:00:00.000Z"), e a conta
+// antiga o lia no fuso do navegador — às 21 h do dia ANTERIOR em Brasília. A
+// parcela que vence hoje saía "Vencida", e a de amanhã, "Vence hoje". Agora
+// compara DATAS DE CALENDÁRIO: os dez primeiros caracteres do vencimento
+// (`dataDeCalendario`, a mesma leitura do selo da linha) contra o dia de hoje
+// no relógio de quem olha.
+export const prazoDaParcela = (dateStr, agora = new Date()) => {
+  const vencimento = dataDeCalendario(dateStr);
+  if (!vencimento) return '';
+  const diff = diasEntre(hojeLocal(agora), vencimento);
+  if (diff < 0)   return 'Vencida';
+  if (diff === 0) return 'Vence hoje';
+  if (diff === 1) return 'Vence amanhã';
+  return `Vence em ${diff} dias`;
+};
+
+// O que a advogada ainda tem a receber NESTA parcela. A parcela parcialmente
+// paga é o caso que o valor cheio erraria: 4.000 contratados com 1.000 já
+// recebidos precisam aparecer como 3.000 na lista de cobranças urgentes.
+export const emAbertoDaParcela = (inst) =>
+  Math.max(0, Number(inst?.valor || 0) - Number(inst?.valorPago || 0));
+
+// O pedido da lista da semana (DEC-165). Antes era `listInstallments()` sem
+// nada — a PRIMEIRA PÁGINA (20 parcelas, por número), filtrada na tela: com
+// mais de 20 parcelas no escritório, as da semana que caíam na página 2 nunca
+// apareciam (no seed da banca com um honorário a mais, nenhuma das 3
+// apareceu). Agora o servidor recorta pelos filtros que a rota já tem
+// (`status`, `ate`, DEC-103) e a tela pede o teto de 100 (regra nº 4). O
+// filtro da tela continua o mesmo, por cima: mesma pergunta, conjunto inteiro.
+export const LIMITE_DA_SEMANA = 100;
+export const pedidoDaSemana = (agora = new Date()) => {
+  const fim = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + 7);
+  return { status: 'pendente', ate: hojeLocal(fim), limit: LIMITE_DA_SEMANA };
+};
+
+// Uma parcela de `GET /installments` (com `feeId` populado e o `processo`
+// resumido da DEC-102) na forma da `LinhaDeData`.
+export const parcelaDaSemana = (inst, agora = new Date()) => ({
+  chave: `semana-${inst._id}`,
+  data: dataDeCalendario(inst.dataVencimento),
+  hora: null,
+  tipo: TIPOS_DE_DATA.vencimento.valor,
+  titulo: `${inst.feeId?.descricao || 'Honorário'} — ${rotuloDaParcela({
+    numeroParcela: inst.numeroParcela,
+    totalParcelas: inst.totalParcelas ?? null,
+  })}`,
+  subtitulo: `${formatCurrency(emAbertoDaParcela(inst))} em aberto · ${prazoDaParcela(inst.dataVencimento, agora)}`,
+  contexto: contextoDoProcesso(null, inst.processo?.numeroProcesso, inst.processo?.clientePrincipalNome),
+  destino: destinoDoItem({ natureza: 'derivada', origem: 'parcela', _id: inst._id }),
+});
+
 // ── As Datas próximas ────────────────────────────────────────────────────
 //
 // Duas fontes, as duas de rotas que já existiam:

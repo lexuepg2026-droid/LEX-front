@@ -8,13 +8,16 @@ import { ESTADO_CIVIL_OPTIONS, PAPEL_PROCESSO_OPTIONS, SEXO_OPTIONS, labelDe, no
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ── As abas, na URL (`?aba=`) ──────────────────────────────────────────────
-// "Detalhes", "Processos" e "Portal". A aba "Pagamentos" da Figura 21 NÃO
-// entra (decisão 5): o financeiro é por processo, e a ficha do processo já o
-// mostra inteiro. "Detalhes" é o padrão e se escreve SEM `?aba=` — uma URL só
-// para cada aba, como o mês do Início (DEC-098).
+// "Detalhes", "Processos", "Financeiro" e "Portal". A 3.5 tinha deixado o
+// financeiro de fora (DEC-123: "o financeiro é por processo"); a Fase 4a2
+// (DEC-167) reviu: a advogada quer ver, num lugar, o que um cliente deve e o
+// que pagou em todos os processos dele — a aba "Financeiro" junta as parcelas
+// e os pagamentos (`?clienteId=`, DEC-166 do back). "Detalhes" é o padrão e se
+// escreve SEM `?aba=` — uma URL só para cada aba, como o mês do Início.
 export const ABAS = Object.freeze([
   { id: 'detalhes', rotulo: 'Detalhes' },
   { id: 'processos', rotulo: 'Processos' },
+  { id: 'financeiro', rotulo: 'Financeiro' },
   { id: 'portal', rotulo: 'Portal' },
 ]);
 export const ABA_PADRAO = 'detalhes';
@@ -152,6 +155,12 @@ export const vinculoDoCliente = (processo, clienteId) => {
 export const destinoDoProcesso = (processoId) => `/dashboard/processos/detalhe/${processoId}`;
 export const listaDeProcessosDoCliente = (clienteId) => `/dashboard/processos?clienteId=${encodeURIComponent(clienteId)}`;
 
+// ── A aba "Financeiro" (Fase 4a2, DEC-167) ────────────────────────────────
+// As listas completas, filtradas pelo cliente — onde estão a busca, os
+// filtros e o chip "só este cliente".
+export const listaDeParcelasDoCliente = (clienteId) => `/dashboard/parcelas?clienteId=${encodeURIComponent(clienteId)}`;
+export const listaDePagamentosDoCliente = (clienteId) => `/dashboard/pagamentos?clienteId=${encodeURIComponent(clienteId)}`;
+
 // ── A aba "Portal" ────────────────────────────────────────────────────────
 // A situação de cada processo do cliente, no vocabulário do detalhe do
 // processo (`situacaoNoPortal`, DEC-111) mais os dois casos que só esta lista
@@ -189,6 +198,8 @@ export default {
   vinculoDoCliente,
   destinoDoProcesso,
   listaDeProcessosDoCliente,
+  listaDeParcelasDoCliente,
+  listaDePagamentosDoCliente,
   situacaoDoProcessoNoPortal,
   rotuloDoProcesso,
 };

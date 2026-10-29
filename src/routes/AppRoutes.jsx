@@ -38,14 +38,14 @@ import InicioPublico from '../pages/public/InicioPublico';
 // ═══════════════════════════════════════════════════════════════════════════
 // PORTAL DO CLIENTE — mesmo app, chunk próprio
 //
-// Tudo do portal entra por `lazy()`, no mesmo padrão que `DashboardCharts`
-// (`DashboardHomePage.jsx:13`). Um build e um deploy: o PWA existente continua
+// Tudo do portal entra por `lazy()` (o padrão que os gráficos do Início usavam
+// até a Fase 4a2, DEC-161). Um build e um deploy: o PWA existente continua
 // valendo, não há segundo domínio para configurar e nem segundo CORS para
 // esquecer.
 //
 // O chunk separado é o que torna isso honesto. Sem ele, o cliente baixaria o
 // bundle inteiro das telas da advogada — Financeiro, Perfil, montagem de
-// documento, `recharts` — para ver um processo e dois PDFs, no celular dele,
+// documento — para ver um processo e dois PDFs, no celular dele,
 // na rede dele.
 //
 // As rotas ficam FORA do `ProtectedRoute` e FORA do layout com Sidebar e

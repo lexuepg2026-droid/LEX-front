@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AlertCircle, ChevronLeft, ChevronRight, HandCoins } from 'lucide-react';
 import dashboardService from '../../api/dashboardService';
@@ -16,11 +16,9 @@ import {
 } from '../../components/dashboard/resumoFinanceiro.js';
 import {
   contarParcelasVencidas,
-  parcelasVencidasDoAviso,
   lerBlocosFechados,
   gravarBlocosFechados,
 } from '../../utils/painel';
-import StatusBadge from '../../components/ui/StatusBadge';
 import EmptyState from '../../components/ui/EmptyState';
 import Icone from '../../components/ui/Icone';
 import OfflineNotice from '../../components/ui/OfflineNotice';
@@ -28,8 +26,7 @@ import Loading from '../../components/common/Loading';
 import useCachedResource from '../../hooks/useCachedResource';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
 import { MENSAGEM_ESCRITA_OFFLINE, MENSAGEM_LEITURA_SEM_CACHE } from '../../offline/offlineMessages';
-import { formatCurrency, formatDate } from '../../utils/formatters';
-import { destinoDoItem } from '../../utils/calendarLabels';
+import { formatCurrency } from '../../utils/formatters';
 import { toast } from '../../utils/toast';
 import { getApiErrorMessage } from '../../utils/apiError';
 import {
@@ -46,6 +43,8 @@ import {
   destinoDasConfirmacoesDoProcesso,
   rotuloDaConfirmacaoPorProcesso,
   destinoDosNaoLiberados,
+  parcelaDaSemana,
+  pedidoDaSemana,
 } from './inicio.js';
 import { pluralizar } from '../../components/ui/plural.js';
 // `link-interno` (F-1b) mora em `styles/modules.css`, junto das demais
@@ -57,13 +56,17 @@ import '../../styles/modules.css';
 // varredura de classes da Fase 2E.1 existe para pegar.
 import '../../components/ui/Button.css';
 import './DashboardPage.css';
-import { rotuloDaParcela } from '../../components/financeiro/installmentLabel';
+import { vencidasDoAviso } from '../financeiro/visaoGeral.js';
 import { jaAvisadoPeloToastGlobal } from '../../api/toastGlobal';
 
 // Fase 2b (DEC-084): com o servidor fora, os GETs em paralelo desta tela
 // falham juntos. O toast global sai UMA vez (deduplicação da DEC-083), e os
 // `catch` abaixo só falam do que ele não cobre — um 404, por exemplo.
-const DashboardCharts = lazy(() => import('./DashboardCharts'));
+//
+// Fase 4a2 (DEC-161): o bloco "Gráficos" saiu do Início, com o componente,
+// os estilos, as duas leituras que só ele fazia (`/dashboard/status` e
+// `/dashboard/honorarios-por-mes`) e o `recharts`. As rotas continuam no
+// back — tirar rota é mudar contrato —, só sem uso no front.
 
 // O `BlocoDoPainel` recebe um COMPONENTE de ícone (`size`, `className`), no
 // formato do lucide. Este adaptador põe os ícones da Raniele no mesmo formato,
@@ -77,7 +80,6 @@ const doIcone = (nome) => {
 const ICONE_CALENDARIO = doIcone('calendario');
 const ICONE_DINHEIRO = doIcone('dinheiro');
 const ICONE_FOLDER = doIcone('folder');
-const ICONE_DOCUMENTO = doIcone('documento');
 
 // O ícone ao lado do rótulo do cartão: o da Raniele pelo nome, ou o lucide
 // quando ela não tem equivalente.
@@ -155,30 +157,12 @@ const CARDS_DO_MES = [
 // impede os dois painéis de discordarem.
 
 // Os blocos de estatística, que nascem fechados.
-const PADRAO_FECHADO = new Set(['acumulado', 'resumo', 'graficos']);
+const PADRAO_FECHADO = new Set(['acumulado', 'resumo']);
 
 const formatCurrentDate = () =>
   new Date().toLocaleDateString('pt-BR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
-
-const daysUntilLabel = (dateStr) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(dateStr);
-  due.setHours(0, 0, 0, 0);
-  const diff = Math.round((due - today) / 86400000);
-  if (diff < 0)   return 'Vencida';
-  if (diff === 0) return 'Vence hoje';
-  if (diff === 1) return 'Vence amanhã';
-  return `Vence em ${diff} dias`;
-};
-
-// O que a advogada ainda tem a receber NESTA parcela. A parcela parcialmente
-// paga é o caso que o valor cheio erraria: 4.000 contratados com 1.000 já
-// recebidos precisam aparecer como 3.000 na lista de cobranças urgentes.
-const emAbertoDaParcela = (inst) =>
-  Math.max(0, Number(inst.valor || 0) - Number(inst.valorPago || 0));
 
 const pluralParcelas = (n) => (n === 1 ? '1 parcela vencida' : `${n} parcelas vencidas`);
 
@@ -192,8 +176,6 @@ function DashboardHomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [upcoming, setUpcoming] = useState([]);
-  const [statusData, setStatusData] = useState(null);
-  const [feesByMonth, setFeesByMonth] = useState([]);
   const [agenda, setAgenda] = useState(null);
   const [agendaFalhou, setAgendaFalhou] = useState(false);
 
@@ -288,7 +270,7 @@ function DashboardHomePage() {
   }, []);
 
   useEffect(() => {
-    installmentService.listInstallments()
+    installmentService.listInstallments(pedidoDaSemana())
       .then(res => {
         const all = res.data.data ?? res.data;
         const today = new Date();
@@ -329,30 +311,18 @@ function DashboardHomePage() {
       .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar os avisos.')); });
   }, []);
 
-  useEffect(() => {
-    dashboardService.getStatusCounts()
-      .then(res => setStatusData(res.data))
-      .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar estatísticas do dashboard.')); });
-  }, []);
-
-  // A série mensal TERMINA no mês escolhido (DEC-098), então é refeita quando
-  // ele muda. `ativo` descarta a resposta de um mês que já ficou para trás —
-  // duas setas rápidas não podem pintar o gráfico do mês do meio.
-  useEffect(() => {
-    let ativo = true;
-    dashboardService.getFeesByMonth(mesParaApi)
-      .then(res => { if (ativo) setFeesByMonth(res.data); })
-      .catch(err => { if (!jaAvisadoPeloToastGlobal(err)) toast.error(getApiErrorMessage(err, 'Não foi possível carregar gráfico financeiro.')); });
-    return () => { ativo = false; };
-  }, [mesParaApi]);
-
   const rotuloMes = rotuloDoMes(chaveEscolhida);
   const rotuloMesDoServidor = resumoFinanceiro?.mesReferencia
     ? rotuloDoMes(resumoFinanceiro.mesReferencia)
     : rotuloMes;
   // Do sino, não do resumo financeiro — uma fonte só para este número.
   const vencidas = contarParcelasVencidas(avisos);
-  const parcelasVencidas = parcelasVencidasDoAviso(avisos);
+  // Fase 4a2 (DEC-164): as linhas das duas listas de "Precisa de atenção" na
+  // forma da `LinhaDeData`, com honorário, em aberto e "processo · cliente".
+  // Todas as vencidas (sem o limite de 8 da Visão geral): o bloco sempre as
+  // listou inteiras, e a contagem ao lado do título é a mesma do sino.
+  const linhasVencidas = vencidasDoAviso(avisos, Infinity);
+  const linhasDaSemana = upcoming.map((inst) => parcelaDaSemana(inst));
   const temAtencao = vencidas + upcoming.length > 0;
 
   const datas = datasProximas({
@@ -364,43 +334,18 @@ function DashboardHomePage() {
   // ── A ordem dos blocos, e por que ela é esta ────────────────────────────
   // Ações rápidas e atenção primeiro, estatística depois. Os três primeiros
   // blocos nascem abertos porque respondem "o que eu preciso fazer hoje"; os
-  // três últimos nascem fechados porque respondem "como está o escritório" —
+  // dois últimos nascem fechados porque respondem "como está o escritório" —
   // uma pergunta boa, só não é a da primeira olhada do dia.
   return (
     <div>
+      {/* Fase 4a2 (DEC-162): o topo fica só com o título e a data de hoje. O
+          seletor do mês desceu para o cabeçalho do bloco "Em {mês}", o único
+          que muda com ele — no topo, longe do bloco, trocar o mês parecia não
+          mudar nada. */}
       <div className="dashboard-header">
         <div className="dashboard-header__titulo">
           <h1 className="dashboard-title">Início</h1>
           <p className="dashboard-date">{formatCurrentDate()}</p>
-        </div>
-
-        {/* O seletor do mês. Só os blocos que dizem o mês no título o seguem —
-            ver a tabela da DEC-098. */}
-        <div className="inicio-mes" role="group" aria-label="Mês do Início">
-          <button
-            type="button"
-            className="inicio-mes__seta"
-            aria-label="Mês anterior"
-            disabled={!anterior}
-            onClick={() => irParaMes(anterior)}
-          >
-            <ChevronLeft size={18} aria-hidden="true" />
-          </button>
-          <span className="inicio-mes__rotulo" aria-live="polite">{rotuloMes}</span>
-          <button
-            type="button"
-            className="inicio-mes__seta"
-            aria-label="Próximo mês"
-            disabled={!proximo}
-            onClick={() => irParaMes(proximo)}
-          >
-            <ChevronRight size={18} aria-hidden="true" />
-          </button>
-          {!noMesCorrente && (
-            <button type="button" className="inicio-mes__atual" onClick={() => irParaMes(null)}>
-              Mês atual
-            </button>
-          )}
         </div>
       </div>
 
@@ -462,30 +407,8 @@ function DashboardHomePage() {
           {vencidas > 0 && (
             <>
               <h3 className="bloco__subtitulo">{pluralParcelas(vencidas)}</h3>
-              <ul className="upcoming-list">
-                {parcelasVencidas.map((item) => {
-                  const destino = destinoDoItem(item);
-                  return (
-                    <li key={`vencida-${item._id}`} className="upcoming-item">
-                      <div className="upcoming-info">
-                        <span className="upcoming-desc">
-                          {destino ? (
-                            <Link to={destino} className="link-interno">{item.titulo}</Link>
-                          ) : (
-                            item.titulo
-                          )}
-                        </span>
-                        <span className="upcoming-due">{formatDate(item.data)}</span>
-                      </div>
-                      <div className="upcoming-right">
-                        {item.valor != null && (
-                          <span className="upcoming-value">{formatCurrency(item.valor)}</span>
-                        )}
-                        <StatusBadge status="vencido" />
-                      </div>
-                    </li>
-                  );
-                })}
+              <ul className="datas-lista">
+                {linhasVencidas.map((item) => <LinhaDeData key={item.chave} item={item} />)}
               </ul>
             </>
           )}
@@ -493,32 +416,8 @@ function DashboardHomePage() {
           {upcoming.length > 0 && (
             <>
               <h3 className="bloco__subtitulo">Vencem nos próximos 7 dias</h3>
-              <ul className="upcoming-list">
-                {upcoming.map(inst => (
-                  <li key={inst._id} className="upcoming-item">
-                    <div className="upcoming-info">
-                      {/* O nome leva à cobrança, "Parcela N" leva à parcela. */}
-                      <span className="upcoming-desc">
-                        {inst.feeId?._id ? (
-                          <Link to={`/dashboard/honorarios/${inst.feeId._id}`} className="link-interno">
-                            {inst.feeId.descricao || 'Honorário'}
-                          </Link>
-                        ) : (
-                          inst.feeId?.descricao || 'Honorário'
-                        )}
-                        {' — '}
-                        <Link to={`/dashboard/parcelas/editar/${inst._id}`} className="upcoming-link">
-                          {rotuloDaParcela({ numeroParcela: inst.numeroParcela, totalParcelas: inst.totalParcelas ?? null })}
-                        </Link>
-                      </span>
-                      <span className="upcoming-due">{daysUntilLabel(inst.dataVencimento)}</span>
-                    </div>
-                    <div className="upcoming-right">
-                      <span className="upcoming-value">{formatCurrency(emAbertoDaParcela(inst))}</span>
-                      <StatusBadge status={inst.status} />
-                    </div>
-                  </li>
-                ))}
+              <ul className="datas-lista">
+                {linhasDaSemana.map((item) => <LinhaDeData key={item.chave} item={item} />)}
               </ul>
             </>
           )}
@@ -560,13 +459,44 @@ function DashboardHomePage() {
         )}
       </BlocoDoPainel>
 
-      {/* ══ 3. NO MÊS — segue o mês escolhido ════════════════════════════════ */}
+      {/* ══ 3. NO MÊS — segue o mês escolhido ════════════════════════════════
+          O seletor mora na AÇÃO do bloco (DEC-162): fica à vista com o bloco
+          aberto ou fechado, fora do botão que o alterna (link ou botão dentro
+          de botão é HTML inválido — ver `BlocoDoPainel`). */}
       <BlocoDoPainel
         chave="mes"
         titulo={`Em ${rotuloMes}`}
         Icone={ICONE_DINHEIRO}
         aberto={estaAberto('mes')}
         aoAlternar={alternarBloco}
+        acao={
+          <div className="inicio-mes" role="group" aria-label="Mês do bloco">
+            <button
+              type="button"
+              className="inicio-mes__seta"
+              aria-label="Mês anterior"
+              disabled={!anterior}
+              onClick={() => irParaMes(anterior)}
+            >
+              <ChevronLeft size={18} aria-hidden="true" />
+            </button>
+            <span className="inicio-mes__rotulo" aria-live="polite">{rotuloMes}</span>
+            <button
+              type="button"
+              className="inicio-mes__seta"
+              aria-label="Próximo mês"
+              disabled={!proximo}
+              onClick={() => irParaMes(proximo)}
+            >
+              <ChevronRight size={18} aria-hidden="true" />
+            </button>
+            {!noMesCorrente && (
+              <button type="button" className="inicio-mes__atual" onClick={() => irParaMes(null)}>
+                Mês atual
+              </button>
+            )}
+          </div>
+        }
       >
         {carregandoResumo && !resumoFinanceiro ? (
           <Loading />
@@ -729,25 +659,6 @@ function DashboardHomePage() {
         )}
       </BlocoDoPainel>
 
-      {/* ══ 6. GRÁFICOS — estatística, nasce FECHADO ════════════════════════
-          Fechado por padrão também poupa o chunk: `DashboardCharts` é `lazy` e
-          o bloco desmonta o conteúdo, então quem não abre não baixa os 386 KB
-          do recharts. A barra segue o mês; os donuts são a situação de hoje. */}
-      <BlocoDoPainel
-        chave="graficos"
-        titulo="Gráficos"
-        Icone={ICONE_DOCUMENTO}
-        aberto={estaAberto('graficos', true)}
-        aoAlternar={alternarBloco}
-      >
-        <Suspense fallback={<Loading />}>
-          <DashboardCharts
-            statusData={statusData}
-            feesByMonth={feesByMonth}
-            mesReferencia={chaveEscolhida}
-          />
-        </Suspense>
-      </BlocoDoPainel>
     </div>
   );
 }
